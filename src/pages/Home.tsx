@@ -128,13 +128,13 @@ const Home = () => {
             <h1 className="text-2xl font-bold brand jac-gradient-text">JAC Chat</h1>
           </div>
           <div className="flex items-center gap-4">
-            {/* Admin Dropdown - Owner/Admin Only */}
+            {/* Admin Dropdown - Owner/Admin Only - Placed LEFT of Welcome */}
             {(isOwner || isAdmin) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Settings className="w-4 h-4" />
-                    Admin
+                  <Button variant="outline" size="sm" className="gap-2 border-primary/50 text-primary hover:bg-primary/10">
+                    <Shield className="w-4 h-4" />
+                    Admin Panel
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
