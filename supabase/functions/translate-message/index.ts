@@ -12,20 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { text, targetLanguage, sourceLanguage } = await req.json();
+    const { text, targetLanguage, detectOnly } = await req.json();
 
-    if (!text || !targetLanguage) {
+    if (!text) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: text and targetLanguage' }),
+        JSON.stringify({ error: 'Missing required field: text' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Skip translation if target is same as source or if it's already English and target is English
-    if (sourceLanguage === targetLanguage) {
-      return new Response(
-        JSON.stringify({ translatedText: text, skipped: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -38,7 +30,7 @@ serve(async (req) => {
       );
     }
 
-    // Language name mapping for better prompts
+    // Language code to name mapping
     const languageNames: Record<string, string> = {
       en: 'English',
       es: 'Spanish',
@@ -47,7 +39,7 @@ serve(async (req) => {
       it: 'Italian',
       pt: 'Portuguese',
       ru: 'Russian',
-      zh: 'Chinese (Simplified)',
+      zh: 'Chinese',
       ja: 'Japanese',
       ko: 'Korean',
       ar: 'Arabic',
@@ -72,8 +64,69 @@ serve(async (req) => {
       bg: 'Bulgarian',
     };
 
+    // Language name to code mapping (reverse)
+    const languageCodes: Record<string, string> = Object.fromEntries(
+      Object.entries(languageNames).map(([code, name]) => [name.toLowerCase(), code])
+    );
+
+    // If detectOnly mode, just detect the language
+    if (detectOnly) {
+      const detectResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-lite',
+          messages: [
+            {
+              role: 'system',
+              content: `Detect the language of the given text. Respond with ONLY the language name in English (e.g., "English", "Spanish", "French", "German", "Japanese", "Chinese", "Korean", "Russian", "Arabic", "Hindi", etc.). If unsure or mixed, respond with the primary language. For very short text or symbols only, respond "Unknown".`
+            },
+            {
+              role: 'user',
+              content: text
+            }
+          ],
+          max_tokens: 20,
+          temperature: 0,
+        }),
+      });
+
+      if (!detectResponse.ok) {
+        return new Response(
+          JSON.stringify({ detectedLanguage: 'en', detectedLanguageName: 'Unknown' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const detectData = await detectResponse.json();
+      const detectedName = detectData.choices?.[0]?.message?.content?.trim() || 'Unknown';
+      const detectedCode = languageCodes[detectedName.toLowerCase()] || 'en';
+
+      console.log(`Detected language: ${detectedName} (${detectedCode}) for: "${text.substring(0, 30)}..."`);
+
+      return new Response(
+        JSON.stringify({ 
+          detectedLanguage: detectedCode, 
+          detectedLanguageName: detectedName 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Translation mode
+    if (!targetLanguage) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required field: targetLanguage for translation' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const targetLangName = languageNames[targetLanguage] || targetLanguage;
 
+    // Use tool calling to get structured output with both translation and detected language
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -85,12 +138,11 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a translator. Translate the given text to ${targetLangName}. 
+            content: `You are a translator. First detect the source language, then translate to ${targetLangName}.
 Rules:
 - Preserve ASCII art, emojis, special symbols, and formatting exactly as-is
 - Only translate the actual text content
 - Keep usernames, URLs, and technical terms unchanged
-- Return ONLY the translated text, nothing else
 - If the text is already in the target language, return it unchanged
 - Preserve any special characters like ★ ♦ ♠ ░ █ etc.`
           },
@@ -99,7 +151,32 @@ Rules:
             content: text
           }
         ],
-        max_tokens: 1000,
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "translate_text",
+              description: "Translate text and report the detected source language",
+              parameters: {
+                type: "object",
+                properties: {
+                  translated_text: { 
+                    type: "string",
+                    description: "The translated text"
+                  },
+                  source_language: { 
+                    type: "string",
+                    description: "The detected source language name (e.g., English, Spanish, French)"
+                  }
+                },
+                required: ["translated_text", "source_language"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "translate_text" } },
+        max_tokens: 1500,
         temperature: 0.3,
       }),
     });
@@ -126,12 +203,37 @@ Rules:
     }
 
     const data = await response.json();
-    const translatedText = data.choices?.[0]?.message?.content?.trim() || text;
+    
+    // Parse tool call response
+    let translatedText = text;
+    let detectedLanguage = 'en';
+    let detectedLanguageName = 'English';
 
-    console.log(`Translated to ${targetLanguage}: "${text.substring(0, 50)}..." -> "${translatedText.substring(0, 50)}..."`);
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) {
+      try {
+        const args = JSON.parse(toolCall.function.arguments);
+        translatedText = args.translated_text || text;
+        detectedLanguageName = args.source_language || 'English';
+        detectedLanguage = languageCodes[detectedLanguageName.toLowerCase()] || 'en';
+      } catch (e) {
+        console.error('Failed to parse tool response:', e);
+        // Fallback to content if tool parsing fails
+        translatedText = data.choices?.[0]?.message?.content?.trim() || text;
+      }
+    } else if (data.choices?.[0]?.message?.content) {
+      // Fallback if no tool call
+      translatedText = data.choices[0].message.content.trim();
+    }
+
+    console.log(`Translated (${detectedLanguageName} -> ${targetLangName}): "${text.substring(0, 30)}..." -> "${translatedText.substring(0, 30)}..."`);
 
     return new Response(
-      JSON.stringify({ translatedText }),
+      JSON.stringify({ 
+        translatedText,
+        detectedLanguage,
+        detectedLanguageName
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

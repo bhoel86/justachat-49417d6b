@@ -45,7 +45,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
   const [preferredLanguage, setPreferredLanguage] = useState('en');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translations, setTranslations] = useState<Record<string, { text: string; lang: string }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -323,14 +323,20 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
       // Check cache first
       const cached = getCachedTranslation(msg.id);
       if (cached) {
-        setTranslations(prev => ({ ...prev, [msg.id]: cached }));
+        setTranslations(prev => ({ 
+          ...prev, 
+          [msg.id]: { text: cached.translatedText, lang: cached.detectedLanguageName } 
+        }));
         return;
       }
       
       // Translate the message
-      const translated = await translateMessage(msg.id, msg.content);
-      if (translated) {
-        setTranslations(prev => ({ ...prev, [msg.id]: translated }));
+      const result = await translateMessage(msg.id, msg.content);
+      if (result) {
+        setTranslations(prev => ({ 
+          ...prev, 
+          [msg.id]: { text: result.translatedText, lang: result.detectedLanguageName } 
+        }));
       }
     });
   }, [messages, preferredLanguage, user?.id, translateMessage, getCachedTranslation, translations]);
@@ -616,7 +622,8 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
                 onBlockClick={handleBlockClick}
                 onReportClick={handleReportClick}
                 onInfoClick={handleInfoClick}
-                translatedMessage={translations[msg.id]}
+                translatedMessage={translations[msg.id]?.text}
+                detectedLanguage={translations[msg.id]?.lang}
                 isTranslating={isTranslating(msg.id)}
               />
             ))

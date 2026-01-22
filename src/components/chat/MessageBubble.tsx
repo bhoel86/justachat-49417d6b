@@ -28,6 +28,7 @@ interface MessageBubbleProps {
   onReportClick?: (userId: string, username: string) => void;
   onInfoClick?: (userId: string, username: string) => void;
   translatedMessage?: string | null;
+  detectedLanguage?: string | null;
   isTranslating?: boolean;
 }
 
@@ -48,6 +49,7 @@ const MessageBubble = ({
   onReportClick,
   onInfoClick,
   translatedMessage,
+  detectedLanguage,
   isTranslating = false
 }: MessageBubbleProps) => {
   const [showOriginal, setShowOriginal] = useState(false);
@@ -215,17 +217,29 @@ const MessageBubble = ({
           </div>
         )}
         <p className="text-sm leading-relaxed break-words pr-6 whitespace-pre-wrap">{displayMessage}</p>
-        {translatedMessage && (
-          <button
-            onClick={() => setShowOriginal(!showOriginal)}
-            className={cn(
-              "flex items-center gap-1 text-[10px] mt-1 opacity-70 hover:opacity-100 transition-opacity",
-              isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+        {(translatedMessage || detectedLanguage) && (
+          <div className="flex items-center gap-2 mt-1">
+            {detectedLanguage && (
+              <span className={cn(
+                "text-[10px] px-1.5 py-0.5 rounded-full",
+                isOwn ? "bg-primary-foreground/10 text-primary-foreground/70" : "bg-muted text-muted-foreground"
+              )}>
+                {detectedLanguage}
+              </span>
             )}
-          >
-            <Languages className="h-3 w-3" />
-            {showOriginal ? 'Show translation' : 'Show original'}
-          </button>
+            {translatedMessage && (
+              <button
+                onClick={() => setShowOriginal(!showOriginal)}
+                className={cn(
+                  "flex items-center gap-1 text-[10px] opacity-70 hover:opacity-100 transition-opacity",
+                  isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                )}
+              >
+                <Languages className="h-3 w-3" />
+                {showOriginal ? 'Show translation' : 'Show original'}
+              </button>
+            )}
+          </div>
         )}
         {isTranslating && (
           <span className="flex items-center gap-1 text-[10px] mt-1 opacity-50">

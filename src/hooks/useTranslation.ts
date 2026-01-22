@@ -1,8 +1,14 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface TranslationResult {
+  translatedText: string;
+  detectedLanguage: string;
+  detectedLanguageName: string;
+}
+
 interface TranslationCache {
-  [key: string]: string;
+  [key: string]: TranslationResult;
 }
 
 export const useTranslation = (targetLanguage: string) => {
@@ -12,8 +18,8 @@ export const useTranslation = (targetLanguage: string) => {
   const translateMessage = useCallback(async (
     messageId: string,
     text: string
-  ): Promise<string | null> => {
-    // Skip if target is English and text looks like English
+  ): Promise<TranslationResult | null> => {
+    // Skip if target is English (default, no translation needed for English speakers)
     if (targetLanguage === 'en') {
       return null;
     }
@@ -40,8 +46,7 @@ export const useTranslation = (targetLanguage: string) => {
       const { data, error } = await supabase.functions.invoke('translate-message', {
         body: {
           text,
-          targetLanguage,
-          sourceLanguage: 'auto'
+          targetLanguage
         }
       });
 
@@ -50,12 +55,14 @@ export const useTranslation = (targetLanguage: string) => {
         return null;
       }
 
-      if (data?.translatedText && !data.skipped) {
-        // Only cache if the translation is different from original
-        if (data.translatedText !== text) {
-          cacheRef.current[cacheKey] = data.translatedText;
-          return data.translatedText;
-        }
+      if (data?.translatedText && data.translatedText !== text) {
+        const result: TranslationResult = {
+          translatedText: data.translatedText,
+          detectedLanguage: data.detectedLanguage || 'en',
+          detectedLanguageName: data.detectedLanguageName || 'English'
+        };
+        cacheRef.current[cacheKey] = result;
+        return result;
       }
 
       return null;
@@ -75,7 +82,7 @@ export const useTranslation = (targetLanguage: string) => {
     return translating.has(messageId);
   }, [translating]);
 
-  const getCachedTranslation = useCallback((messageId: string): string | null => {
+  const getCachedTranslation = useCallback((messageId: string): TranslationResult | null => {
     const cacheKey = `${messageId}-${targetLanguage}`;
     return cacheRef.current[cacheKey] || null;
   }, [targetLanguage]);
