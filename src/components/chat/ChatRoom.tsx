@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, supabaseUntyped } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
 import MemberList from "./MemberList";
 import ChannelList, { Channel } from "./ChannelList";
 import PrivateMessageModal from "./PrivateMessageModal";
+import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
 import { getModerator, getWelcomeMessage, getRandomTip } from "@/lib/roomConfig";
 
@@ -41,9 +43,14 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   const [isMuted, setIsMuted] = useState(false);
   const [username, setUsername] = useState('');
   const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
+  const [preferredLanguage, setPreferredLanguage] = useState('en');
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  const { translateMessage, isTranslating, getCachedTranslation } = useTranslation(preferredLanguage);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,16 +87,21 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     loadInitialChannel();
   }, [initialChannelId, navigate, toast]);
 
-  // Fetch user profile
+  // Fetch user profile and language preference
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
       const { data } = await supabaseUntyped
         .from('profiles')
-        .select('username')
+        .select('username, preferred_language')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (data) setUsername(data.username);
+      if (data) {
+        setUsername(data.username);
+        if (data.preferred_language) {
+          setPreferredLanguage(data.preferred_language);
+        }
+      }
     };
     fetchProfile();
   }, [user]);
@@ -292,6 +304,36 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
 
     return () => clearTimeout(timer);
   }, [currentChannel?.id, loading]);
+
+  // Auto-translate messages from other users
+  useEffect(() => {
+    if (preferredLanguage === 'en') return; // Skip if user prefers English
+    
+    messages.forEach(async (msg) => {
+      // Skip own messages, system messages, moderator messages, and already translated
+      if (
+        msg.user_id === user?.id || 
+        msg.isSystem || 
+        msg.isModerator || 
+        msg.user_id === 'system' || 
+        msg.user_id === 'moderator' ||
+        translations[msg.id]
+      ) return;
+      
+      // Check cache first
+      const cached = getCachedTranslation(msg.id);
+      if (cached) {
+        setTranslations(prev => ({ ...prev, [msg.id]: cached }));
+        return;
+      }
+      
+      // Translate the message
+      const translated = await translateMessage(msg.id, msg.content);
+      if (translated) {
+        setTranslations(prev => ({ ...prev, [msg.id]: translated }));
+      }
+    });
+  }, [messages, preferredLanguage, user?.id, translateMessage, getCachedTranslation, translations]);
 
   // AI Moderator response logic - check if moderator should respond
   const shouldModeratorRespond = useCallback((message: string): boolean => {
@@ -541,6 +583,8 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           onlineCount={onlineUserIds.size || 1} 
           topic={topic}
           channelName={currentChannel?.name || 'general'}
+          onLanguageClick={() => setShowLanguageModal(true)}
+          currentLanguage={preferredLanguage}
         />
         
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -572,6 +616,8 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
                 onBlockClick={handleBlockClick}
                 onReportClick={handleReportClick}
                 onInfoClick={handleInfoClick}
+                translatedMessage={translations[msg.id]}
+                isTranslating={isTranslating(msg.id)}
               />
             ))
           )}
@@ -593,6 +639,17 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           targetUsername={pmTarget.username}
           currentUserId={user.id}
           currentUsername={username}
+        />
+      )}
+
+      {/* Language Settings Modal */}
+      {user && (
+        <LanguageSettingsModal
+          open={showLanguageModal}
+          onOpenChange={setShowLanguageModal}
+          userId={user.id}
+          currentLanguage={preferredLanguage}
+          onLanguageChange={setPreferredLanguage}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { MessageCircle, Users, LogOut, Crown, ShieldCheck, Info, Hash } from "lucide-react";
+import { MessageCircle, Users, LogOut, Crown, ShieldCheck, Info, Hash, Globe } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +11,11 @@ interface ChatHeaderProps {
   onlineCount: number;
   topic?: string;
   channelName?: string;
+  onLanguageClick?: () => void;
+  currentLanguage?: string;
 }
 
-const ChatHeader = ({ onlineCount, topic, channelName = 'general' }: ChatHeaderProps) => {
+const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageClick, currentLanguage = 'en' }: ChatHeaderProps) => {
   const { signOut, role } = useAuth();
 
   const getRoleBadge = () => {
@@ -60,6 +62,24 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general' }: ChatHeaderP
             <Users className="h-4 w-4" />
             <span>{onlineCount} online</span>
           </div>
+          
+          {onLanguageClick && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onLanguageClick}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Globe className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Language: {currentLanguage.toUpperCase()}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           
           <Tooltip>
             <TooltipTrigger asChild>

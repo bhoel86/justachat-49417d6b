@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.decrypt-pm]
 verify_jwt = false
+
+[functions.translate-message]
+verify_jwt = false

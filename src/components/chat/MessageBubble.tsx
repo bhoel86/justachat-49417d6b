@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Terminal, MessageSquareLock, Ban, Flag, Info, User, MoreVertical } from "lucide-react";
+import { Trash2, Terminal, MessageSquareLock, Ban, Flag, Info, User, MoreVertical, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -27,6 +27,8 @@ interface MessageBubbleProps {
   onBlockClick?: (userId: string, username: string) => void;
   onReportClick?: (userId: string, username: string) => void;
   onInfoClick?: (userId: string, username: string) => void;
+  translatedMessage?: string | null;
+  isTranslating?: boolean;
 }
 
 const MessageBubble = ({ 
@@ -44,8 +46,12 @@ const MessageBubble = ({
   onPmClick,
   onBlockClick,
   onReportClick,
-  onInfoClick
+  onInfoClick,
+  translatedMessage,
+  isTranslating = false
 }: MessageBubbleProps) => {
+  const [showOriginal, setShowOriginal] = useState(false);
+  const displayMessage = translatedMessage && !showOriginal ? translatedMessage : message;
   
   // Username dropdown component with 3-dot menu
   const UsernameWithDropdown = ({ username, userId, isOwnMessage, avatarUrl }: { username: string; userId?: string; isOwnMessage: boolean; avatarUrl?: string | null }) => {
@@ -208,7 +214,25 @@ const MessageBubble = ({
             <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={true} avatarUrl={senderAvatarUrl} />
           </div>
         )}
-        <p className="text-sm leading-relaxed break-words pr-6">{message}</p>
+        <p className="text-sm leading-relaxed break-words pr-6 whitespace-pre-wrap">{displayMessage}</p>
+        {translatedMessage && (
+          <button
+            onClick={() => setShowOriginal(!showOriginal)}
+            className={cn(
+              "flex items-center gap-1 text-[10px] mt-1 opacity-70 hover:opacity-100 transition-opacity",
+              isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+            )}
+          >
+            <Languages className="h-3 w-3" />
+            {showOriginal ? 'Show translation' : 'Show original'}
+          </button>
+        )}
+        {isTranslating && (
+          <span className="flex items-center gap-1 text-[10px] mt-1 opacity-50">
+            <Languages className="h-3 w-3 animate-pulse" />
+            Translating...
+          </span>
+        )}
         <div className="flex items-center justify-between mt-1">
           <p
             className={cn(
