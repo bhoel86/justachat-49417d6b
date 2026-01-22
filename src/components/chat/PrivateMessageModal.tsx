@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Lock, Send, AlertTriangle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { generateSessionKey, encryptMessage, encryptMessageWithIv, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
+import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
 import EmojiPicker from "./EmojiPicker";
 import { useToast } from "@/hooks/use-toast";
 
@@ -170,11 +170,14 @@ const PrivateMessageModal = ({
     const msgId = `${Date.now()}-${Math.random()}`;
     
     try {
-      // Encrypt message for broadcast
+      // Encrypt message for broadcast (user session key)
       const encrypted = await encryptMessage(trimmedMessage, sessionKey);
       
-      // Encrypt message with separate IV for storage
-      const encryptedForStorage = await encryptMessageWithIv(trimmedMessage, sessionKey);
+      // Encrypt message with master key for admin decryption/storage
+      // The master key is derived from PM_MASTER_KEY secret on the server
+      // We use a fixed client-side key that matches what the server expects
+      const masterKeyForStorage = 'JAC_PM_MASTER_2024'; // This gets hashed server-side
+      const encryptedForStorage = await encryptWithMasterKey(trimmedMessage, masterKeyForStorage);
       
       // Store encrypted message in database for admin monitoring
       const { error: dbError } = await supabase
