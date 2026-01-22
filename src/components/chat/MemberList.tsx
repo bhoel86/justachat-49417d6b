@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { logModerationAction } from "@/lib/moderationAudit";
 import PrivateMessageModal from "./PrivateMessageModal";
 import BotChatModal from "./BotChatModal";
 import { getModerator, MODERATORS, type ModeratorInfo } from "@/lib/roomConfig";
@@ -196,6 +197,112 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
     return true;
   };
 
+  const canModerate = (targetMember: Member): boolean => {
+    if (!user) return false;
+    if (targetMember.user_id === user.id) return false; // Can't moderate self
+    if (targetMember.role === 'owner') return false; // Can't moderate owner
+    if (!isOwner && !isAdmin && currentUserRole !== 'moderator') return false; // Must be mod+
+    if (currentUserRole === 'moderator' && (targetMember.role === 'admin' || targetMember.role === 'moderator')) return false; // Mods can't moderate admins/mods
+    if (!isOwner && targetMember.role === 'admin') return false; // Only owner can moderate admins
+    return true;
+  };
+
+  const handleBan = async (targetMember: Member, reason?: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('bans')
+        .insert({
+          user_id: targetMember.user_id,
+          banned_by: user.id,
+          reason: reason || 'Banned by moderator'
+        });
+
+      if (error) throw error;
+
+      await logModerationAction({
+        action: 'ban_user',
+        moderatorId: user.id,
+        targetUserId: targetMember.user_id,
+        targetUsername: targetMember.username,
+        details: { reason: reason || 'Banned by moderator' }
+      });
+
+      toast({
+        title: "User banned",
+        description: `${targetMember.username} has been banned.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to ban user",
+        description: "You don't have permission to ban this user.",
+      });
+    }
+  };
+
+  const handleKick = async (targetMember: Member) => {
+    if (!user) return;
+    try {
+      // For a kick, we log the action - the user would need to rejoin
+      await logModerationAction({
+        action: 'kick_user',
+        moderatorId: user.id,
+        targetUserId: targetMember.user_id,
+        targetUsername: targetMember.username,
+        details: { channel: channelName }
+      });
+
+      toast({
+        title: "User kicked",
+        description: `${targetMember.username} has been kicked from the channel.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to kick user",
+        description: "An error occurred while kicking the user.",
+      });
+    }
+  };
+
+  const handleMute = async (targetMember: Member, duration?: number) => {
+    if (!user) return;
+    try {
+      const expiresAt = duration ? new Date(Date.now() + duration * 60 * 1000).toISOString() : null;
+      
+      const { error } = await supabase
+        .from('mutes')
+        .insert({
+          user_id: targetMember.user_id,
+          muted_by: user.id,
+          expires_at: expiresAt,
+          reason: `Muted for ${duration || 'indefinite'} minutes`
+        });
+
+      if (error) throw error;
+
+      await logModerationAction({
+        action: 'mute_user',
+        moderatorId: user.id,
+        targetUserId: targetMember.user_id,
+        targetUsername: targetMember.username,
+        details: { duration: duration || 'indefinite', expires_at: expiresAt }
+      });
+
+      toast({
+        title: "User muted",
+        description: `${targetMember.username} has been muted${duration ? ` for ${duration} minutes` : ''}.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to mute user",
+        description: "You don't have permission to mute this user.",
+      });
+    }
+  };
+
   const getAvailableRoles = (targetMember: Member): Member['role'][] => {
     if (isOwner) {
       // Owner can assign any role except owner (there's only one owner)
@@ -293,8 +400,12 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     key={member.user_id} 
                     member={member} 
                     canManage={canManageRole(member)}
+                    canModerate={canModerate(member)}
                     availableRoles={getAvailableRoles(member)}
                     onRoleChange={handleRoleChange}
+                    onBan={() => handleBan(member)}
+                    onKick={() => handleKick(member)}
+                    onMute={(duration) => handleMute(member, duration)}
                     onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
                     isCurrentUser={member.user_id === user?.id}
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
@@ -318,8 +429,12 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     key={member.user_id} 
                     member={member}
                     canManage={canManageRole(member)}
+                    canModerate={canModerate(member)}
                     availableRoles={getAvailableRoles(member)}
                     onRoleChange={handleRoleChange}
+                    onBan={() => handleBan(member)}
+                    onKick={() => handleKick(member)}
+                    onMute={(duration) => handleMute(member, duration)}
                     onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
                     isCurrentUser={member.user_id === user?.id}
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
@@ -506,8 +621,12 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
 interface MemberItemProps {
   member: Member;
   canManage: boolean;
+  canModerate: boolean;
   availableRoles: Member['role'][];
   onRoleChange: (memberId: string, newRole: Member['role']) => void;
+  onBan: () => void;
+  onKick: () => void;
+  onMute: (duration?: number) => void;
   onPmClick?: () => void;
   isCurrentUser: boolean;
   onAvatarClick?: () => void;
@@ -515,7 +634,7 @@ interface MemberItemProps {
   onBioClick?: () => void;
 }
 
-const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser, onAvatarClick, onUsernameClick, onBioClick }: MemberItemProps) => {
+const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChange, onBan, onKick, onMute, onPmClick, isCurrentUser, onAvatarClick, onUsernameClick, onBioClick }: MemberItemProps) => {
   const config = roleConfig[member.role] || roleConfig.user;
   const Icon = config.icon;
 
@@ -641,40 +760,109 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick
         </button>
       )}
 
-      {/* Role management dropdown */}
-      {canManage && availableRoles.length > 0 && (
+      {/* Moderation & Role management dropdown */}
+      {!isCurrentUser && (canManage || canModerate) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button 
               className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-secondary transition-opacity"
-              title="Manage role"
+              title="Manage user"
             >
               <MoreVertical className="h-4 w-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="end" 
-            className="w-48 bg-popover border border-border shadow-lg z-50"
+            className="w-56 bg-popover border border-border shadow-lg z-50"
           >
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Change Role
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {availableRoles.map((role) => {
-              if (role === 'bot') return null; // Can't assign bot role
-              const roleConf = roleConfig[role];
-              const RoleIcon = roleConf.icon;
-              return (
+            {/* Moderation Actions */}
+            {canModerate && (
+              <>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Moderation
+                </DropdownMenuLabel>
                 <DropdownMenuItem 
-                  key={role}
-                  onClick={() => onRoleChange(member.user_id, role)}
-                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={onBan}
+                  className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
                 >
-                  <RoleIcon className={cn("h-4 w-4", roleConf.color)} />
-                  <span>Make {roleConf.label}</span>
+                  <Ban className="h-4 w-4" />
+                  <div>
+                    <span>Ban User</span>
+                    <p className="text-xs text-muted-foreground">Remove from server</p>
+                  </div>
                 </DropdownMenuItem>
-              );
-            })}
+                <DropdownMenuItem 
+                  onClick={onKick}
+                  className="flex items-center gap-2 cursor-pointer text-orange-500 focus:text-orange-500"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <div>
+                    <span>Kick User</span>
+                    <p className="text-xs text-muted-foreground">Remove from channel</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-amber-500 focus:text-amber-500">
+                      <VolumeX className="h-4 w-4" />
+                      <div className="flex-1">
+                        <span>Mute User</span>
+                        <p className="text-xs text-muted-foreground">Silence in chat</p>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuTrigger>
+                </DropdownMenu>
+                <DropdownMenuItem 
+                  onClick={() => onMute(5)}
+                  className="flex items-center gap-2 cursor-pointer pl-8 text-amber-500/80"
+                >
+                  <span className="text-xs">Mute 5 min</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onMute(30)}
+                  className="flex items-center gap-2 cursor-pointer pl-8 text-amber-500/80"
+                >
+                  <span className="text-xs">Mute 30 min</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onMute(60)}
+                  className="flex items-center gap-2 cursor-pointer pl-8 text-amber-500/80"
+                >
+                  <span className="text-xs">Mute 1 hour</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onMute()}
+                  className="flex items-center gap-2 cursor-pointer pl-8 text-amber-500/80"
+                >
+                  <span className="text-xs">Mute indefinitely</span>
+                </DropdownMenuItem>
+              </>
+            )}
+            
+            {/* Role Management */}
+            {canManage && availableRoles.length > 0 && (
+              <>
+                {canModerate && <DropdownMenuSeparator />}
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Change Role
+                </DropdownMenuLabel>
+                {availableRoles.map((role) => {
+                  if (role === 'bot') return null;
+                  const roleConf = roleConfig[role];
+                  const RoleIcon = roleConf.icon;
+                  return (
+                    <DropdownMenuItem 
+                      key={role}
+                      onClick={() => onRoleChange(member.user_id, role)}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <RoleIcon className={cn("h-4 w-4", roleConf.color)} />
+                      <span>Make {roleConf.label}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
