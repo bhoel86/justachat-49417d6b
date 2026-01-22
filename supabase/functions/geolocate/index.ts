@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,6 +17,20 @@ interface GeoData {
   lon: number;
   timezone: string;
   isp: string;
+}
+
+// Hash IP address for privacy (one-way hash)
+async function hashIp(ip: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(ip + Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')); // Salt with service key
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16); // First 16 chars
+}
+
+// Reduce coordinate precision to ~1km (2 decimal places)
+function reduceCoordinatePrecision(coord: number): number {
+  return Math.round(coord * 100) / 100;
 }
 
 serve(async (req) => {
@@ -60,13 +75,13 @@ serve(async (req) => {
                    req.headers.get('x-real-ip') ||
                    '8.8.8.8'; // fallback for testing
 
-    console.log(`Getting geolocation for user ${user.id}, IP: ${clientIp}`);
+    console.log(`Getting geolocation for user ${user.id}`);
 
     // Use ip-api.com (free, no API key required)
     const geoResponse = await fetch(`http://ip-api.com/json/${clientIp}?fields=status,message,country,countryCode,region,regionName,city,lat,lon,timezone,isp,query`);
     const geoData = await geoResponse.json();
 
-    console.log('Geo API response:', geoData);
+    console.log('Geo API response for region:', geoData.regionName, geoData.country);
 
     if (geoData.status !== 'success') {
       console.error('Geo API error:', geoData.message);
@@ -86,17 +101,19 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
+    // Privacy-enhanced location data
+    const hashedIp = await hashIp(geoData.query);
     const locationData = {
       user_id: user.id,
-      ip_address: geoData.query,
-      latitude: geoData.lat,
-      longitude: geoData.lon,
+      ip_address: hashedIp, // Hashed IP instead of raw
+      latitude: reduceCoordinatePrecision(geoData.lat), // Reduced precision (~1km)
+      longitude: reduceCoordinatePrecision(geoData.lon), // Reduced precision (~1km)
       city: geoData.city,
       region: geoData.regionName,
       country: geoData.country,
       country_code: geoData.countryCode,
       timezone: geoData.timezone,
-      isp: geoData.isp,
+      isp: null, // Don't store ISP for privacy
       last_seen: new Date().toISOString(),
     };
 
@@ -126,7 +143,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Location saved successfully:', result.data);
+    console.log('Location saved successfully for user:', user.id);
 
     return new Response(
       JSON.stringify({ 
