@@ -9,12 +9,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import UserAvatar from "@/components/avatar/UserAvatar";
 
 interface MessageBubbleProps {
   id: string;
   message: string;
   sender: string;
   senderId?: string;
+  senderAvatarUrl?: string | null;
   timestamp: Date;
   isOwn: boolean;
   isSystem?: boolean;
@@ -32,6 +34,7 @@ const MessageBubble = ({
   message, 
   sender, 
   senderId,
+  senderAvatarUrl,
   timestamp, 
   isOwn, 
   isSystem = false,
@@ -45,7 +48,7 @@ const MessageBubble = ({
 }: MessageBubbleProps) => {
   
   // Username dropdown component with 3-dot menu
-  const UsernameWithDropdown = ({ username, userId, isOwnMessage }: { username: string; userId?: string; isOwnMessage: boolean }) => {
+  const UsernameWithDropdown = ({ username, userId, isOwnMessage, avatarUrl }: { username: string; userId?: string; isOwnMessage: boolean; avatarUrl?: string | null }) => {
     if (!userId) return <span className="text-xs font-medium text-primary">{username}</span>;
     
     return (
@@ -61,9 +64,11 @@ const MessageBubble = ({
             className="w-48 bg-popover border border-border shadow-lg z-50"
           >
             <DropdownMenuLabel className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-xs font-bold">
-                {username.charAt(0).toUpperCase()}
-              </div>
+              <UserAvatar
+                avatarUrl={avatarUrl}
+                username={username}
+                size="sm"
+              />
               <div>
                 <p className="font-medium text-sm">{username}</p>
                 <p className="text-xs text-muted-foreground">{isOwnMessage ? 'You' : 'User'}</p>
@@ -197,10 +202,10 @@ const MessageBubble = ({
         )}
       >
         {!isOwn ? (
-          <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={false} />
+          <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={false} avatarUrl={senderAvatarUrl} />
         ) : (
           <div className="flex justify-end mb-1">
-            <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={true} />
+            <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={true} avatarUrl={senderAvatarUrl} />
           </div>
         )}
         <p className="text-sm leading-relaxed break-words pr-6">{message}</p>

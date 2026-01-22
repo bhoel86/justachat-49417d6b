@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import PrivateMessageModal from "./PrivateMessageModal";
 import BotChatModal from "./BotChatModal";
 import { getModerator, MODERATORS, type ModeratorInfo } from "@/lib/roomConfig";
+import UserAvatar from "@/components/avatar/UserAvatar";
+import AvatarUploadModal from "@/components/avatar/AvatarUploadModal";
 
 interface Member {
   user_id: string;
@@ -23,6 +25,7 @@ interface Member {
   isOnline: boolean;
   isBot?: boolean;
   avatar?: string;
+  avatar_url?: string | null;
 }
 
 interface MemberListProps {
@@ -68,29 +71,35 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
   const [loading, setLoading] = useState(true);
   const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
 
-  // Get current user's username
+  // Get current user's username and avatar
   const [currentUsername, setCurrentUsername] = useState('');
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
+  
   useEffect(() => {
     if (user) {
       supabaseUntyped
         .from('profiles')
-        .select('username')
+        .select('username, avatar_url')
         .eq('user_id', user.id)
         .single()
         .then(({ data }) => {
-          if (data) setCurrentUsername(data.username);
+          if (data) {
+            setCurrentUsername(data.username);
+            setCurrentAvatarUrl(data.avatar_url);
+          }
         });
     }
   }, [user]);
 
   const fetchMembers = async () => {
-    // Fetch all profiles with their roles
+    // Fetch all profiles with their roles and avatars
     const { data: profiles } = await supabaseUntyped
       .from('profiles')
-      .select('user_id, username');
+      .select('user_id, username, avatar_url');
 
     const { data: roles } = await supabaseUntyped
       .from('user_roles')
@@ -99,11 +108,12 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
     if (profiles) {
       const roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]) || []);
       
-      const memberList: Member[] = profiles.map((p: { user_id: string; username: string }) => ({
+      const memberList: Member[] = profiles.map((p: { user_id: string; username: string; avatar_url: string | null }) => ({
         user_id: p.user_id,
         username: p.username,
         role: (roleMap.get(p.user_id) || 'user') as Member['role'],
         isOnline: onlineUserIds.has(p.user_id),
+        avatar_url: p.avatar_url,
       }));
 
       // Sort by role priority and online status
@@ -266,6 +276,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     onRoleChange={handleRoleChange}
                     onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
                     isCurrentUser={member.user_id === user?.id}
+                    onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                   />
                 ))}
               </div>
@@ -288,6 +299,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     onRoleChange={handleRoleChange}
                     onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
                     isCurrentUser={member.user_id === user?.id}
+                    onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                   />
                 ))}
               </div>
@@ -318,6 +330,17 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
           currentUsername={currentUsername}
         />
       )}
+
+      {/* Avatar Upload Modal */}
+      <AvatarUploadModal
+        open={avatarModalOpen}
+        onOpenChange={setAvatarModalOpen}
+        currentAvatarUrl={currentAvatarUrl}
+        onAvatarChange={(url) => {
+          setCurrentAvatarUrl(url);
+          fetchMembers();
+        }}
+      />
     </>
   );
 };
@@ -437,9 +460,10 @@ interface MemberItemProps {
   onRoleChange: (memberId: string, newRole: Member['role']) => void;
   onPmClick?: () => void;
   isCurrentUser: boolean;
+  onAvatarClick?: () => void;
 }
 
-const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser }: MemberItemProps) => {
+const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser, onAvatarClick }: MemberItemProps) => {
   const config = roleConfig[member.role] || roleConfig.user;
   const Icon = config.icon;
 
@@ -452,16 +476,27 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick
     >
       {/* Avatar with online indicator */}
       <div className="relative">
-        <div className={cn(
-          "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium",
-          config.bgColor,
-          config.color
-        )}>
-          {member.username.charAt(0).toUpperCase()}
-        </div>
-        {member.isOnline && (
-          <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-card" />
-        )}
+        <button
+          onClick={onAvatarClick}
+          disabled={!onAvatarClick}
+          className={cn(
+            "relative",
+            onAvatarClick && "cursor-pointer group/avatar"
+          )}
+        >
+          <UserAvatar
+            avatarUrl={member.avatar_url}
+            username={member.username}
+            size="sm"
+            showOnlineIndicator={true}
+            isOnline={member.isOnline}
+          />
+          {onAvatarClick && (
+            <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+              <Camera className="h-3 w-3 text-white" />
+            </div>
+          )}
+        </button>
       </div>
 
       {/* Name and role */}

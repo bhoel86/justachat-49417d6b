@@ -22,6 +22,7 @@ interface Message {
   isModerator?: boolean;
   profile?: {
     username: string;
+    avatar_url?: string | null;
   };
 }
 
@@ -164,9 +165,9 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
         if (userIds.length > 0) {
           const { data: profiles } = await supabaseUntyped
             .from('profiles')
-            .select('user_id, username')
+            .select('user_id, username, avatar_url')
             .in('user_id', userIds);
-          profileMap = new Map(profiles?.map((p: { user_id: string; username: string }) => [p.user_id, p]) || []);
+          profileMap = new Map(profiles?.map((p: { user_id: string; username: string; avatar_url?: string | null }) => [p.user_id, p]) || []);
         }
 
         setMessages(data.map((msg: Message) => ({
@@ -192,7 +193,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           const newMessage = payload.new as Message;
           const { data: profile } = await supabaseUntyped
             .from('profiles')
-            .select('username')
+            .select('username, avatar_url')
             .eq('user_id', newMessage.user_id)
             .single();
           setMessages(prev => [...prev, { ...newMessage, profile: profile || undefined }]);
@@ -560,6 +561,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
                 message={msg.content}
                 sender={msg.profile?.username || 'Unknown'}
                 senderId={msg.user_id}
+                senderAvatarUrl={msg.profile?.avatar_url}
                 timestamp={new Date(msg.created_at)}
                 isOwn={msg.user_id === user?.id}
                 isSystem={msg.isSystem || msg.user_id === 'system'}
