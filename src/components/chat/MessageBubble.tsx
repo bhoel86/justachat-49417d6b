@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Terminal, MessageSquareLock, Ban, Flag, Info, User } from "lucide-react";
+import { Trash2, Terminal, MessageSquareLock, Ban, Flag, Info, User, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -44,89 +44,92 @@ const MessageBubble = ({
   onInfoClick
 }: MessageBubbleProps) => {
   
-  // Username dropdown component
+  // Username dropdown component with 3-dot menu
   const UsernameWithDropdown = ({ username, userId, isOwnMessage }: { username: string; userId?: string; isOwnMessage: boolean }) => {
     if (!userId) return <span className="text-xs font-medium text-primary">{username}</span>;
     
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer">
-            {username}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          align="start" 
-          className="w-48 bg-popover border border-border shadow-lg z-50"
-        >
-          <DropdownMenuLabel className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-xs font-bold">
-              {username.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="font-medium text-sm">{username}</p>
-              <p className="text-xs text-muted-foreground">{isOwnMessage ? 'You' : 'User'}</p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          
-          {!isOwnMessage && onPmClick && (
-            <DropdownMenuItem 
-              onClick={() => onPmClick(userId, username)}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <MessageSquareLock className="h-4 w-4 text-primary" />
-              <span>Private Message</span>
-            </DropdownMenuItem>
-          )}
-          
-          {onInfoClick && (
-            <DropdownMenuItem 
-              onClick={() => onInfoClick(userId, username)}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span>View Info</span>
-            </DropdownMenuItem>
-          )}
-          
-          {!isOwnMessage && (
-            <>
-              <DropdownMenuSeparator />
-              
-              {onBlockClick && (
-                <DropdownMenuItem 
-                  onClick={() => onBlockClick(userId, username)}
-                  className="flex items-center gap-2 cursor-pointer text-amber-500 focus:text-amber-500"
-                >
-                  <Ban className="h-4 w-4" />
-                  <span>Block User</span>
-                </DropdownMenuItem>
-              )}
-              
-              {onReportClick && (
-                <DropdownMenuItem 
-                  onClick={() => onReportClick(userId, username)}
-                  className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
-                >
-                  <Flag className="h-4 w-4" />
-                  <span>Report User</span>
-                </DropdownMenuItem>
-              )}
-            </>
-          )}
-          
-          {isOwnMessage && (
-            <DropdownMenuItem 
-              onClick={() => onInfoClick?.(userId, username)}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span>My Profile</span>
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="p-0.5 rounded hover:bg-accent/50 transition-colors cursor-pointer opacity-60 hover:opacity-100">
+              <MoreVertical className="h-3 w-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent 
+            align="start" 
+            className="w-48 bg-popover border border-border shadow-lg z-50"
+          >
+            <DropdownMenuLabel className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-xs font-bold">
+                {username.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-medium text-sm">{username}</p>
+                <p className="text-xs text-muted-foreground">{isOwnMessage ? 'You' : 'User'}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            {!isOwnMessage && onPmClick && (
+              <DropdownMenuItem 
+                onClick={() => onPmClick(userId, username)}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <MessageSquareLock className="h-4 w-4 text-primary" />
+                <span>Private Message</span>
+              </DropdownMenuItem>
+            )}
+            
+            {onInfoClick && (
+              <DropdownMenuItem 
+                onClick={() => onInfoClick(userId, username)}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span>View Info</span>
+              </DropdownMenuItem>
+            )}
+            
+            {!isOwnMessage && (
+              <>
+                <DropdownMenuSeparator />
+                
+                {onBlockClick && (
+                  <DropdownMenuItem 
+                    onClick={() => onBlockClick(userId, username)}
+                    className="flex items-center gap-2 cursor-pointer text-amber-500 focus:text-amber-500"
+                  >
+                    <Ban className="h-4 w-4" />
+                    <span>Block User</span>
+                  </DropdownMenuItem>
+                )}
+                
+                {onReportClick && (
+                  <DropdownMenuItem 
+                    onClick={() => onReportClick(userId, username)}
+                    className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <Flag className="h-4 w-4" />
+                    <span>Report User</span>
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+            
+            {isOwnMessage && (
+              <DropdownMenuItem 
+                onClick={() => onInfoClick?.(userId, username)}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span>My Profile</span>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <span className="text-xs font-medium text-primary">{username}</span>
+      </div>
     );
   };
 
