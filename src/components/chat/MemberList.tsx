@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import PrivateMessageModal from "./PrivateMessageModal";
-import { getModerator, type ModeratorInfo } from "@/lib/roomConfig";
+import BotChatModal from "./BotChatModal";
+import { getModerator, MODERATORS, type ModeratorInfo } from "@/lib/roomConfig";
 
 interface Member {
   user_id: string;
@@ -66,6 +67,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
+  const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -226,7 +228,25 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
               AI Moderator
             </p>
             <div className="space-y-1">
-              <BotMemberItem member={botMember} />
+              <BotMemberItem 
+                member={botMember} 
+                moderator={moderator}
+                channelName={channelName}
+                onPmClick={() => setBotChatTarget({ moderator, channelName })}
+                onBlockClick={() => {
+                  toast({
+                    variant: "destructive",
+                    title: "Cannot block AI moderators",
+                    description: "AI moderators are essential for room management and cannot be blocked."
+                  });
+                }}
+                onInfoClick={() => {
+                  toast({
+                    title: `${moderator.avatar} ${moderator.name}`,
+                    description: `${moderator.displayName} - AI Moderator for #${channelName}. Personality based on famous hackers.`
+                  });
+                }}
+              />
             </div>
           </div>
 
@@ -287,49 +307,126 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
           currentUsername={currentUsername}
         />
       )}
+
+      {/* Bot Chat Modal */}
+      {botChatTarget && (
+        <BotChatModal
+          isOpen={!!botChatTarget}
+          onClose={() => setBotChatTarget(null)}
+          moderator={botChatTarget.moderator}
+          channelName={botChatTarget.channelName}
+          currentUsername={currentUsername}
+        />
+      )}
     </>
   );
 };
 
-// Bot member item component
-const BotMemberItem = ({ member }: { member: Member }) => {
+// Bot member item component with dropdown
+interface BotMemberItemProps {
+  member: Member;
+  moderator: ModeratorInfo;
+  channelName: string;
+  onPmClick: () => void;
+  onBlockClick: () => void;
+  onInfoClick: () => void;
+}
+
+const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick, onInfoClick }: BotMemberItemProps) => {
   const config = roleConfig.bot;
   const Icon = config.icon;
 
   return (
-    <div 
-      className={cn(
-        "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors",
-        "bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20"
-      )}
-    >
-      {/* Avatar with bot indicator */}
-      <div className="relative">
-        <div className={cn(
-          "h-8 w-8 rounded-full flex items-center justify-center text-sm",
-          "bg-gradient-to-br from-cyan-500/20 to-primary/20"
-        )}>
-          {member.avatar || '🤖'}
-        </div>
-        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-cyan-400 border-2 border-card flex items-center justify-center">
-          <span className="text-[6px]">✓</span>
-        </div>
-      </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <div 
+          className={cn(
+            "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors cursor-pointer group",
+            "bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20 hover:from-cyan-500/20 hover:to-primary/20"
+          )}
+        >
+          {/* Avatar with bot indicator */}
+          <div className="relative">
+            <div className={cn(
+              "h-8 w-8 rounded-full flex items-center justify-center text-sm",
+              "bg-gradient-to-br from-cyan-500/20 to-primary/20"
+            )}>
+              {member.avatar || '🤖'}
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-cyan-400 border-2 border-card flex items-center justify-center">
+              <span className="text-[6px]">✓</span>
+            </div>
+          </div>
 
-      {/* Name and role */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate text-foreground">
-          {member.username.split(' ').slice(1).join(' ') || member.username}
-        </p>
-        <div className="flex items-center gap-1">
-          <Icon className={cn("h-3 w-3", config.color)} />
-          <span className={cn("text-xs", config.color)}>{config.label}</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium ml-1">
-            BOT
-          </span>
+          {/* Name and role */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate text-foreground">
+              {member.username.split(' ').slice(1).join(' ') || member.username}
+            </p>
+            <div className="flex items-center gap-1">
+              <Icon className={cn("h-3 w-3", config.color)} />
+              <span className={cn("text-xs", config.color)}>{config.label}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium ml-1">
+                BOT
+              </span>
+            </div>
+          </div>
+
+          <MoreVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-      </div>
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent 
+        align="end" 
+        className="w-48 bg-popover border border-border shadow-lg z-50"
+      >
+        <DropdownMenuLabel className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500/30 to-primary/30 flex items-center justify-center text-sm">
+            {moderator.avatar}
+          </div>
+          <div>
+            <p className="font-medium text-sm">{moderator.name}</p>
+            <p className="text-xs text-muted-foreground">AI Moderator</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem 
+          onClick={onPmClick}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          <MessageSquareLock className="h-4 w-4 text-primary" />
+          <span>Private Message</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={onInfoClick}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          <Info className="h-4 w-4 text-muted-foreground" />
+          <span>View Info</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem 
+          onClick={onBlockClick}
+          className="flex items-center gap-2 cursor-pointer text-muted-foreground"
+        >
+          <Ban className="h-4 w-4" />
+          <span>Block Bot</span>
+          <span className="text-[10px] ml-auto opacity-50">N/A</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          className="flex items-center gap-2 cursor-pointer text-muted-foreground"
+          disabled
+        >
+          <Flag className="h-4 w-4" />
+          <span>Report</span>
+          <span className="text-[10px] ml-auto opacity-50">N/A</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
