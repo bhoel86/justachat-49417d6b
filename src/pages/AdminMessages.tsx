@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, MessageSquareLock, RefreshCw, Search, Trash2, Clock, User, ArrowRight, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { MessageSquareLock, RefreshCw, Search, Trash2, Clock, User, ArrowRight, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 
 interface PrivateMessage {
   id: string;
@@ -219,44 +220,22 @@ const AdminMessages = () => {
   }
 
   if (!isOwner && !isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="pt-6 text-center">
-            <MessageSquareLock className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-            <p className="text-muted-foreground mb-4">
-              Only admins can view private messages.
-            </p>
-            <Link to="/">
-              <Button>Return Home</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 space-y-6">
+    <AdminSidebar>
+      <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <MessageSquareLock className="h-6 w-6 text-primary" />
-                Private Message Monitor
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                View encrypted private messages for moderation
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <MessageSquareLock className="h-6 w-6 text-primary" />
+              Private Message Monitor
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              View encrypted private messages for moderation
+            </p>
           </div>
           <div className="flex gap-2">
             {Object.keys(decryptedMessages).length > 0 && (
@@ -447,7 +426,7 @@ const AdminMessages = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AdminSidebar>
   );
 };
 

@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Ban, Clock, User, Trash2, RefreshCw } from "lucide-react";
+import { Ban, Clock, User, Trash2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { logModerationAction } from "@/lib/moderationAudit";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 
 interface BanRecord {
   id: string;
@@ -116,47 +117,25 @@ const AdminBans = () => {
   }
 
   if (!isOwner && !isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Ban className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-            <p className="text-muted-foreground mb-4">
-              Only admins can access the ban list.
-            </p>
-            <Link to="/">
-              <Button>Return Home</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   const activeBans = bans.filter(b => !b.expires_at || new Date(b.expires_at) > new Date());
   const expiredBans = bans.filter(b => b.expires_at && new Date(b.expires_at) <= new Date());
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 space-y-6">
+    <AdminSidebar>
+      <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Ban className="h-6 w-6 text-destructive" />
-                Ban List
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Manage banned users
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Ban className="h-6 w-6 text-destructive" />
+              Ban List
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Manage banned users
+            </p>
           </div>
           <Button 
             variant="outline" 
@@ -277,7 +256,7 @@ const AdminBans = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AdminSidebar>
   );
 };
 

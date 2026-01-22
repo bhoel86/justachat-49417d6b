@@ -14,6 +14,9 @@ const NETWORK_NAME = "JACNet";
 // Active IRC sessions
 const sessions = new Map<string, IRCSession>();
 
+// Channel to session mapping for realtime relay
+const channelSubscriptions = new Map<string, Set<string>>(); // channelId -> Set<sessionId>
+
 interface IRCSession {
   ws: WebSocket;
   nick: string | null;
@@ -25,6 +28,7 @@ interface IRCSession {
   channels: Set<string>;
   lastPing: number;
   supabase: ReturnType<typeof createClient> | null;
+  sessionId: string;
 }
 
 // IRC numeric replies
@@ -301,6 +305,12 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       }
 
       session.channels.add(channel.id);
+      
+      // Track channel subscription for realtime
+      if (!channelSubscriptions.has(channel.id)) {
+        channelSubscriptions.set(channel.id, new Set());
+      }
+      channelSubscriptions.get(channel.id)!.add(session.sessionId);
 
       // Send JOIN confirmation
       sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} JOIN ${channelName}`);
@@ -382,6 +392,16 @@ async function handlePART(session: IRCSession, params: string[]) {
 
       if (channel && session.channels.has(channel.id)) {
         session.channels.delete(channel.id);
+        
+        // Remove from channel subscription tracking
+        const subscribers = channelSubscriptions.get(channel.id);
+        if (subscribers) {
+          subscribers.delete(session.sessionId);
+          if (subscribers.size === 0) {
+            channelSubscriptions.delete(channel.id);
+          }
+        }
+        
         sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} PART ${channelName} :${reason}`);
 
         // Leave in database
@@ -561,6 +581,18 @@ function handlePONG(session: IRCSession, _params: string[]) {
 function handleQUIT(session: IRCSession, params: string[]) {
   const reason = params.join(" ").replace(/^:/, "") || "Client Quit";
   sendIRC(session, `ERROR :Closing Link: ${session.nick} (${reason})`);
+  
+  // Clean up channel subscriptions
+  for (const channelId of session.channels) {
+    const subscribers = channelSubscriptions.get(channelId);
+    if (subscribers) {
+      subscribers.delete(session.sessionId);
+      if (subscribers.size === 0) {
+        channelSubscriptions.delete(channelId);
+      }
+    }
+  }
+  
   session.ws.close();
 }
 
@@ -687,6 +719,7 @@ Deno.serve(async (req) => {
     channels: new Set(),
     lastPing: Date.now(),
     supabase: null,
+    sessionId,
   };
 
   sessions.set(sessionId, session);
@@ -713,8 +746,102 @@ Deno.serve(async (req) => {
 
   socket.onclose = () => {
     console.log(`IRC connection closed: ${sessionId}`);
+    
+    // Clean up channel subscriptions on close
+    for (const channelId of session.channels) {
+      const subscribers = channelSubscriptions.get(channelId);
+      if (subscribers) {
+        subscribers.delete(sessionId);
+        if (subscribers.size === 0) {
+          channelSubscriptions.delete(channelId);
+        }
+      }
+    }
+    
     sessions.delete(sessionId);
   };
 
   return response;
 });
+
+// ============================================
+// Realtime Message Relay Setup
+// ============================================
+// This sets up a global Supabase client to listen for new messages
+// and relay them to connected IRC sessions
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+if (supabaseUrl && supabaseServiceKey) {
+  const realtimeClient = createClient(supabaseUrl, supabaseServiceKey);
+  
+  // Subscribe to messages table for realtime updates
+  realtimeClient
+    .channel("irc-message-relay")
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+      },
+      async (payload) => {
+        const newMessage = payload.new as {
+          id: string;
+          channel_id: string;
+          user_id: string;
+          content: string;
+          created_at: string;
+        };
+
+        console.log(`[Realtime] New message in channel ${newMessage.channel_id}`);
+
+        // Get subscribers for this channel
+        const subscribers = channelSubscriptions.get(newMessage.channel_id);
+        if (!subscribers || subscribers.size === 0) {
+          console.log(`[Realtime] No IRC subscribers for channel ${newMessage.channel_id}`);
+          return;
+        }
+
+        // Get sender's username
+        const { data: senderProfile } = await realtimeClient
+          .from("profiles")
+          .select("username")
+          .eq("user_id", newMessage.user_id)
+          .single();
+
+        const senderUsername = (senderProfile as { username: string } | null)?.username || "unknown";
+
+        // Get channel name
+        const { data: channelData } = await realtimeClient
+          .from("channels")
+          .select("name")
+          .eq("id", newMessage.channel_id)
+          .single();
+
+        const channelName = `#${(channelData as { name: string } | null)?.name || "unknown"}`;
+
+        // Relay message to all subscribed IRC sessions (except sender)
+        for (const subscriberId of subscribers) {
+          const subscriberSession = sessions.get(subscriberId);
+          if (
+            subscriberSession &&
+            subscriberSession.registered &&
+            subscriberSession.userId !== newMessage.user_id // Don't echo back to sender
+          ) {
+            sendIRC(
+              subscriberSession,
+              `:${senderUsername}!${senderUsername}@web.${SERVER_NAME} PRIVMSG ${channelName} :${newMessage.content}`
+            );
+            console.log(`[Realtime] Relayed message to ${subscriberSession.nick}`);
+          }
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log(`[Realtime] Subscription status: ${status}`);
+    });
+
+  console.log("[IRC Gateway] Realtime message relay initialized");
+}
