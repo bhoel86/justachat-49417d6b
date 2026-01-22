@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      bans: {
+        Row: {
+          banned_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      channel_settings: {
+        Row: {
+          channel_name: string
+          id: string
+          topic: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          channel_name?: string
+          id?: string
+          topic?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          channel_name?: string
+          id?: string
+          topic?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -31,6 +82,33 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mutes: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          muted_by: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          muted_by?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          muted_by?: string | null
+          reason?: string | null
           user_id?: string
         }
         Relationships: []
