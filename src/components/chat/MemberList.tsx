@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
@@ -19,6 +19,7 @@ import { getModerator, MODERATORS, type ModeratorInfo } from "@/lib/roomConfig";
 import UserAvatar from "@/components/avatar/UserAvatar";
 import AvatarUploadModal from "@/components/avatar/AvatarUploadModal";
 import UsernameChangeModal from "@/components/profile/UsernameChangeModal";
+import { BioEditModal } from "@/components/profile/BioEditModal";
 
 interface Member {
   user_id: string;
@@ -28,6 +29,7 @@ interface Member {
   isBot?: boolean;
   avatar?: string;
   avatar_url?: string | null;
+  bio?: string | null;
 }
 
 interface MemberListProps {
@@ -75,34 +77,37 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
+  const [bioModalOpen, setBioModalOpen] = useState(false);
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
 
   // Get current user's username and avatar
   const [currentUsername, setCurrentUsername] = useState('');
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
+  const [currentBio, setCurrentBio] = useState<string | null>(null);
   
   useEffect(() => {
     if (user) {
       supabaseUntyped
         .from('profiles')
-        .select('username, avatar_url')
+        .select('username, avatar_url, bio')
         .eq('user_id', user.id)
         .single()
-        .then(({ data }) => {
+        .then(({ data }: { data: { username: string; avatar_url: string | null; bio: string | null } | null }) => {
           if (data) {
             setCurrentUsername(data.username);
             setCurrentAvatarUrl(data.avatar_url);
+            setCurrentBio(data.bio);
           }
         });
     }
   }, [user]);
 
   const fetchMembers = async () => {
-    // Fetch all profiles with their roles and avatars
+    // Fetch all profiles with their roles, avatars, and bios
     const { data: profiles } = await supabaseUntyped
       .from('profiles')
-      .select('user_id, username, avatar_url');
+      .select('user_id, username, avatar_url, bio');
 
     const { data: roles } = await supabaseUntyped
       .from('user_roles')
@@ -111,12 +116,13 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
     if (profiles) {
       const roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]) || []);
       
-      const memberList: Member[] = profiles.map((p: { user_id: string; username: string; avatar_url: string | null }) => ({
+      const memberList: Member[] = profiles.map((p: { user_id: string; username: string; avatar_url: string | null; bio: string | null }) => ({
         user_id: p.user_id,
         username: p.username,
         role: (roleMap.get(p.user_id) || 'user') as Member['role'],
         isOnline: onlineUserIds.has(p.user_id),
         avatar_url: p.avatar_url,
+        bio: p.bio,
       }));
 
       // Sort by role priority and online status
@@ -293,6 +299,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     isCurrentUser={member.user_id === user?.id}
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                     onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
+                    onBioClick={member.user_id === user?.id ? () => setBioModalOpen(true) : undefined}
                   />
                 ))}
               </div>
@@ -317,6 +324,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     isCurrentUser={member.user_id === user?.id}
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                     onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
+                    onBioClick={member.user_id === user?.id ? () => setBioModalOpen(true) : undefined}
                   />
                 ))}
               </div>
@@ -369,6 +377,20 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
           fetchMembers();
         }}
       />
+
+      {/* Bio Edit Modal */}
+      {user && (
+        <BioEditModal
+          open={bioModalOpen}
+          onOpenChange={setBioModalOpen}
+          userId={user.id}
+          currentBio={currentBio}
+          onBioUpdated={(newBio) => {
+            setCurrentBio(newBio);
+            fetchMembers();
+          }}
+        />
+      )}
     </>
   );
 };
@@ -490,9 +512,10 @@ interface MemberItemProps {
   isCurrentUser: boolean;
   onAvatarClick?: () => void;
   onUsernameClick?: () => void;
+  onBioClick?: () => void;
 }
 
-const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser, onAvatarClick, onUsernameClick }: MemberItemProps) => {
+const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser, onAvatarClick, onUsernameClick, onBioClick }: MemberItemProps) => {
   const config = roleConfig[member.role] || roleConfig.user;
   const Icon = config.icon;
 
@@ -575,10 +598,11 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick
               </DropdownMenuItem>
               
               <DropdownMenuItem 
+                onClick={onBioClick}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span>View Profile</span>
+                <FileText className="h-4 w-4 text-primary" />
+                <span>Edit Bio</span>
               </DropdownMenuItem>
               
               <DropdownMenuSeparator />
