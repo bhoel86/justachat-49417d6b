@@ -53,17 +53,29 @@ export async function encryptMessage(message: string, key: CryptoKey): Promise<s
   return btoa(String.fromCharCode(...combined));
 }
 
-// Encrypt a message - returns separate ciphertext and IV for storage
-export async function encryptMessageWithIv(message: string, key: CryptoKey): Promise<{ ciphertext: string; iv: string }> {
+// Encrypt a message with a master key (for admin decryption)
+export async function encryptWithMasterKey(message: string, masterKey: string): Promise<{ ciphertext: string; iv: string }> {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
+  
+  // Derive a 256-bit key from the master key
+  const keyData = encoder.encode(masterKey);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    hashBuffer,
+    { name: ALGORITHM, length: KEY_LENGTH },
+    false,
+    ['encrypt']
+  );
   
   // Generate random IV
   const iv = crypto.getRandomValues(new Uint8Array(12));
   
   const encrypted = await crypto.subtle.encrypt(
     { name: ALGORITHM, iv },
-    key,
+    cryptoKey,
     data
   );
   

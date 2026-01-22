@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, MessageSquareLock, RefreshCw, Search, Trash2, Clock, User, ArrowRight, Lock } from "lucide-react";
+import { ArrowLeft, MessageSquareLock, RefreshCw, Search, Trash2, Clock, User, ArrowRight, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -28,6 +28,8 @@ const AdminMessages = () => {
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [decryptedMessages, setDecryptedMessages] = useState<Record<string, string>>({});
+  const [decryptingId, setDecryptingId] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -90,9 +92,54 @@ const AdminMessages = () => {
       if (error) throw error;
 
       setMessages(prev => prev.filter(m => m.id !== messageId));
+      setDecryptedMessages(prev => {
+        const newState = { ...prev };
+        delete newState[messageId];
+        return newState;
+      });
       toast.success('Message deleted');
     } catch (error) {
       toast.error('Failed to delete message');
+    }
+  };
+
+  const handleDecrypt = async (message: PrivateMessage) => {
+    // If already decrypted, toggle visibility
+    if (decryptedMessages[message.id]) {
+      setDecryptedMessages(prev => {
+        const newState = { ...prev };
+        delete newState[message.id];
+        return newState;
+      });
+      return;
+    }
+
+    setDecryptingId(message.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('decrypt-pm', {
+        body: {
+          messageId: message.id,
+          encrypted_content: message.encrypted_content,
+          iv: message.iv
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.decrypted_content) {
+        setDecryptedMessages(prev => ({
+          ...prev,
+          [message.id]: data.decrypted_content
+        }));
+        toast.success('Message decrypted');
+      } else {
+        throw new Error('No decrypted content returned');
+      }
+    } catch (error) {
+      console.error('Decryption error:', error);
+      toast.error('Failed to decrypt message. Check master key configuration.');
+    } finally {
+      setDecryptingId(null);
     }
   };
 
@@ -212,8 +259,8 @@ const AdminMessages = () => {
           <CardContent className="py-3 flex items-center gap-3">
             <Lock className="h-5 w-5 text-amber-500 shrink-0" />
             <p className="text-sm text-amber-500">
-              Messages are stored with AES-256 encryption. Content shown is encrypted ciphertext. 
-              Decryption requires the session key which is only available to conversation participants.
+              Messages are stored with AES-256 encryption. Click the eye icon to decrypt and view message content.
+              All decryption actions are logged for audit purposes.
             </p>
           </CardContent>
         </Card>
@@ -269,24 +316,54 @@ const AdminMessages = () => {
                               {format(new Date(msg.created_at), 'MMM d, HH:mm:ss')}
                             </span>
                           </div>
-                          <div className="mt-2 p-2 rounded bg-muted/50 border border-border">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Lock className="h-3 w-3 text-amber-500" />
-                              <span className="text-xs text-amber-500 font-medium">Encrypted Content</span>
+                          {decryptedMessages[msg.id] ? (
+                            <div className="mt-2 p-3 rounded bg-green-500/10 border border-green-500/30">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Eye className="h-3 w-3 text-green-500" />
+                                <span className="text-xs text-green-500 font-medium">Decrypted Content</span>
+                              </div>
+                              <p className="text-sm text-foreground break-words">
+                                {decryptedMessages[msg.id]}
+                              </p>
                             </div>
-                            <p className="text-xs text-muted-foreground font-mono break-all">
-                              {msg.encrypted_content.substring(0, 100)}...
-                            </p>
-                          </div>
+                          ) : (
+                            <div className="mt-2 p-2 rounded bg-muted/50 border border-border">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Lock className="h-3 w-3 text-amber-500" />
+                                <span className="text-xs text-amber-500 font-medium">Encrypted Content</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground font-mono break-all">
+                                {msg.encrypted_content.substring(0, 100)}...
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteMessage(msg.id)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDecrypt(msg)}
+                            disabled={decryptingId === msg.id}
+                            className="text-primary hover:text-primary hover:bg-primary/10"
+                            title={decryptedMessages[msg.id] ? "Hide decrypted content" : "Decrypt message"}
+                          >
+                            {decryptingId === msg.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : decryptedMessages[msg.id] ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

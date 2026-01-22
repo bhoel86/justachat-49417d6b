@@ -1,0 +1,159 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Decrypt using Web Crypto API
+async function decryptMessage(ciphertext: string, iv: string, masterKey: string): Promise<string> {
+  try {
+    // Derive a 256-bit key from the master key
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(masterKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      hashBuffer,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['decrypt']
+    );
+    
+    // Decode base64 ciphertext and IV
+    const ciphertextBytes = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
+    const ivBytes = Uint8Array.from(atob(iv), c => c.charCodeAt(0));
+    
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: ivBytes },
+      cryptoKey,
+      ciphertextBytes
+    );
+    
+    const decoder = new TextDecoder();
+    return decoder.decode(decrypted);
+  } catch (error) {
+    console.error('Decryption failed:', error);
+    throw new Error('Failed to decrypt message');
+  }
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Verify authorization
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verify user is admin or owner
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getUser(token);
+    
+    if (claimsError || !claimsData?.user) {
+      console.error('Auth error:', claimsError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.user.id;
+
+    // Check if user has admin or owner role using service role
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: roleData, error: roleError } = await serviceClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    if (roleError || !roleData) {
+      console.error('Role check error:', roleError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - role check failed' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (roleData.role !== 'admin' && roleData.role !== 'owner') {
+      console.log(`User ${userId} with role ${roleData.role} attempted to decrypt messages`);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden - admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Parse request body
+    const { messageId, encrypted_content, iv } = await req.json();
+
+    if (!encrypted_content || !iv) {
+      return new Response(
+        JSON.stringify({ error: 'Missing encrypted_content or iv' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get master key from secrets
+    const masterKey = Deno.env.get('PM_MASTER_KEY');
+    if (!masterKey) {
+      console.error('PM_MASTER_KEY not configured');
+      return new Response(
+        JSON.stringify({ error: 'Decryption service not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Decrypt the message
+    const decryptedContent = await decryptMessage(encrypted_content, iv, masterKey);
+
+    // Log the decryption action for audit
+    await serviceClient.from('audit_logs').insert({
+      user_id: userId,
+      action: 'decrypt_pm',
+      resource_type: 'private_message',
+      resource_id: messageId || null,
+      details: { decrypted_at: new Date().toISOString() }
+    });
+
+    console.log(`Admin ${userId} decrypted message ${messageId || 'unknown'}`);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        decrypted_content: decryptedContent 
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    console.error('Decrypt PM error:', error);
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
