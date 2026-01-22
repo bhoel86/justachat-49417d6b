@@ -66,6 +66,7 @@ const helpCommand: CommandHandler = async (args, context) => {
 /help - Show this help
 /me <action> - Send action message (e.g., /me waves)
 /nick <newname> - Change your display name
+/pm <username> - Start private encrypted chat
 /clear - Clear your chat (local only)
 /users - List online users
 /whois <username> - View user info${modCommands}${adminCommands}`,
@@ -487,11 +488,36 @@ Role: ${role}${status}`,
   };
 };
 
+// PM command - returns special result that signals to open PM modal
+const pmCommand: CommandHandler = async (args, context) => {
+  if (args.length === 0) {
+    return { success: false, message: 'Usage: /pm <username>' };
+  }
+
+  const targetUser = await findUserByUsername(args[0]);
+  if (!targetUser) {
+    return { success: false, message: `User "${args[0]}" not found.` };
+  }
+
+  if (targetUser.user_id === context.userId) {
+    return { success: false, message: "You can't send a private message to yourself." };
+  }
+
+  // Return special format that ChatRoom can detect
+  return {
+    success: true,
+    message: `PM_REQUEST:${targetUser.user_id}:${targetUser.username}`,
+    isSystemMessage: false,
+  };
+};
+
 // Command registry
 const commands: Record<string, CommandHandler> = {
   help: helpCommand,
   me: meCommand,
   nick: nickCommand,
+  pm: pmCommand,
+  msg: pmCommand, // Alias
   op: opCommand,
   deop: deopCommand,
   admin: adminCommand,

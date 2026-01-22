@@ -1,29 +1,135 @@
-import { Trash2, Terminal, Bot } from "lucide-react";
+import { useState } from "react";
+import { Trash2, Terminal, MessageSquareLock, Ban, Flag, Info, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MessageBubbleProps {
   id: string;
   message: string;
   sender: string;
+  senderId?: string;
   timestamp: Date;
   isOwn: boolean;
   isSystem?: boolean;
   isModerator?: boolean;
   canDelete?: boolean;
   onDelete?: (id: string) => void;
+  onPmClick?: (userId: string, username: string) => void;
+  onBlockClick?: (userId: string, username: string) => void;
+  onReportClick?: (userId: string, username: string) => void;
+  onInfoClick?: (userId: string, username: string) => void;
 }
 
 const MessageBubble = ({ 
   id, 
   message, 
   sender, 
+  senderId,
   timestamp, 
   isOwn, 
   isSystem = false,
   isModerator = false,
   canDelete = false,
-  onDelete 
+  onDelete,
+  onPmClick,
+  onBlockClick,
+  onReportClick,
+  onInfoClick
 }: MessageBubbleProps) => {
+  
+  // Username dropdown component
+  const UsernameWithDropdown = ({ username, userId, isOwnMessage }: { username: string; userId?: string; isOwnMessage: boolean }) => {
+    if (!userId) return <span className="text-xs font-medium text-primary">{username}</span>;
+    
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer">
+            {username}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent 
+          align="start" 
+          className="w-48 bg-popover border border-border shadow-lg z-50"
+        >
+          <DropdownMenuLabel className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-xs font-bold">
+              {username.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="font-medium text-sm">{username}</p>
+              <p className="text-xs text-muted-foreground">{isOwnMessage ? 'You' : 'User'}</p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          {!isOwnMessage && onPmClick && (
+            <DropdownMenuItem 
+              onClick={() => onPmClick(userId, username)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <MessageSquareLock className="h-4 w-4 text-primary" />
+              <span>Private Message</span>
+            </DropdownMenuItem>
+          )}
+          
+          {onInfoClick && (
+            <DropdownMenuItem 
+              onClick={() => onInfoClick(userId, username)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <Info className="h-4 w-4 text-muted-foreground" />
+              <span>View Info</span>
+            </DropdownMenuItem>
+          )}
+          
+          {!isOwnMessage && (
+            <>
+              <DropdownMenuSeparator />
+              
+              {onBlockClick && (
+                <DropdownMenuItem 
+                  onClick={() => onBlockClick(userId, username)}
+                  className="flex items-center gap-2 cursor-pointer text-amber-500 focus:text-amber-500"
+                >
+                  <Ban className="h-4 w-4" />
+                  <span>Block User</span>
+                </DropdownMenuItem>
+              )}
+              
+              {onReportClick && (
+                <DropdownMenuItem 
+                  onClick={() => onReportClick(userId, username)}
+                  className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <Flag className="h-4 w-4" />
+                  <span>Report User</span>
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
+          
+          {isOwnMessage && (
+            <DropdownMenuItem 
+              onClick={() => onInfoClick?.(userId, username)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span>My Profile</span>
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
   // System message styling
   if (isSystem) {
     return (
@@ -87,8 +193,12 @@ const MessageBubble = ({
             : "bg-jac-bubble-other text-foreground rounded-bl-md"
         )}
       >
-        {!isOwn && (
-          <p className="text-xs font-medium text-primary mb-1">{sender}</p>
+        {!isOwn ? (
+          <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={false} />
+        ) : (
+          <div className="flex justify-end mb-1">
+            <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={true} />
+          </div>
         )}
         <p className="text-sm leading-relaxed break-words pr-6">{message}</p>
         <div className="flex items-center justify-between mt-1">

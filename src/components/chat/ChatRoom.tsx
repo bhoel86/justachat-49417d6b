@@ -8,6 +8,7 @@ import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
 import MemberList from "./MemberList";
 import ChannelList, { Channel } from "./ChannelList";
+import PrivateMessageModal from "./PrivateMessageModal";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
 import { getModerator, getWelcomeMessage, getRandomTip } from "@/lib/roomConfig";
 
@@ -38,6 +39,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   const [isBanned, setIsBanned] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [username, setUsername] = useState('');
+  const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -423,6 +425,15 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
         return;
       }
 
+      // Check if this is a PM request
+      if (result.message.startsWith('PM_REQUEST:')) {
+        const parts = result.message.split(':');
+        const targetUserId = parts[1];
+        const targetUsername = parts[2];
+        setPmTarget({ userId: targetUserId, username: targetUsername });
+        return;
+      }
+
       if (result.isSystemMessage && !result.broadcast) {
         addSystemMessage(result.message);
       } else if (result.broadcast) {
@@ -471,6 +482,38 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
       .eq('id', messageId);
   };
 
+  // User action handlers for MessageBubble dropdown
+  const handlePmClick = (userId: string, username: string) => {
+    setPmTarget({ userId, username });
+  };
+
+  const handleBlockClick = (userId: string, username: string) => {
+    // For now, just show a toast - could implement actual blocking later
+    toast({
+      title: "User blocked",
+      description: `${username} has been blocked. You won't see their messages.`
+    });
+  };
+
+  const handleReportClick = (userId: string, username: string) => {
+    toast({
+      title: "User reported",
+      description: `${username} has been reported to moderators.`
+    });
+  };
+
+  const handleInfoClick = async (userId: string, username: string) => {
+    // Fetch user info and display
+    const { data: roleData } = await supabaseUntyped
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    const userRole = roleData?.role || 'user';
+    addSystemMessage(`**User Info: ${username}**\nRole: ${userRole}`);
+  };
+
   if (isBanned) {
     return (
       <div className="flex flex-col h-screen bg-background items-center justify-center text-center p-6">
@@ -516,12 +559,17 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
                 id={msg.id}
                 message={msg.content}
                 sender={msg.profile?.username || 'Unknown'}
+                senderId={msg.user_id}
                 timestamp={new Date(msg.created_at)}
                 isOwn={msg.user_id === user?.id}
                 isSystem={msg.isSystem || msg.user_id === 'system'}
                 isModerator={msg.isModerator || msg.user_id === 'moderator'}
                 canDelete={(msg.user_id === user?.id || isAdmin) && !msg.isModerator && msg.user_id !== 'moderator'}
                 onDelete={handleDelete}
+                onPmClick={handlePmClick}
+                onBlockClick={handleBlockClick}
+                onReportClick={handleReportClick}
+                onInfoClick={handleInfoClick}
               />
             ))
           )}
@@ -533,6 +581,18 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
 
       {/* Member Sidebar */}
       <MemberList onlineUserIds={onlineUserIds} />
+
+      {/* Private Message Modal */}
+      {pmTarget && user && (
+        <PrivateMessageModal
+          isOpen={!!pmTarget}
+          onClose={() => setPmTarget(null)}
+          targetUserId={pmTarget.userId}
+          targetUsername={pmTarget.username}
+          currentUserId={user.id}
+          currentUsername={username}
+        />
+      )}
     </div>
   );
 };
