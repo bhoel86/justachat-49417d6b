@@ -1,36 +1,27 @@
 @echo off
 cd /d "C:\Users\dunad\Desktop\kiwiirc-master"
 echo ========================================
-echo IRC Gateway Proxy Launcher
+echo IRC Gateway Proxy
 echo ========================================
 echo.
-echo Current directory: %CD%
-echo.
 
-echo Checking for files...
-if exist "webircgateway_windows_amd64.exe" (
-    echo [OK] Found webircgateway_windows_amd64.exe
-) else (
-    echo [ERROR] webircgateway_windows_amd64.exe NOT FOUND
+if not exist "webircgateway_windows_amd64.exe" (
+    echo [ERROR] webircgateway_windows_amd64.exe not found!
     echo.
-    echo Files in this folder:
-    dir /b *.exe 2>nul
+    echo Download from: https://github.com/kiwiirc/webircgateway/releases
+    echo Save to: %CD%
     echo.
     pause
     exit /b 1
 )
 
-if exist "config.conf" (
-    echo [OK] Found config.conf
-) else (
-    echo [ERROR] config.conf NOT FOUND
-    pause
-    exit /b 1
-)
-
+echo Starting proxy on 127.0.0.1:6667
 echo.
-echo ========================================
-echo Starting proxy - Connect mIRC to 127.0.0.1:6667
+echo mIRC Settings:
+echo   Server: 127.0.0.1
+echo   Port: 6667  
+echo   Password: your-email@example.com:your-password
+echo.
 echo Press Ctrl+C to stop
 echo ========================================
 echo.
@@ -38,8 +29,5 @@ echo.
 webircgateway_windows_amd64.exe -config config.conf
 
 echo.
-echo ========================================
-echo Proxy has exited. Error code: %ERRORLEVEL%
-echo ========================================
-echo.
+echo Exited with code: %ERRORLEVEL%
 pause
