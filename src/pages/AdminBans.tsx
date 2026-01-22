@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Ban, Clock, User, Trash2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { logModerationAction } from "@/lib/moderationAudit";
 
 interface BanRecord {
   id: string;
@@ -71,7 +72,9 @@ const AdminBans = () => {
     }
   }, [isOwner, isAdmin]);
 
-  const handleUnban = async (banId: string, username: string) => {
+  const handleUnban = async (banId: string, username: string, targetUserId: string) => {
+    if (!user) return;
+    
     try {
       const { error } = await supabase
         .from('bans')
@@ -79,6 +82,14 @@ const AdminBans = () => {
         .eq('id', banId);
 
       if (error) throw error;
+
+      // Log the unban action
+      await logModerationAction({
+        action: 'unban_user',
+        moderatorId: user.id,
+        targetUserId,
+        targetUsername: username,
+      });
 
       toast.success(`${username} has been unbanned`);
       fetchBans();
@@ -250,7 +261,7 @@ const AdminBans = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleUnban(ban.id, ban.profiles?.username || 'user')}
+                              onClick={() => handleUnban(ban.id, ban.profiles?.username || 'user', ban.user_id)}
                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="h-4 w-4" />

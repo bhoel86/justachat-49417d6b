@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { logModerationAction } from "@/lib/moderationAudit";
 
 interface UserRecord {
   user_id: string;
@@ -76,7 +77,9 @@ const AdminUsers = () => {
     }
   }, [isOwner, isAdmin]);
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  const handleRoleChange = async (userId: string, username: string, previousRole: string, newRole: string) => {
+    if (!user) return;
+    
     try {
       const { error } = await supabaseUntyped
         .from('user_roles')
@@ -84,6 +87,15 @@ const AdminUsers = () => {
         .eq('user_id', userId);
 
       if (error) throw error;
+
+      // Log the role change
+      await logModerationAction({
+        action: 'change_role',
+        moderatorId: user.id,
+        targetUserId: userId,
+        targetUsername: username,
+        details: { previous_role: previousRole, new_role: newRole }
+      });
 
       toast.success(`Role updated to ${roleConfig[newRole as keyof typeof roleConfig].label}`);
       fetchUsers();
@@ -247,7 +259,7 @@ const AdminUsers = () => {
                           {canChangeRole(u.role) && !isCurrentUser && (
                             <Select
                               value={u.role}
-                              onValueChange={(value) => handleRoleChange(u.user_id, value)}
+                              onValueChange={(value) => handleRoleChange(u.user_id, u.username, u.role, value)}
                             >
                               <SelectTrigger className="w-32">
                                 <SelectValue />

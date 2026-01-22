@@ -1,4 +1,5 @@
 import { supabaseUntyped } from '@/hooks/useAuth';
+import { logModerationAction } from './moderationAudit';
 
 export interface CommandResult {
   success: boolean;
@@ -145,6 +146,15 @@ const opCommand: CommandHandler = async (args, context) => {
     return { success: false, message: 'Failed to give operator status.' };
   }
 
+  // Log the action
+  await logModerationAction({
+    action: 'change_role',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+    details: { previous_role: targetRole, new_role: 'moderator' }
+  });
+
   return {
     success: true,
     message: `${targetUser.username} has been given moderator status.`,
@@ -183,6 +193,15 @@ const deopCommand: CommandHandler = async (args, context) => {
     return { success: false, message: 'Failed to remove operator status.' };
   }
 
+  // Log the action
+  await logModerationAction({
+    action: 'change_role',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+    details: { previous_role: targetRole, new_role: 'user' }
+  });
+
   return {
     success: true,
     message: `${targetUser.username} has been demoted to user.`,
@@ -204,6 +223,8 @@ const adminCommand: CommandHandler = async (args, context) => {
     return { success: false, message: `User "${args[0]}" not found.` };
   }
 
+  const previousRole = await getUserRole(targetUser.user_id);
+
   const { error } = await supabaseUntyped
     .from('user_roles')
     .update({ role: 'admin' })
@@ -212,6 +233,15 @@ const adminCommand: CommandHandler = async (args, context) => {
   if (error) {
     return { success: false, message: 'Failed to give admin status.' };
   }
+
+  // Log the action
+  await logModerationAction({
+    action: 'change_role',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+    details: { previous_role: previousRole, new_role: 'admin' }
+  });
 
   return {
     success: true,
@@ -248,6 +278,15 @@ const deadminCommand: CommandHandler = async (args, context) => {
     return { success: false, message: 'Failed to demote admin.' };
   }
 
+  // Log the action
+  await logModerationAction({
+    action: 'change_role',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+    details: { previous_role: 'admin', new_role: 'moderator' }
+  });
+
   return {
     success: true,
     message: `${targetUser.username} has been demoted to moderator.`,
@@ -276,7 +315,15 @@ const kickCommand: CommandHandler = async (args, context) => {
 
   const reason = args.slice(1).join(' ') || 'No reason given';
 
-  // For now, kick just sends a system message - in a real app, you'd invalidate their session
+  // Log the action
+  await logModerationAction({
+    action: 'kick_user',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+    details: { reason }
+  });
+
   return {
     success: true,
     message: `${targetUser.username} has been kicked by ${context.username}. Reason: ${reason}`,
@@ -317,6 +364,15 @@ const banCommand: CommandHandler = async (args, context) => {
     return { success: false, message: 'Failed to ban user.' };
   }
 
+  // Log the action
+  await logModerationAction({
+    action: 'ban_user',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+    details: { reason }
+  });
+
   return {
     success: true,
     message: `${targetUser.username} has been banned by ${context.username}. Reason: ${reason}`,
@@ -346,6 +402,14 @@ const unbanCommand: CommandHandler = async (args, context) => {
   if (error) {
     return { success: false, message: 'Failed to unban user.' };
   }
+
+  // Log the action
+  await logModerationAction({
+    action: 'unban_user',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+  });
 
   return {
     success: true,
@@ -382,6 +446,15 @@ const muteCommand: CommandHandler = async (args, context) => {
     return { success: false, message: 'Failed to mute user.' };
   }
 
+  // Log the action
+  await logModerationAction({
+    action: 'mute_user',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+    details: { reason }
+  });
+
   return {
     success: true,
     message: `${targetUser.username} has been muted. Reason: ${reason}`,
@@ -411,6 +484,14 @@ const unmuteCommand: CommandHandler = async (args, context) => {
   if (error) {
     return { success: false, message: 'Failed to unmute user.' };
   }
+
+  // Log the action
+  await logModerationAction({
+    action: 'unmute_user',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+  });
 
   return {
     success: true,

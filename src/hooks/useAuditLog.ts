@@ -7,7 +7,14 @@ type AuditAction =
   | 'view_locations'
   | 'view_location_analytics'
   | 'export_locations'
-  | 'view_user_location';
+  | 'view_user_location'
+  | 'ban_user'
+  | 'unban_user'
+  | 'mute_user'
+  | 'unmute_user'
+  | 'change_role'
+  | 'kick_user'
+  | 'delete_message';
 
 interface AuditLogParams {
   action: AuditAction;
