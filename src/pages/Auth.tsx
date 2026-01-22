@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import TurnstileCaptcha from "@/components/auth/TurnstileCaptcha";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -15,12 +17,29 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string }>({});
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleCaptchaVerify = useCallback((token: string) => {
+    setCaptchaToken(token);
+    setCaptchaError(false);
+    setErrors(prev => ({ ...prev, captcha: undefined }));
+  }, []);
+
+  const handleCaptchaError = useCallback(() => {
+    setCaptchaError(true);
+    setCaptchaToken(null);
+  }, []);
+
+  const handleCaptchaExpire = useCallback(() => {
+    setCaptchaToken(null);
+  }, []);
 
   useEffect(() => {
     if (!loading && user) {
@@ -46,10 +65,33 @@ const Auth = () => {
       if (!usernameResult.success) {
         newErrors.username = usernameResult.error.errors[0].message;
       }
+      
+      // Require CAPTCHA for signup
+      if (!captchaToken) {
+        newErrors.captcha = "Please complete the CAPTCHA verification";
+      }
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const verifyCaptchaOnServer = async (token: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-captcha', {
+        body: { token }
+      });
+      
+      if (error) {
+        console.error('CAPTCHA verification error:', error);
+        return false;
+      }
+      
+      return data?.success === true;
+    } catch (err) {
+      console.error('CAPTCHA verification failed:', err);
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,6 +114,25 @@ const Auth = () => {
           });
         }
       } else {
+        // Verify CAPTCHA on server first
+        if (!captchaToken) {
+          setErrors(prev => ({ ...prev, captcha: "Please complete the CAPTCHA" }));
+          setIsSubmitting(false);
+          return;
+        }
+        
+        const captchaValid = await verifyCaptchaOnServer(captchaToken);
+        if (!captchaValid) {
+          toast({
+            variant: "destructive",
+            title: "Verification failed",
+            description: "CAPTCHA verification failed. Please try again."
+          });
+          setCaptchaToken(null);
+          setIsSubmitting(false);
+          return;
+        }
+        
         const { error } = await signUp(email, password, username);
         if (error) {
           if (error.message.includes("already registered")) {
@@ -196,12 +257,35 @@ const Auth = () => {
               )}
             </div>
 
+            {/* CAPTCHA for signup only */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <TurnstileCaptcha
+                  onVerify={handleCaptchaVerify}
+                  onError={handleCaptchaError}
+                  onExpire={handleCaptchaExpire}
+                />
+                {captchaToken && (
+                  <div className="flex items-center justify-center gap-1 text-xs text-green-500">
+                    <ShieldCheck className="h-3 w-3" />
+                    <span>Verified</span>
+                  </div>
+                )}
+                {errors.captcha && (
+                  <p className="text-destructive text-xs text-center">{errors.captcha}</p>
+                )}
+                {captchaError && (
+                  <p className="text-destructive text-xs text-center">CAPTCHA error. Please refresh and try again.</p>
+                )}
+              </div>
+            )}
+
             <Button
               type="submit"
               variant="jac"
               size="lg"
               className="w-full"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (!isLogin && !captchaToken)}
             >
               {isSubmitting ? (
                 <span className="animate-pulse">Please wait...</span>
@@ -220,6 +304,7 @@ const Auth = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setErrors({});
+                setCaptchaToken(null);
               }}
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
