@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Hash, Plus, Lock, Settings, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Hash, Plus, Lock, Home, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,7 @@ export interface Channel {
 }
 
 interface ChannelListProps {
-  currentChannelId: string;
+  currentChannelId?: string;
   onChannelSelect: (channel: Channel) => void;
 }
 
@@ -36,6 +37,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
   const [isPrivate, setIsPrivate] = useState(false);
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchChannels = async () => {
     const { data } = await supabaseUntyped
@@ -166,7 +168,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
 
   return (
     <div className="w-56 bg-secondary/30 border-r border-border flex flex-col h-full">
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground text-sm">Channels</h2>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -270,11 +272,17 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
         ))}
       </div>
 
-      {/* Channel commands hint */}
+      {/* Back to lobby */}
       <div className="p-3 border-t border-border">
-        <p className="text-xs text-muted-foreground">
-          Use /join #channel or /part to switch channels
-        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/')}
+          className="w-full justify-start text-muted-foreground hover:text-foreground"
+        >
+          <Home className="h-4 w-4 mr-2" />
+          Back to Lobby
+        </Button>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, supabaseUntyped } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -21,9 +22,11 @@ interface Message {
   };
 }
 
-const DEFAULT_CHANNEL_ID = '00000000-0000-0000-0000-000000000001';
+interface ChatRoomProps {
+  initialChannelId?: string;
+}
 
-const ChatRoom = () => {
+const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   const { user, isAdmin, isOwner, role } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
@@ -35,6 +38,7 @@ const ChatRoom = () => {
   const [username, setUsername] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,6 +47,33 @@ const ChatRoom = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load initial channel from URL parameter
+  useEffect(() => {
+    if (!initialChannelId) return;
+    
+    const loadInitialChannel = async () => {
+      const { data } = await supabaseUntyped
+        .from('channels')
+        .select('*')
+        .eq('id', initialChannelId)
+        .maybeSingle();
+      
+      if (data) {
+        setCurrentChannel(data);
+      } else {
+        // Channel not found, redirect to home
+        toast({
+          variant: "destructive",
+          title: "Channel not found",
+          description: "Redirecting to lobby..."
+        });
+        navigate('/');
+      }
+    };
+    
+    loadInitialChannel();
+  }, [initialChannelId, navigate, toast]);
 
   // Fetch user profile
   useEffect(() => {
@@ -367,7 +398,7 @@ const ChatRoom = () => {
     <div className="flex h-screen bg-background">
       {/* Channel Sidebar */}
       <ChannelList 
-        currentChannelId={currentChannel?.id || DEFAULT_CHANNEL_ID} 
+        currentChannelId={currentChannel?.id} 
         onChannelSelect={handleChannelSelect}
       />
 

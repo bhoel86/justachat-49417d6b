@@ -1,11 +1,12 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ChatRoom from "@/components/chat/ChatRoom";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { channelId } = useParams<{ channelId: string }>();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -25,7 +26,7 @@ const Index = () => {
     return null;
   }
 
-  return <ChatRoom />;
+  return <ChatRoom initialChannelId={channelId} />;
 };
 
 export default Index;
