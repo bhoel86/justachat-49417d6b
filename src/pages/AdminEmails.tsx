@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Mail, RefreshCw, Search, Copy, Check } from "lucide-react";
+import { ArrowLeft, Mail, RefreshCw, Search, Copy, Check, Globe, Wifi } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -18,6 +18,8 @@ interface UserEmail {
   role: string;
   created_at: string;
   last_sign_in_at: string | null;
+  ip_address: string | null;
+  isp: string | null;
 }
 
 const AdminEmails = () => {
@@ -40,18 +42,29 @@ const AdminEmails = () => {
         .from('user_roles')
         .select('user_id, role');
 
+      // Fetch user locations for IP and ISP info
+      const { data: locations } = await supabaseUntyped
+        .from('user_locations')
+        .select('user_id, ip_address, isp');
+
       const roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]));
+      const locationMap = new Map(locations?.map((l: { user_id: string; ip_address: string | null; isp: string | null }) => [l.user_id, { ip_address: l.ip_address, isp: l.isp }]));
 
       // Since we can't access auth.users directly, we'll show user_id as placeholder
       // In a real scenario, you'd use a service role or edge function to get emails
-      const userList = profiles?.map((p: { user_id: string; username: string; created_at: string }) => ({
-        user_id: p.user_id,
-        email: `${p.username.toLowerCase().replace(/\s+/g, '.')}@user.local`, // Placeholder
-        username: p.username,
-        role: roleMap.get(p.user_id) || 'user',
-        created_at: p.created_at,
-        last_sign_in_at: null,
-      })) || [];
+      const userList = profiles?.map((p: { user_id: string; username: string; created_at: string }) => {
+        const locationInfo = locationMap.get(p.user_id);
+        return {
+          user_id: p.user_id,
+          email: `${p.username.toLowerCase().replace(/\s+/g, '.')}@user.local`, // Placeholder
+          username: p.username,
+          role: roleMap.get(p.user_id) || 'user',
+          created_at: p.created_at,
+          last_sign_in_at: null,
+          ip_address: locationInfo?.ip_address || null,
+          isp: locationInfo?.isp || null,
+        };
+      }) || [];
 
       setUsers(userList);
     } catch (error) {
@@ -205,26 +218,43 @@ const AdminEmails = () => {
                   {filteredUsers.map((u) => (
                     <div
                       key={u.user_id}
-                      className="p-3 rounded-lg border bg-card hover:bg-secondary/30 transition-colors"
+                      className="p-4 rounded-lg border bg-card hover:bg-secondary/30 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary shrink-0">
                             {u.username.charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium">{u.username}</span>
                               <Badge variant="outline" className="text-xs capitalize">
                                 {u.role}
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Mail className="h-3 w-3" />
-                              <span>{u.email}</span>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                              <Mail className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{u.email}</span>
                             </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Joined {format(new Date(u.created_at), 'MMM d, yyyy')}
+                            <div className="text-xs text-muted-foreground mt-1 font-mono break-all">
+                              ID: {u.user_id}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
+                              {u.ip_address && (
+                                <span className="flex items-center gap-1">
+                                  <Globe className="h-3 w-3 shrink-0" />
+                                  <span className="font-mono">{u.ip_address}</span>
+                                </span>
+                              )}
+                              {u.isp && (
+                                <span className="flex items-center gap-1">
+                                  <Wifi className="h-3 w-3 shrink-0" />
+                                  <span>{u.isp}</span>
+                                </span>
+                              )}
+                              <span>
+                                Joined {format(new Date(u.created_at), 'MMM d, yyyy')}
+                              </span>
                             </div>
                           </div>
                         </div>
