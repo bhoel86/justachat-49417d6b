@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Shield, Eye, Clock, User, FileText, RefreshCw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, Shield, Eye, Clock, User, FileText, RefreshCw, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
@@ -22,11 +29,61 @@ interface AuditLog {
   profiles?: { username: string };
 }
 
+const ACTION_CATEGORIES = {
+  all: "All Actions",
+  location: "Location Access",
+  moderation: "Moderation",
+  other: "Other",
+};
+
+const ACTION_TYPE_MAP: Record<string, keyof typeof ACTION_CATEGORIES> = {
+  view_locations: "location",
+  view_location_analytics: "location",
+  export_locations: "location",
+  view_user_location: "location",
+  ban_user: "moderation",
+  unban_user: "moderation",
+  mute_user: "moderation",
+  unmute_user: "moderation",
+  kick_user: "moderation",
+  role_change: "moderation",
+  promote_moderator: "moderation",
+  demote_moderator: "moderation",
+  promote_admin: "moderation",
+  demote_admin: "moderation",
+};
+
 const AdminPanel = () => {
   const { user, loading, isOwner } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedAction, setSelectedAction] = useState<string>("all");
+
+  // Get unique actions from logs
+  const uniqueActions = useMemo(() => {
+    const actions = [...new Set(logs.map(l => l.action))];
+    return actions.sort();
+  }, [logs]);
+
+  // Filter logs based on selected filters
+  const filteredLogs = useMemo(() => {
+    return logs.filter(log => {
+      // Filter by category
+      if (selectedCategory !== "all") {
+        const logCategory = ACTION_TYPE_MAP[log.action] || "other";
+        if (logCategory !== selectedCategory) return false;
+      }
+      
+      // Filter by specific action
+      if (selectedAction !== "all" && log.action !== selectedAction) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [logs, selectedCategory, selectedAction]);
 
   const fetchLogs = async () => {
     try {
@@ -72,15 +129,12 @@ const AdminPanel = () => {
   };
 
   const getActionBadgeColor = (action: string) => {
-    switch (action) {
-      case 'view_locations':
+    const category = ACTION_TYPE_MAP[action] || "other";
+    switch (category) {
+      case "location":
         return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'view_location_analytics':
-        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 'export_locations':
-        return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'view_user_location':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case "moderation":
+        return 'bg-red-500/20 text-red-400 border-red-500/30';
       default:
         return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
     }
@@ -88,6 +142,11 @@ const AdminPanel = () => {
 
   const formatAction = (action: string) => {
     return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const clearFilters = () => {
+    setSelectedCategory("all");
+    setSelectedAction("all");
   };
 
   if (loading) {
@@ -154,7 +213,7 @@ const AdminPanel = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -172,8 +231,20 @@ const AdminPanel = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary">
-                {logs.filter(l => l.action === 'view_locations').length}
+              <div className="text-3xl font-bold text-blue-400">
+                {logs.filter(l => ACTION_TYPE_MAP[l.action] === "location").length}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Moderation Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-400">
+                {logs.filter(l => ACTION_TYPE_MAP[l.action] === "moderation").length}
               </div>
             </CardContent>
           </Card>
@@ -194,26 +265,82 @@ const AdminPanel = () => {
         {/* Audit Logs Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Audit Logs
-            </CardTitle>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Audit Logs
+                {(selectedCategory !== "all" || selectedAction !== "all") && (
+                  <Badge variant="secondary" className="ml-2">
+                    {filteredLogs.length} of {logs.length}
+                  </Badge>
+                )}
+              </CardTitle>
+              
+              {/* Filters */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-[160px] bg-background">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border z-50">
+                    {Object.entries(ACTION_CATEGORIES).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedAction} onValueChange={setSelectedAction}>
+                  <SelectTrigger className="w-[180px] bg-background">
+                    <SelectValue placeholder="Specific Action" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border z-50">
+                    <SelectItem value="all">All Actions</SelectItem>
+                    {uniqueActions.map((action) => (
+                      <SelectItem key={action} value={action}>
+                        {formatAction(action)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {(selectedCategory !== "all" || selectedAction !== "all") && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {logsLoading ? (
+          {logsLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-pulse text-muted-foreground">Loading logs...</div>
               </div>
-            ) : logs.length === 0 ? (
+            ) : filteredLogs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No audit logs yet</p>
-                <p className="text-sm">Logs will appear when admins access sensitive data</p>
+                {logs.length === 0 ? (
+                  <>
+                    <p>No audit logs yet</p>
+                    <p className="text-sm">Logs will appear when admins access sensitive data</p>
+                  </>
+                ) : (
+                  <>
+                    <p>No logs match your filters</p>
+                    <Button variant="link" onClick={clearFilters} className="mt-2">
+                      Clear filters
+                    </Button>
+                  </>
+                )}
               </div>
             ) : (
               <ScrollArea className="h-[500px]">
                 <div className="space-y-3">
-                  {logs.map((log) => (
+                  {filteredLogs.map((log) => (
                     <div
                       key={log.id}
                       className="p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors border border-border"
