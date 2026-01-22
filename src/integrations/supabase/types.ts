@@ -144,6 +144,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          is_hidden: boolean
           is_private: boolean | null
           name: string
         }
@@ -152,6 +153,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_hidden?: boolean
           is_private?: boolean | null
           name: string
         }
@@ -160,6 +162,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_hidden?: boolean
           is_private?: boolean | null
           name?: string
         }

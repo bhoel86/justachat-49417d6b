@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Hash, Plus, Lock, Home, X } from "lucide-react";
+import { Hash, Plus, Lock, Home, MoreVertical, Trash2, EyeOff, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Channel {
@@ -21,6 +37,7 @@ export interface Channel {
   description: string | null;
   is_private: boolean;
   created_by: string | null;
+  is_hidden?: boolean;
 }
 
 interface ChannelListProps {
@@ -35,7 +52,8 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
   const [newChannelName, setNewChannelName] = useState("");
   const [newChannelDesc, setNewChannelDesc] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
-  const { user, isAdmin } = useAuth();
+  const [deleteConfirmChannel, setDeleteConfirmChannel] = useState<Channel | null>(null);
+  const { user, isAdmin, isOwner } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -122,8 +140,8 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
     }
   };
 
-  const handleDeleteChannel = async (channelId: string, channelName: string) => {
-    if (channelName === 'general') {
+  const handleDeleteChannel = async (channel: Channel) => {
+    if (channel.name === 'general') {
       toast({
         variant: "destructive",
         title: "Cannot delete",
@@ -135,7 +153,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
     const { error } = await supabaseUntyped
       .from('channels')
       .delete()
-      .eq('id', channelId);
+      .eq('id', channel.id);
 
     if (error) {
       toast({
@@ -148,14 +166,41 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
 
     toast({
       title: "Channel deleted",
-      description: `#${channelName} has been removed.`
+      description: `#${channel.name} has been removed.`
     });
 
+    setDeleteConfirmChannel(null);
+
     // Switch to general if current channel was deleted
-    if (currentChannelId === channelId) {
+    if (currentChannelId === channel.id) {
       const general = channels.find(c => c.name === 'general');
       if (general) onChannelSelect(general);
     }
+  };
+
+  const handleToggleHidden = async (channel: Channel) => {
+    const newHiddenState = !channel.is_hidden;
+    
+    const { error } = await supabaseUntyped
+      .from('channels')
+      .update({ is_hidden: newHiddenState })
+      .eq('id', channel.id);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update channel",
+        description: error.message
+      });
+      return;
+    }
+
+    toast({
+      title: newHiddenState ? "Channel hidden" : "Channel visible",
+      description: newHiddenState 
+        ? `#${channel.name} is now hidden from regular users.`
+        : `#${channel.name} is now visible to everyone.`
+    });
   };
 
   if (loading) {
@@ -245,7 +290,8 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
               "group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors",
               currentChannelId === channel.id
                 ? "bg-primary/20 text-foreground"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+              channel.is_hidden && "opacity-50"
             )}
             onClick={() => onChannelSelect(channel)}
           >
@@ -255,22 +301,86 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
               <Hash className="h-4 w-4 shrink-0" />
             )}
             <span className="flex-1 truncate text-sm">{channel.name}</span>
+            {channel.is_hidden && isAdmin && (
+              <span title="Hidden">
+                <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />
+              </span>
+            )}
             
-            {isAdmin && channel.name !== 'general' && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteChannel(channel.id, channel.name);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-opacity"
-                title="Delete channel"
-              >
-                <X className="h-3 w-3" />
-              </button>
+            {/* Dropdown menu for owners/admins */}
+            {(isOwner || isAdmin) && channel.name !== 'general' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-opacity"
+                  >
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40 bg-popover border-border z-50">
+                  {/* Hide/Show - Admin only */}
+                  {isAdmin && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleHidden(channel);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {channel.is_hidden ? (
+                        <>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Show Channel
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="h-4 w-4 mr-2" />
+                          Hide Channel
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {/* Delete - Owner only */}
+                  {isOwner && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirmChannel(channel);
+                      }}
+                      className="cursor-pointer text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Channel
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         ))}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteConfirmChannel} onOpenChange={() => setDeleteConfirmChannel(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Channel</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete #{deleteConfirmChannel?.name}? This action cannot be undone and all messages will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirmChannel && handleDeleteChannel(deleteConfirmChannel)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Back to lobby */}
       <div className="p-3 border-t border-border">
