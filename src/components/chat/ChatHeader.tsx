@@ -1,4 +1,4 @@
-import { MessageCircle, Users, LogOut, Crown, ShieldCheck, Info } from "lucide-react";
+import { MessageCircle, Users, LogOut, Crown, ShieldCheck, Info, Hash } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,9 +10,10 @@ import {
 interface ChatHeaderProps {
   onlineCount: number;
   topic?: string;
+  channelName?: string;
 }
 
-const ChatHeader = ({ onlineCount, topic }: ChatHeaderProps) => {
+const ChatHeader = ({ onlineCount, topic, channelName = 'general' }: ChatHeaderProps) => {
   const { signOut, role } = useAuth();
 
   const getRoleBadge = () => {
@@ -44,10 +45,13 @@ const ChatHeader = ({ onlineCount, topic }: ChatHeaderProps) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-display font-bold text-lg jac-gradient-text">JAC</h1>
+              <div className="flex items-center gap-1">
+                <Hash className="h-4 w-4 text-primary" />
+                <h1 className="font-display font-bold text-lg text-foreground">{channelName}</h1>
+              </div>
               {getRoleBadge()}
             </div>
-            <p className="text-xs text-muted-foreground">Just A Chat</p>
+            <p className="text-xs text-muted-foreground">JAC - Just A Chat</p>
           </div>
         </div>
         

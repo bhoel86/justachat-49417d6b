@@ -6,6 +6,7 @@ import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
 import MemberList from "./MemberList";
+import ChannelList, { Channel } from "./ChannelList";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
 
 interface Message {
@@ -13,17 +14,21 @@ interface Message {
   content: string;
   user_id: string;
   created_at: string;
+  channel_id: string;
   isSystem?: boolean;
   profile?: {
     username: string;
   };
 }
 
+const DEFAULT_CHANNEL_ID = '00000000-0000-0000-0000-000000000001';
+
 const ChatRoom = () => {
   const { user, isAdmin, isOwner, role } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [topic, setTopic] = useState('Welcome to JAC!');
   const [isBanned, setIsBanned] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -57,19 +62,16 @@ const ChatRoom = () => {
   useEffect(() => {
     const checkStatus = async () => {
       if (!user) return;
-      
       const { data: ban } = await supabaseUntyped
         .from('bans')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
-      
       const { data: mute } = await supabaseUntyped
         .from('mutes')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
-      
       setIsBanned(!!ban);
       setIsMuted(!!mute);
     };
@@ -78,22 +80,23 @@ const ChatRoom = () => {
 
   // Fetch channel topic
   useEffect(() => {
+    if (!currentChannel) return;
+
     const fetchTopic = async () => {
       const { data } = await supabaseUntyped
         .from('channel_settings')
         .select('topic')
-        .eq('channel_name', 'general')
+        .eq('channel_id', currentChannel.id)
         .maybeSingle();
-      if (data?.topic) setTopic(data.topic);
+      setTopic(data?.topic || currentChannel.description || `Welcome to #${currentChannel.name}`);
     };
     fetchTopic();
 
-    // Subscribe to topic changes
     const channel = supabase
-      .channel('topic-changes')
+      .channel(`topic-${currentChannel.id}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'channel_settings' },
+        { event: 'UPDATE', schema: 'public', table: 'channel_settings', filter: `channel_id=eq.${currentChannel.id}` },
         (payload) => {
           const newTopic = (payload.new as { topic: string }).topic;
           if (newTopic) setTopic(newTopic);
@@ -104,25 +107,32 @@ const ChatRoom = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [currentChannel]);
 
-  // Fetch initial messages
+  // Fetch messages for current channel
   useEffect(() => {
+    if (!currentChannel) return;
+
     const fetchMessages = async () => {
+      setLoading(true);
       const { data, error } = await supabaseUntyped
         .from('messages')
-        .select(`id, content, user_id, created_at`)
+        .select(`id, content, user_id, created_at, channel_id`)
+        .eq('channel_id', currentChannel.id)
         .order('created_at', { ascending: true })
         .limit(100);
 
       if (!error && data) {
         const userIds = [...new Set(data.map((msg: Message) => msg.user_id))];
-        const { data: profiles } = await supabaseUntyped
-          .from('profiles')
-          .select('user_id, username')
-          .in('user_id', userIds);
-
-        const profileMap = new Map(profiles?.map((p: { user_id: string; username: string }) => [p.user_id, p]) || []);
+        let profileMap = new Map();
+        
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabaseUntyped
+            .from('profiles')
+            .select('user_id, username')
+            .in('user_id', userIds);
+          profileMap = new Map(profiles?.map((p: { user_id: string; username: string }) => [p.user_id, p]) || []);
+        }
 
         setMessages(data.map((msg: Message) => ({
           ...msg,
@@ -132,15 +142,17 @@ const ChatRoom = () => {
       setLoading(false);
     };
     fetchMessages();
-  }, []);
+  }, [currentChannel]);
 
-  // Subscribe to real-time messages
+  // Subscribe to real-time messages for current channel
   useEffect(() => {
+    if (!currentChannel) return;
+
     const channel = supabase
-      .channel('public:messages')
+      .channel(`messages-${currentChannel.id}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${currentChannel.id}` },
         async (payload) => {
           const newMessage = payload.new as Message;
           const { data: profile } = await supabaseUntyped
@@ -148,13 +160,12 @@ const ChatRoom = () => {
             .select('username')
             .eq('user_id', newMessage.user_id)
             .single();
-
           setMessages(prev => [...prev, { ...newMessage, profile: profile || undefined }]);
         }
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'messages' },
+        { event: 'DELETE', schema: 'public', table: 'messages', filter: `channel_id=eq.${currentChannel.id}` },
         (payload) => {
           const deletedId = (payload.old as { id: string }).id;
           setMessages(prev => prev.filter(msg => msg.id !== deletedId));
@@ -165,7 +176,7 @@ const ChatRoom = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [currentChannel]);
 
   // Track presence
   useEffect(() => {
@@ -196,10 +207,12 @@ const ChatRoom = () => {
   }, [user?.id]);
 
   const addSystemMessage = (content: string) => {
+    if (!currentChannel) return;
     const systemMsg: Message = {
       id: `system-${Date.now()}`,
       content,
       user_id: 'system',
+      channel_id: currentChannel.id,
       created_at: new Date().toISOString(),
       isSystem: true,
       profile: { username: 'System' }
@@ -207,10 +220,14 @@ const ChatRoom = () => {
     setMessages(prev => [...prev, systemMsg]);
   };
 
-  const handleSend = async (content: string) => {
-    if (!user || !role) return;
+  const handleChannelSelect = (channel: Channel) => {
+    setCurrentChannel(channel);
+    setMessages([]); // Clear messages, will refetch
+  };
 
-    // Check if banned
+  const handleSend = async (content: string) => {
+    if (!user || !role || !currentChannel) return;
+
     if (isBanned) {
       toast({
         variant: "destructive",
@@ -233,8 +250,42 @@ const ChatRoom = () => {
 
       // Handle /users locally
       if (parsed.command === 'users') {
-        const onlineList = Array.from(onlineUserIds).join(', ') || 'No users online';
         addSystemMessage(`**Online Users (${onlineUserIds.size}):** Check the member list on the right.`);
+        return;
+      }
+
+      // Handle /join command
+      if (parsed.command === 'join') {
+        const channelName = parsed.args[0]?.replace('#', '');
+        if (!channelName) {
+          toast({ variant: "destructive", title: "Usage", description: "/join #channel-name" });
+          return;
+        }
+        const { data: targetChannel } = await supabaseUntyped
+          .from('channels')
+          .select('*')
+          .eq('name', channelName)
+          .maybeSingle();
+        if (targetChannel) {
+          handleChannelSelect(targetChannel);
+          toast({ title: "Switched channel", description: `Now in #${channelName}` });
+        } else {
+          toast({ variant: "destructive", title: "Channel not found", description: `#${channelName} doesn't exist.` });
+        }
+        return;
+      }
+
+      // Handle /part command
+      if (parsed.command === 'part') {
+        const { data: generalChannel } = await supabaseUntyped
+          .from('channels')
+          .select('*')
+          .eq('name', 'general')
+          .single();
+        if (generalChannel) {
+          handleChannelSelect(generalChannel);
+          toast({ title: "Left channel", description: "Returned to #general" });
+        }
         return;
       }
 
@@ -258,21 +309,19 @@ const ChatRoom = () => {
       }
 
       if (result.isSystemMessage && !result.broadcast) {
-        // Local-only system message
         addSystemMessage(result.message);
       } else if (result.broadcast) {
-        // Broadcast as a message (e.g., /me or moderation actions)
         await supabaseUntyped
           .from('messages')
           .insert({
             content: result.message,
-            user_id: user.id
+            user_id: user.id,
+            channel_id: currentChannel.id
           });
       }
       return;
     }
 
-    // Check if muted
     if (isMuted) {
       toast({
         variant: "destructive",
@@ -282,35 +331,25 @@ const ChatRoom = () => {
       return;
     }
 
-    // Regular message
     await supabaseUntyped
       .from('messages')
       .insert({
         content,
-        user_id: user.id
+        user_id: user.id,
+        channel_id: currentChannel.id
       });
   };
 
   const handleDelete = async (messageId: string) => {
-    // Don't delete system messages
     if (messageId.startsWith('system-')) {
       setMessages(prev => prev.filter(msg => msg.id !== messageId));
       return;
     }
-    
     await supabaseUntyped
       .from('messages')
       .delete()
       .eq('id', messageId);
   };
-
-  if (loading) {
-    return (
-      <div className="flex flex-col h-screen bg-background items-center justify-center">
-        <div className="h-12 w-12 rounded-xl jac-gradient-bg animate-pulse" />
-      </div>
-    );
-  }
 
   if (isBanned) {
     return (
@@ -326,14 +365,29 @@ const ChatRoom = () => {
 
   return (
     <div className="flex h-screen bg-background">
+      {/* Channel Sidebar */}
+      <ChannelList 
+        currentChannelId={currentChannel?.id || DEFAULT_CHANNEL_ID} 
+        onChannelSelect={handleChannelSelect}
+      />
+
+      {/* Main Chat Area */}
       <div className="flex flex-col flex-1">
-        <ChatHeader onlineCount={onlineUserIds.size || 1} topic={topic} />
+        <ChatHeader 
+          onlineCount={onlineUserIds.size || 1} 
+          topic={topic}
+          channelName={currentChannel?.name || 'general'}
+        />
         
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="h-8 w-8 rounded-xl jac-gradient-bg animate-pulse" />
+            </div>
+          ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <p>No messages yet. Be the first to say hello!</p>
-              <p className="text-sm mt-2">Type /help for available commands</p>
+              <p>No messages in #{currentChannel?.name || 'general'} yet.</p>
+              <p className="text-sm mt-2">Be the first to say hello! Type /help for commands.</p>
             </div>
           ) : (
             messages.map((msg) => (
@@ -356,6 +410,7 @@ const ChatRoom = () => {
         <ChatInput onSend={handleSend} isMuted={isMuted} />
       </div>
 
+      {/* Member Sidebar */}
       <MemberList onlineUserIds={onlineUserIds} />
     </div>
   );
