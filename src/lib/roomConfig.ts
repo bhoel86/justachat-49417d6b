@@ -20,20 +20,20 @@ export const MODERATORS: Record<string, ModeratorInfo> = {
   'trivia': { name: 'Poulsen', displayName: 'Kevin Poulsen', avatar: '🧠' },
 };
 
-// Room welcome messages
+// Room welcome messages (kept concise to avoid chat clutter)
 export const WELCOME_MESSAGES: Record<string, string> = {
-  'general': "Welcome to General! I'm Mitnick, your friendly neighborhood moderator. Feel free to chat about anything. Remember: information wants to be free, but respect wants to be earned. 🔓",
-  'adults-21-plus': "Welcome to Adults 21+. I'm Lamo. This is a space for mature conversations. Keep it classy, keep it real. The best discussions happen when we're honest with ourselves. 🌙",
-  'music': "Yo! Welcome to Music! I'm geohot. Whether you're into beats, bars, or classical compositions - this is your zone. Drop your favorite tracks or just vibe. Let's make some noise! 🎧",
-  'help': "Hey there, welcome to Help! I'm Mudge. No question is too basic here. We all started somewhere, and we're here to learn together. What can I help you figure out today? 💡",
-  'games': "Player joined! I'm Barnaby, your gaming mod. Whether you're here for esports, casual gaming, or retro classics - you're among friends. GG and have fun! 🕹️",
-  'politics': "Welcome to Politics. I'm Sabu. This is a space for informed debate. Respect different viewpoints, cite your sources, and remember - we're all trying to understand a complex world. 🗳️",
-  'movies-tv': "Welcome, cinephile! I'm Guccifer. From blockbusters to indie gems - let's discuss it all. No spoilers without warnings though, that's the only rule. 🍿",
-  'sports': "What's good! I'm Albert, welcome to Sports. Whether you're team stats or team heart, casual fan or die-hard supporter - pull up a seat. Let's talk game. 🏆",
-  'technology': "Welcome to Technology. I'm Charlie. From vulnerabilities to emerging tech, hardware hacks to software dev - this is where we geek out. What's on your mind? 🔧",
-  'dating': "Hey there! Welcome to Dating. I'm Phoenix. This is a space to discuss relationships and maybe find some connections. Be respectful, be genuine, be yourself. 💫",
-  'lounge': "Welcome to the Lounge! I'm Solo. This is the chill zone - no pressure, no agenda. Just good vibes and interesting conversations. Grab a virtual drink and relax. 🛋️",
-  'trivia': "Welcome, knowledge seeker! I'm Poulsen. This is Trivia - where random facts reign supreme and curiosity is rewarded. Think you know stuff? Let's find out! 🎯",
+  'general': "Hey! I'm Mitnick, your mod. Chat freely, stay cool. 🔓",
+  'adults-21-plus': "I'm Lamo. Adults only, keep it classy. 🌙",
+  'music': "I'm geohot. Drop tracks, share vibes. 🎧",
+  'help': "I'm Mudge. No dumb questions here. 💡",
+  'games': "I'm Barnaby. GG and have fun! 🕹️",
+  'politics': "I'm Sabu. Debate respectfully. 🗳️",
+  'movies-tv': "I'm Guccifer. No spoilers! 🍿",
+  'sports': "I'm Albert. Let's talk game. 🏆",
+  'technology': "I'm Charlie. Let's geek out. 🔧",
+  'dating': "I'm Phoenix. Be genuine. 💫",
+  'lounge': "I'm Solo. Chill zone. ☕",
+  'trivia': "I'm Poulsen. Test your knowledge! 🎯",
 };
 
 // Tips of the day per room

@@ -30,6 +30,7 @@ const AdminMessages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [decryptedMessages, setDecryptedMessages] = useState<Record<string, string>>({});
   const [decryptingId, setDecryptingId] = useState<string | null>(null);
+  const [bulkDecrypting, setBulkDecrypting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -143,6 +144,54 @@ const AdminMessages = () => {
     }
   };
 
+  const handleBulkDecrypt = async () => {
+    const undecryptedMessages = filteredMessages.filter(m => !decryptedMessages[m.id]);
+    if (undecryptedMessages.length === 0) {
+      toast.info('All visible messages are already decrypted');
+      return;
+    }
+
+    setBulkDecrypting(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const msg of undecryptedMessages) {
+      try {
+        const { data, error } = await supabase.functions.invoke('decrypt-pm', {
+          body: {
+            messageId: msg.id,
+            encrypted_content: msg.encrypted_content,
+            iv: msg.iv
+          }
+        });
+
+        if (!error && data?.decrypted_content) {
+          setDecryptedMessages(prev => ({
+            ...prev,
+            [msg.id]: data.decrypted_content
+          }));
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+
+    setBulkDecrypting(false);
+    if (failCount === 0) {
+      toast.success(`Decrypted ${successCount} messages`);
+    } else {
+      toast.warning(`Decrypted ${successCount}, failed ${failCount}`);
+    }
+  };
+
+  const handleHideAll = () => {
+    setDecryptedMessages({});
+    toast.success('All decrypted content hidden');
+  };
+
   const filteredMessages = messages.filter(m => {
     if (searchQuery === "") return true;
     return (
@@ -209,15 +258,40 @@ const AdminMessages = () => {
               </p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            {Object.keys(decryptedMessages).length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleHideAll}
+              >
+                <EyeOff className="h-4 w-4 mr-2" />
+                Hide All
+              </Button>
+            )}
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={handleBulkDecrypt}
+              disabled={bulkDecrypting || filteredMessages.length === 0}
+            >
+              {bulkDecrypting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Eye className="h-4 w-4 mr-2" />
+              )}
+              {bulkDecrypting ? 'Decrypting...' : 'Decrypt All'}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
