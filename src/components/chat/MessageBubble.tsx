@@ -1,4 +1,4 @@
-import { Trash2, Terminal } from "lucide-react";
+import { Trash2, Terminal, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MessageBubbleProps {
@@ -8,6 +8,7 @@ interface MessageBubbleProps {
   timestamp: Date;
   isOwn: boolean;
   isSystem?: boolean;
+  isModerator?: boolean;
   canDelete?: boolean;
   onDelete?: (id: string) => void;
 }
@@ -19,6 +20,7 @@ const MessageBubble = ({
   timestamp, 
   isOwn, 
   isSystem = false,
+  isModerator = false,
   canDelete = false,
   onDelete 
 }: MessageBubbleProps) => {
@@ -33,6 +35,25 @@ const MessageBubble = ({
               i % 2 === 1 ? <strong key={i} className="text-foreground">{part}</strong> : part
             )}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Moderator message styling
+  if (isModerator) {
+    return (
+      <div className="flex justify-start animate-message-in">
+        <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/30 rounded-bl-md">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">{sender.split(' ')[0]}</span>
+            <p className="text-xs font-bold text-primary">{sender.split(' ').slice(1).join(' ')}</p>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">MOD</span>
+          </div>
+          <p className="text-sm leading-relaxed break-words text-foreground">{message}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
         </div>
       </div>
     );

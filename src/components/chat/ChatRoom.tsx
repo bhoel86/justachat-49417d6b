@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, supabaseUntyped } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import MessageBubble from "./MessageBubble";
 import MemberList from "./MemberList";
 import ChannelList, { Channel } from "./ChannelList";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
+import { getModerator, getWelcomeMessage, getRandomTip } from "@/lib/roomConfig";
 
 interface Message {
   id: string;
@@ -17,6 +18,7 @@ interface Message {
   created_at: string;
   channel_id: string;
   isSystem?: boolean;
+  isModerator?: boolean;
   profile?: {
     username: string;
   };
@@ -237,19 +239,101 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     };
   }, [user?.id]);
 
-  const addSystemMessage = (content: string) => {
-    if (!currentChannel) return;
+  const addSystemMessage = useCallback((content: string, channelId?: string) => {
+    const targetChannelId = channelId || currentChannel?.id;
+    if (!targetChannelId) return;
     const systemMsg: Message = {
-      id: `system-${Date.now()}`,
+      id: `system-${Date.now()}-${Math.random()}`,
       content,
       user_id: 'system',
-      channel_id: currentChannel.id,
+      channel_id: targetChannelId,
       created_at: new Date().toISOString(),
       isSystem: true,
       profile: { username: 'System' }
     };
     setMessages(prev => [...prev, systemMsg]);
-  };
+  }, [currentChannel?.id]);
+
+  const addModeratorMessage = useCallback((content: string, channelName: string, channelId?: string) => {
+    const targetChannelId = channelId || currentChannel?.id;
+    if (!targetChannelId) return;
+    const moderator = getModerator(channelName);
+    const modMsg: Message = {
+      id: `mod-${Date.now()}-${Math.random()}`,
+      content,
+      user_id: 'moderator',
+      channel_id: targetChannelId,
+      created_at: new Date().toISOString(),
+      isModerator: true,
+      profile: { username: `${moderator.avatar} ${moderator.name}` }
+    };
+    setMessages(prev => [...prev, modMsg]);
+  }, [currentChannel?.id]);
+
+  // Show welcome message and tip when entering a channel
+  useEffect(() => {
+    if (!currentChannel || loading) return;
+    
+    // Add welcome message from moderator
+    const welcomeMsg = getWelcomeMessage(currentChannel.name);
+    const tipMsg = getRandomTip(currentChannel.name);
+    
+    // Small delay to let messages load first
+    const timer = setTimeout(() => {
+      addModeratorMessage(welcomeMsg, currentChannel.name, currentChannel.id);
+      // Add tip after a brief moment
+      setTimeout(() => {
+        addModeratorMessage(tipMsg, currentChannel.name, currentChannel.id);
+      }, 1500);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [currentChannel?.id, loading]);
+
+  // AI Moderator response logic - check if moderator should respond
+  const shouldModeratorRespond = useCallback((message: string): boolean => {
+    const lowerMsg = message.toLowerCase();
+    const moderator = currentChannel ? getModerator(currentChannel.name) : null;
+    const modName = moderator?.name.toLowerCase() || '';
+    
+    // Respond if mentioned by name or if it's a question
+    if (lowerMsg.includes(modName) || lowerMsg.includes('@mod')) return true;
+    if (lowerMsg.endsWith('?')) return Math.random() < 0.3; // 30% chance on questions
+    return Math.random() < 0.05; // 5% chance on regular messages
+  }, [currentChannel]);
+
+  const triggerModeratorResponse = useCallback(async (userMessage: string) => {
+    if (!currentChannel) return;
+    
+    try {
+      const recentMsgs = messages.slice(-5).map(m => ({
+        role: m.user_id === 'moderator' ? 'assistant' : 'user',
+        content: m.content
+      }));
+
+      const response = await supabase.functions.invoke('ai-moderator', {
+        body: {
+          channelName: currentChannel.name,
+          userMessage,
+          recentMessages: recentMsgs
+        }
+      });
+
+      if (response.error) {
+        console.error('Moderator error:', response.error);
+        return;
+      }
+
+      if (response.data?.response) {
+        // Add slight delay to seem more natural
+        setTimeout(() => {
+          addModeratorMessage(response.data.response, currentChannel.name);
+        }, 1000 + Math.random() * 2000);
+      }
+    } catch (error) {
+      console.error('Failed to get moderator response:', error);
+    }
+  }, [currentChannel, messages, addModeratorMessage]);
 
   const handleChannelSelect = (channel: Channel) => {
     setCurrentChannel(channel);
@@ -369,6 +453,11 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
         user_id: user.id,
         channel_id: currentChannel.id
       });
+
+    // Check if AI moderator should respond
+    if (shouldModeratorRespond(content)) {
+      triggerModeratorResponse(content);
+    }
   };
 
   const handleDelete = async (messageId: string) => {
@@ -430,7 +519,8 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
                 timestamp={new Date(msg.created_at)}
                 isOwn={msg.user_id === user?.id}
                 isSystem={msg.isSystem || msg.user_id === 'system'}
-                canDelete={msg.user_id === user?.id || isAdmin}
+                isModerator={msg.isModerator || msg.user_id === 'moderator'}
+                canDelete={(msg.user_id === user?.id || isAdmin) && !msg.isModerator && msg.user_id !== 'moderator'}
                 onDelete={handleDelete}
               />
             ))
