@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -13,16 +13,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import PrivateMessageModal from "./PrivateMessageModal";
+import { getModerator, type ModeratorInfo } from "@/lib/roomConfig";
 
 interface Member {
   user_id: string;
   username: string;
-  role: 'owner' | 'admin' | 'moderator' | 'user';
+  role: 'owner' | 'admin' | 'moderator' | 'user' | 'bot';
   isOnline: boolean;
+  isBot?: boolean;
+  avatar?: string;
 }
 
 interface MemberListProps {
   onlineUserIds: Set<string>;
+  channelName?: string;
 }
 
 const roleConfig = {
@@ -50,9 +54,15 @@ const roleConfig = {
     color: 'text-muted-foreground',
     bgColor: 'bg-muted',
   },
+  bot: {
+    icon: Bot,
+    label: 'AI Mod',
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-400/10',
+  },
 };
 
-const MemberList = ({ onlineUserIds }: MemberListProps) => {
+const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
@@ -177,6 +187,17 @@ const MemberList = ({ onlineUserIds }: MemberListProps) => {
     return [];
   };
 
+  // Get the bot moderator for this channel
+  const moderator = getModerator(channelName);
+  const botMember: Member = {
+    user_id: `bot-${channelName}`,
+    username: `${moderator.avatar} ${moderator.name}`,
+    role: 'bot',
+    isOnline: true,
+    isBot: true,
+    avatar: moderator.avatar
+  };
+
   const onlineMembers = members.filter(m => m.isOnline);
   const offlineMembers = members.filter(m => !m.isOnline);
 
@@ -199,6 +220,16 @@ const MemberList = ({ onlineUserIds }: MemberListProps) => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
+          {/* AI Moderator Bot - Always on top */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase px-2 mb-2">
+              AI Moderator
+            </p>
+            <div className="space-y-1">
+              <BotMemberItem member={botMember} />
+            </div>
+          </div>
+
           {/* Online Members */}
           {onlineMembers.length > 0 && (
             <div className="mb-4">
@@ -260,6 +291,48 @@ const MemberList = ({ onlineUserIds }: MemberListProps) => {
   );
 };
 
+// Bot member item component
+const BotMemberItem = ({ member }: { member: Member }) => {
+  const config = roleConfig.bot;
+  const Icon = config.icon;
+
+  return (
+    <div 
+      className={cn(
+        "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors",
+        "bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20"
+      )}
+    >
+      {/* Avatar with bot indicator */}
+      <div className="relative">
+        <div className={cn(
+          "h-8 w-8 rounded-full flex items-center justify-center text-sm",
+          "bg-gradient-to-br from-cyan-500/20 to-primary/20"
+        )}>
+          {member.avatar || '🤖'}
+        </div>
+        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-cyan-400 border-2 border-card flex items-center justify-center">
+          <span className="text-[6px]">✓</span>
+        </div>
+      </div>
+
+      {/* Name and role */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate text-foreground">
+          {member.username.split(' ').slice(1).join(' ') || member.username}
+        </p>
+        <div className="flex items-center gap-1">
+          <Icon className={cn("h-3 w-3", config.color)} />
+          <span className={cn("text-xs", config.color)}>{config.label}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium ml-1">
+            BOT
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface MemberItemProps {
   member: Member;
   canManage: boolean;
@@ -270,7 +343,7 @@ interface MemberItemProps {
 }
 
 const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser }: MemberItemProps) => {
-  const config = roleConfig[member.role];
+  const config = roleConfig[member.role] || roleConfig.user;
   const Icon = config.icon;
 
   return (
@@ -340,6 +413,7 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {availableRoles.map((role) => {
+              if (role === 'bot') return null; // Can't assign bot role
               const roleConf = roleConfig[role];
               const RoleIcon = roleConf.icon;
               return (

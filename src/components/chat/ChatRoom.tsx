@@ -580,7 +580,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
       </div>
 
       {/* Member Sidebar */}
-      <MemberList onlineUserIds={onlineUserIds} />
+      <MemberList onlineUserIds={onlineUserIds} channelName={currentChannel?.name} />
 
       {/* Private Message Modal */}
       {pmTarget && user && (
