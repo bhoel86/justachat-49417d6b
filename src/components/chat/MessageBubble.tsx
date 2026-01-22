@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { Trash2, Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MessageBubbleProps {
@@ -7,6 +7,7 @@ interface MessageBubbleProps {
   sender: string;
   timestamp: Date;
   isOwn: boolean;
+  isSystem?: boolean;
   canDelete?: boolean;
   onDelete?: (id: string) => void;
 }
@@ -17,9 +18,39 @@ const MessageBubble = ({
   sender, 
   timestamp, 
   isOwn, 
+  isSystem = false,
   canDelete = false,
   onDelete 
 }: MessageBubbleProps) => {
+  // System message styling
+  if (isSystem) {
+    return (
+      <div className="flex justify-center animate-message-in">
+        <div className="flex items-start gap-2 max-w-[90%] px-4 py-2 bg-secondary/50 rounded-lg border border-border/50">
+          <Terminal className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {message.split('**').map((part, i) => 
+              i % 2 === 1 ? <strong key={i} className="text-foreground">{part}</strong> : part
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if this is an action message (/me)
+  const isAction = message.startsWith('* ');
+
+  if (isAction) {
+    return (
+      <div className="flex justify-center animate-message-in">
+        <div className="px-4 py-2 text-sm italic text-primary">
+          {message}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
