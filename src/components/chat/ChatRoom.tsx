@@ -4,6 +4,7 @@ import { useAuth, supabaseUntyped } from "@/hooks/useAuth";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
+import MemberList from "./MemberList";
 
 interface Message {
   id: string;
@@ -18,7 +19,7 @@ interface Message {
 const ChatRoom = () => {
   const { user, isAdmin } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [onlineCount, setOnlineCount] = useState(1);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +104,13 @@ const ChatRoom = () => {
       )
       .subscribe();
 
-    // Track presence for online count
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Track presence for online users
+  useEffect(() => {
     const presenceChannel = supabase.channel('online-users', {
       config: {
         presence: {
@@ -115,7 +122,17 @@ const ChatRoom = () => {
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState();
-        setOnlineCount(Object.keys(state).length);
+        const onlineIds = new Set<string>();
+        
+        Object.values(state).forEach((presences: any[]) => {
+          presences.forEach((presence: { user_id?: string }) => {
+            if (presence.user_id) {
+              onlineIds.add(presence.user_id);
+            }
+          });
+        });
+        
+        setOnlineUserIds(onlineIds);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -124,7 +141,6 @@ const ChatRoom = () => {
       });
 
     return () => {
-      supabase.removeChannel(channel);
       supabase.removeChannel(presenceChannel);
     };
   }, [user?.id]);
@@ -156,32 +172,38 @@ const ChatRoom = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <ChatHeader onlineCount={onlineCount} />
-      
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <p>No messages yet. Be the first to say hello!</p>
-          </div>
-        ) : (
-          messages.map((msg) => (
-            <MessageBubble
-              key={msg.id}
-              id={msg.id}
-              message={msg.content}
-              sender={msg.profile?.username || 'Unknown'}
-              timestamp={new Date(msg.created_at)}
-              isOwn={msg.user_id === user?.id}
-              canDelete={msg.user_id === user?.id || isAdmin}
-              onDelete={handleDelete}
-            />
-          ))
-        )}
-        <div ref={messagesEndRef} />
+    <div className="flex h-screen bg-background">
+      {/* Main Chat Area */}
+      <div className="flex flex-col flex-1">
+        <ChatHeader onlineCount={onlineUserIds.size || 1} />
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <p>No messages yet. Be the first to say hello!</p>
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <MessageBubble
+                key={msg.id}
+                id={msg.id}
+                message={msg.content}
+                sender={msg.profile?.username || 'Unknown'}
+                timestamp={new Date(msg.created_at)}
+                isOwn={msg.user_id === user?.id}
+                canDelete={msg.user_id === user?.id || isAdmin}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+        
+        <ChatInput onSend={handleSend} />
       </div>
-      
-      <ChatInput onSend={handleSend} />
+
+      {/* Member Sidebar */}
+      <MemberList onlineUserIds={onlineUserIds} />
     </div>
   );
 };

@@ -8,11 +8,15 @@ const supabaseUntyped = createClient(
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 );
 
+type AppRole = 'owner' | 'admin' | 'moderator' | 'user';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isOwner: boolean;
+  role: AppRole | null;
   signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -24,7 +28,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<AppRole | null>(null);
+
+  const isAdmin = role === 'admin' || role === 'owner';
+  const isOwner = role === 'owner';
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -37,10 +44,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Defer role check with setTimeout to prevent deadlock
         if (session?.user) {
           setTimeout(() => {
-            checkAdminRole(session.user.id);
+            checkUserRole(session.user.id);
           }, 0);
         } else {
-          setIsAdmin(false);
+          setRole(null);
         }
       }
     );
@@ -52,22 +59,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
 
       if (session?.user) {
-        checkAdminRole(session.user.id);
+        checkUserRole(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdminRole = async (userId: string) => {
+  const checkUserRole = async (userId: string) => {
     const { data } = await supabaseUntyped
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
+      .single();
     
-    setIsAdmin(!!data);
+    if (data) {
+      setRole(data.role as AppRole);
+    } else {
+      setRole('user');
+    }
   };
 
   const signUp = async (email: string, password: string, username: string) => {
@@ -98,11 +108,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setIsAdmin(false);
+    setRole(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isOwner, role, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
