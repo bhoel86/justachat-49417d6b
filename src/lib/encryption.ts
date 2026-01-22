@@ -31,7 +31,7 @@ export async function importKey(base64Key: string): Promise<CryptoKey> {
   );
 }
 
-// Encrypt a message
+// Encrypt a message - returns combined base64 string
 export async function encryptMessage(message: string, key: CryptoKey): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
@@ -51,6 +51,26 @@ export async function encryptMessage(message: string, key: CryptoKey): Promise<s
   combined.set(new Uint8Array(encrypted), iv.length);
   
   return btoa(String.fromCharCode(...combined));
+}
+
+// Encrypt a message - returns separate ciphertext and IV for storage
+export async function encryptMessageWithIv(message: string, key: CryptoKey): Promise<{ ciphertext: string; iv: string }> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  
+  // Generate random IV
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  
+  const encrypted = await crypto.subtle.encrypt(
+    { name: ALGORITHM, iv },
+    key,
+    data
+  );
+  
+  return {
+    ciphertext: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
+    iv: btoa(String.fromCharCode(...iv))
+  };
 }
 
 // Decrypt a message

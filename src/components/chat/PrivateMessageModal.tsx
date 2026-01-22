@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Lock, Send, AlertTriangle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { generateSessionKey, encryptMessage, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
+import { generateSessionKey, encryptMessage, encryptMessageWithIv, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
 import EmojiPicker from "./EmojiPicker";
 import { useToast } from "@/hooks/use-toast";
 
@@ -170,10 +170,27 @@ const PrivateMessageModal = ({
     const msgId = `${Date.now()}-${Math.random()}`;
     
     try {
-      // Encrypt message
+      // Encrypt message for broadcast
       const encrypted = await encryptMessage(trimmedMessage, sessionKey);
       
-      // Send via broadcast (ephemeral - not stored)
+      // Encrypt message with separate IV for storage
+      const encryptedForStorage = await encryptMessageWithIv(trimmedMessage, sessionKey);
+      
+      // Store encrypted message in database for admin monitoring
+      const { error: dbError } = await supabase
+        .from('private_messages')
+        .insert({
+          sender_id: currentUserId,
+          recipient_id: targetUserId,
+          encrypted_content: encryptedForStorage.ciphertext,
+          iv: encryptedForStorage.iv
+        });
+
+      if (dbError) {
+        console.error('Failed to store message:', dbError);
+      }
+      
+      // Send via broadcast for real-time delivery
       channelRef.current.send({
         type: 'broadcast',
         event: 'message',
@@ -256,7 +273,7 @@ const PrivateMessageModal = ({
         <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-2">
           <Shield className="h-4 w-4 text-amber-500" />
           <span className="text-xs text-amber-500">
-            Messages are encrypted and will be destroyed when this chat closes. No records are stored.
+            Messages are encrypted. Admins can review encrypted content for moderation.
           </span>
         </div>
 
