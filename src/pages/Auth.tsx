@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck } from "lucide-react";
+import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -12,19 +12,31 @@ const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 const usernameSchema = z.string().min(2, "Username must be at least 2 characters").max(20, "Username must be less than 20 characters");
 
+type AuthMode = "login" | "signup" | "forgot" | "reset";
+
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [username, setUsername] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check for password reset token in URL
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=recovery")) {
+      setMode("reset");
+    }
+  }, []);
 
   const handleCaptchaVerify = useCallback((token: string) => {
     setCaptchaToken(token);
@@ -50,6 +62,24 @@ const Auth = () => {
   const validateForm = () => {
     const newErrors: typeof errors = {};
     
+    if (mode === "forgot") {
+      const emailResult = emailSchema.safeParse(email);
+      if (!emailResult.success) {
+        newErrors.email = emailResult.error.errors[0].message;
+      }
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
+
+    if (mode === "reset") {
+      const passwordResult = passwordSchema.safeParse(newPassword);
+      if (!passwordResult.success) {
+        newErrors.password = passwordResult.error.errors[0].message;
+      }
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    }
+    
     const emailResult = emailSchema.safeParse(email);
     if (!emailResult.success) {
       newErrors.email = emailResult.error.errors[0].message;
@@ -60,7 +90,7 @@ const Auth = () => {
       newErrors.password = passwordResult.error.errors[0].message;
     }
     
-    if (!isLogin) {
+    if (mode === "signup") {
       const usernameResult = usernameSchema.safeParse(username);
       if (!usernameResult.success) {
         newErrors.username = usernameResult.error.errors[0].message;
@@ -94,15 +124,81 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const redirectUrl = `${window.location.origin}/auth`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+      
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message
+        });
+      } else {
+        setResetEmailSent(true);
+        toast({
+          title: "Check your email",
+          description: "We've sent you a password reset link."
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message
+        });
+      } else {
+        toast({
+          title: "Password updated!",
+          description: "You can now sign in with your new password."
+        });
+        setMode("login");
+        setNewPassword("");
+        // Clear the hash from URL
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (mode === "forgot") {
+      return handleForgotPassword();
+    }
+    
+    if (mode === "reset") {
+      return handleResetPassword();
+    }
     
     if (!validateForm()) return;
     
     setIsSubmitting(true);
     
     try {
-      if (isLogin) {
+      if (mode === "login") {
         const { error } = await signIn(email, password);
         if (error) {
           toast({
@@ -113,7 +209,7 @@ const Auth = () => {
               : error.message
           });
         }
-      } else {
+      } else if (mode === "signup") {
         // Verify CAPTCHA on server first
         if (!captchaToken) {
           setErrors(prev => ({ ...prev, captcha: "Please complete the CAPTCHA" }));
@@ -141,7 +237,7 @@ const Auth = () => {
               title: "Account exists",
               description: "This email is already registered. Please log in instead."
             });
-            setIsLogin(true);
+            setMode("login");
           } else {
             toast({
               variant: "destructive",
@@ -189,15 +285,56 @@ const Auth = () => {
 
         {/* Form Card */}
         <div className="bg-card rounded-2xl p-6 border border-border shadow-xl">
+          {/* Back button for forgot/reset modes */}
+          {(mode === "forgot" || mode === "reset") && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login");
+                setResetEmailSent(false);
+                setErrors({});
+              }}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to login
+            </button>
+          )}
+          
           <h2 className="text-xl font-semibold text-foreground mb-1 text-center">
-            {isLogin ? "Welcome back" : "Create account"}
+            {mode === "login" && "Welcome back"}
+            {mode === "signup" && "Create account"}
+            {mode === "forgot" && "Reset password"}
+            {mode === "reset" && "Set new password"}
           </h2>
           <p className="text-muted-foreground text-sm text-center mb-6">
-            {isLogin ? "Sign in to continue chatting" : "Join the conversation"}
+            {mode === "login" && "Sign in to continue chatting"}
+            {mode === "signup" && "Join the conversation"}
+            {mode === "forgot" && "Enter your email to receive a reset link"}
+            {mode === "reset" && "Enter your new password below"}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+          {/* Reset email sent success message */}
+          {mode === "forgot" && resetEmailSent ? (
+            <div className="text-center py-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
+                <Mail className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-foreground font-medium mb-2">Check your inbox</p>
+              <p className="text-muted-foreground text-sm">
+                We've sent a password reset link to <span className="font-medium">{email}</span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setResetEmailSent(false)}
+                className="text-sm text-primary hover:underline mt-4"
+              >
+                Didn't receive it? Try again
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === "signup" && (
               <div>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -219,98 +356,149 @@ const Auth = () => {
               </div>
             )}
 
-            <div>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setErrors(prev => ({ ...prev, email: undefined }));
-                  }}
-                  placeholder="Email"
-                  className="w-full bg-input rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-destructive text-xs mt-1">{errors.email}</p>
-              )}
-            </div>
-
-            <div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setErrors(prev => ({ ...prev, password: undefined }));
-                  }}
-                  placeholder="Password"
-                  className="w-full bg-input rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-              </div>
-              {errors.password && (
-                <p className="text-destructive text-xs mt-1">{errors.password}</p>
-              )}
-            </div>
-
-            {/* CAPTCHA for signup only */}
-            {!isLogin && (
-              <div className="space-y-2">
-                <TurnstileCaptcha
-                  onVerify={handleCaptchaVerify}
-                  onError={handleCaptchaError}
-                  onExpire={handleCaptchaExpire}
-                />
-                {captchaToken && (
-                  <div className="flex items-center justify-center gap-1 text-xs text-green-500">
-                    <ShieldCheck className="h-3 w-3" />
-                    <span>Verified</span>
+              {/* Email field - show for login, signup, forgot */}
+              {(mode === "login" || mode === "signup" || mode === "forgot") && (
+                <div>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setErrors(prev => ({ ...prev, email: undefined }));
+                      }}
+                      placeholder="Email"
+                      className="w-full bg-input rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
                   </div>
-                )}
-                {errors.captcha && (
-                  <p className="text-destructive text-xs text-center">{errors.captcha}</p>
-                )}
-                {captchaError && (
-                  <p className="text-destructive text-xs text-center">CAPTCHA error. Please refresh and try again.</p>
-                )}
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              variant="jac"
-              size="lg"
-              className="w-full"
-              disabled={isSubmitting || (!isLogin && !captchaToken)}
-            >
-              {isSubmitting ? (
-                <span className="animate-pulse">Please wait...</span>
-              ) : (
-                <>
-                  {isLogin ? "Sign In" : "Create Account"}
-                  <ArrowRight className="h-5 w-5 ml-1" />
-                </>
+                  {errors.email && (
+                    <p className="text-destructive text-xs mt-1">{errors.email}</p>
+                  )}
+                </div>
               )}
-            </Button>
-          </form>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setErrors({});
-                setCaptchaToken(null);
-              }}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
-          </div>
+              {/* Password field - show for login, signup */}
+              {(mode === "login" || mode === "signup") && (
+                <div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setErrors(prev => ({ ...prev, password: undefined }));
+                      }}
+                      placeholder="Password"
+                      className="w-full bg-input rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                  </div>
+                  {errors.password && (
+                    <p className="text-destructive text-xs mt-1">{errors.password}</p>
+                  )}
+                </div>
+              )}
+
+              {/* New password field - show for reset */}
+              {mode === "reset" && (
+                <div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setErrors(prev => ({ ...prev, password: undefined }));
+                      }}
+                      placeholder="New password"
+                      className="w-full bg-input rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                  </div>
+                  {errors.password && (
+                    <p className="text-destructive text-xs mt-1">{errors.password}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Forgot password link */}
+              {mode === "login" && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("forgot");
+                      setErrors({});
+                    }}
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              {/* CAPTCHA for signup only */}
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <TurnstileCaptcha
+                    onVerify={handleCaptchaVerify}
+                    onError={handleCaptchaError}
+                    onExpire={handleCaptchaExpire}
+                  />
+                  {captchaToken && (
+                    <div className="flex items-center justify-center gap-1 text-xs text-green-500">
+                      <ShieldCheck className="h-3 w-3" />
+                      <span>Verified</span>
+                    </div>
+                  )}
+                  {errors.captcha && (
+                    <p className="text-destructive text-xs text-center">{errors.captcha}</p>
+                  )}
+                  {captchaError && (
+                    <p className="text-destructive text-xs text-center">CAPTCHA error. Please refresh and try again.</p>
+                  )}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                variant="jac"
+                size="lg"
+                className="w-full"
+                disabled={isSubmitting || (mode === "signup" && !captchaToken)}
+              >
+                {isSubmitting ? (
+                  <span className="animate-pulse">Please wait...</span>
+                ) : (
+                  <>
+                    {mode === "login" && "Sign In"}
+                    {mode === "signup" && "Create Account"}
+                    {mode === "forgot" && "Send Reset Link"}
+                    {mode === "reset" && "Update Password"}
+                    <ArrowRight className="h-5 w-5 ml-1" />
+                  </>
+                )}
+              </Button>
+            </form>
+          )}
+
+          {/* Toggle between login/signup */}
+          {(mode === "login" || mode === "signup") && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === "login" ? "signup" : "login");
+                  setErrors({});
+                  setCaptchaToken(null);
+                }}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
