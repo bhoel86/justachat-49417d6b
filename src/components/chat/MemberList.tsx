@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -234,6 +235,18 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
+          {/* Admin Panel Link - Owner Only */}
+          {isOwner && (
+            <div className="mb-4">
+              <Link 
+                to="/admin"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-colors group"
+              >
+                <Settings className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Admin Panel</span>
+              </Link>
+            </div>
+          )}
           {/* AI Moderator Bot - Always on top */}
           <div className="mb-4">
             <p className="text-xs font-medium text-muted-foreground uppercase px-2 mb-2">
