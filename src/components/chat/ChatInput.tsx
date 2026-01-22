@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Send, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import EmojiPicker from "./EmojiPicker";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -18,6 +19,10 @@ const ChatInput = ({ onSend, isMuted = false }: ChatInputProps) => {
     }
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    setMessage(prev => prev + emoji);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-4 bg-card border-t border-border">
       {isMuted && (
@@ -26,7 +31,8 @@ const ChatInput = ({ onSend, isMuted = false }: ChatInputProps) => {
           <span>You are muted. You can still use commands.</span>
         </div>
       )}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
+        <EmojiPicker onEmojiSelect={handleEmojiSelect} />
         <input
           type="text"
           value={message}

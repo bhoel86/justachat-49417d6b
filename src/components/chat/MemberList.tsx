@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, ChevronDown } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import PrivateMessageModal from "./PrivateMessageModal";
 
 interface Member {
   user_id: string;
@@ -54,8 +55,24 @@ const roleConfig = {
 const MemberList = ({ onlineUserIds }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
+
+  // Get current user's username
+  const [currentUsername, setCurrentUsername] = useState('');
+  useEffect(() => {
+    if (user) {
+      supabaseUntyped
+        .from('profiles')
+        .select('username')
+        .eq('user_id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setCurrentUsername(data.username);
+        });
+    }
+  }, [user]);
 
   const fetchMembers = async () => {
     // Fetch all profiles with their roles
@@ -172,56 +189,74 @@ const MemberList = ({ onlineUserIds }: MemberListProps) => {
   }
 
   return (
-    <div className="w-60 bg-card border-l border-border flex flex-col h-full">
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold text-foreground">Members</h2>
+    <>
+      <div className="w-60 bg-card border-l border-border flex flex-col h-full">
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold text-foreground">Members</h2>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2">
+          {/* Online Members */}
+          {onlineMembers.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase px-2 mb-2">
+                Online — {onlineMembers.length}
+              </p>
+              <div className="space-y-1">
+                {onlineMembers.map((member) => (
+                  <MemberItem 
+                    key={member.user_id} 
+                    member={member} 
+                    canManage={canManageRole(member)}
+                    availableRoles={getAvailableRoles(member)}
+                    onRoleChange={handleRoleChange}
+                    onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
+                    isCurrentUser={member.user_id === user?.id}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Offline Members */}
+          {offlineMembers.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase px-2 mb-2">
+                Offline — {offlineMembers.length}
+              </p>
+              <div className="space-y-1">
+                {offlineMembers.map((member) => (
+                  <MemberItem 
+                    key={member.user_id} 
+                    member={member}
+                    canManage={canManageRole(member)}
+                    availableRoles={getAvailableRoles(member)}
+                    onRoleChange={handleRoleChange}
+                    onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
+                    isCurrentUser={member.user_id === user?.id}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
-        {/* Online Members */}
-        {onlineMembers.length > 0 && (
-          <div className="mb-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase px-2 mb-2">
-              Online — {onlineMembers.length}
-            </p>
-            <div className="space-y-1">
-              {onlineMembers.map((member) => (
-                <MemberItem 
-                  key={member.user_id} 
-                  member={member} 
-                  canManage={canManageRole(member)}
-                  availableRoles={getAvailableRoles(member)}
-                  onRoleChange={handleRoleChange}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Offline Members */}
-        {offlineMembers.length > 0 && (
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase px-2 mb-2">
-              Offline — {offlineMembers.length}
-            </p>
-            <div className="space-y-1">
-              {offlineMembers.map((member) => (
-                <MemberItem 
-                  key={member.user_id} 
-                  member={member}
-                  canManage={canManageRole(member)}
-                  availableRoles={getAvailableRoles(member)}
-                  onRoleChange={handleRoleChange}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      {/* Private Message Modal */}
+      {pmTarget && user && (
+        <PrivateMessageModal
+          isOpen={!!pmTarget}
+          onClose={() => setPmTarget(null)}
+          targetUserId={pmTarget.userId}
+          targetUsername={pmTarget.username}
+          currentUserId={user.id}
+          currentUsername={currentUsername}
+        />
+      )}
+    </>
   );
 };
 
@@ -230,9 +265,11 @@ interface MemberItemProps {
   canManage: boolean;
   availableRoles: Member['role'][];
   onRoleChange: (memberId: string, newRole: Member['role']) => void;
+  onPmClick?: () => void;
+  isCurrentUser: boolean;
 }
 
-const MemberItem = ({ member, canManage, availableRoles, onRoleChange }: MemberItemProps) => {
+const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser }: MemberItemProps) => {
   const config = roleConfig[member.role];
   const Icon = config.icon;
 
@@ -253,7 +290,7 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange }: MemberI
           {member.username.charAt(0).toUpperCase()}
         </div>
         {member.isOnline && (
-          <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />
+          <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-card" />
         )}
       </div>
 
@@ -264,12 +301,24 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange }: MemberI
           member.isOnline ? "text-foreground" : "text-muted-foreground"
         )}>
           {member.username}
+          {isCurrentUser && <span className="text-xs text-muted-foreground ml-1">(you)</span>}
         </p>
         <div className="flex items-center gap-1">
           <Icon className={cn("h-3 w-3", config.color)} />
           <span className={cn("text-xs", config.color)}>{config.label}</span>
         </div>
       </div>
+
+      {/* PM button */}
+      {!isCurrentUser && onPmClick && (
+        <button 
+          onClick={onPmClick}
+          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-primary/10 transition-all"
+          title="Send private message"
+        >
+          <MessageSquareLock className="h-4 w-4 text-primary" />
+        </button>
+      )}
 
       {/* Role management dropdown */}
       {canManage && availableRoles.length > 0 && (
