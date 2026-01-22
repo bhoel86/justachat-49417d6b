@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.pm-monitor]
 verify_jwt = false
+
+[functions.geolocate]
+verify_jwt = false
