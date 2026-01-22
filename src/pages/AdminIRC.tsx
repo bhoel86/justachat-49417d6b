@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Server, Terminal, Copy, CheckCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import IRCTestClient from "@/components/admin/IRCTestClient";
 
 const AdminIRC = () => {
   const { user, isOwner, isAdmin, loading } = useAuth();
@@ -47,6 +48,9 @@ const AdminIRC = () => {
           </h1>
           <p className="text-muted-foreground">Connect with external IRC clients</p>
         </div>
+
+        {/* Built-in Test Client */}
+        <IRCTestClient />
 
         <Card>
           <CardHeader>
