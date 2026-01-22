@@ -13,7 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Shield, Eye, Clock, User, FileText, RefreshCw, Filter } from "lucide-react";
+import { ArrowLeft, Shield, Eye, Clock, User, FileText, RefreshCw, Filter, Download, FileJson, FileSpreadsheet } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
@@ -149,6 +155,59 @@ const AdminPanel = () => {
     setSelectedAction("all");
   };
 
+  const exportToJSON = () => {
+    const dataToExport = filteredLogs.map(log => ({
+      id: log.id,
+      user: log.profiles?.username || 'Unknown',
+      user_id: log.user_id,
+      action: log.action,
+      resource_type: log.resource_type,
+      resource_id: log.resource_id,
+      details: log.details,
+      created_at: log.created_at
+    }));
+
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToCSV = () => {
+    const headers = ['ID', 'User', 'User ID', 'Action', 'Resource Type', 'Resource ID', 'Details', 'Created At'];
+    
+    const rows = filteredLogs.map(log => [
+      log.id,
+      log.profiles?.username || 'Unknown',
+      log.user_id,
+      log.action,
+      log.resource_type,
+      log.resource_id || '',
+      log.details ? JSON.stringify(log.details) : '',
+      log.created_at
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -210,6 +269,25 @@ const AdminPanel = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={filteredLogs.length === 0}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover border-border z-50">
+              <DropdownMenuItem onClick={exportToJSON} className="cursor-pointer">
+                <FileJson className="h-4 w-4 mr-2" />
+                Export as JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToCSV} className="cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export as CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Stats */}
