@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft } from "lucide-react";
+import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import TurnstileCaptcha from "@/components/auth/TurnstileCaptcha";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -25,6 +26,7 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ locked: boolean; message?: string; remainingAttempts?: number } | null>(null);
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -124,6 +126,57 @@ const Auth = () => {
     }
   };
 
+  const checkRateLimit = async (identifier: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-rate-limit', {
+        body: { identifier, action: 'check' }
+      });
+      
+      if (error) {
+        console.error('Rate limit check error:', error);
+        return true; // Allow on error
+      }
+      
+      if (data?.locked) {
+        setRateLimitInfo({ locked: true, message: data.message });
+        return false;
+      }
+      
+      setRateLimitInfo({ locked: false, remainingAttempts: data?.remainingAttempts });
+      return data?.allowed !== false;
+    } catch (err) {
+      console.error('Rate limit check failed:', err);
+      return true;
+    }
+  };
+
+  const recordFailedAttempt = async (identifier: string) => {
+    try {
+      const { data } = await supabase.functions.invoke('check-rate-limit', {
+        body: { identifier, action: 'record_failure' }
+      });
+      
+      if (data?.locked) {
+        setRateLimitInfo({ locked: true, message: data.message });
+      } else if (data?.remainingAttempts !== undefined) {
+        setRateLimitInfo({ locked: false, remainingAttempts: data.remainingAttempts });
+      }
+    } catch (err) {
+      console.error('Failed to record attempt:', err);
+    }
+  };
+
+  const resetRateLimit = async (identifier: string) => {
+    try {
+      await supabase.functions.invoke('check-rate-limit', {
+        body: { identifier, action: 'reset' }
+      });
+      setRateLimitInfo(null);
+    } catch (err) {
+      console.error('Failed to reset rate limit:', err);
+    }
+  };
+
   const handleForgotPassword = async () => {
     if (!validateForm()) return;
     
@@ -199,15 +252,32 @@ const Auth = () => {
     
     try {
       if (mode === "login") {
+        // Check rate limit before attempting login
+        const allowed = await checkRateLimit(email.toLowerCase());
+        if (!allowed) {
+          setIsSubmitting(false);
+          return;
+        }
+
         const { error } = await signIn(email, password);
         if (error) {
+          // Record failed attempt
+          await recordFailedAttempt(email.toLowerCase());
+          
+          const remainingMsg = rateLimitInfo?.remainingAttempts !== undefined 
+            ? ` (${rateLimitInfo.remainingAttempts} attempts remaining)`
+            : '';
+          
           toast({
             variant: "destructive",
             title: "Login failed",
             description: error.message === "Invalid login credentials" 
-              ? "Invalid email or password. Please try again."
+              ? `Invalid email or password.${remainingMsg}`
               : error.message
           });
+        } else {
+          // Reset rate limit on successful login
+          await resetRateLimit(email.toLowerCase());
         }
       } else if (mode === "signup") {
         // Verify CAPTCHA on server first
@@ -313,6 +383,24 @@ const Auth = () => {
             {mode === "forgot" && "Enter your email to receive a reset link"}
             {mode === "reset" && "Enter your new password below"}
           </p>
+
+          {/* Rate limit warning */}
+          {mode === "login" && rateLimitInfo?.locked && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{rateLimitInfo.message}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Remaining attempts warning */}
+          {mode === "login" && !rateLimitInfo?.locked && rateLimitInfo?.remainingAttempts !== undefined && rateLimitInfo.remainingAttempts <= 2 && (
+            <Alert className="mb-4 border-yellow-500/50 bg-yellow-500/10">
+              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              <AlertDescription className="text-yellow-500">
+                {rateLimitInfo.remainingAttempts} login attempt{rateLimitInfo.remainingAttempts !== 1 ? 's' : ''} remaining before temporary lockout.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Reset email sent success message */}
           {mode === "forgot" && resetEmailSent ? (
@@ -466,7 +554,7 @@ const Auth = () => {
                 variant="jac"
                 size="lg"
                 className="w-full"
-                disabled={isSubmitting || (mode === "signup" && !captchaToken)}
+                disabled={isSubmitting || (mode === "signup" && !captchaToken) || (mode === "login" && rateLimitInfo?.locked)}
               >
                 {isSubmitting ? (
                   <span className="animate-pulse">Please wait...</span>
