@@ -501,13 +501,67 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick
 
       {/* Name and role */}
       <div className="flex-1 min-w-0">
-        <p className={cn(
-          "text-sm font-medium truncate",
-          member.isOnline ? "text-foreground" : "text-muted-foreground"
-        )}>
-          {member.username}
-          {isCurrentUser && <span className="text-xs text-muted-foreground ml-1">(you)</span>}
-        </p>
+        {isCurrentUser ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={cn(
+                "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer",
+                member.isOnline ? "text-foreground" : "text-muted-foreground"
+              )}>
+                {member.username}
+                <span className="text-xs text-muted-foreground ml-1">(you)</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="start" 
+              className="w-48 bg-popover border border-border shadow-lg z-50"
+            >
+              <DropdownMenuLabel className="flex items-center gap-2">
+                <UserAvatar
+                  avatarUrl={member.avatar_url}
+                  username={member.username}
+                  size="sm"
+                />
+                <div>
+                  <p className="font-medium text-sm">{member.username}</p>
+                  <p className="text-xs text-muted-foreground">Your Profile</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem 
+                onClick={onAvatarClick}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Camera className="h-4 w-4 text-primary" />
+                <span>Change Avatar</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span>View Profile</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem 
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Icon className={cn("h-4 w-4", config.color)} />
+                <span>Role: {config.label}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <p className={cn(
+            "text-sm font-medium truncate",
+            member.isOnline ? "text-foreground" : "text-muted-foreground"
+          )}>
+            {member.username}
+          </p>
+        )}
         <div className="flex items-center gap-1">
           <Icon className={cn("h-3 w-3", config.color)} />
           <span className={cn("text-xs", config.color)}>{config.label}</span>
