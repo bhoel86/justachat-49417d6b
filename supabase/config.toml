@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.translate-message]
 verify_jwt = false
+
+[functions.irc-gateway]
+verify_jwt = false
