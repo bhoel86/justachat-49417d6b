@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import MapView from "./pages/MapView";
 import AdminPanel from "./pages/AdminPanel";
+import AdminBans from "./pages/AdminBans";
+import AdminUsers from "./pages/AdminUsers";
+import AdminAPI from "./pages/AdminAPI";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +29,9 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/map" element={<MapView />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/bans" element={<AdminBans />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/api" element={<AdminAPI />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

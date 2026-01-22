@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash } from "lucide-react";
+import { 
+  LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, 
+  Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
+  Ban, Key, MapPin, UserCog, ChevronDown
+} from "lucide-react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Channel {
   id: string;
@@ -51,7 +63,7 @@ const formatRoomName = (name: string) => {
 };
 
 const Home = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, isOwner, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
@@ -116,6 +128,83 @@ const Home = () => {
             <h1 className="text-2xl font-bold brand jac-gradient-text">JAC Chat</h1>
           </div>
           <div className="flex items-center gap-4">
+            {/* Admin Dropdown - Owner/Admin Only */}
+            {(isOwner || isAdmin) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Settings className="w-4 h-4" />
+                    Admin
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-popover border border-border shadow-lg z-50">
+                  <DropdownMenuLabel className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    {isOwner ? 'Owner Controls' : 'Admin Controls'}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  {isOwner && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                        <FileText className="w-4 h-4 text-primary" />
+                        <div>
+                          <span>Audit Logs</span>
+                          <p className="text-xs text-muted-foreground">View access history</p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/bans" className="flex items-center gap-2 cursor-pointer">
+                      <Ban className="w-4 h-4 text-destructive" />
+                      <div>
+                        <span>Ban List</span>
+                        <p className="text-xs text-muted-foreground">Manage banned users</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem asChild>
+                    <Link to="/map" className="flex items-center gap-2 cursor-pointer">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <div>
+                        <span>User Locations</span>
+                        <p className="text-xs text-muted-foreground">View user map</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/users" className="flex items-center gap-2 cursor-pointer">
+                      <UserCog className="w-4 h-4 text-primary" />
+                      <div>
+                        <span>User Management</span>
+                        <p className="text-xs text-muted-foreground">Roles & permissions</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  {isOwner && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/api" className="flex items-center gap-2 cursor-pointer">
+                          <Key className="w-4 h-4 text-amber-500" />
+                          <div>
+                            <span>API & Secrets</span>
+                            <p className="text-xs text-muted-foreground">View API info</p>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
             <div className="flex items-center gap-2 text-muted-foreground">
               <Users className="w-4 h-4" />
               <span className="text-sm">Welcome back!</span>
