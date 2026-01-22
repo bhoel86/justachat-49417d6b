@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ import BotChatModal from "./BotChatModal";
 import { getModerator, MODERATORS, type ModeratorInfo } from "@/lib/roomConfig";
 import UserAvatar from "@/components/avatar/UserAvatar";
 import AvatarUploadModal from "@/components/avatar/AvatarUploadModal";
+import UsernameChangeModal from "@/components/profile/UsernameChangeModal";
 
 interface Member {
   user_id: string;
@@ -72,6 +73,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
   const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+  const [usernameModalOpen, setUsernameModalOpen] = useState(false);
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -277,6 +279,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
                     isCurrentUser={member.user_id === user?.id}
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
+                    onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
                   />
                 ))}
               </div>
@@ -300,6 +303,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
                     isCurrentUser={member.user_id === user?.id}
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
+                    onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
                   />
                 ))}
               </div>
@@ -338,6 +342,17 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
         currentAvatarUrl={currentAvatarUrl}
         onAvatarChange={(url) => {
           setCurrentAvatarUrl(url);
+          fetchMembers();
+        }}
+      />
+
+      {/* Username Change Modal */}
+      <UsernameChangeModal
+        open={usernameModalOpen}
+        onOpenChange={setUsernameModalOpen}
+        currentUsername={currentUsername}
+        onUsernameChange={(newUsername) => {
+          setCurrentUsername(newUsername);
           fetchMembers();
         }}
       />
@@ -461,9 +476,10 @@ interface MemberItemProps {
   onPmClick?: () => void;
   isCurrentUser: boolean;
   onAvatarClick?: () => void;
+  onUsernameClick?: () => void;
 }
 
-const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser, onAvatarClick }: MemberItemProps) => {
+const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick, isCurrentUser, onAvatarClick, onUsernameClick }: MemberItemProps) => {
   const config = roleConfig[member.role] || roleConfig.user;
   const Icon = config.icon;
 
@@ -538,6 +554,14 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick
               </DropdownMenuItem>
               
               <DropdownMenuItem 
+                onClick={onUsernameClick}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <AtSign className="h-4 w-4 text-primary" />
+                <span>Change Username</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
                 className="flex items-center gap-2 cursor-pointer"
               >
                 <User className="h-4 w-4 text-muted-foreground" />
@@ -548,6 +572,7 @@ const MemberItem = ({ member, canManage, availableRoles, onRoleChange, onPmClick
               
               <DropdownMenuItem 
                 className="flex items-center gap-2 cursor-pointer"
+                disabled
               >
                 <Icon className={cn("h-4 w-4", config.color)} />
                 <span>Role: {config.label}</span>
