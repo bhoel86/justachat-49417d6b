@@ -164,6 +164,21 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
       return;
     }
 
+    // Log the delete action
+    if (user) {
+      await supabaseUntyped.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'channel_delete',
+        resource_type: 'channel',
+        resource_id: channel.id,
+        details: {
+          channel_name: channel.name,
+          was_private: channel.is_private,
+          was_hidden: channel.is_hidden
+        }
+      });
+    }
+
     toast({
       title: "Channel deleted",
       description: `#${channel.name} has been removed.`
@@ -193,6 +208,20 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
         description: error.message
       });
       return;
+    }
+
+    // Log the hide/show action
+    if (user) {
+      await supabaseUntyped.from('audit_logs').insert({
+        user_id: user.id,
+        action: newHiddenState ? 'channel_hide' : 'channel_show',
+        resource_type: 'channel',
+        resource_id: channel.id,
+        details: {
+          channel_name: channel.name,
+          is_hidden: newHiddenState
+        }
+      });
     }
 
     toast({
