@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { 
   LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, 
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
-  Ban, Key, MapPin, UserCog, ChevronDown
+  Ban, Key, MapPin, UserCog, ChevronDown, Mail
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -185,11 +185,30 @@ const Home = () => {
                         <p className="text-xs text-muted-foreground">Roles & permissions</p>
                       </div>
                     </Link>
+                    </DropdownMenuItem>
+                  
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/messages" className="flex items-center gap-2 cursor-pointer">
+                      <MessageSquare className="w-4 h-4 text-blue-500" />
+                      <div>
+                        <span>Messages</span>
+                        <p className="text-xs text-muted-foreground">View & moderate</p>
+                      </div>
+                    </Link>
                   </DropdownMenuItem>
                   
                   {isOwner && (
                     <>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/emails" className="flex items-center gap-2 cursor-pointer">
+                          <Mail className="w-4 h-4 text-green-500" />
+                          <div>
+                            <span>User Emails</span>
+                            <p className="text-xs text-muted-foreground">View email addresses</p>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/admin/api" className="flex items-center gap-2 cursor-pointer">
                           <Key className="w-4 h-4 text-amber-500" />

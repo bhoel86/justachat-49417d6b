@@ -12,6 +12,8 @@ import AdminPanel from "./pages/AdminPanel";
 import AdminBans from "./pages/AdminBans";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAPI from "./pages/AdminAPI";
+import AdminEmails from "./pages/AdminEmails";
+import AdminMessages from "./pages/AdminMessages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/admin/bans" element={<AdminBans />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/api" element={<AdminAPI />} />
+            <Route path="/admin/emails" element={<AdminEmails />} />
+            <Route path="/admin/messages" element={<AdminMessages />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
