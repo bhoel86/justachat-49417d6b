@@ -26,7 +26,8 @@ interface TurnstileCaptchaProps {
   onExpire?: () => void;
 }
 
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "";
+// Public site key - safe to include in frontend code
+const TURNSTILE_SITE_KEY = "0x4AAAAAACOPzR3zKYU7in6K";
 
 const TurnstileCaptcha = ({ onVerify, onError, onExpire }: TurnstileCaptchaProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
