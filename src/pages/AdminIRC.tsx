@@ -3,8 +3,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Server, Terminal, Copy, CheckCircle, ExternalLink } from "lucide-react";
+import { Server, Terminal, Copy, CheckCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 
 const AdminIRC = () => {
   const { user, isOwner, isAdmin, loading } = useAuth();
@@ -37,19 +38,14 @@ const AdminIRC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Server className="h-6 w-6" />
-              IRC Gateway
-            </h1>
-            <p className="text-muted-foreground">Connect with external IRC clients</p>
-          </div>
+    <AdminSidebar>
+      <div className="p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Server className="h-6 w-6" />
+            IRC Gateway
+          </h1>
+          <p className="text-muted-foreground">Connect with external IRC clients</p>
         </div>
 
         <Card>
@@ -183,7 +179,7 @@ const AdminIRC = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AdminSidebar>
   );
 };
 

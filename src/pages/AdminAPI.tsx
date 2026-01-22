@@ -2,9 +2,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Key, Shield, Copy, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Key, Shield, Copy, Eye, EyeOff, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 
 const AdminAPI = () => {
   const { user, loading, isOwner } = useAuth();
@@ -32,43 +33,21 @@ const AdminAPI = () => {
   }
 
   if (!isOwner) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Key className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-            <p className="text-muted-foreground mb-4">
-              Only owners can view API information.
-            </p>
-            <Link to="/">
-              <Button>Return Home</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 space-y-6">
+    <AdminSidebar>
+      <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link to="/">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Key className="h-6 w-6 text-amber-500" />
-              API & Secrets
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              View API configuration and keys
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Key className="h-6 w-6 text-amber-500" />
+            API & Secrets
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            View API configuration and keys
+          </p>
         </div>
 
         {/* Warning */}
@@ -226,7 +205,7 @@ const AdminAPI = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AdminSidebar>
   );
 };
 
