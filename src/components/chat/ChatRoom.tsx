@@ -704,7 +704,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           <div ref={messagesEndRef} />
         </div>
         
-        <ChatInput onSend={handleSend} isMuted={isMuted} />
+        <ChatInput onSend={handleSend} isMuted={isMuted} canControlRadio={isAdmin || isOwner} />
       </div>
 
       {/* Member Sidebar */}

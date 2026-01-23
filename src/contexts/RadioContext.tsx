@@ -68,6 +68,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   const albumArt = currentSong ? getAlbumArt(currentSong.videoId) : null;
   
   const ytWindow = window as YTWindow;
+  const hasAutoStarted = useRef(false);
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -78,6 +79,30 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
     }
   }, []);
+
+  // Autoplay on mount
+  useEffect(() => {
+    if (hasAutoStarted.current) return;
+    
+    const startAutoplay = () => {
+      if (ytWindow.YT?.Player && currentSong && !isInitialized) {
+        hasAutoStarted.current = true;
+        initPlayer();
+      }
+    };
+
+    // If YT is already loaded, start immediately
+    if (ytWindow.YT?.Player) {
+      startAutoplay();
+    } else {
+      // Otherwise, set up callback for when it's ready
+      const existingCallback = ytWindow.onYouTubeIframeAPIReady;
+      ytWindow.onYouTubeIframeAPIReady = () => {
+        existingCallback?.();
+        startAutoplay();
+      };
+    }
+  }, [currentSong, isInitialized]);
 
   const initPlayer = useCallback(() => {
     if (playerRef.current) {

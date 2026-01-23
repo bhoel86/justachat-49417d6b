@@ -9,9 +9,10 @@ import { useRadioOptional } from "@/contexts/RadioContext";
 interface ChatInputProps {
   onSend: (message: string) => void;
   isMuted?: boolean;
+  canControlRadio?: boolean;
 }
 
-const ChatInput = ({ onSend, isMuted = false }: ChatInputProps) => {
+const ChatInput = ({ onSend, isMuted = false, canControlRadio = false }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const radio = useRadioOptional();
 
@@ -69,113 +70,118 @@ const ChatInput = ({ onSend, isMuted = false }: ChatInputProps) => {
                   </p>
                 </>
               ) : (
-                <p className="text-xs text-muted-foreground">Click play to start</p>
+                <p className="text-xs text-muted-foreground">Loading radio...</p>
               )}
             </div>
           </div>
 
-          {/* Genre Selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
-                {radio.currentGenre}
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
-              {radio.genres.map((genre) => (
-                <DropdownMenuItem 
-                  key={genre} 
-                  onClick={() => radio.setGenre(genre)}
-                  className={radio.currentGenre === genre ? 'bg-primary/10' : ''}
-                >
-                  {genre}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Controls - Only visible to admins/owners */}
+          {canControlRadio && (
+            <>
+              {/* Genre Selector */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
+                    {radio.currentGenre}
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
+                  {radio.genres.map((genre) => (
+                    <DropdownMenuItem 
+                      key={genre} 
+                      onClick={() => radio.setGenre(genre)}
+                      className={radio.currentGenre === genre ? 'bg-primary/10' : ''}
+                    >
+                      {genre}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          {/* Controls */}
-          <div className="flex items-center gap-0.5">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={radio.shuffle}
-                  className="h-7 w-7"
-                >
-                  <Shuffle className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Shuffle</TooltipContent>
-            </Tooltip>
+              {/* Controls */}
+              <div className="flex items-center gap-0.5">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={radio.shuffle}
+                      className="h-7 w-7"
+                    >
+                      <Shuffle className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Shuffle</TooltipContent>
+                </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={radio.previous}
-                  className="h-7 w-7"
-                >
-                  <SkipBack className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Previous Song</TooltipContent>
-            </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={radio.previous}
+                      className="h-7 w-7"
+                    >
+                      <SkipBack className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Previous Song</TooltipContent>
+                </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={radio.toggle}
-                  className="h-8 w-8 bg-primary/10"
-                >
-                  {radio.isPlaying ? (
-                    <Pause className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{radio.isPlaying ? 'Pause' : 'Play'}</TooltipContent>
-            </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={radio.toggle}
+                      className="h-8 w-8 bg-primary/10"
+                    >
+                      {radio.isPlaying ? (
+                        <Pause className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{radio.isPlaying ? 'Pause' : 'Play'}</TooltipContent>
+                </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={radio.skip}
-                  className="h-7 w-7"
-                >
-                  <SkipForward className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Next Song</TooltipContent>
-            </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={radio.skip}
+                      className="h-7 w-7"
+                    >
+                      <SkipForward className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Next Song</TooltipContent>
+                </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={radio.skipGenre}
-                  className="h-7 w-7"
-                >
-                  <Radio className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Next Genre</TooltipContent>
-            </Tooltip>
-          </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={radio.skipGenre}
+                      className="h-7 w-7"
+                    >
+                      <Radio className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Next Genre</TooltipContent>
+                </Tooltip>
+              </div>
+            </>
+          )}
         </div>
       )}
 
