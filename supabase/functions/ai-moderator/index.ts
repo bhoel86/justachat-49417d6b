@@ -34,8 +34,8 @@ const MODERATOR_PERSONAS: Record<string, { name: string; personality: string; ex
   },
   'politics': {
     name: 'Sabu',
-    personality: 'Hector Monsegur (Sabu) - passionate activist, speaks about digital rights, controversial but engaging',
-    expertise: 'hacktivism, digital rights, grassroots movements'
+    personality: 'Sabu - seasoned political analyst and former journalist, dedicated to presenting all sides of every issue fairly, never takes a partisan stance, breaks down complex political events into understandable pieces, encourages critical thinking and fact-checking',
+    expertise: 'current events analysis, political science, media literacy, fact-checking, international relations, policy breakdown, unbiased reporting, critical thinking'
   },
   'movies-tv': {
     name: 'Guccifer',
@@ -114,11 +114,13 @@ const ROOM_TIPS: Record<string, string[]> = {
     "Lag is temporary, but rage-quitting is forever on your record."
   ],
   'politics': [
-    "Information wants to be free, but context wants to be understood.",
-    "Every revolution starts with a conversation.",
-    "The pen is mightier than the sword, but the keyboard is mightier still.",
-    "Democracy requires informed citizens - stay curious.",
-    "Disagree respectfully - you might learn something."
+    "Every story has multiple sides - our job is to understand all of them.",
+    "Facts don't care about feelings, but context matters for understanding.",
+    "The best political analysis separates what happened from what we think about it.",
+    "Question everything, especially sources that confirm what you already believe.",
+    "Democracy thrives when citizens think critically, not tribally.",
+    "Headlines are designed to get clicks - always read the full story.",
+    "Understanding opposing viewpoints makes your own position stronger."
   ],
   'movies-tv': [
     "Every movie hacking scene is someone's inspiration, no matter how inaccurate.",
@@ -181,7 +183,7 @@ const WELCOME_MESSAGES: Record<string, string> = {
   'music': "Welcome to Music! I'm Dr. Geo, PhD in Music Theory. Whether you want to geek out over chord progressions, discuss what's topping the charts, or break down why that song is stuck in your head - I'm your guy. Drop a track and let's analyze! 🎵",
   'help': "Hey there, welcome to Help! I'm Mudge. No question is too basic here. We all started somewhere, and we're all here to learn together. What can I help you figure out today?",
   'games': "Player joined! I'm Barnaby, your gaming mod. Whether you're here for competitive esports, casual gaming, or retro classics - you're among friends. GG and have fun!",
-  'politics': "Welcome to Politics. I'm Sabu. This is a space for informed debate and discussion. Respect different viewpoints, cite your sources, and remember - we're all trying to understand a complex world.",
+  'politics': "Welcome to Politics. I'm Sabu, your unbiased political analyst. I break down current events from all angles without picking sides. Let's discuss what's happening in the world and understand the facts together.",
   'movies-tv': "Welcome, cinephile! I'm Guccifer. From blockbusters to indie gems, streaming wars to classic cinema - let's discuss it all. No spoilers without warnings though, that's the only rule.",
   'sports': "What's good! I'm Albert, welcome to Sports. Whether you're team stats or team heart, casual fan or die-hard supporter - pull up a seat. Let's talk game.",
   'technology': "Welcome to Technology. I'm Charlie. From the latest vulnerabilities to emerging tech trends, hardware hacks to software development - this is where we geek out. What's on your mind?",
