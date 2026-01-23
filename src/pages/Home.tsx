@@ -343,30 +343,30 @@ const Home = () => {
                 {/* Dating Section - Special Entry */}
                 <Link
                   to="/dating"
-                  className="group relative h-12 min-w-[140px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-lg overflow-hidden bg-card border border-pink-500/50 hover:border-pink-500 transition-all duration-300 hover:shadow-md hover:shadow-pink-500/20 snap-start active:scale-95"
+                  className="group relative h-16 sm:h-20 min-w-[160px] sm:min-w-[180px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 snap-start active:scale-95"
                 >
                   {/* Background image */}
                   <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
+                    className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
                     style={{ backgroundImage: `url(${datingBg})` }}
                   />
                   
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-20 group-hover:opacity-30 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-30 group-hover:opacity-40 transition-opacity" />
                   
                   {/* Dark overlay for readability */}
-                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="absolute inset-0 bg-black/30" />
                   
                   {/* Content */}
-                  <div className="relative h-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3">
-                    <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md group-hover:scale-105 transition-transform">
-                      <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <div className="relative h-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4">
+                    <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
+                      <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     <div className="flex flex-col">
-                      <h3 className="font-semibold text-xs sm:text-sm text-white drop-shadow-md whitespace-nowrap">
-                        Dating
+                      <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap">
+                        💕 Dating
                       </h3>
-                      <span className="text-[10px] text-white/70 hidden sm:block">Find your match</span>
+                      <span className="text-[10px] sm:text-xs text-white/80">Find your match</span>
                     </div>
                   </div>
 
