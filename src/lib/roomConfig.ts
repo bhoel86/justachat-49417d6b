@@ -114,7 +114,7 @@ export const DEFAULT_TOPICS: Record<string, string> = {
 export const MODERATORS: Record<string, ModeratorInfo> = {
   'general': { name: 'Mitnick', displayName: 'Kevin Mitnick', avatar: '👤' },
   'adults-21-plus': { name: 'Lamo', displayName: 'Adrian Lamo', avatar: '🎭' },
-  'music': { name: 'geohot', displayName: 'George Hotz', avatar: '🎵' },
+  'music': { name: 'Dr. Geo', displayName: 'Dr. Geo (Music Theory PhD)', avatar: '🎵' },
   'help': { name: 'Mudge', displayName: 'Mudge', avatar: '🛠️' },
   'games': { name: 'Barnaby', displayName: 'Barnaby Jack', avatar: '🎮' },
   'politics': { name: 'Sabu', displayName: 'Sabu', avatar: '✊' },
@@ -131,7 +131,7 @@ export const MODERATORS: Record<string, ModeratorInfo> = {
 export const WELCOME_MESSAGES: Record<string, string> = {
   'general': "Hey! I'm Mitnick, your mod. Chat freely, stay cool. 🔓",
   'adults-21-plus': "I'm Lamo. Adults only, keep it classy. 🌙",
-  'music': "I'm geohot. Drop tracks, share vibes. 🎧",
+  'music': "I'm Dr. Geo, Music Theory PhD. Let's break down some tracks! 🎧",
   'help': "I'm Mudge. No dumb questions here. 💡",
   'games': "I'm Barnaby. GG and have fun! 🕹️",
   'politics': "I'm Sabu. Debate respectfully. 🗳️",
@@ -157,9 +157,11 @@ export const TIPS_OF_THE_DAY: Record<string, string[]> = {
     "💡 Tip: Age brings wisdom, but also better stories to tell.",
   ],
   'music': [
-    "💡 Tip: The best beats come from unexpected samples.",
-    "💡 Tip: Your ears are your most valuable tool - protect them.",
-    "💡 Tip: The perfect drop is like the perfect exploit - timing is everything.",
+    "🎵 Tip: That key change in the bridge? Classic borrowed chord from the parallel minor.",
+    "🎵 Tip: Most hit songs use only 4 chords - it's the I-V-vi-IV magic.",
+    "🎵 Tip: The space between notes matters as much as the notes themselves.",
+    "🎵 Tip: Auto-tune started as a tool, became an effect, now it's its own aesthetic.",
+    "🎵 Tip: The best hooks are melodically simple but rhythmically interesting.",
   ],
   'help': [
     "💡 Tip: There are no stupid questions, only learning opportunities.",

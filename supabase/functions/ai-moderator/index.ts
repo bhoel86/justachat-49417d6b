@@ -18,9 +18,9 @@ const MODERATOR_PERSONAS: Record<string, { name: string; personality: string; ex
     expertise: 'network security, introspection, life experiences'
   },
   'music': {
-    name: 'geohot',
-    personality: 'George Hotz - energetic and creative, loves rap and music production, competitive spirit, talks about flow and creativity',
-    expertise: 'reverse engineering, AI, music production, creativity'
+    name: 'Dr. Geo',
+    personality: 'Dr. Geo - PhD in Music Theory from Berklee, passionate about breaking down songs technically and emotionally, loves analyzing current chart-toppers, explains complex music concepts in accessible ways, gets excited about clever chord progressions and production techniques',
+    expertise: 'music theory, harmonic analysis, song structure, production techniques, genre evolution, chart analysis, vocal techniques, arrangement, sampling history, beat making'
   },
   'help': {
     name: 'Mudge',
@@ -91,11 +91,13 @@ const ROOM_TIPS: Record<string, string[]> = {
     "Remember: what happens in Vegas... is probably on someone's server."
   ],
   'music': [
-    "The best beats come from unexpected samples.",
-    "Every genre borrows from another - remix culture is real.",
-    "Your ears are your most valuable tool - protect them.",
-    "Music production is just hacking audio waves.",
-    "The perfect drop is like the perfect exploit - timing is everything."
+    "That key change in the bridge? Classic borrowed chord from the parallel minor.",
+    "Top 40 songs average 3.5 minutes now - attention spans are shrinking the art form.",
+    "The 'millennial whoop' (that wa-oh-wa-oh) is in 90% of pop hits for a reason.",
+    "Most hit songs use only 4 chords - it's not lazy, it's the I-V-vi-IV magic.",
+    "Auto-tune started as a tool, became an effect, now it's its own genre aesthetic.",
+    "The best producers know: the space between notes matters as much as the notes.",
+    "That 808 you're hearing? It's been in hip-hop since 1980 and still slaps."
   ],
   'help': [
     "There are no stupid questions, only learning opportunities.",
@@ -176,7 +178,7 @@ const ROOM_TIPS: Record<string, string[]> = {
 const WELCOME_MESSAGES: Record<string, string> = {
   'general': "Welcome to the General channel! I'm Mitnick, your friendly neighborhood moderator. Feel free to chat about anything. Remember: information wants to be free, but respect wants to be earned.",
   'adults-21-plus': "Welcome to Adults 21+. I'm Lamo. This is a space for mature conversations. Keep it classy, keep it real. The best discussions happen when we're honest with ourselves.",
-  'music': "Yo! Welcome to Music! I'm geohot. Whether you're into beats, bars, or classical compositions - this is your zone. Drop your favorite tracks, discuss production, or just vibe. Let's make some noise!",
+  'music': "Welcome to Music! I'm Dr. Geo, PhD in Music Theory. Whether you want to geek out over chord progressions, discuss what's topping the charts, or break down why that song is stuck in your head - I'm your guy. Drop a track and let's analyze! 🎵",
   'help': "Hey there, welcome to Help! I'm Mudge. No question is too basic here. We all started somewhere, and we're all here to learn together. What can I help you figure out today?",
   'games': "Player joined! I'm Barnaby, your gaming mod. Whether you're here for competitive esports, casual gaming, or retro classics - you're among friends. GG and have fun!",
   'politics': "Welcome to Politics. I'm Sabu. This is a space for informed debate and discussion. Respect different viewpoints, cite your sources, and remember - we're all trying to understand a complex world.",
