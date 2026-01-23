@@ -298,82 +298,86 @@ const Home = () => {
                 ))}
               </div>
             ) : (
-              <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-280px)] lg:overflow-y-auto pb-2 lg:pb-0 lg:pr-2 scrollbar-thin snap-x lg:snap-none">
-                {channels.map((channel) => (
-                  <button
-                    key={channel.id}
-                    onClick={() => handleJoinRoom(channel)}
-                    className="group relative h-12 min-w-[140px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-lg overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
+              <>
+                <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-340px)] lg:overflow-y-auto pb-2 lg:pb-0 lg:pr-2 scrollbar-thin snap-x lg:snap-none">
+                  {channels.map((channel) => (
+                    <button
+                      key={channel.id}
+                      onClick={() => handleJoinRoom(channel)}
+                      className="group relative h-12 min-w-[140px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-lg overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
+                    >
+                      {/* Background image */}
+                      {roomBackgrounds[channel.name] && (
+                        <div 
+                          className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
+                          style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
+                        />
+                      )}
+                      
+                      {/* Gradient overlay */}
+                      <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                      
+                      {/* Dark overlay for readability */}
+                      <div className="absolute inset-0 bg-black/40" />
+                      
+                      {/* Content */}
+                      <div className="relative h-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3">
+                        <div className={`p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
+                          {roomIcons[channel.name] ? (
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-5 sm:[&>svg]:h-5">
+                              {roomIcons[channel.name]}
+                            </div>
+                          ) : (
+                            <Hash className="w-4 h-4 sm:w-5 sm:h-5" />
+                          )}
+                        </div>
+                        <h3 className="font-semibold text-xs sm:text-sm text-white drop-shadow-md whitespace-nowrap">
+                          #{formatRoomName(channel.name)}
+                        </h3>
+                      </div>
+
+                      {/* Hover effect overlay */}
+                      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Dating Section - Fixed at bottom */}
+                <div className="mt-3 lg:mt-4">
+                  <Link
+                    to="/dating"
+                    className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
                   >
                     {/* Background image */}
-                    {roomBackgrounds[channel.name] && (
-                      <div 
-                        className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
-                        style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
-                      />
-                    )}
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
+                      style={{ backgroundImage: `url(${datingBg})` }}
+                    />
                     
                     {/* Gradient overlay */}
-                    <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-30 group-hover:opacity-40 transition-opacity" />
                     
                     {/* Dark overlay for readability */}
-                    <div className="absolute inset-0 bg-black/40" />
+                    <div className="absolute inset-0 bg-black/30" />
                     
                     {/* Content */}
-                    <div className="relative h-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3">
-                      <div className={`p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
-                        {roomIcons[channel.name] ? (
-                          <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-5 sm:[&>svg]:h-5">
-                            {roomIcons[channel.name]}
-                          </div>
-                        ) : (
-                          <Hash className="w-4 h-4 sm:w-5 sm:h-5" />
-                        )}
+                    <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
+                      <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
+                        <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
-                      <h3 className="font-semibold text-xs sm:text-sm text-white drop-shadow-md whitespace-nowrap">
-                        #{formatRoomName(channel.name)}
-                      </h3>
+                      <div className="flex flex-col">
+                        <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap">
+                          💕 Dating
+                        </h3>
+                        <span className="text-[10px] sm:text-xs text-white/80">Find your match</span>
+                      </div>
                     </div>
 
                     {/* Hover effect overlay */}
-                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                ))}
-                
-                {/* Dating Section - Special Entry */}
-                <Link
-                  to="/dating"
-                  className="group relative h-20 sm:h-24 w-fit min-w-[180px] sm:min-w-[220px] lg:w-full lg:max-w-none flex-shrink-0 rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 snap-start active:scale-95"
-                >
-                  {/* Background image */}
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
-                    style={{ backgroundImage: `url(${datingBg})` }}
-                  />
-                  
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-30 group-hover:opacity-40 transition-opacity" />
-                  
-                  {/* Dark overlay for readability */}
-                  <div className="absolute inset-0 bg-black/30" />
-                  
-                  {/* Content */}
-                  <div className="relative h-full flex items-center gap-4 px-4">
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
-                      <Heart className="w-6 h-6 sm:w-7 sm:h-7" />
-                    </div>
-                    <div className="flex flex-col">
-                      <h3 className="font-bold text-base sm:text-lg text-white drop-shadow-lg whitespace-nowrap">
-                        💕 Dating
-                      </h3>
-                      <span className="text-xs text-white/80">Find your match</span>
-                    </div>
-                  </div>
-
-                  {/* Hover effect overlay */}
-                  <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              </div>
+                    <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </div>
+              </>
             )}
           </div>
 
