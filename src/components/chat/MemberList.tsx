@@ -636,7 +636,7 @@ interface MemberItemProps {
   onAvatarClick?: () => void;
   onUsernameClick?: () => void;
   onBioClick?: () => void;
-  currentlyPlaying?: { name: string; artist: string } | null;
+  currentlyPlaying?: { title: string; artist: string } | null;
 }
 
 const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChange, onBan, onKick, onMute, onPmClick, isCurrentUser, onAvatarClick, onUsernameClick, onBioClick, currentlyPlaying }: MemberItemProps) => {
@@ -757,7 +757,7 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
           <div className="flex items-center gap-1 mt-0.5">
             <Music className="h-2.5 w-2.5 text-primary animate-pulse" />
             <span className="text-[10px] text-primary truncate max-w-[120px]">
-              {currentlyPlaying.name}
+              {currentlyPlaying.title}
             </span>
           </div>
         )}
