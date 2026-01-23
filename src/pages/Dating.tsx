@@ -2,17 +2,24 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Heart, X, MessageCircle, ArrowLeft, Settings, 
-  Camera, MapPin, Sparkles, Users, Filter, ChevronLeft, ChevronRight,
-  ImagePlus, Trash2, Check
+  MapPin, Sparkles, Users, ChevronLeft, ChevronRight,
+  ImagePlus, Check, User, Ruler, Scale, Briefcase, GraduationCap,
+  Wine, Cigarette, Baby, Languages, Target, Compass, Star, PawPrint,
+  Camera, Trash2, Plus, Edit, Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useAuth, supabaseUntyped } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,10 +33,35 @@ interface DatingProfile {
   avatar_url: string | null;
   bio: string | null;
   age: number | null;
-  looking_for: string | null;
-  interests: string[];
-  photos: string[];
+  gender: string | null;
+  seeking: string[];
+  height_cm: number | null;
+  weight_kg: number | null;
+  body_type: string | null;
+  ethnicity: string | null;
+  relationship_status: string | null;
+  looking_for_type: string | null;
+  has_children: boolean;
+  wants_children: string | null;
+  education: string | null;
+  occupation: string | null;
+  smoking: string | null;
+  drinking: string | null;
+  religion: string | null;
+  languages: string[];
   location: string | null;
+  max_distance_km: number;
+  min_age: number;
+  max_age: number;
+  about_me: string | null;
+  ideal_match: string | null;
+  interests: string[];
+  hobbies: string[];
+  zodiac: string | null;
+  pets: string | null;
+  photos: string[];
+  is_verified: boolean;
+  profile_complete: boolean;
 }
 
 interface Match {
@@ -39,6 +71,35 @@ interface Match {
   matched_at: string;
   profile: DatingProfile;
 }
+
+// Option lists
+const GENDERS = ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say'];
+const BODY_TYPES = ['Slim', 'Athletic', 'Average', 'Curvy', 'Plus size', 'Muscular'];
+const ETHNICITIES = ['Asian', 'Black', 'Hispanic/Latino', 'Middle Eastern', 'Mixed', 'Native American', 'Pacific Islander', 'White', 'Other', 'Prefer not to say'];
+const RELATIONSHIP_STATUSES = ['Single', 'Divorced', 'Widowed', 'Separated', 'Its complicated'];
+const LOOKING_FOR_TYPES = ['Casual dating', 'Serious relationship', 'Marriage', 'Friendship', 'Not sure yet'];
+const WANTS_CHILDREN_OPTIONS = ['Yes', 'No', 'Maybe', 'Already have kids'];
+const EDUCATION_LEVELS = ['High school', 'Some college', 'Associates degree', 'Bachelors degree', 'Masters degree', 'Doctorate', 'Trade school', 'Other'];
+const SMOKING_OPTIONS = ['Never', 'Occasionally', 'Regularly', 'Trying to quit'];
+const DRINKING_OPTIONS = ['Never', 'Socially', 'Regularly', 'Sober'];
+const RELIGIONS = ['Agnostic', 'Atheist', 'Buddhist', 'Catholic', 'Christian', 'Hindu', 'Jewish', 'Muslim', 'Spiritual', 'Other', 'Prefer not to say'];
+const ZODIAC_SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+const PET_OPTIONS = ['Dogs', 'Cats', 'Both', 'Other pets', 'No pets', 'Allergic'];
+const INTEREST_OPTIONS = ['Music', 'Movies', 'Gaming', 'Travel', 'Fitness', 'Reading', 'Cooking', 'Art', 'Photography', 'Dancing', 'Sports', 'Hiking', 'Yoga', 'Technology', 'Fashion', 'Food & Drinks', 'Nightlife', 'Outdoors', 'Animals', 'Volunteering'];
+
+const defaultProfile: Partial<DatingProfile> = {
+  seeking: [],
+  languages: [],
+  interests: [],
+  hobbies: [],
+  photos: [],
+  max_distance_km: 100,
+  min_age: 18,
+  max_age: 99,
+  has_children: false,
+  is_verified: false,
+  profile_complete: false,
+};
 
 const Dating = () => {
   const navigate = useNavigate();
@@ -52,8 +113,11 @@ const Dating = () => {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [showMatches, setShowMatches] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfileDetail, setShowProfileDetail] = useState(false);
   const [myProfile, setMyProfile] = useState<DatingProfile | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState('basic');
+  const [isSaving, setIsSaving] = useState(false);
   
   // Touch/Drag handling
   const cardRef = useRef<HTMLDivElement>(null);
@@ -92,17 +156,45 @@ const Dating = () => {
     
     if (profile) {
       setMyProfile({
+        ...defaultProfile,
         id: datingProfile?.id || '',
         user_id: user.id,
         username: profile.username,
         avatar_url: profile.avatar_url,
         bio: profile.bio,
-        age: datingProfile?.age || null,
-        looking_for: datingProfile?.looking_for || null,
-        interests: datingProfile?.interests || [],
-        photos: datingProfile?.photos || [],
-        location: datingProfile?.location || null,
+        ...datingProfile,
+      } as DatingProfile);
+    }
+  };
+
+  const saveProfile = async (updates: Partial<DatingProfile>) => {
+    if (!user) return;
+    setIsSaving(true);
+    
+    try {
+      const { error } = await supabaseUntyped
+        .from('dating_profiles')
+        .upsert({ 
+          user_id: user.id, 
+          ...updates,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+      
+      if (error) throw error;
+      
+      await fetchMyProfile();
+      toast({
+        title: "Profile saved",
+        description: "Your dating profile has been updated.",
       });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to save",
+        description: "Could not update your profile. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -117,7 +209,7 @@ const Dating = () => {
       .eq('swiper_id', user.id);
     
     const excludeIds = swipedIds?.map((s: { swiped_id: string }) => s.swiped_id) || [];
-    excludeIds.push(user.id); // Exclude self
+    excludeIds.push(user.id);
     
     let query = supabaseUntyped
       .from('profiles')
@@ -130,7 +222,6 @@ const Dating = () => {
     const { data: profilesData } = await query.limit(20);
     
     if (profilesData) {
-      // Enrich with dating profile data
       const enrichedProfiles: DatingProfile[] = await Promise.all(
         profilesData.map(async (p: { user_id: string; username: string; avatar_url: string | null; bio: string | null }) => {
           const { data: datingData } = await supabaseUntyped
@@ -140,17 +231,15 @@ const Dating = () => {
             .single();
           
           return {
+            ...defaultProfile,
             id: datingData?.id || p.user_id,
             user_id: p.user_id,
             username: p.username,
             avatar_url: p.avatar_url,
             bio: p.bio,
-            age: datingData?.age || null,
-            looking_for: datingData?.looking_for || null,
-            interests: datingData?.interests || [],
-            photos: datingData?.photos || [p.avatar_url].filter(Boolean) as string[],
-            location: datingData?.location || null,
-          };
+            ...datingData,
+            photos: datingData?.photos?.length > 0 ? datingData.photos : (p.avatar_url ? [p.avatar_url] : []),
+          } as DatingProfile;
         })
       );
       
@@ -191,17 +280,14 @@ const Dating = () => {
             user2_id: m.user2_id,
             matched_at: m.matched_at,
             profile: {
+              ...defaultProfile,
               id: datingData?.id || otherUserId,
               user_id: otherUserId,
               username: profile?.username || 'Unknown',
               avatar_url: profile?.avatar_url,
               bio: profile?.bio,
-              age: datingData?.age || null,
-              looking_for: datingData?.looking_for || null,
-              interests: datingData?.interests || [],
-              photos: datingData?.photos || [],
-              location: datingData?.location || null,
-            },
+              ...datingData,
+            } as DatingProfile,
           };
         })
       );
@@ -216,7 +302,6 @@ const Dating = () => {
     const targetProfile = profiles[currentIndex];
     setSwipeDirection(direction);
     
-    // Record the swipe
     await supabaseUntyped
       .from('dating_swipes')
       .insert({
@@ -225,7 +310,6 @@ const Dating = () => {
         direction: direction,
       });
     
-    // If liked, check for match
     if (direction === 'right') {
       const { data: reverseSwipe } = await supabaseUntyped
         .from('dating_swipes')
@@ -236,7 +320,6 @@ const Dating = () => {
         .single();
       
       if (reverseSwipe) {
-        // It's a match!
         await supabaseUntyped
           .from('dating_matches')
           .insert({
@@ -253,7 +336,6 @@ const Dating = () => {
       }
     }
     
-    // Move to next profile after animation
     setTimeout(() => {
       setSwipeDirection(null);
       setCurrentIndex(prev => prev + 1);
@@ -262,7 +344,6 @@ const Dating = () => {
     }, 300);
   };
 
-  // Touch handlers for swiping
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -292,6 +373,14 @@ const Dating = () => {
     } else {
       setDragOffset({ x: 0, y: 0 });
     }
+  };
+
+  // Height conversion helper
+  const cmToFeetInches = (cm: number) => {
+    const inches = cm / 2.54;
+    const feet = Math.floor(inches / 12);
+    const remainingInches = Math.round(inches % 12);
+    return `${feet}'${remainingInches}"`;
   };
 
   const currentProfile = profiles[currentIndex];
@@ -363,9 +452,10 @@ const Dating = () => {
               onTouchStart={handleDragStart}
               onTouchMove={handleDragMove}
               onTouchEnd={handleDragEnd}
+              onClick={() => setShowProfileDetail(true)}
             >
               {/* Photo Carousel */}
-              <div className="relative h-[70%] bg-muted">
+              <div className="relative h-[65%] bg-muted">
                 {currentProfile.photos.length > 0 ? (
                   <>
                     <img
@@ -374,7 +464,6 @@ const Dating = () => {
                       className="w-full h-full object-cover"
                       draggable={false}
                     />
-                    {/* Photo indicators */}
                     {currentProfile.photos.length > 1 && (
                       <div className="absolute top-2 left-2 right-2 flex gap-1">
                         {currentProfile.photos.map((_, idx) => (
@@ -388,7 +477,6 @@ const Dating = () => {
                         ))}
                       </div>
                     )}
-                    {/* Photo navigation */}
                     <button
                       className="absolute left-0 top-0 bottom-0 w-1/2"
                       onClick={(e) => {
@@ -435,10 +523,18 @@ const Dating = () => {
                 >
                   NOPE
                 </div>
+                
+                {currentProfile.is_verified && (
+                  <div className="absolute top-4 right-4">
+                    <Badge className="bg-blue-500 text-white">
+                      <Check className="h-3 w-3 mr-1" /> Verified
+                    </Badge>
+                  </div>
+                )}
               </div>
               
               {/* Profile Info */}
-              <div className="p-4 h-[30%] overflow-hidden">
+              <div className="p-4 h-[35%] overflow-hidden">
                 <div className="flex items-baseline gap-2 mb-1">
                   <h2 className="text-2xl font-bold text-foreground">
                     {currentProfile.username}
@@ -448,16 +544,30 @@ const Dating = () => {
                   )}
                 </div>
                 
-                {currentProfile.location && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                    <MapPin className="h-3 w-3" />
-                    {currentProfile.location}
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-2 mb-2 text-sm text-muted-foreground">
+                  {currentProfile.location && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {currentProfile.location}
+                    </div>
+                  )}
+                  {currentProfile.height_cm && (
+                    <div className="flex items-center gap-1">
+                      <Ruler className="h-3 w-3" />
+                      {cmToFeetInches(currentProfile.height_cm)}
+                    </div>
+                  )}
+                  {currentProfile.occupation && (
+                    <div className="flex items-center gap-1">
+                      <Briefcase className="h-3 w-3" />
+                      {currentProfile.occupation}
+                    </div>
+                  )}
+                </div>
                 
-                {currentProfile.bio && (
+                {currentProfile.about_me && (
                   <p className="text-sm text-foreground line-clamp-2 mb-2">
-                    {currentProfile.bio}
+                    {currentProfile.about_me}
                   </p>
                 )}
                 
@@ -468,6 +578,11 @@ const Dating = () => {
                         {interest}
                       </Badge>
                     ))}
+                    {currentProfile.interests.length > 4 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{currentProfile.interests.length - 4}
+                      </Badge>
+                    )}
                   </div>
                 )}
               </div>
@@ -478,7 +593,7 @@ const Dating = () => {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-14 w-14 rounded-full border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                className="h-14 w-14 rounded-full border-2 border-destructive text-destructive hover:bg-destructive hover:text-white"
                 onClick={() => handleSwipe('left')}
               >
                 <X className="h-7 w-7" />
@@ -509,6 +624,136 @@ const Dating = () => {
         )}
       </div>
 
+      {/* Profile Detail Modal */}
+      <Dialog open={showProfileDetail} onOpenChange={setShowProfileDetail}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-hidden p-0">
+          {currentProfile && (
+            <ScrollArea className="h-full max-h-[90vh]">
+              <div className="relative">
+                <img
+                  src={currentProfile.photos[0] || currentProfile.avatar_url || ''}
+                  alt={currentProfile.username}
+                  className="w-full h-64 object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                  <h2 className="text-2xl font-bold text-white">
+                    {currentProfile.username}, {currentProfile.age || '?'}
+                  </h2>
+                  {currentProfile.location && (
+                    <p className="text-white/80 flex items-center gap-1">
+                      <MapPin className="h-4 w-4" /> {currentProfile.location}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="p-4 space-y-4">
+                {/* Quick stats */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  {currentProfile.height_cm && (
+                    <div className="p-2 bg-muted rounded-lg">
+                      <Ruler className="h-4 w-4 mx-auto mb-1 text-primary" />
+                      <p className="text-sm font-medium">{cmToFeetInches(currentProfile.height_cm)}</p>
+                      <p className="text-xs text-muted-foreground">Height</p>
+                    </div>
+                  )}
+                  {currentProfile.body_type && (
+                    <div className="p-2 bg-muted rounded-lg">
+                      <User className="h-4 w-4 mx-auto mb-1 text-primary" />
+                      <p className="text-sm font-medium">{currentProfile.body_type}</p>
+                      <p className="text-xs text-muted-foreground">Body Type</p>
+                    </div>
+                  )}
+                  {currentProfile.zodiac && (
+                    <div className="p-2 bg-muted rounded-lg">
+                      <Star className="h-4 w-4 mx-auto mb-1 text-primary" />
+                      <p className="text-sm font-medium">{currentProfile.zodiac}</p>
+                      <p className="text-xs text-muted-foreground">Zodiac</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* About */}
+                {currentProfile.about_me && (
+                  <div>
+                    <h3 className="font-semibold mb-2">About Me</h3>
+                    <p className="text-sm text-muted-foreground">{currentProfile.about_me}</p>
+                  </div>
+                )}
+                
+                {/* Looking for */}
+                {currentProfile.looking_for_type && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Looking For</h3>
+                    <Badge variant="secondary">{currentProfile.looking_for_type}</Badge>
+                  </div>
+                )}
+                
+                {/* Interests */}
+                {currentProfile.interests.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Interests</h3>
+                    <div className="flex flex-wrap gap-1">
+                      {currentProfile.interests.map((interest, idx) => (
+                        <Badge key={idx} variant="outline">{interest}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Details grid */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {currentProfile.education && (
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                      <span>{currentProfile.education}</span>
+                    </div>
+                  )}
+                  {currentProfile.occupation && (
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      <span>{currentProfile.occupation}</span>
+                    </div>
+                  )}
+                  {currentProfile.smoking && (
+                    <div className="flex items-center gap-2">
+                      <Cigarette className="h-4 w-4 text-muted-foreground" />
+                      <span>{currentProfile.smoking}</span>
+                    </div>
+                  )}
+                  {currentProfile.drinking && (
+                    <div className="flex items-center gap-2">
+                      <Wine className="h-4 w-4 text-muted-foreground" />
+                      <span>{currentProfile.drinking}</span>
+                    </div>
+                  )}
+                  {currentProfile.pets && (
+                    <div className="flex items-center gap-2">
+                      <PawPrint className="h-4 w-4 text-muted-foreground" />
+                      <span>{currentProfile.pets}</span>
+                    </div>
+                  )}
+                  {currentProfile.religion && (
+                    <div className="flex items-center gap-2">
+                      <Compass className="h-4 w-4 text-muted-foreground" />
+                      <span>{currentProfile.religion}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Ideal match */}
+                {currentProfile.ideal_match && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Ideal Match</h3>
+                    <p className="text-sm text-muted-foreground">{currentProfile.ideal_match}</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Matches Drawer */}
       <Dialog open={showMatches} onOpenChange={setShowMatches}>
         <DialogContent className="max-w-md h-[80vh]">
@@ -526,7 +771,6 @@ const Dating = () => {
                     key={match.id} 
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => {
-                      // Navigate to PM with this user
                       setShowMatches(false);
                       toast({
                         title: "Opening chat...",
@@ -563,75 +807,448 @@ const Dating = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Settings/Profile Dialog */}
+      {/* Comprehensive Settings/Profile Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Dating Profile Settings</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Age</Label>
-              <Input 
-                type="number" 
-                placeholder="Your age" 
-                value={myProfile?.age || ''}
-                onChange={async (e) => {
-                  if (!user) return;
-                  const age = parseInt(e.target.value) || null;
-                  await supabaseUntyped
-                    .from('dating_profiles')
-                    .upsert({ user_id: user.id, age }, { onConflict: 'user_id' });
-                  fetchMyProfile();
-                }}
-              />
-            </div>
+          
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="basic">Basic</TabsTrigger>
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="preferences">Match</TabsTrigger>
+              <TabsTrigger value="about">About</TabsTrigger>
+            </TabsList>
             
-            <div className="space-y-2">
-              <Label>Location</Label>
-              <Input 
-                placeholder="City, Country" 
-                value={myProfile?.location || ''}
-                onChange={async (e) => {
-                  if (!user) return;
-                  await supabaseUntyped
-                    .from('dating_profiles')
-                    .upsert({ user_id: user.id, location: e.target.value }, { onConflict: 'user_id' });
-                  fetchMyProfile();
-                }}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Looking For</Label>
-              <Input 
-                placeholder="What are you looking for?" 
-                value={myProfile?.looking_for || ''}
-                onChange={async (e) => {
-                  if (!user) return;
-                  await supabaseUntyped
-                    .from('dating_profiles')
-                    .upsert({ user_id: user.id, looking_for: e.target.value }, { onConflict: 'user_id' });
-                  fetchMyProfile();
-                }}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Interests (comma separated)</Label>
-              <Input 
-                placeholder="Music, Gaming, Travel..." 
-                value={myProfile?.interests?.join(', ') || ''}
-                onChange={async (e) => {
-                  if (!user) return;
-                  const interests = e.target.value.split(',').map(i => i.trim()).filter(Boolean);
-                  await supabaseUntyped
-                    .from('dating_profiles')
-                    .upsert({ user_id: user.id, interests }, { onConflict: 'user_id' });
-                  fetchMyProfile();
-                }}
-              />
-            </div>
+            <ScrollArea className="h-[60vh] mt-4">
+              {/* Basic Info Tab */}
+              <TabsContent value="basic" className="space-y-4 pr-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Age</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="Your age"
+                      min={18}
+                      max={120}
+                      value={myProfile?.age || ''}
+                      onChange={(e) => setMyProfile(prev => prev ? {...prev, age: parseInt(e.target.value) || null} : null)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <Select 
+                      value={myProfile?.gender || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, gender: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GENDERS.map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input 
+                    placeholder="City, Country"
+                    value={myProfile?.location || ''}
+                    onChange={(e) => setMyProfile(prev => prev ? {...prev, location: e.target.value} : null)}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Height (cm)</Label>
+                    <Input 
+                      type="number"
+                      placeholder="Height in cm"
+                      min={100}
+                      max={250}
+                      value={myProfile?.height_cm || ''}
+                      onChange={(e) => setMyProfile(prev => prev ? {...prev, height_cm: parseInt(e.target.value) || null} : null)}
+                    />
+                    {myProfile?.height_cm && (
+                      <p className="text-xs text-muted-foreground">
+                        ≈ {cmToFeetInches(myProfile.height_cm)}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Weight (kg)</Label>
+                    <Input 
+                      type="number"
+                      placeholder="Weight in kg"
+                      min={30}
+                      max={300}
+                      value={myProfile?.weight_kg || ''}
+                      onChange={(e) => setMyProfile(prev => prev ? {...prev, weight_kg: parseInt(e.target.value) || null} : null)}
+                    />
+                    {myProfile?.weight_kg && (
+                      <p className="text-xs text-muted-foreground">
+                        ≈ {Math.round(myProfile.weight_kg * 2.205)} lbs
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Body Type</Label>
+                    <Select 
+                      value={myProfile?.body_type || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, body_type: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select body type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BODY_TYPES.map(bt => (
+                          <SelectItem key={bt} value={bt}>{bt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Ethnicity</Label>
+                    <Select 
+                      value={myProfile?.ethnicity || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, ethnicity: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select ethnicity" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ETHNICITIES.map(e => (
+                          <SelectItem key={e} value={e}>{e}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Occupation</Label>
+                  <Input 
+                    placeholder="What do you do?"
+                    value={myProfile?.occupation || ''}
+                    onChange={(e) => setMyProfile(prev => prev ? {...prev, occupation: e.target.value} : null)}
+                  />
+                </div>
+              </TabsContent>
+              
+              {/* Details Tab */}
+              <TabsContent value="details" className="space-y-4 pr-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Relationship Status</Label>
+                    <Select 
+                      value={myProfile?.relationship_status || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, relationship_status: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RELATIONSHIP_STATUSES.map(rs => (
+                          <SelectItem key={rs} value={rs}>{rs}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Looking For</Label>
+                    <Select 
+                      value={myProfile?.looking_for_type || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, looking_for_type: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="What are you looking for?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LOOKING_FOR_TYPES.map(lf => (
+                          <SelectItem key={lf} value={lf}>{lf}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Education</Label>
+                    <Select 
+                      value={myProfile?.education || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, education: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Education level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EDUCATION_LEVELS.map(ed => (
+                          <SelectItem key={ed} value={ed}>{ed}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Religion</Label>
+                    <Select 
+                      value={myProfile?.religion || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, religion: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select religion" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RELIGIONS.map(r => (
+                          <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Smoking</Label>
+                    <Select 
+                      value={myProfile?.smoking || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, smoking: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Smoking habits" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SMOKING_OPTIONS.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Drinking</Label>
+                    <Select 
+                      value={myProfile?.drinking || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, drinking: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Drinking habits" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DRINKING_OPTIONS.map(d => (
+                          <SelectItem key={d} value={d}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Children</Label>
+                    <Select 
+                      value={myProfile?.wants_children || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, wants_children: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Want children?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WANTS_CHILDREN_OPTIONS.map(wc => (
+                          <SelectItem key={wc} value={wc}>{wc}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Pets</Label>
+                    <Select 
+                      value={myProfile?.pets || ''} 
+                      onValueChange={(v) => setMyProfile(prev => prev ? {...prev, pets: v} : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pet preference" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PET_OPTIONS.map(p => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Zodiac Sign</Label>
+                  <Select 
+                    value={myProfile?.zodiac || ''} 
+                    onValueChange={(v) => setMyProfile(prev => prev ? {...prev, zodiac: v} : null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select zodiac" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ZODIAC_SIGNS.map(z => (
+                        <SelectItem key={z} value={z}>{z}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TabsContent>
+              
+              {/* Match Preferences Tab */}
+              <TabsContent value="preferences" className="space-y-4 pr-4">
+                <div className="space-y-2">
+                  <Label>I'm interested in</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {GENDERS.filter(g => g !== 'Prefer not to say').map(g => (
+                      <Button
+                        key={g}
+                        type="button"
+                        variant={myProfile?.seeking?.includes(g) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const current = myProfile?.seeking || [];
+                          const updated = current.includes(g) 
+                            ? current.filter(x => x !== g)
+                            : [...current, g];
+                          setMyProfile(prev => prev ? {...prev, seeking: updated} : null);
+                        }}
+                      >
+                        {g}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Age Range: {myProfile?.min_age || 18} - {myProfile?.max_age || 99}</Label>
+                    <div className="pt-2">
+                      <Slider
+                        value={[myProfile?.min_age || 18, myProfile?.max_age || 99]}
+                        min={18}
+                        max={99}
+                        step={1}
+                        onValueChange={([min, max]) => {
+                          setMyProfile(prev => prev ? {...prev, min_age: min, max_age: max} : null);
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Maximum Distance: {myProfile?.max_distance_km || 100} km</Label>
+                    <div className="pt-2">
+                      <Slider
+                        value={[myProfile?.max_distance_km || 100]}
+                        min={1}
+                        max={500}
+                        step={1}
+                        onValueChange={([v]) => {
+                          setMyProfile(prev => prev ? {...prev, max_distance_km: v} : null);
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      ≈ {Math.round((myProfile?.max_distance_km || 100) * 0.621)} miles
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              {/* About Me Tab */}
+              <TabsContent value="about" className="space-y-4 pr-4">
+                <div className="space-y-2">
+                  <Label>About Me</Label>
+                  <Textarea 
+                    placeholder="Tell others about yourself..."
+                    className="min-h-[100px]"
+                    value={myProfile?.about_me || ''}
+                    onChange={(e) => setMyProfile(prev => prev ? {...prev, about_me: e.target.value} : null)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>My Ideal Match</Label>
+                  <Textarea 
+                    placeholder="Describe your ideal partner..."
+                    className="min-h-[100px]"
+                    value={myProfile?.ideal_match || ''}
+                    onChange={(e) => setMyProfile(prev => prev ? {...prev, ideal_match: e.target.value} : null)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Interests</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {INTEREST_OPTIONS.map(interest => (
+                      <Button
+                        key={interest}
+                        type="button"
+                        variant={myProfile?.interests?.includes(interest) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const current = myProfile?.interests || [];
+                          const updated = current.includes(interest) 
+                            ? current.filter(x => x !== interest)
+                            : [...current, interest];
+                          setMyProfile(prev => prev ? {...prev, interests: updated} : null);
+                        }}
+                      >
+                        {interest}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Languages (comma separated)</Label>
+                  <Input 
+                    placeholder="English, Spanish, French..."
+                    value={myProfile?.languages?.join(', ') || ''}
+                    onChange={(e) => {
+                      const langs = e.target.value.split(',').map(l => l.trim()).filter(Boolean);
+                      setMyProfile(prev => prev ? {...prev, languages: langs} : null);
+                    }}
+                  />
+                </div>
+              </TabsContent>
+            </ScrollArea>
+          </Tabs>
+          
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowSettings(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (myProfile) {
+                  const { id, username, avatar_url, bio, user_id, ...datingFields } = myProfile;
+                  saveProfile(datingFields);
+                }
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Profile'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

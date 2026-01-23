@@ -268,12 +268,6 @@ const Home = () => {
               </DropdownMenu>
             )}
             
-            <Link to="/dating">
-              <Button variant="outline" size="sm" className="px-2 sm:px-3 border-pink-500/50 text-pink-500 hover:bg-pink-500/10">
-                <Heart className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Dating</span>
-              </Button>
-            </Link>
             <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
               <Users className="w-4 h-4" />
               <span className="text-sm">Welcome back!</span>
@@ -345,6 +339,40 @@ const Home = () => {
                     <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
+                
+                {/* Dating Section - Special Entry */}
+                <Link
+                  to="/dating"
+                  className="group relative h-12 min-w-[140px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-lg overflow-hidden bg-card border border-pink-500/50 hover:border-pink-500 transition-all duration-300 hover:shadow-md hover:shadow-pink-500/20 snap-start active:scale-95"
+                >
+                  {/* Background image */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
+                    style={{ backgroundImage: `url(${datingBg})` }}
+                  />
+                  
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-20 group-hover:opacity-30 transition-opacity" />
+                  
+                  {/* Dark overlay for readability */}
+                  <div className="absolute inset-0 bg-black/40" />
+                  
+                  {/* Content */}
+                  <div className="relative h-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3">
+                    <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-md group-hover:scale-105 transition-transform">
+                      <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <h3 className="font-semibold text-xs sm:text-sm text-white drop-shadow-md whitespace-nowrap">
+                        Dating
+                      </h3>
+                      <span className="text-[10px] text-white/70 hidden sm:block">Find your match</span>
+                    </div>
+                  </div>
+
+                  {/* Hover effect overlay */}
+                  <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
               </div>
             )}
           </div>

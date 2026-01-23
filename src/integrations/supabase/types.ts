@@ -366,37 +366,118 @@ export type Database = {
       }
       dating_profiles: {
         Row: {
+          about_me: string | null
           age: number | null
+          body_type: string | null
           created_at: string
+          drinking: string | null
+          education: string | null
+          ethnicity: string | null
+          gender: string | null
+          has_children: boolean | null
+          height_cm: number | null
+          hobbies: string[] | null
           id: string
+          ideal_match: string | null
           interests: string[] | null
+          is_verified: boolean | null
+          languages: string[] | null
+          last_active: string | null
           location: string | null
           looking_for: string | null
+          looking_for_type: string | null
+          max_age: number | null
+          max_distance_km: number | null
+          min_age: number | null
+          occupation: string | null
+          pets: string | null
           photos: string[] | null
+          profile_complete: boolean | null
+          relationship_status: string | null
+          religion: string | null
+          seeking: string[] | null
+          smoking: string | null
           updated_at: string
           user_id: string
+          wants_children: string | null
+          weight_kg: number | null
+          zodiac: string | null
         }
         Insert: {
+          about_me?: string | null
           age?: number | null
+          body_type?: string | null
           created_at?: string
+          drinking?: string | null
+          education?: string | null
+          ethnicity?: string | null
+          gender?: string | null
+          has_children?: boolean | null
+          height_cm?: number | null
+          hobbies?: string[] | null
           id?: string
+          ideal_match?: string | null
           interests?: string[] | null
+          is_verified?: boolean | null
+          languages?: string[] | null
+          last_active?: string | null
           location?: string | null
           looking_for?: string | null
+          looking_for_type?: string | null
+          max_age?: number | null
+          max_distance_km?: number | null
+          min_age?: number | null
+          occupation?: string | null
+          pets?: string | null
           photos?: string[] | null
+          profile_complete?: boolean | null
+          relationship_status?: string | null
+          religion?: string | null
+          seeking?: string[] | null
+          smoking?: string | null
           updated_at?: string
           user_id: string
+          wants_children?: string | null
+          weight_kg?: number | null
+          zodiac?: string | null
         }
         Update: {
+          about_me?: string | null
           age?: number | null
+          body_type?: string | null
           created_at?: string
+          drinking?: string | null
+          education?: string | null
+          ethnicity?: string | null
+          gender?: string | null
+          has_children?: boolean | null
+          height_cm?: number | null
+          hobbies?: string[] | null
           id?: string
+          ideal_match?: string | null
           interests?: string[] | null
+          is_verified?: boolean | null
+          languages?: string[] | null
+          last_active?: string | null
           location?: string | null
           looking_for?: string | null
+          looking_for_type?: string | null
+          max_age?: number | null
+          max_distance_km?: number | null
+          min_age?: number | null
+          occupation?: string | null
+          pets?: string | null
           photos?: string[] | null
+          profile_complete?: boolean | null
+          relationship_status?: string | null
+          religion?: string | null
+          seeking?: string[] | null
+          smoking?: string | null
           updated_at?: string
           user_id?: string
+          wants_children?: string | null
+          weight_kg?: number | null
+          zodiac?: string | null
         }
         Relationships: []
       }
