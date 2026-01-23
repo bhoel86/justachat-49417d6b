@@ -21,8 +21,10 @@ import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/c
 import { getModerator, getWelcomeMessage, getRandomTip, isAdultChannel } from "@/lib/roomConfig";
 import { moderateContent, shouldBlockMessage } from "@/lib/contentModeration";
 import { Button } from "@/components/ui/button";
-import { Menu, Users, X } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Menu, Users, X, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Message {
   id: string;
@@ -67,6 +69,8 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   // Mobile sidebar state
   const [showChannelSidebar, setShowChannelSidebar] = useState(false);
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
+  const [showRoomSheet, setShowRoomSheet] = useState(false);
+  const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -1026,6 +1030,35 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           )}
           <div ref={messagesEndRef} />
         </div>
+        
+        {/* Floating Room Switcher Button for Mobile */}
+        {isMobile && (
+          <Sheet open={showRoomSheet} onOpenChange={setShowRoomSheet}>
+            <SheetTrigger asChild>
+              <Button
+                variant="jac"
+                size="icon"
+                className="fixed bottom-24 right-4 h-12 w-12 rounded-full shadow-lg z-30"
+              >
+                <Hash className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <SheetHeader className="p-4 border-b border-border">
+                <SheetTitle className="text-left">Switch Room</SheetTitle>
+              </SheetHeader>
+              <div className="h-[calc(100vh-60px)] overflow-hidden">
+                <ChannelList 
+                  currentChannelId={currentChannel?.id} 
+                  onChannelSelect={(channel) => {
+                    handleChannelSelect(channel);
+                    setShowRoomSheet(false);
+                  }} 
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
         
         <ChatInput onSend={handleSend} isMuted={isMuted || isRoomMuted} canControlRadio={isAdmin || isOwner} onlineUsers={onlineUsers} />
       </div>
