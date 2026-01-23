@@ -18,7 +18,7 @@ interface ChatHeaderProps {
 }
 
 const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageClick, currentLanguage = 'en' }: ChatHeaderProps) => {
-  const { signOut, role } = useAuth();
+  const { logoutFromChat, role } = useAuth();
   const theme = getRoomTheme(channelName);
   const displayTopic = topic || getDefaultTopic(channelName);
 
@@ -107,9 +107,9 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
           <Button
             variant="ghost"
             size="icon"
-            onClick={signOut}
+            onClick={logoutFromChat}
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            title="Sign out"
+            title="Leave chat"
           >
             <LogOut className="h-4 w-4" />
           </Button>
