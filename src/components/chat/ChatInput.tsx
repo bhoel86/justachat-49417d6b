@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
 import EmojiPicker from "./EmojiPicker";
+import TextFormatMenu, { TextFormat, encodeFormat } from "./TextFormatMenu";
 import { useRadioOptional } from "@/contexts/RadioContext";
 
 // Fun IRC-style user actions
@@ -41,12 +42,16 @@ interface ChatInputProps {
 const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUsers = [] }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const [selectedAction, setSelectedAction] = useState<{ emoji: string; action: string; suffix: string } | null>(null);
+  const [textFormat, setTextFormat] = useState<TextFormat>({ type: 'none' });
   const radio = useRadioOptional();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
-      onSend(message.trim());
+      // Apply formatting if set and not a command
+      const isCommand = message.trim().startsWith('/');
+      const formattedMessage = isCommand ? message.trim() : encodeFormat(textFormat, message.trim());
+      onSend(formattedMessage);
       setMessage("");
     }
   };
@@ -306,6 +311,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
         </div>
       )}
       <div className="flex gap-2">
+        <TextFormatMenu currentFormat={textFormat} onFormatChange={setTextFormat} />
         <EmojiPicker onEmojiSelect={handleEmojiSelect} />
         
         {/* User Actions Dropdown */}

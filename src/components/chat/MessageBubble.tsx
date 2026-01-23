@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import UserAvatar from "@/components/avatar/UserAvatar";
+import FormattedText from "./FormattedText";
 
 interface MessageBubbleProps {
   id: string;
@@ -238,7 +239,7 @@ const MessageBubble = ({
             </button>
           )}
         </div>
-        <p className="text-xs leading-tight break-words whitespace-pre-wrap">{displayMessage}</p>
+        <FormattedText text={displayMessage} className="text-xs leading-tight break-words whitespace-pre-wrap" />
         {(translatedMessage || detectedLanguage) && (
           <div className="flex items-center gap-1.5 mt-0.5">
             {detectedLanguage && (

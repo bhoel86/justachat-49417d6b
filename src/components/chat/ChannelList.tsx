@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Hash, Plus, Lock, Home, MoreVertical, Trash2, EyeOff, Eye } from "lucide-react";
+import { Hash, Plus, Lock, Home, MoreVertical, Trash2, EyeOff, Eye, Palette, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,27 @@ interface ChannelListProps {
   onChannelSelect: (channel: Channel) => void;
 }
 
+// Color and gradient presets for rooms
+const ROOM_COLOR_PRESETS = [
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Purple', value: '#a855f7' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Teal', value: '#14b8a6' },
+];
+
+const ROOM_GRADIENT_PRESETS = [
+  { name: 'Sunset', from: '#f97316', to: '#ec4899' },
+  { name: 'Ocean', from: '#06b6d4', to: '#3b82f6' },
+  { name: 'Forest', from: '#22c55e', to: '#06b6d4' },
+  { name: 'Aurora', from: '#a855f7', to: '#06b6d4' },
+  { name: 'Fire', from: '#ef4444', to: '#f59e0b' },
+  { name: 'Royal', from: '#6366f1', to: '#a855f7' },
+];
+
 const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +76,9 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
   const [newChannelDesc, setNewChannelDesc] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [deleteConfirmChannel, setDeleteConfirmChannel] = useState<Channel | null>(null);
+  const [roomTextColor, setRoomTextColor] = useState<string | null>(null);
+  const [roomBgColor, setRoomBgColor] = useState<string | null>(null);
+  const [roomGradient, setRoomGradient] = useState<{ name: string; from: string; to: string } | null>(null);
   const { user, isAdmin, isOwner } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -134,6 +159,9 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
     setNewChannelName("");
     setNewChannelDesc("");
     setIsPrivate(false);
+    setRoomTextColor(null);
+    setRoomBgColor(null);
+    setRoomGradient(null);
     setIsCreateOpen(false);
     
     if (data) {
@@ -298,6 +326,130 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
                     Private channel
                   </label>
                 </div>
+                
+                {/* Text Color Selection */}
+                <div>
+                  <Label className="text-sm font-medium text-foreground flex items-center gap-1 mb-2">
+                    <Palette className="h-3 w-3" />
+                    Room Name Color
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setRoomTextColor(null)}
+                      className={cn(
+                        "w-6 h-6 rounded border-2 flex items-center justify-center text-[10px]",
+                        !roomTextColor ? "border-primary" : "border-border"
+                      )}
+                    >
+                      ✕
+                    </button>
+                    {ROOM_COLOR_PRESETS.map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => setRoomTextColor(color.value)}
+                        className={cn(
+                          "w-6 h-6 rounded",
+                          roomTextColor === color.value ? "ring-2 ring-white ring-offset-1 ring-offset-background" : ""
+                        )}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Background Color Selection */}
+                <div>
+                  <Label className="text-sm font-medium text-foreground flex items-center gap-1 mb-2">
+                    <Palette className="h-3 w-3" />
+                    Room Background
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setRoomBgColor(null)}
+                      className={cn(
+                        "w-6 h-6 rounded border-2 flex items-center justify-center text-[10px]",
+                        !roomBgColor ? "border-primary" : "border-border"
+                      )}
+                    >
+                      ✕
+                    </button>
+                    {ROOM_COLOR_PRESETS.map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() => setRoomBgColor(color.value)}
+                        className={cn(
+                          "w-6 h-6 rounded opacity-50",
+                          roomBgColor === color.value ? "ring-2 ring-white ring-offset-1 ring-offset-background" : ""
+                        )}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Gradient Selection */}
+                <div>
+                  <Label className="text-sm font-medium text-foreground flex items-center gap-1 mb-2">
+                    <Sparkles className="h-3 w-3" />
+                    Gradient Text
+                  </Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setRoomGradient(null)}
+                      className={cn(
+                        "w-8 h-6 rounded border-2 flex items-center justify-center text-[10px]",
+                        !roomGradient ? "border-primary" : "border-border"
+                      )}
+                    >
+                      None
+                    </button>
+                    {ROOM_GRADIENT_PRESETS.map((gradient) => (
+                      <button
+                        key={gradient.name}
+                        type="button"
+                        onClick={() => setRoomGradient(gradient)}
+                        className={cn(
+                          "w-8 h-6 rounded",
+                          roomGradient?.name === gradient.name ? "ring-2 ring-white ring-offset-1 ring-offset-background" : ""
+                        )}
+                        style={{ 
+                          background: `linear-gradient(90deg, ${gradient.from}, ${gradient.to})` 
+                        }}
+                        title={gradient.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Preview */}
+                {(roomTextColor || roomBgColor || roomGradient) && (
+                  <div className="p-2 rounded-lg bg-secondary/50">
+                    <p className="text-[10px] text-muted-foreground mb-1">Preview:</p>
+                    <span 
+                      className={cn(
+                        "text-sm font-semibold px-1.5 py-0.5 rounded",
+                        roomGradient && "bg-clip-text text-transparent"
+                      )}
+                      style={{
+                        color: !roomGradient ? (roomTextColor || undefined) : undefined,
+                        backgroundColor: roomBgColor ? `${roomBgColor}40` : undefined,
+                        backgroundImage: roomGradient 
+                          ? `linear-gradient(90deg, ${roomGradient.from}, ${roomGradient.to})`
+                          : undefined,
+                      }}
+                    >
+                      #{newChannelName || 'channel-name'}
+                    </span>
+                  </div>
+                )}
+                
                 <Button
                   onClick={handleCreateChannel}
                   variant="jac"
