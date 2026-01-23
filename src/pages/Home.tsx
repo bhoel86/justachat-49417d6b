@@ -102,6 +102,11 @@ const Home = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
 
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
@@ -285,26 +290,26 @@ const Home = () => {
         {/* Mobile: Stack vertically, Desktop: Side by side */}
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* Room Cards - Horizontal scroll on mobile */}
-          <div className="lg:w-80 xl:w-96 flex-shrink-0">
-            <div className="mb-3 sm:mb-6">
-              <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
-              <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
+          <div className="lg:w-96 xl:w-[420px] flex-shrink-0">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
+              <p className="text-muted-foreground text-sm">Select a room to join</p>
             </div>
 
             {loadingChannels ? (
-              <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+              <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-14 sm:h-16 min-w-[160px] lg:min-w-0 rounded-lg bg-card animate-pulse flex-shrink-0 lg:flex-shrink" />
+                  <div key={i} className="h-16 sm:h-20 min-w-[180px] lg:min-w-0 rounded-xl bg-card animate-pulse flex-shrink-0 lg:flex-shrink" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-340px)] lg:overflow-y-auto pb-2 lg:pb-0 lg:pr-2 scrollbar-thin snap-x lg:snap-none">
+                <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-380px)] lg:overflow-y-auto pb-2 lg:pb-0 lg:pr-2 scrollbar-thin snap-x lg:snap-none">
                   {channels.map((channel) => (
                     <button
                       key={channel.id}
                       onClick={() => handleJoinRoom(channel)}
-                      className="group relative h-14 sm:h-16 min-w-[160px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-lg overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
+                      className="group relative h-16 sm:h-20 min-w-[180px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
                     >
                       {/* Background image */}
                       {roomBackgrounds[channel.name] && (
@@ -321,17 +326,17 @@ const Home = () => {
                       <div className="absolute inset-0 bg-black/40" />
                       
                       {/* Content */}
-                      <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                        <div className={`p-2 sm:p-2.5 rounded-xl bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
+                      <div className="relative h-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4">
+                        <div className={`p-2.5 sm:p-3 rounded-xl bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
                           {roomIcons[channel.name] ? (
-                            <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-6 sm:[&>svg]:h-6">
+                            <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6 sm:[&>svg]:w-7 sm:[&>svg]:h-7">
                               {roomIcons[channel.name]}
                             </div>
                           ) : (
-                            <Hash className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <Hash className="w-6 h-6 sm:w-7 sm:h-7" />
                           )}
                         </div>
-                        <h3 className="font-semibold text-sm sm:text-base text-white drop-shadow-md whitespace-nowrap">
+                        <h3 className="font-semibold text-base sm:text-lg text-white drop-shadow-md whitespace-nowrap">
                           #{formatRoomName(channel.name)}
                         </h3>
                       </div>
@@ -357,7 +362,7 @@ const Home = () => {
                   </div>
                   <Link
                     to="/dating"
-                    className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
+                    className="group relative flex h-16 sm:h-20 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
                   >
                     {/* Background image */}
                     <div 
@@ -372,15 +377,15 @@ const Home = () => {
                     <div className="absolute inset-0 bg-black/30" />
                     
                     {/* Content */}
-                    <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                      <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
-                        <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <div className="relative h-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4">
+                      <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
+                        <Heart className="w-6 h-6 sm:w-7 sm:h-7" />
                       </div>
                       <div className="flex flex-col">
-                        <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap">
+                        <h3 className="font-bold text-base sm:text-lg text-white drop-shadow-lg whitespace-nowrap">
                           💕 Dating
                         </h3>
-                        <span className="text-[10px] sm:text-xs text-white/80">Find your match</span>
+                        <span className="text-xs sm:text-sm text-white/80">Find your match</span>
                       </div>
                     </div>
 
@@ -419,8 +424,8 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Chat Preview - Smaller on mobile */}
-            <div className="bg-card rounded-xl sm:rounded-2xl border border-border h-[50vh] sm:h-[calc(100vh-340px)] flex flex-col overflow-hidden">
+            {/* Chat Preview */}
+            <div className="bg-card rounded-xl sm:rounded-2xl border border-border h-[55vh] sm:h-[calc(100vh-300px)] flex flex-col overflow-hidden">
               {/* Topic bar */}
               <div className="px-3 sm:px-4 py-1.5 sm:py-2 border-b border-border bg-primary/5">
                 <p className="text-xs sm:text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
