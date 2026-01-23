@@ -292,19 +292,19 @@ const Home = () => {
             </div>
 
             {loadingChannels ? (
-              <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-12 min-w-[140px] lg:min-w-0 rounded-lg bg-card animate-pulse flex-shrink-0 lg:flex-shrink" />
+                  <div key={i} className="h-16 sm:h-20 rounded-lg bg-card animate-pulse" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-340px)] lg:overflow-y-auto pb-2 lg:pb-0 lg:pr-2 scrollbar-thin snap-x lg:snap-none">
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 lg:max-h-[calc(100vh-340px)] lg:overflow-y-auto lg:pr-2 scrollbar-thin">
                   {channels.map((channel) => (
                     <button
                       key={channel.id}
                       onClick={() => handleJoinRoom(channel)}
-                      className="group relative h-20 sm:h-24 w-24 sm:w-28 lg:w-full flex-shrink-0 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
+                      className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 active:scale-95"
                     >
                       {/* Background image */}
                       {roomBackgrounds[channel.name] && (
