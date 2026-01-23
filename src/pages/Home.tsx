@@ -374,8 +374,8 @@ const Home = () => {
                           <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div className="flex flex-col">
-                          <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap">
-                            💕 Find Your Match
+                          <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
+                            <span className="animate-pulse">💕</span> Find Your Match
                           </h3>
                           <span className="text-[10px] sm:text-xs text-white/80">Start connecting today</span>
                         </div>
