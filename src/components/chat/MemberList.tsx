@@ -861,18 +861,14 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
                     <p className="text-xs text-muted-foreground">Remove from channel</p>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <DropdownMenuItem className="flex items-center gap-2 cursor-pointer text-amber-500 focus:text-amber-500">
-                      <VolumeX className="h-4 w-4" />
-                      <div className="flex-1">
-                        <span>Mute User</span>
-                        <p className="text-xs text-muted-foreground">Silence in chat</p>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuTrigger>
-                </DropdownMenu>
-                <DropdownMenuItem 
+                <DropdownMenuLabel className="flex items-center gap-2 text-amber-500">
+                  <VolumeX className="h-4 w-4" />
+                  <div className="flex-1">
+                    <span className="font-medium">Mute User</span>
+                    <p className="text-xs text-muted-foreground font-normal">Silence in chat</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuItem
                   onClick={() => onMute(5)}
                   className="flex items-center gap-2 cursor-pointer pl-8 text-amber-500/80"
                 >

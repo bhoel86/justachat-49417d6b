@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power, Smile, MoreHorizontal, Palette, Sparkles } from "lucide-react";
+import { useState, useRef } from "react";
+import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power, Smile, MoreHorizontal, Palette, Sparkles, ImagePlus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -9,6 +9,8 @@ import EmojiPicker from "./EmojiPicker";
 import TextFormatMenu, { TextFormat, encodeFormat } from "./TextFormatMenu";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 // Fun IRC-style user actions
 const USER_ACTIONS = {
   funny: [
@@ -44,20 +46,98 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const [message, setMessage] = useState("");
   const [selectedAction, setSelectedAction] = useState<{ emoji: string; action: string; suffix: string } | null>(null);
   const [textFormat, setTextFormat] = useState<TextFormat>({ textStyle: 'none' });
+  const [attachedImage, setAttachedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const radio = useRadioOptional();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   // Emoji categories for mobile dropdown
   const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '🔥', '😮', '😢', '😡', '🎉', '💯'];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          variant: "destructive",
+          title: "Image too large",
+          description: "Please select an image under 5MB",
+        });
+        return;
+      }
+      setAttachedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearImage = () => {
+    setAttachedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!attachedImage) return null;
+    
+    setIsUploading(true);
+    try {
+      const fileExt = attachedImage.name.split('.').pop();
+      const fileName = `chat-${Date.now()}.${fileExt}`;
+      const filePath = `chat-images/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars') // Reusing avatars bucket for chat images
+        .upload(filePath, attachedImage);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+      
+      return publicUrl;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim()) {
-      // Apply formatting if set and not a command
+    
+    let imageUrl: string | null = null;
+    if (attachedImage) {
+      imageUrl = await uploadImage();
+      if (!imageUrl && !message.trim()) return; // Failed upload with no text
+    }
+    
+    if (message.trim() || imageUrl) {
       const isCommand = message.trim().startsWith('/');
-      const formattedMessage = isCommand ? message.trim() : encodeFormat(textFormat, message.trim());
-      onSend(formattedMessage);
+      let finalMessage = isCommand ? message.trim() : encodeFormat(textFormat, message.trim());
+      
+      // Append image as a special format
+      if (imageUrl) {
+        finalMessage = finalMessage ? `${finalMessage} [img:${imageUrl}]` : `[img:${imageUrl}]`;
+      }
+      
+      onSend(finalMessage);
       setMessage("");
+      clearImage();
     }
   };
 
@@ -551,6 +631,54 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
           </DropdownMenu>
         )}
 
+        {/* Hidden file input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageSelect}
+          accept="image/*"
+          className="hidden"
+        />
+        
+        {/* Image attachment button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl shrink-0"
+              disabled={isMuted || isUploading}
+            >
+              {isUploading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <ImagePlus className="h-5 w-5" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Attach Image</TooltipContent>
+        </Tooltip>
+
+        {/* Image preview */}
+        {imagePreview && (
+          <div className="relative">
+            <img 
+              src={imagePreview} 
+              alt="Preview" 
+              className="h-10 lg:h-12 w-10 lg:w-12 rounded-xl object-cover"
+            />
+            <button
+              type="button"
+              onClick={clearImage}
+              className="absolute -top-1 -right-1 h-4 w-4 bg-destructive rounded-full flex items-center justify-center"
+            >
+              <X className="h-3 w-3 text-white" />
+            </button>
+          </div>
+        )}
+
         <input
           type="text"
           value={message}
@@ -563,9 +691,13 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
           variant="jac"
           size="icon"
           className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl shrink-0"
-          disabled={!message.trim()}
+          disabled={(!message.trim() && !attachedImage) || isUploading}
         >
-          <Send className="h-5 w-5" />
+          {isUploading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
         </Button>
       </div>
     </form>

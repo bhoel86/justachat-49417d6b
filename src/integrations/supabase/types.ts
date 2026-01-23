@@ -343,6 +343,87 @@ export type Database = {
         }
         Relationships: []
       }
+      dating_matches: {
+        Row: {
+          id: string
+          matched_at: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          id?: string
+          matched_at?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          id?: string
+          matched_at?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
+      dating_profiles: {
+        Row: {
+          age: number | null
+          created_at: string
+          id: string
+          interests: string[] | null
+          location: string | null
+          looking_for: string | null
+          photos: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          id?: string
+          interests?: string[] | null
+          location?: string | null
+          looking_for?: string | null
+          photos?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          id?: string
+          interests?: string[] | null
+          location?: string | null
+          looking_for?: string | null
+          photos?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      dating_swipes: {
+        Row: {
+          created_at: string
+          direction: string
+          id: string
+          swiped_id: string
+          swiper_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          id?: string
+          swiped_id: string
+          swiper_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          id?: string
+          swiped_id?: string
+          swiper_id?: string
+        }
+        Relationships: []
+      }
       klines: {
         Row: {
           created_at: string

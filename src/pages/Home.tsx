@@ -268,6 +268,12 @@ const Home = () => {
               </DropdownMenu>
             )}
             
+            <Link to="/dating">
+              <Button variant="outline" size="sm" className="px-2 sm:px-3 border-pink-500/50 text-pink-500 hover:bg-pink-500/10">
+                <Heart className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Dating</span>
+              </Button>
+            </Link>
             <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
               <Users className="w-4 h-4" />
               <span className="text-sm">Welcome back!</span>
