@@ -27,7 +27,6 @@ interface Message {
   profile?: {
     username: string;
     avatar_url?: string | null;
-    role?: 'owner' | 'admin' | 'moderator' | 'user';
   };
 }
 
@@ -191,32 +190,19 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
       if (!error && data) {
         const userIds = [...new Set(data.map((msg: Message) => msg.user_id))];
         let profileMap = new Map();
-        let roleMap = new Map();
         
         if (userIds.length > 0) {
-          // Fetch profiles
           const { data: profiles } = await supabaseUntyped
             .from('profiles')
             .select('user_id, username, avatar_url')
             .in('user_id', userIds);
           profileMap = new Map(profiles?.map((p: { user_id: string; username: string; avatar_url?: string | null }) => [p.user_id, p]) || []);
-          
-          // Fetch roles
-          const { data: roles } = await supabaseUntyped
-            .from('user_roles')
-            .select('user_id, role')
-            .in('user_id', userIds);
-          roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]) || []);
         }
 
-        setMessages(data.map((msg: Message) => {
-          const profile = profileMap.get(msg.user_id);
-          const role = roleMap.get(msg.user_id) || 'user';
-          return {
-            ...msg,
-            profile: profile ? { ...profile, role } : undefined
-          };
-        }));
+        setMessages(data.map((msg: Message) => ({
+          ...msg,
+          profile: profileMap.get(msg.user_id) as { username: string } | undefined
+        })));
       }
       setLoading(false);
     };
@@ -239,13 +225,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
             .select('username, avatar_url')
             .eq('user_id', newMessage.user_id)
             .single();
-          const { data: roleData } = await supabaseUntyped
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', newMessage.user_id)
-            .maybeSingle();
-          const role = roleData?.role || 'user';
-          setMessages(prev => [...prev, { ...newMessage, profile: profile ? { ...profile, role } : undefined }]);
+          setMessages(prev => [...prev, { ...newMessage, profile: profile || undefined }]);
         }
       )
       .on(
@@ -732,7 +712,6 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
                 sender={msg.profile?.username || 'Unknown'}
                 senderId={msg.user_id}
                 senderAvatarUrl={msg.profile?.avatar_url}
-                senderRole={msg.profile?.role || 'user'}
                 timestamp={new Date(msg.created_at)}
                 isOwn={msg.user_id === user?.id}
                 isSystem={msg.isSystem || msg.user_id === 'system'}
