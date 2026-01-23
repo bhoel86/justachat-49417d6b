@@ -75,6 +75,17 @@ export const MUSIC_LIBRARY: Genre[] = [
       { title: 'Skepta Interlude', artist: 'Pop Smoke ft. Skepta', videoId: 'E5oSByLn0so', genre: 'Drill' },
       { title: 'Welcome to Brixton', artist: 'SR', videoId: '1HK0YHIW0QQ', genre: 'Drill' },
       { title: 'War', artist: 'Pop Smoke', videoId: 'rQJj7I85kv0', genre: 'Drill' },
+      // Lil Durk
+      { title: 'Turn Up A Notch', artist: 'Lil Durk', videoId: '850IP1bKV2g', genre: 'Drill' },
+      { title: 'Monitoring Me', artist: 'Lil Durk', videoId: 'IpffX4rqGAA', genre: 'Drill' },
+      { title: 'Old Days', artist: 'Lil Durk', videoId: 'abZ15xSBlnM', genre: 'Drill' },
+      { title: 'AHHH HA', artist: 'Lil Durk', videoId: '_kIUq2x0V5k', genre: 'Drill' },
+      { title: 'All My Life', artist: 'Lil Durk ft. J. Cole', videoId: 'Z_1lT-UQTOQ', genre: 'Drill' },
+      { title: 'Viral Moment', artist: 'Lil Durk', videoId: 'Tr7Xa9cdreg', genre: 'Drill' },
+      { title: 'The Voice', artist: 'Lil Durk', videoId: 'W5GEvSTvwxE', genre: 'Drill' },
+      { title: 'Backdoor', artist: 'Lil Durk', videoId: 'p8kQ7wEHLSY', genre: 'Drill' },
+      { title: 'Still Trappin', artist: 'Lil Durk ft. King Von', videoId: 'F9B2LZQX9KI', genre: 'Drill' },
+      { title: 'Broadway Girls', artist: 'Lil Durk ft. Morgan Wallen', videoId: 'mN2_F31OVzE', genre: 'Drill' },
     ]
   },
   {

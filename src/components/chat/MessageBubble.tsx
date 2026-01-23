@@ -69,8 +69,9 @@ const MessageBubble = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="start" 
-            className="w-48 bg-popover border border-border shadow-lg z-50"
-          >
+            side="bottom"
+            sideOffset={4}
+            className="w-48 bg-popover border border-border shadow-lg z-50">
             <DropdownMenuLabel className="flex items-center gap-2">
               <UserAvatar
                 avatarUrl={avatarUrl}

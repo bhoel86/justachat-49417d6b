@@ -587,8 +587,9 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
-        className="w-48 bg-popover border border-border shadow-lg z-50"
-      >
+        side="bottom"
+        sideOffset={4}
+        className="w-48 bg-popover border border-border shadow-lg z-50">
         <DropdownMenuLabel className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500/30 to-primary/30 flex items-center justify-center text-sm">
             {moderator.avatar}
@@ -708,8 +709,9 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
             </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="start" 
-              className="w-48 bg-popover border border-border shadow-lg z-50"
-            >
+              side="bottom"
+              sideOffset={4}
+              className="w-48 bg-popover border border-border shadow-lg z-50">
               <DropdownMenuLabel className="flex items-center gap-2">
                 <UserAvatar
                   avatarUrl={member.avatar_url}
@@ -814,8 +816,9 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
           </DropdownMenuTrigger>
           <DropdownMenuContent 
             align="end" 
-            className="w-56 bg-popover border border-border shadow-lg z-50"
-          >
+            side="bottom"
+            sideOffset={4}
+            className="w-56 bg-popover border border-border shadow-lg z-50">
             {/* Moderation Actions */}
             {canModerate && (
               <>
