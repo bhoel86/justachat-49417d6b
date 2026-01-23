@@ -102,9 +102,11 @@ const Home = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
 
-  // Scroll to top on page load
+  // Scroll to top on page load - use requestAnimationFrame to ensure it runs after render
   useEffect(() => {
-    window.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    });
   }, []);
 
   useEffect(() => {

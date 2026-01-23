@@ -367,8 +367,13 @@ const FakeChatPreview = () => {
     return () => clearTimeout(timeoutId);
   }, [usedConversations]);
 
-  // Auto-scroll to bottom within container only (not page scroll)
+  // Auto-scroll to bottom within container only (not page scroll) - skip on initial render
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     if (messagesEndRef.current) {
       const container = messagesEndRef.current.parentElement;
       if (container) {

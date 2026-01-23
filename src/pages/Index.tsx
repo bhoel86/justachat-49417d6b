@@ -8,6 +8,13 @@ const Index = () => {
   const navigate = useNavigate();
   const { channelId } = useParams<{ channelId: string }>();
 
+  // Scroll to top on page load
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    });
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
