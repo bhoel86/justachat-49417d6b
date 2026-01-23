@@ -47,8 +47,9 @@ const RADIO_STATIONS: RadioStation[] = [
   
   // EDM & Electronic
   { name: 'NCS Radio', videoId: '7tNtU5XFwrU', artist: 'NoCopyrightSounds', genre: 'EDM', albumArt: 'https://i.ytimg.com/vi/7tNtU5XFwrU/hqdefault.jpg' },
-  { name: 'House Radio', videoId: 'XLsN_h5EvlY', artist: 'Deep House', genre: 'House', albumArt: 'https://i.ytimg.com/vi/XLsN_h5EvlY/hqdefault.jpg' },
+  { name: 'Bass Nation', videoId: '21qNxnCS8WU', artist: 'Bass Nation', genre: 'Bass', albumArt: 'https://i.ytimg.com/vi/21qNxnCS8WU/hqdefault.jpg' },
   { name: 'Synthwave Radio', videoId: '4xDzrJKXOOY', artist: 'Synthwave Goose', genre: 'Synthwave', albumArt: 'https://i.ytimg.com/vi/4xDzrJKXOOY/hqdefault.jpg' },
+  { name: 'Electronic Vibes', videoId: 'RbmS3tQJ7Os', artist: 'MrSuicideSheep', genre: 'Electronic', albumArt: 'https://i.ytimg.com/vi/RbmS3tQJ7Os/hqdefault.jpg' },
   
   // Jazz & Classical
   { name: 'Jazz Radio', videoId: 'Dx5qFachd3A', artist: 'Cafe Music BGM', genre: 'Jazz', albumArt: 'https://i.ytimg.com/vi/Dx5qFachd3A/hqdefault.jpg' },
