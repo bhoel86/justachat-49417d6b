@@ -6,6 +6,7 @@ interface RadioContextType {
   currentSong: Song | null;
   currentGenre: string;
   genres: string[];
+  isEnabled: boolean;
   play: () => void;
   pause: () => void;
   skip: () => void;
@@ -15,6 +16,8 @@ interface RadioContextType {
   shuffle: () => void;
   setGenre: (genre: string) => void;
   albumArt: string | null;
+  enableRadio: () => void;
+  disableRadio: () => void;
 }
 
 const RadioContext = createContext<RadioContextType | null>(null);
@@ -53,6 +56,7 @@ interface RadioProviderProps {
 
 export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(false);
   const [currentGenre, setCurrentGenre] = useState('All');
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -80,11 +84,11 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Autoplay on mount
+  // Start playback only when enabled (inside chat room)
   useEffect(() => {
-    if (hasAutoStarted.current) return;
+    if (!isEnabled || hasAutoStarted.current) return;
     
-    const startAutoplay = () => {
+    const startPlayback = () => {
       if (ytWindow.YT?.Player && currentSong && !isInitialized) {
         hasAutoStarted.current = true;
         initPlayer();
@@ -93,16 +97,16 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
 
     // If YT is already loaded, start immediately
     if (ytWindow.YT?.Player) {
-      startAutoplay();
+      startPlayback();
     } else {
       // Otherwise, set up callback for when it's ready
       const existingCallback = ytWindow.onYouTubeIframeAPIReady;
       ytWindow.onYouTubeIframeAPIReady = () => {
         existingCallback?.();
-        startAutoplay();
+        startPlayback();
       };
     }
-  }, [currentSong, isInitialized]);
+  }, [isEnabled, currentSong, isInitialized]);
 
   const initPlayer = useCallback(() => {
     if (playerRef.current) {
@@ -242,12 +246,25 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }
   }, [isInitialized]);
 
+  const enableRadio = useCallback(() => {
+    setIsEnabled(true);
+  }, []);
+
+  const disableRadio = useCallback(() => {
+    setIsEnabled(false);
+    if (playerRef.current) {
+      playerRef.current.pauseVideo();
+    }
+    setIsPlaying(false);
+  }, []);
+
   return (
     <RadioContext.Provider value={{
       isPlaying,
       currentSong: isInitialized ? currentSong : null,
       currentGenre,
       genres,
+      isEnabled,
       play,
       pause,
       skip,
@@ -257,6 +274,8 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       shuffle,
       setGenre: handleSetGenre,
       albumArt: isInitialized ? albumArt : null,
+      enableRadio,
+      disableRadio,
     }}>
       {children}
     </RadioContext.Provider>

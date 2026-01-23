@@ -55,6 +55,19 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   
   const { translateMessage, isTranslating, getCachedTranslation } = useTranslation(preferredLanguage);
 
+  // Enable radio when entering chat room, disable when leaving
+  useEffect(() => {
+    if (radio?.enableRadio) {
+      radio.enableRadio();
+    }
+    
+    return () => {
+      if (radio?.disableRadio) {
+        radio.disableRadio();
+      }
+    };
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
