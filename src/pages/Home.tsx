@@ -381,36 +381,36 @@ const Home = () => {
           </div>
         </div>
         
-        {/* Official Footer */}
-        <footer className="mt-8 pt-6 border-t border-border/50">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Logo and tagline */}
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold jac-gradient-text">Justachat<sup className="text-xs">™</sup></h3>
-                <p className="text-xs text-muted-foreground">Chat. Connect. Chill.</p>
-              </div>
-            </div>
-            
-            {/* Mascots */}
+        {/* Official Footer - Blended */}
+        <footer className="mt-12 -mx-4 px-4 py-10 bg-gradient-to-t from-card/80 via-card/40 to-transparent">
+          <div className="flex flex-col items-center gap-6">
+            {/* Mascots - Large and prominent */}
             <div className="flex-shrink-0">
               <img 
                 src={footerMascots} 
                 alt="Justachat Mascots" 
-                className="h-16 sm:h-20 w-auto object-contain"
+                className="h-28 sm:h-36 w-auto object-contain drop-shadow-lg"
               />
             </div>
             
+            {/* Logo and tagline - Centered */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl jac-gradient-bg flex items-center justify-center shadow-lg">
+                  <MessageSquare className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <h3 className="text-2xl font-bold jac-gradient-text">Justachat<sup className="text-xs">™</sup></h3>
+              </div>
+              <p className="text-sm text-muted-foreground font-medium">Chat. Connect. Chill.</p>
+            </div>
+            
             {/* Copyright */}
-            <div className="text-center sm:text-right">
-              <p className="text-xs text-muted-foreground">
+            <div className="text-center mt-2">
+              <p className="text-sm text-muted-foreground">
                 © {new Date().getFullYear()} Justachat™ All rights reserved.
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
+              <p className="text-sm text-muted-foreground mt-1">
+                <a href="https://justachat.net" className="hover:text-primary transition-colors underline-offset-2 hover:underline">justachat.net</a>
               </p>
             </div>
           </div>
