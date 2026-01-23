@@ -37,9 +37,9 @@ const RADIO_STATIONS: RadioStation[] = [
   { name: 'Chillhop Radio', videoId: '5yx6BWlEVcY', artist: 'Chillhop Music', genre: 'Lofi', albumArt: 'https://i.ytimg.com/vi/5yx6BWlEVcY/hqdefault.jpg' },
   { name: 'Sleepy Lofi', videoId: 'rUxyKA_-grg', artist: 'Lofi Girl', genre: 'Lofi', albumArt: 'https://i.ytimg.com/vi/rUxyKA_-grg/hqdefault.jpg' },
   
-  // Hip Hop & Drill
-  { name: 'Hip Hop Radio', videoId: 'rXhXj2_D9MA', artist: 'Hip Hop Beats', genre: 'Hip Hop', albumArt: 'https://i.ytimg.com/vi/rXhXj2_D9MA/hqdefault.jpg' },
-  { name: 'Trap Nation', videoId: 'f2xGxd9xPYA', artist: 'Trap Nation', genre: 'Trap', albumArt: 'https://i.ytimg.com/vi/f2xGxd9xPYA/hqdefault.jpg' },
+  // Hip Hop
+  { name: 'Hip Hop Vibes', videoId: 'gvSFt4oW0UA', artist: 'Chill Nation', genre: 'Hip Hop', albumArt: 'https://i.ytimg.com/vi/gvSFt4oW0UA/hqdefault.jpg' },
+  { name: 'Rap Radio', videoId: 'n1WpP7iowLc', artist: 'Trap City', genre: 'Rap', albumArt: 'https://i.ytimg.com/vi/n1WpP7iowLc/hqdefault.jpg' },
   
   // Rock & Metal
   { name: 'Rock Classics', videoId: 'IO9XlQrEt2Y', artist: 'Classic Rock', genre: 'Rock', albumArt: 'https://i.ytimg.com/vi/IO9XlQrEt2Y/hqdefault.jpg' },
