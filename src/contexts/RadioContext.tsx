@@ -7,6 +7,8 @@ interface RadioContextType {
   currentGenre: string;
   genres: string[];
   isEnabled: boolean;
+  currentTime: number;
+  duration: number;
   play: () => void;
   pause: () => void;
   skip: () => void;
@@ -15,6 +17,7 @@ interface RadioContextType {
   toggle: () => void;
   shuffle: () => void;
   setGenre: (genre: string) => void;
+  seekTo: (seconds: number) => void;
   albumArt: string | null;
   enableRadio: () => void;
   disableRadio: () => void;
@@ -40,6 +43,9 @@ interface YTPlayer {
   pauseVideo: () => void;
   setVolume: (volume: number) => void;
   loadVideoById: (videoId: string) => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
 }
 
 interface YTWindow extends Window {
@@ -60,6 +66,9 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   const [currentGenre, setCurrentGenre] = useState('All');
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const progressInterval = useRef<number | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   
   const genres = ['All', ...MUSIC_LIBRARY.map(g => g.name)];
@@ -140,11 +149,30 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
           event.target.setVolume(50);
           event.target.playVideo();
           setIsPlaying(true);
+          // Start tracking progress
+          if (progressInterval.current) {
+            clearInterval(progressInterval.current);
+          }
+          progressInterval.current = window.setInterval(() => {
+            if (playerRef.current) {
+              setCurrentTime(playerRef.current.getCurrentTime() || 0);
+              setDuration(playerRef.current.getDuration() || 0);
+            }
+          }, 500);
         },
         onStateChange: (event: { data: number }) => {
           if (ytWindow.YT?.PlayerState) {
             if (event.data === ytWindow.YT.PlayerState.PLAYING) {
               setIsPlaying(true);
+              // Resume progress tracking
+              if (!progressInterval.current) {
+                progressInterval.current = window.setInterval(() => {
+                  if (playerRef.current) {
+                    setCurrentTime(playerRef.current.getCurrentTime() || 0);
+                    setDuration(playerRef.current.getDuration() || 0);
+                  }
+                }, 500);
+              }
             } else if (event.data === ytWindow.YT.PlayerState.PAUSED) {
               setIsPlaying(false);
             } else if (event.data === ytWindow.YT.PlayerState.ENDED) {
@@ -255,7 +283,27 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     if (playerRef.current) {
       playerRef.current.pauseVideo();
     }
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+      progressInterval.current = null;
+    }
     setIsPlaying(false);
+  }, []);
+
+  const seekTo = useCallback((seconds: number) => {
+    if (playerRef.current && isInitialized) {
+      playerRef.current.seekTo(seconds, true);
+      setCurrentTime(seconds);
+    }
+  }, [isInitialized]);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
+      }
+    };
   }, []);
 
   return (
@@ -265,6 +313,8 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       currentGenre,
       genres,
       isEnabled,
+      currentTime,
+      duration,
       play,
       pause,
       skip,
@@ -273,6 +323,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       toggle,
       shuffle,
       setGenre: handleSetGenre,
+      seekTo,
       albumArt: isInitialized ? albumArt : null,
       enableRadio,
       disableRadio,

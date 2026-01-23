@@ -3,6 +3,7 @@ import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, 
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Slider } from "@/components/ui/slider";
 import EmojiPicker from "./EmojiPicker";
 import { useRadioOptional } from "@/contexts/RadioContext";
 
@@ -26,6 +27,14 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false }: ChatInp
 
   const handleEmojiSelect = (emoji: string) => {
     setMessage(prev => prev + emoji);
+  };
+
+  // Format seconds to MM:SS
+  const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -68,6 +77,23 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false }: ChatInp
                   <p className="text-xs text-muted-foreground truncate">
                     {radio.currentSong.artist}
                   </p>
+                  {/* Progress Bar */}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] text-muted-foreground w-8 text-right">
+                      {formatTime(radio.currentTime)}
+                    </span>
+                    <Slider
+                      value={[radio.currentTime]}
+                      max={radio.duration || 100}
+                      step={1}
+                      onValueChange={(value) => radio.seekTo(value[0])}
+                      className="flex-1 h-1 cursor-pointer"
+                      disabled={!canControlRadio}
+                    />
+                    <span className="text-[10px] text-muted-foreground w-8">
+                      {formatTime(radio.duration)}
+                    </span>
+                  </div>
                 </>
               ) : (
                 <p className="text-xs text-muted-foreground">Loading radio...</p>
