@@ -19,55 +19,74 @@ const FormattedText = ({ text, className = '' }: FormattedTextProps) => {
   }
   
   const { format, text: content } = decoded;
-  const bgStyle = format.bgColor ? { backgroundColor: `${format.bgColor}60` } : {};
-  const bgClass = format.bgColor ? 'px-1 rounded' : '';
+  
+  // Wrapper for background color
+  const BgWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (format.bgColor) {
+      return (
+        <span 
+          className="px-1.5 py-0.5 rounded inline-block"
+          style={{ backgroundColor: format.bgColor }}
+        >
+          {children}
+        </span>
+      );
+    }
+    return <>{children}</>;
+  };
   
   switch (format.textStyle) {
     case 'rainbow':
       return (
-        <span className={`${bgClass} ${className}`} style={bgStyle}>
-          {content.split('').map((char, i) => (
-            <span
-              key={i}
-              style={{
-                color: rainbowColors[i % rainbowColors.length],
-                fontWeight: 500,
-              }}
-            >
-              {char}
-            </span>
-          ))}
-        </span>
+        <BgWrapper>
+          <span className={className}>
+            {content.split('').map((char, i) => (
+              <span
+                key={i}
+                style={{
+                  color: rainbowColors[i % rainbowColors.length],
+                  fontWeight: 500,
+                }}
+              >
+                {char}
+              </span>
+            ))}
+          </span>
+        </BgWrapper>
       );
     
     case 'gradient':
       return (
-        <span
-          className={`bg-clip-text text-transparent font-medium ${bgClass} ${className}`}
-          style={{ 
-            backgroundImage: format.textValue,
-            ...bgStyle 
-          }}
-        >
-          {content}
-        </span>
+        <BgWrapper>
+          <span
+            className={`bg-clip-text text-transparent font-medium ${className}`}
+            style={{ backgroundImage: format.textValue }}
+          >
+            {content}
+          </span>
+        </BgWrapper>
       );
     
     case 'color':
       return (
-        <span 
-          className={`font-medium ${bgClass} ${className}`} 
-          style={{ color: format.textValue, ...bgStyle }}
-        >
-          {content}
-        </span>
+        <BgWrapper>
+          <span 
+            className={`font-medium ${className}`} 
+            style={{ color: format.textValue }}
+          >
+            {content}
+          </span>
+        </BgWrapper>
       );
     
     default:
       // Just background color, no text style
       if (format.bgColor) {
         return (
-          <span className={`px-1 rounded ${className}`} style={bgStyle}>
+          <span 
+            className={`px-1.5 py-0.5 rounded inline-block ${className}`}
+            style={{ backgroundColor: format.bgColor }}
+          >
             {content}
           </span>
         );
