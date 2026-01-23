@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Hash, Plus, Lock, Home, MoreVertical, Trash2, EyeOff, Eye, Palette, Sparkles } from "lucide-react";
+import { Hash, Plus, Lock, Home, MoreVertical, Trash2, EyeOff, Eye, Palette, Sparkles, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -542,8 +542,8 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
                 </span>
               )}
               
-              {/* Dropdown menu for owners/admins */}
-              {(isOwner || isAdmin) && channel.name !== 'general' && (
+              {/* Dropdown menu for room owners, site owners, or admins */}
+              {((user && channel.created_by === user.id) || isOwner || isAdmin) && channel.name !== 'general' && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                     <button
@@ -552,8 +552,23 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
                       <MoreVertical className="h-3 w-3" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40 bg-popover border-border z-50">
-                    {/* Hide/Show - Admin only */}
+                  <DropdownMenuContent align="end" className="w-44 bg-popover border-border z-50">
+                    {/* Room Settings - Room owner only */}
+                    {user && channel.created_by === user.id && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Dispatch custom event to open room settings
+                          window.dispatchEvent(new CustomEvent('openRoomSettings', { detail: channel }));
+                        }}
+                        className="cursor-pointer text-xs"
+                      >
+                        <Settings className="h-3.5 w-3.5 mr-2" />
+                        Room Settings
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {/* Hide/Show - Site Admin only */}
                     {isAdmin && (
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -576,8 +591,8 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
                       </DropdownMenuItem>
                     )}
                     
-                    {/* Delete - Owner only */}
-                    {isOwner && (
+                    {/* Delete - Site Owner or Room Owner */}
+                    {(isOwner || (user && channel.created_by === user.id)) && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();

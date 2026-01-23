@@ -140,6 +140,7 @@ export type Database = {
       }
       channels: {
         Row: {
+          admin_password: string | null
           bg_color: string | null
           created_at: string
           created_by: string | null
@@ -151,8 +152,10 @@ export type Database = {
           name_color: string | null
           name_gradient_from: string | null
           name_gradient_to: string | null
+          room_password: string | null
         }
         Insert: {
+          admin_password?: string | null
           bg_color?: string | null
           created_at?: string
           created_by?: string | null
@@ -164,8 +167,10 @@ export type Database = {
           name_color?: string | null
           name_gradient_from?: string | null
           name_gradient_to?: string | null
+          room_password?: string | null
         }
         Update: {
+          admin_password?: string | null
           bg_color?: string | null
           created_at?: string
           created_by?: string | null
@@ -177,6 +182,7 @@ export type Database = {
           name_color?: string | null
           name_gradient_from?: string | null
           name_gradient_to?: string | null
+          room_password?: string | null
         }
         Relationships: []
       }
@@ -326,6 +332,114 @@ export type Database = {
         }
         Relationships: []
       }
+      room_admins: {
+        Row: {
+          channel_id: string
+          created_at: string
+          granted_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_admins_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_bans: {
+        Row: {
+          banned_by: string
+          channel_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          channel_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          channel_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_bans_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_mutes: {
+        Row: {
+          channel_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          muted_by: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          muted_by: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          muted_by?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_mutes_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trivia_scores: {
         Row: {
           correct_answers: number
@@ -440,6 +554,14 @@ export type Database = {
         Returns: boolean
       }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_room_admin: {
+        Args: { _channel_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_room_owner: {
+        Args: { _channel_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "owner"

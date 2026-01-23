@@ -14,6 +14,10 @@ export interface CommandContext {
   role: 'owner' | 'admin' | 'moderator' | 'user';
   isAdmin: boolean;
   isOwner: boolean;
+  channelId?: string;
+  channelOwnerId?: string;
+  isRoomOwner?: boolean;
+  isRoomAdmin?: boolean;
 }
 
 type CommandHandler = (
@@ -45,6 +49,14 @@ const canModerate = (context: CommandContext): boolean => {
 
 // Command implementations
 const helpCommand: CommandHandler = async (args, context) => {
+  const roomOwnerCommands = (context.isRoomOwner || context.isRoomAdmin) ? `
+**Room Owner Commands:**
+/roomban <username> [reason] - Ban user from this room
+/roomunban <username> - Unban user from room
+/roommute <username> [duration] - Mute user in room (e.g., 5m, 1h, 1d)
+/roomunmute <username> - Unmute user in room
+/roomkick <username> - Kick user from room` : '';
+
   const modCommands = canModerate(context) ? `
 **Moderator Commands:**
 /op <username> - Promote user to moderator
@@ -71,6 +83,7 @@ const helpCommand: CommandHandler = async (args, context) => {
 /clear - Clear your chat (local only)
 /users - List online users
 /whois <username> - View user info
+/roomadmin <password> - Become a room admin (if password is set)
 
 **Radio Commands:**
 /radio - Start/toggle radio player
@@ -83,7 +96,7 @@ const helpCommand: CommandHandler = async (args, context) => {
 /trivia - Start trivia game
 /score - View your trivia stats
 /leaderboard - View top players
-/skipq - Skip current question${modCommands}${adminCommands}`,
+/skipq - Skip current question${roomOwnerCommands}${modCommands}${adminCommands}`,
     isSystemMessage: true,
   };
 };
@@ -679,6 +692,249 @@ const skipQuestionCommand: CommandHandler = async () => {
   };
 };
 
+// Room-specific moderation commands
+const canRoomModerate = (context: CommandContext): boolean => {
+  return context.isRoomOwner || context.isRoomAdmin || context.isOwner || context.isAdmin;
+};
+
+const roombanCommand: CommandHandler = async (args, context) => {
+  if (!canRoomModerate(context)) {
+    return { success: false, message: 'You need room owner/admin privileges to use this command.' };
+  }
+  if (!context.channelId) {
+    return { success: false, message: 'Cannot determine current channel.' };
+  }
+  if (args.length === 0) {
+    return { success: false, message: 'Usage: /roomban <username> [reason]' };
+  }
+
+  const targetUser = await findUserByUsername(args[0]);
+  if (!targetUser) {
+    return { success: false, message: `User "${args[0]}" not found.` };
+  }
+
+  if (targetUser.user_id === context.channelOwnerId) {
+    return { success: false, message: 'Cannot ban the room owner.' };
+  }
+
+  const reason = args.slice(1).join(' ') || 'No reason given';
+
+  const { error } = await supabaseUntyped
+    .from('room_bans')
+    .upsert({
+      channel_id: context.channelId,
+      user_id: targetUser.user_id,
+      banned_by: context.userId,
+      reason,
+    });
+
+  if (error) {
+    return { success: false, message: 'Failed to ban user from room.' };
+  }
+
+  return {
+    success: true,
+    message: `${targetUser.username} has been banned from this room. Reason: ${reason}`,
+    isSystemMessage: true,
+    broadcast: true,
+  };
+};
+
+const roomunbanCommand: CommandHandler = async (args, context) => {
+  if (!canRoomModerate(context)) {
+    return { success: false, message: 'You need room owner/admin privileges to use this command.' };
+  }
+  if (!context.channelId) {
+    return { success: false, message: 'Cannot determine current channel.' };
+  }
+  if (args.length === 0) {
+    return { success: false, message: 'Usage: /roomunban <username>' };
+  }
+
+  const targetUser = await findUserByUsername(args[0]);
+  if (!targetUser) {
+    return { success: false, message: `User "${args[0]}" not found.` };
+  }
+
+  const { error } = await supabaseUntyped
+    .from('room_bans')
+    .delete()
+    .eq('channel_id', context.channelId)
+    .eq('user_id', targetUser.user_id);
+
+  if (error) {
+    return { success: false, message: 'Failed to unban user from room.' };
+  }
+
+  return {
+    success: true,
+    message: `${targetUser.username} has been unbanned from this room.`,
+    isSystemMessage: true,
+    broadcast: true,
+  };
+};
+
+const roommuteCommand: CommandHandler = async (args, context) => {
+  if (!canRoomModerate(context)) {
+    return { success: false, message: 'You need room owner/admin privileges to use this command.' };
+  }
+  if (!context.channelId) {
+    return { success: false, message: 'Cannot determine current channel.' };
+  }
+  if (args.length === 0) {
+    return { success: false, message: 'Usage: /roommute <username> [duration: 5m/30m/1h/1d]' };
+  }
+
+  const targetUser = await findUserByUsername(args[0]);
+  if (!targetUser) {
+    return { success: false, message: `User "${args[0]}" not found.` };
+  }
+
+  if (targetUser.user_id === context.channelOwnerId) {
+    return { success: false, message: 'Cannot mute the room owner.' };
+  }
+
+  // Parse duration
+  let expiresAt: Date | null = null;
+  const durationArg = args[1];
+  if (durationArg) {
+    const match = durationArg.match(/^(\d+)(m|h|d)$/);
+    if (match) {
+      const amount = parseInt(match[1]);
+      const unit = match[2];
+      expiresAt = new Date();
+      if (unit === 'm') expiresAt.setMinutes(expiresAt.getMinutes() + amount);
+      else if (unit === 'h') expiresAt.setHours(expiresAt.getHours() + amount);
+      else if (unit === 'd') expiresAt.setDate(expiresAt.getDate() + amount);
+    }
+  }
+
+  const { error } = await supabaseUntyped
+    .from('room_mutes')
+    .upsert({
+      channel_id: context.channelId,
+      user_id: targetUser.user_id,
+      muted_by: context.userId,
+      expires_at: expiresAt?.toISOString() || null,
+    });
+
+  if (error) {
+    return { success: false, message: 'Failed to mute user in room.' };
+  }
+
+  const durationText = expiresAt ? ` for ${durationArg}` : ' indefinitely';
+  return {
+    success: true,
+    message: `${targetUser.username} has been muted in this room${durationText}.`,
+    isSystemMessage: true,
+    broadcast: true,
+  };
+};
+
+const roomunmuteCommand: CommandHandler = async (args, context) => {
+  if (!canRoomModerate(context)) {
+    return { success: false, message: 'You need room owner/admin privileges to use this command.' };
+  }
+  if (!context.channelId) {
+    return { success: false, message: 'Cannot determine current channel.' };
+  }
+  if (args.length === 0) {
+    return { success: false, message: 'Usage: /roomunmute <username>' };
+  }
+
+  const targetUser = await findUserByUsername(args[0]);
+  if (!targetUser) {
+    return { success: false, message: `User "${args[0]}" not found.` };
+  }
+
+  const { error } = await supabaseUntyped
+    .from('room_mutes')
+    .delete()
+    .eq('channel_id', context.channelId)
+    .eq('user_id', targetUser.user_id);
+
+  if (error) {
+    return { success: false, message: 'Failed to unmute user in room.' };
+  }
+
+  return {
+    success: true,
+    message: `${targetUser.username} has been unmuted in this room.`,
+    isSystemMessage: true,
+    broadcast: true,
+  };
+};
+
+const roomkickCommand: CommandHandler = async (args, context) => {
+  if (!canRoomModerate(context)) {
+    return { success: false, message: 'You need room owner/admin privileges to use this command.' };
+  }
+  if (args.length === 0) {
+    return { success: false, message: 'Usage: /roomkick <username>' };
+  }
+
+  const targetUser = await findUserByUsername(args[0]);
+  if (!targetUser) {
+    return { success: false, message: `User "${args[0]}" not found.` };
+  }
+
+  if (targetUser.user_id === context.channelOwnerId) {
+    return { success: false, message: 'Cannot kick the room owner.' };
+  }
+
+  return {
+    success: true,
+    message: `${targetUser.username} has been kicked from this room by ${context.username}.`,
+    isSystemMessage: true,
+    broadcast: true,
+  };
+};
+
+const roomadminCommand: CommandHandler = async (args, context) => {
+  if (!context.channelId) {
+    return { success: false, message: 'Cannot determine current channel.' };
+  }
+  if (args.length === 0) {
+    return { success: false, message: 'Usage: /roomadmin <password>' };
+  }
+
+  const password = args.join(' ');
+  
+  // Get the room's admin password
+  const { data: channel } = await supabaseUntyped
+    .from('channels')
+    .select('admin_password')
+    .eq('id', context.channelId)
+    .single();
+  
+  if (!channel?.admin_password) {
+    return { success: false, message: 'This room does not have an admin password set.' };
+  }
+  
+  if (password !== channel.admin_password) {
+    return { success: false, message: 'Incorrect password.' };
+  }
+  
+  // Grant room admin
+  const { error } = await supabaseUntyped
+    .from('room_admins')
+    .upsert({
+      channel_id: context.channelId,
+      user_id: context.userId,
+      granted_by: context.userId,
+    });
+  
+  if (error) {
+    return { success: false, message: 'Failed to grant room admin.' };
+  }
+  
+  return {
+    success: true,
+    message: `You are now a room admin. You can use /roomban, /roommute, /roomkick commands.`,
+    isSystemMessage: true,
+  };
+};
+
 // Command registry
 const commands: Record<string, CommandHandler> = {
   help: helpCommand,
@@ -697,6 +953,13 @@ const commands: Record<string, CommandHandler> = {
   unmute: unmuteCommand,
   topic: topicCommand,
   whois: whoisCommand,
+  // Room-specific moderation
+  roomban: roombanCommand,
+  roomunban: roomunbanCommand,
+  roommute: roommuteCommand,
+  roomunmute: roomunmuteCommand,
+  roomkick: roomkickCommand,
+  roomadmin: roomadminCommand,
   // Radio commands
   radio: radioCommand,
   play: playCommand,

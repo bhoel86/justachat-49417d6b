@@ -12,6 +12,8 @@ import MemberList from "./MemberList";
 import ChannelList, { Channel } from "./ChannelList";
 import PrivateMessageModal from "./PrivateMessageModal";
 import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
+import RoomSettingsModal from "./RoomSettingsModal";
+import RoomPasswordModal from "./RoomPasswordModal";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
 import { getModerator, getWelcomeMessage, getRandomTip } from "@/lib/roomConfig";
@@ -44,10 +46,17 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   const [topic, setTopic] = useState('Welcome to JAC!');
   const [isBanned, setIsBanned] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isRoomBanned, setIsRoomBanned] = useState(false);
+  const [isRoomMuted, setIsRoomMuted] = useState(false);
+  const [isRoomOwner, setIsRoomOwner] = useState(false);
+  const [isRoomAdmin, setIsRoomAdmin] = useState(false);
   const [username, setUsername] = useState('');
   const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
   const [preferredLanguage, setPreferredLanguage] = useState('en');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showRoomSettings, setShowRoomSettings] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingChannel, setPendingChannel] = useState<Channel | null>(null);
   const [translations, setTranslations] = useState<Record<string, { text: string; lang: string }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -142,6 +151,66 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     };
     checkStatus();
   }, [user]);
+
+  // Check room-specific ban/mute status and ownership
+  useEffect(() => {
+    const checkRoomStatus = async () => {
+      if (!user || !currentChannel) {
+        setIsRoomBanned(false);
+        setIsRoomMuted(false);
+        setIsRoomOwner(false);
+        setIsRoomAdmin(false);
+        return;
+      }
+      
+      // Check room ban
+      const { data: roomBan } = await supabaseUntyped
+        .from('room_bans')
+        .select('*')
+        .eq('channel_id', currentChannel.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      // Check room mute (including expired)
+      const { data: roomMute } = await supabaseUntyped
+        .from('room_mutes')
+        .select('*')
+        .eq('channel_id', currentChannel.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      // Check if room mute is expired
+      const isExpiredMute = roomMute?.expires_at && new Date(roomMute.expires_at) < new Date();
+      
+      // Check if user is room admin
+      const { data: roomAdmin } = await supabaseUntyped
+        .from('room_admins')
+        .select('*')
+        .eq('channel_id', currentChannel.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      setIsRoomBanned(!!roomBan);
+      setIsRoomMuted(!!roomMute && !isExpiredMute);
+      setIsRoomOwner(currentChannel.created_by === user.id);
+      setIsRoomAdmin(!!roomAdmin || currentChannel.created_by === user.id);
+    };
+    checkRoomStatus();
+  }, [user, currentChannel]);
+
+  // Listen for room settings event
+  useEffect(() => {
+    const handleOpenRoomSettings = (e: CustomEvent<Channel>) => {
+      if (e.detail && e.detail.id === currentChannel?.id) {
+        setShowRoomSettings(true);
+      }
+    };
+    
+    window.addEventListener('openRoomSettings', handleOpenRoomSettings as EventListener);
+    return () => {
+      window.removeEventListener('openRoomSettings', handleOpenRoomSettings as EventListener);
+    };
+  }, [currentChannel]);
 
   // Fetch channel topic
   useEffect(() => {
@@ -425,9 +494,25 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     }
   }, [currentChannel, messages, addModeratorMessage]);
 
-  const handleChannelSelect = (channel: Channel) => {
+  const handleChannelSelect = async (channel: Channel) => {
+    // Check if room has a password and user is not room owner
+    if (channel.created_by !== user?.id && !isAdmin && !isOwner) {
+      const { data } = await supabaseUntyped
+        .from('channels')
+        .select('room_password')
+        .eq('id', channel.id)
+        .single();
+      
+      if (data?.room_password) {
+        setPendingChannel(channel);
+        setShowPasswordModal(true);
+        return;
+      }
+    }
+    
     setCurrentChannel(channel);
     setMessages([]); // Clear messages, will refetch
+    navigate(`/chat/${channel.id}`);
   };
 
   const handleSend = async (content: string) => {
@@ -500,6 +585,10 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
         role: role as CommandContext['role'],
         isAdmin,
         isOwner,
+        channelId: currentChannel?.id,
+        channelOwnerId: currentChannel?.created_by || undefined,
+        isRoomOwner,
+        isRoomAdmin,
       };
 
       const result = await executeCommand(parsed.command, parsed.args, context);
@@ -675,6 +764,25 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     );
   }
 
+  if (isRoomBanned && currentChannel) {
+    return (
+      <div className="flex h-screen bg-background">
+        <ChannelList 
+          currentChannelId={currentChannel?.id} 
+          onChannelSelect={handleChannelSelect}
+        />
+        <div className="flex flex-col flex-1 items-center justify-center text-center p-6">
+          <div className="h-16 w-16 rounded-xl bg-destructive/20 flex items-center justify-center mb-4">
+            <span className="text-3xl">🚪</span>
+          </div>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Banned from #{currentChannel.name}</h1>
+          <p className="text-muted-foreground mb-4">You have been banned from this room by the room owner.</p>
+          <p className="text-sm text-muted-foreground">Select a different channel to continue chatting.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-background">
       {/* Channel Sidebar */}
@@ -731,7 +839,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           <div ref={messagesEndRef} />
         </div>
         
-        <ChatInput onSend={handleSend} isMuted={isMuted} canControlRadio={isAdmin || isOwner} onlineUsers={onlineUsers} />
+        <ChatInput onSend={handleSend} isMuted={isMuted || isRoomMuted} canControlRadio={isAdmin || isOwner} onlineUsers={onlineUsers} />
       </div>
 
       {/* Member Sidebar */}
@@ -757,6 +865,45 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           userId={user.id}
           currentLanguage={preferredLanguage}
           onLanguageChange={setPreferredLanguage}
+        />
+      )}
+      
+      {/* Room Settings Modal */}
+      {user && currentChannel && isRoomOwner && (
+        <RoomSettingsModal
+          open={showRoomSettings}
+          onOpenChange={setShowRoomSettings}
+          channel={currentChannel}
+          userId={user.id}
+        />
+      )}
+      
+      {/* Room Password Modal */}
+      {pendingChannel && (
+        <RoomPasswordModal
+          open={showPasswordModal}
+          onOpenChange={(open) => {
+            setShowPasswordModal(open);
+            if (!open) setPendingChannel(null);
+          }}
+          roomName={pendingChannel.name}
+          onPasswordSubmit={async (password) => {
+            // Check password
+            const { data } = await supabaseUntyped
+              .from('channels')
+              .select('room_password')
+              .eq('id', pendingChannel.id)
+              .single();
+            
+            if (data?.room_password === password) {
+              setShowPasswordModal(false);
+              setCurrentChannel(pendingChannel);
+              navigate(`/chat/${pendingChannel.id}`);
+              setPendingChannel(null);
+            } else {
+              toast({ variant: "destructive", title: "Incorrect password" });
+            }
+          }}
         />
       )}
     </div>
