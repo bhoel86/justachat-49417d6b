@@ -304,7 +304,7 @@ const Home = () => {
                     <button
                       key={channel.id}
                       onClick={() => handleJoinRoom(channel)}
-                      className="group relative h-12 min-w-[140px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-lg overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
+                      className="group relative h-20 sm:h-24 w-24 sm:w-28 lg:w-full flex-shrink-0 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
                     >
                       {/* Background image */}
                       {roomBackgrounds[channel.name] && (
@@ -320,18 +320,18 @@ const Home = () => {
                       {/* Dark overlay for readability */}
                       <div className="absolute inset-0 bg-black/40" />
                       
-                      {/* Content */}
-                      <div className="relative h-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3">
-                        <div className={`p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
+                      {/* Content - stacked vertically */}
+                      <div className="relative h-full flex flex-col items-center justify-center gap-1 px-2 py-2">
+                        <div className={`p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
                           {roomIcons[channel.name] ? (
-                            <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-5 sm:[&>svg]:h-5">
+                            <div className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5">
                               {roomIcons[channel.name]}
                             </div>
                           ) : (
-                            <Hash className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <Hash className="w-5 h-5" />
                           )}
                         </div>
-                        <h3 className="font-semibold text-xs sm:text-sm text-white drop-shadow-md whitespace-nowrap">
+                        <h3 className="font-semibold text-[10px] sm:text-xs text-white drop-shadow-md text-center leading-tight">
                           #{formatRoomName(channel.name)}
                         </h3>
                       </div>
