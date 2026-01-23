@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { getRoomTheme } from "@/lib/roomConfig";
 
 export interface Channel {
   id: string;
@@ -312,82 +313,90 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {channels.map((channel) => (
-          <div
-            key={channel.id}
-            className={cn(
-              "group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors",
-              currentChannelId === channel.id
-                ? "bg-primary/20 text-foreground"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-              channel.is_hidden && "opacity-50"
-            )}
-            onClick={() => onChannelSelect(channel)}
-          >
-            {channel.is_private ? (
-              <Lock className="h-4 w-4 shrink-0" />
-            ) : (
-              <Hash className="h-4 w-4 shrink-0" />
-            )}
-            <span className="flex-1 truncate text-sm">{channel.name}</span>
-            {channel.is_hidden && isAdmin && (
-              <span title="Hidden">
-                <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />
+        {channels.map((channel) => {
+          const theme = getRoomTheme(channel.name);
+          return (
+            <div
+              key={channel.id}
+              className={cn(
+                "group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors",
+                currentChannelId === channel.id
+                  ? cn(theme.bgColor, "border border-current/20")
+                  : "hover:bg-secondary",
+                channel.is_hidden && "opacity-50"
+              )}
+              onClick={() => onChannelSelect(channel)}
+            >
+              {channel.is_private ? (
+                <Lock className={cn("h-3.5 w-3.5 shrink-0", currentChannelId === channel.id ? theme.textColor : "text-muted-foreground")} />
+              ) : (
+                <Hash className={cn("h-3.5 w-3.5 shrink-0", currentChannelId === channel.id ? theme.textColor : "text-muted-foreground")} />
+              )}
+              <span className={cn(
+                "flex-1 truncate text-xs font-medium",
+                currentChannelId === channel.id ? theme.textColor : "text-muted-foreground hover:text-foreground"
+              )}>
+                {channel.name}
               </span>
-            )}
-            
-            {/* Dropdown menu for owners/admins */}
-            {(isOwner || isAdmin) && channel.name !== 'general' && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <button
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-opacity"
-                  >
-                    <MoreVertical className="h-3.5 w-3.5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40 bg-popover border-border z-50">
-                  {/* Hide/Show - Admin only */}
-                  {isAdmin && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleHidden(channel);
-                      }}
-                      className="cursor-pointer"
+              {channel.is_hidden && isAdmin && (
+                <span title="Hidden">
+                  <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />
+                </span>
+              )}
+              
+              {/* Dropdown menu for owners/admins */}
+              {(isOwner || isAdmin) && channel.name !== 'general' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-opacity"
                     >
-                      {channel.is_hidden ? (
-                        <>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Show Channel
-                        </>
-                      ) : (
-                        <>
-                          <EyeOff className="h-4 w-4 mr-2" />
-                          Hide Channel
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {/* Delete - Owner only */}
-                  {isOwner && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteConfirmChannel(channel);
-                      }}
-                      className="cursor-pointer text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Channel
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        ))}
+                      <MoreVertical className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 bg-popover border-border z-50">
+                    {/* Hide/Show - Admin only */}
+                    {isAdmin && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleHidden(channel);
+                        }}
+                        className="cursor-pointer text-xs"
+                      >
+                        {channel.is_hidden ? (
+                          <>
+                            <Eye className="h-3.5 w-3.5 mr-2" />
+                            Show Channel
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="h-3.5 w-3.5 mr-2" />
+                            Hide Channel
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {/* Delete - Owner only */}
+                    {isOwner && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirmChannel(channel);
+                        }}
+                        className="cursor-pointer text-destructive focus:text-destructive text-xs"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-2" />
+                        Delete Channel
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Delete confirmation dialog */}

@@ -5,6 +5,105 @@ export interface ModeratorInfo {
   avatar: string;
 }
 
+// Room color themes
+export interface RoomTheme {
+  textColor: string;       // Tailwind class for text
+  bgColor: string;         // Tailwind class for background
+  gradient: string;        // Gradient for backgrounds
+  accentColor: string;     // HSL accent color
+}
+
+export const ROOM_THEMES: Record<string, RoomTheme> = {
+  'general': { 
+    textColor: 'text-blue-400', 
+    bgColor: 'bg-blue-500/20', 
+    gradient: 'from-blue-500 to-cyan-500',
+    accentColor: '199 89% 48%'
+  },
+  'adults-21-plus': { 
+    textColor: 'text-red-400', 
+    bgColor: 'bg-red-500/20', 
+    gradient: 'from-red-600 to-pink-600',
+    accentColor: '0 84% 60%'
+  },
+  'music': { 
+    textColor: 'text-purple-400', 
+    bgColor: 'bg-purple-500/20', 
+    gradient: 'from-purple-500 to-pink-500',
+    accentColor: '270 76% 60%'
+  },
+  'help': { 
+    textColor: 'text-green-400', 
+    bgColor: 'bg-green-500/20', 
+    gradient: 'from-green-500 to-emerald-500',
+    accentColor: '142 71% 45%'
+  },
+  'games': { 
+    textColor: 'text-orange-400', 
+    bgColor: 'bg-orange-500/20', 
+    gradient: 'from-orange-500 to-yellow-500',
+    accentColor: '25 95% 53%'
+  },
+  'politics': { 
+    textColor: 'text-slate-400', 
+    bgColor: 'bg-slate-500/20', 
+    gradient: 'from-slate-500 to-zinc-600',
+    accentColor: '215 14% 50%'
+  },
+  'movies-tv': { 
+    textColor: 'text-indigo-400', 
+    bgColor: 'bg-indigo-500/20', 
+    gradient: 'from-indigo-500 to-violet-500',
+    accentColor: '239 84% 67%'
+  },
+  'sports': { 
+    textColor: 'text-lime-400', 
+    bgColor: 'bg-lime-500/20', 
+    gradient: 'from-lime-500 to-green-500',
+    accentColor: '84 81% 44%'
+  },
+  'technology': { 
+    textColor: 'text-cyan-400', 
+    bgColor: 'bg-cyan-500/20', 
+    gradient: 'from-cyan-500 to-blue-500',
+    accentColor: '188 94% 43%'
+  },
+  'dating': { 
+    textColor: 'text-pink-400', 
+    bgColor: 'bg-pink-500/20', 
+    gradient: 'from-pink-500 to-rose-500',
+    accentColor: '330 81% 60%'
+  },
+  'lounge': { 
+    textColor: 'text-amber-400', 
+    bgColor: 'bg-amber-500/20', 
+    gradient: 'from-amber-500 to-orange-500',
+    accentColor: '38 92% 50%'
+  },
+  'trivia': { 
+    textColor: 'text-teal-400', 
+    bgColor: 'bg-teal-500/20', 
+    gradient: 'from-teal-500 to-cyan-500',
+    accentColor: '174 72% 40%'
+  },
+};
+
+// Default room topics
+export const DEFAULT_TOPICS: Record<string, string> = {
+  'general': 'Welcome to the main chat - anything goes!',
+  'adults-21-plus': '21+ only - mature conversations welcome',
+  'music': 'Share tunes, discuss artists, discover new sounds 🎵',
+  'help': 'Got questions? We got answers! No judgment zone 💡',
+  'games': 'Gaming discussions, LFG, streams & esports 🎮',
+  'politics': 'Civil political discourse - respect all viewpoints',
+  'movies-tv': 'Films, shows, reviews & recommendations 🎬',
+  'sports': 'All sports talk - scores, trades, fantasy 🏆',
+  'technology': 'Tech news, coding, gadgets & innovations 💻',
+  'dating': 'Connection & relationship discussions 💕',
+  'lounge': 'Chill vibes only - unwind and relax ☕',
+  'trivia': 'Test your knowledge! Type /trivia to play 🧠',
+};
+
 export const MODERATORS: Record<string, ModeratorInfo> = {
   'general': { name: 'Mitnick', displayName: 'Kevin Mitnick', avatar: '👤' },
   'adults-21-plus': { name: 'Lamo', displayName: 'Adrian Lamo', avatar: '🎭' },
@@ -111,4 +210,12 @@ export const getModerator = (channelName: string): ModeratorInfo => {
 
 export const getWelcomeMessage = (channelName: string): string => {
   return WELCOME_MESSAGES[channelName] || WELCOME_MESSAGES['general'];
+};
+
+export const getRoomTheme = (channelName: string): RoomTheme => {
+  return ROOM_THEMES[channelName] || ROOM_THEMES['general'];
+};
+
+export const getDefaultTopic = (channelName: string): string => {
+  return DEFAULT_TOPICS[channelName] || DEFAULT_TOPICS['general'];
 };
