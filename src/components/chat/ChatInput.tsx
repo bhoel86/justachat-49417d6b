@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power } from "lucide-react";
+import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power, Smile, MoreHorizontal, Palette, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import EmojiPicker from "./EmojiPicker";
 import TextFormatMenu, { TextFormat, encodeFormat } from "./TextFormatMenu";
 import { useRadioOptional } from "@/contexts/RadioContext";
-
+import { useIsMobile } from "@/hooks/use-mobile";
 // Fun IRC-style user actions
 const USER_ACTIONS = {
   funny: [
@@ -44,6 +45,10 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const [selectedAction, setSelectedAction] = useState<{ emoji: string; action: string; suffix: string } | null>(null);
   const [textFormat, setTextFormat] = useState<TextFormat>({ textStyle: 'none' });
   const radio = useRadioOptional();
+  const isMobile = useIsMobile();
+
+  // Emoji categories for mobile dropdown
+  const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '🔥', '😮', '😢', '😡', '🎉', '💯'];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,100 +315,254 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
           <span>You are muted. You can still use commands.</span>
         </div>
       )}
-      <div className="flex gap-2">
-        <TextFormatMenu currentFormat={textFormat} onFormatChange={setTextFormat} />
-        <EmojiPicker onEmojiSelect={handleEmojiSelect} />
-        
-        {/* User Actions Dropdown */}
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
+      <div className="flex gap-2 items-center justify-center max-w-3xl mx-auto w-full">
+        {/* Desktop: Show individual buttons */}
+        {!isMobile && (
+          <>
+            <TextFormatMenu currentFormat={textFormat} onFormatChange={setTextFormat} />
+            <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+            
+            {/* User Actions Dropdown */}
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-12 w-12 rounded-xl shrink-0"
+                    >
+                      <Zap className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Fun Actions</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="start" className="w-56 bg-popover border border-border z-50">
+                {selectedAction ? (
+                  <>
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      {selectedAction.emoji} Select target for "{selectedAction.action}"
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {onlineUsers.length > 0 ? (
+                      onlineUsers.map((user) => (
+                        <DropdownMenuItem
+                          key={user.username}
+                          onClick={() => handleActionWithUser(user.username)}
+                          className="cursor-pointer"
+                        >
+                          @{user.username}
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <DropdownMenuItem disabled className="text-muted-foreground">
+                        No users online
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setSelectedAction(null)} className="text-muted-foreground">
+                      ← Back to actions
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                      🤪 Funny
+                    </DropdownMenuLabel>
+                    {USER_ACTIONS.funny.map((action, idx) => (
+                      <DropdownMenuItem
+                        key={`funny-${idx}`}
+                        onClick={() => setSelectedAction(action)}
+                        className="cursor-pointer"
+                      >
+                        <span className="mr-2">{action.emoji}</span>
+                        {action.action} {action.suffix ? `... ${action.suffix.slice(0, 15)}...` : ''}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                      💖 Nice
+                    </DropdownMenuLabel>
+                    {USER_ACTIONS.nice.map((action, idx) => (
+                      <DropdownMenuItem
+                        key={`nice-${idx}`}
+                        onClick={() => setSelectedAction(action)}
+                        className="cursor-pointer"
+                      >
+                        <span className="mr-2">{action.emoji}</span>
+                        {action.action} {action.suffix ? `... ${action.suffix.slice(0, 15)}...` : ''}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        )}
+
+        {/* Mobile: Condensed dropdown with all options */}
+        {isMobile && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 rounded-xl shrink-0"
+              >
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="start" 
+              side="top"
+              className="w-64 bg-popover border border-border z-50"
+            >
+              {/* Quick Emojis */}
+              <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                <Smile className="h-3 w-3" /> Emojis
+              </DropdownMenuLabel>
+              <div className="flex flex-wrap gap-1 px-2 pb-2">
+                {QUICK_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => handleEmojiSelect(emoji)}
+                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-muted text-lg"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Text Formatting */}
+              <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                <Palette className="h-3 w-3" /> Text Style
+              </DropdownMenuLabel>
+              <div className="flex flex-wrap gap-1 px-2 pb-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-12 rounded-xl shrink-0"
+                  variant={textFormat.textStyle === 'none' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setTextFormat({ textStyle: 'none' })}
+                  className="h-7 text-xs px-2"
                 >
-                  <Zap className="h-5 w-5" />
+                  None
                 </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent>Fun Actions</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="start" className="w-56 bg-popover border border-border z-50">
-            {selectedAction ? (
-              <>
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  {selectedAction.emoji} Select target for "{selectedAction.action}"
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {onlineUsers.length > 0 ? (
-                  onlineUsers.map((user) => (
-                    <DropdownMenuItem
-                      key={user.username}
-                      onClick={() => handleActionWithUser(user.username)}
-                      className="cursor-pointer"
-                    >
-                      @{user.username}
-                    </DropdownMenuItem>
-                  ))
-                ) : (
-                  <DropdownMenuItem disabled className="text-muted-foreground">
-                    No users online
+                <Button
+                  type="button"
+                  variant={textFormat.textStyle === 'rainbow' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setTextFormat({ textStyle: 'rainbow' })}
+                  className="h-7 text-xs px-2"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Rainbow
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setTextFormat({ textStyle: 'color', textValue: '#ef4444' })}
+                  className="h-6 w-6 rounded bg-red-500"
+                  title="Red"
+                />
+                <button
+                  type="button"
+                  onClick={() => setTextFormat({ textStyle: 'color', textValue: '#3b82f6' })}
+                  className="h-6 w-6 rounded bg-blue-500"
+                  title="Blue"
+                />
+                <button
+                  type="button"
+                  onClick={() => setTextFormat({ textStyle: 'color', textValue: '#22c55e' })}
+                  className="h-6 w-6 rounded bg-green-500"
+                  title="Green"
+                />
+                <button
+                  type="button"
+                  onClick={() => setTextFormat({ textStyle: 'color', textValue: '#a855f7' })}
+                  className="h-6 w-6 rounded bg-purple-500"
+                  title="Purple"
+                />
+              </div>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Fun Actions */}
+              <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                <Zap className="h-3 w-3" /> Fun Actions
+              </DropdownMenuLabel>
+              {selectedAction ? (
+                <>
+                  <div className="px-2 py-1 text-xs text-muted-foreground">
+                    {selectedAction.emoji} Select target for "{selectedAction.action}"
+                  </div>
+                  <ScrollArea className="max-h-32">
+                    {onlineUsers.length > 0 ? (
+                      onlineUsers.map((user) => (
+                        <DropdownMenuItem
+                          key={user.username}
+                          onClick={() => handleActionWithUser(user.username)}
+                          className="cursor-pointer"
+                        >
+                          @{user.username}
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <DropdownMenuItem disabled className="text-muted-foreground text-xs">
+                        No users online
+                      </DropdownMenuItem>
+                    )}
+                  </ScrollArea>
+                  <DropdownMenuItem onClick={() => setSelectedAction(null)} className="text-muted-foreground text-xs">
+                    ← Back
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSelectedAction(null)} className="text-muted-foreground">
-                  ← Back to actions
-                </DropdownMenuItem>
-              </>
-            ) : (
-              <>
-                <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
-                  🤪 Funny
-                </DropdownMenuLabel>
-                {USER_ACTIONS.funny.map((action, idx) => (
-                  <DropdownMenuItem
-                    key={`funny-${idx}`}
-                    onClick={() => setSelectedAction(action)}
-                    className="cursor-pointer"
-                  >
-                    <span className="mr-2">{action.emoji}</span>
-                    {action.action} {action.suffix ? `... ${action.suffix.slice(0, 15)}...` : ''}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
-                  💖 Nice
-                </DropdownMenuLabel>
-                {USER_ACTIONS.nice.map((action, idx) => (
-                  <DropdownMenuItem
-                    key={`nice-${idx}`}
-                    onClick={() => setSelectedAction(action)}
-                    className="cursor-pointer"
-                  >
-                    <span className="mr-2">{action.emoji}</span>
-                    {action.action} {action.suffix ? `... ${action.suffix.slice(0, 15)}...` : ''}
-                  </DropdownMenuItem>
-                ))}
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                </>
+              ) : (
+                <ScrollArea className="max-h-40">
+                  <div className="px-1">
+                    {USER_ACTIONS.funny.slice(0, 4).map((action, idx) => (
+                      <DropdownMenuItem
+                        key={`funny-${idx}`}
+                        onClick={() => setSelectedAction(action)}
+                        className="cursor-pointer text-xs"
+                      >
+                        <span className="mr-2">{action.emoji}</span>
+                        {action.action}
+                      </DropdownMenuItem>
+                    ))}
+                    {USER_ACTIONS.nice.slice(0, 4).map((action, idx) => (
+                      <DropdownMenuItem
+                        key={`nice-${idx}`}
+                        onClick={() => setSelectedAction(action)}
+                        className="cursor-pointer text-xs"
+                      >
+                        <span className="mr-2">{action.emoji}</span>
+                        {action.action}
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         <input
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder={isMuted ? "You can only use commands..." : "Type a message or /command..."}
-          className="flex-1 bg-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          placeholder={isMuted ? "Commands only..." : "Type a message..."}
+          className="flex-1 min-w-0 bg-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
         />
         <Button
           type="submit"
           variant="jac"
           size="icon"
-          className="h-12 w-12 rounded-xl shrink-0"
+          className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl shrink-0"
           disabled={!message.trim()}
         >
           <Send className="h-5 w-5" />
