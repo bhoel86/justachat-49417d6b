@@ -42,7 +42,7 @@ interface ChatInputProps {
 const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUsers = [] }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const [selectedAction, setSelectedAction] = useState<{ emoji: string; action: string; suffix: string } | null>(null);
-  const [textFormat, setTextFormat] = useState<TextFormat>({ type: 'none' });
+  const [textFormat, setTextFormat] = useState<TextFormat>({ textStyle: 'none' });
   const radio = useRadioOptional();
 
   const handleSubmit = (e: React.FormEvent) => {

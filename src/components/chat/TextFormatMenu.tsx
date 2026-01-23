@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Palette, Sparkles, ChevronDown } from "lucide-react";
+import { Palette, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,8 +15,9 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface TextFormat {
-  type: 'none' | 'color' | 'bg' | 'gradient' | 'rainbow';
-  value?: string;
+  textStyle: 'none' | 'color' | 'gradient' | 'rainbow';
+  textValue?: string;
+  bgColor?: string;
 }
 
 interface TextFormatMenuProps {
@@ -67,41 +68,50 @@ const GRADIENTS = [
 ];
 
 const TextFormatMenu = ({ currentFormat, onFormatChange }: TextFormatMenuProps) => {
+  const hasAnyFormat = currentFormat.textStyle !== 'none' || currentFormat.bgColor;
+  
   const getFormatPreview = () => {
-    switch (currentFormat.type) {
-      case 'rainbow':
-        return (
-          <span className="text-[10px] font-bold bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-            ABC
-          </span>
-        );
-      case 'gradient':
-        return (
-          <span 
-            className="text-[10px] font-bold bg-clip-text text-transparent"
-            style={{ backgroundImage: currentFormat.value }}
-          >
-            ABC
-          </span>
-        );
-      case 'color':
-        return (
-          <span className="text-[10px] font-bold" style={{ color: currentFormat.value }}>
-            ABC
-          </span>
-        );
-      case 'bg':
-        return (
-          <span 
-            className="text-[10px] font-bold px-1 rounded text-white"
-            style={{ backgroundColor: currentFormat.value }}
-          >
-            ABC
-          </span>
-        );
-      default:
-        return <Palette className="h-4 w-4" />;
+    if (currentFormat.textStyle === 'rainbow') {
+      return (
+        <span 
+          className="text-[10px] font-bold bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 bg-clip-text text-transparent px-0.5 rounded"
+          style={{ backgroundColor: currentFormat.bgColor ? `${currentFormat.bgColor}60` : undefined }}
+        >
+          ABC
+        </span>
+      );
     }
+    if (currentFormat.textStyle === 'gradient') {
+      return (
+        <span 
+          className="text-[10px] font-bold bg-clip-text text-transparent px-0.5 rounded"
+          style={{ 
+            backgroundImage: currentFormat.textValue,
+            backgroundColor: currentFormat.bgColor ? `${currentFormat.bgColor}60` : undefined 
+          }}
+        >
+          ABC
+        </span>
+      );
+    }
+    if (currentFormat.textStyle === 'color' || currentFormat.bgColor) {
+      return (
+        <span 
+          className="text-[10px] font-bold px-0.5 rounded"
+          style={{ 
+            color: currentFormat.textValue || undefined,
+            backgroundColor: currentFormat.bgColor ? `${currentFormat.bgColor}60` : undefined 
+          }}
+        >
+          ABC
+        </span>
+      );
+    }
+    return <Palette className="h-4 w-4" />;
+  };
+
+  const updateFormat = (updates: Partial<TextFormat>) => {
+    onFormatChange({ ...currentFormat, ...updates });
   };
 
   return (
@@ -125,20 +135,20 @@ const TextFormatMenu = ({ currentFormat, onFormatChange }: TextFormatMenuProps) 
       <DropdownMenuContent align="start" className="w-56 bg-popover border border-border z-50">
         <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
           <Sparkles className="h-3 w-3" />
-          Text Effects
+          Text Style
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
         {/* Rainbow */}
         <DropdownMenuItem
-          onClick={() => onFormatChange({ type: 'rainbow' })}
+          onClick={() => updateFormat({ textStyle: 'rainbow', textValue: undefined })}
           className="cursor-pointer"
         >
           <span className="mr-2 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 bg-clip-text text-transparent font-bold">
             🌈
           </span>
           Rainbow Text
-          {currentFormat.type === 'rainbow' && <span className="ml-auto text-primary">✓</span>}
+          {currentFormat.textStyle === 'rainbow' && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
         
         {/* Gradient submenu */}
@@ -151,14 +161,14 @@ const TextFormatMenu = ({ currentFormat, onFormatChange }: TextFormatMenuProps) 
             {GRADIENTS.map((gradient) => (
               <DropdownMenuItem
                 key={gradient.name}
-                onClick={() => onFormatChange({ type: 'gradient', value: gradient.value })}
+                onClick={() => updateFormat({ textStyle: 'gradient', textValue: gradient.value })}
                 className="cursor-pointer"
               >
                 <span 
                   className={`mr-2 w-4 h-4 rounded bg-gradient-to-r ${gradient.preview}`}
                 />
                 {gradient.name}
-                {currentFormat.type === 'gradient' && currentFormat.value === gradient.value && (
+                {currentFormat.textStyle === 'gradient' && currentFormat.textValue === gradient.value && (
                   <span className="ml-auto text-primary">✓</span>
                 )}
               </DropdownMenuItem>
@@ -177,9 +187,9 @@ const TextFormatMenu = ({ currentFormat, onFormatChange }: TextFormatMenuProps) 
               {TEXT_COLORS.map((color) => (
                 <button
                   key={color.name}
-                  onClick={() => onFormatChange({ type: 'color', value: color.value })}
+                  onClick={() => updateFormat({ textStyle: 'color', textValue: color.value })}
                   className={`w-6 h-6 rounded ${color.class} hover:scale-110 transition-transform ${
-                    currentFormat.type === 'color' && currentFormat.value === color.value 
+                    currentFormat.textStyle === 'color' && currentFormat.textValue === color.value 
                       ? 'ring-2 ring-white ring-offset-1 ring-offset-background' 
                       : ''
                   }`}
@@ -190,20 +200,34 @@ const TextFormatMenu = ({ currentFormat, onFormatChange }: TextFormatMenuProps) 
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+          <Palette className="h-3 w-3" />
+          Background Color
+        </DropdownMenuLabel>
+        
         {/* Background Color submenu */}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="cursor-pointer">
             <span className="mr-2">🖌️</span>
-            Background Color
+            Background
+            {currentFormat.bgColor && <span className="ml-auto text-primary text-xs">Active</span>}
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="bg-popover border border-border">
+            <DropdownMenuItem
+              onClick={() => updateFormat({ bgColor: undefined })}
+              className="cursor-pointer text-muted-foreground"
+            >
+              None
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <div className="grid grid-cols-4 gap-1 p-2">
               {BG_COLORS.map((color) => (
                 <button
                   key={color.name}
-                  onClick={() => onFormatChange({ type: 'bg', value: color.value })}
+                  onClick={() => updateFormat({ bgColor: color.value })}
                   className={`w-6 h-6 rounded ${color.class} hover:scale-110 transition-transform ${
-                    currentFormat.type === 'bg' && currentFormat.value === color.value 
+                    currentFormat.bgColor === color.value 
                       ? 'ring-2 ring-white ring-offset-1 ring-offset-background' 
                       : ''
                   }`}
@@ -218,11 +242,12 @@ const TextFormatMenu = ({ currentFormat, onFormatChange }: TextFormatMenuProps) 
         
         {/* Clear formatting */}
         <DropdownMenuItem
-          onClick={() => onFormatChange({ type: 'none' })}
+          onClick={() => onFormatChange({ textStyle: 'none' })}
           className="cursor-pointer text-muted-foreground"
+          disabled={!hasAnyFormat}
         >
           <span className="mr-2">❌</span>
-          Clear Formatting
+          Clear All Formatting
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -231,16 +256,25 @@ const TextFormatMenu = ({ currentFormat, onFormatChange }: TextFormatMenuProps) 
 
 // Export format encoding/decoding utilities
 export const encodeFormat = (format: TextFormat, text: string): string => {
-  if (format.type === 'none' || !text) return text;
+  if ((format.textStyle === 'none' && !format.bgColor) || !text) return text;
   
-  const formatCode = {
-    rainbow: 'R',
-    gradient: `G:${format.value}`,
-    color: `C:${format.value}`,
-    bg: `B:${format.value}`,
-  }[format.type];
+  const parts: string[] = [];
   
-  return `[FMT:${formatCode}]${text}[/FMT]`;
+  if (format.textStyle === 'rainbow') {
+    parts.push('R');
+  } else if (format.textStyle === 'gradient' && format.textValue) {
+    parts.push(`G:${format.textValue}`);
+  } else if (format.textStyle === 'color' && format.textValue) {
+    parts.push(`C:${format.textValue}`);
+  }
+  
+  if (format.bgColor) {
+    parts.push(`B:${format.bgColor}`);
+  }
+  
+  if (parts.length === 0) return text;
+  
+  return `[FMT:${parts.join('|')}]${text}[/FMT]`;
 };
 
 export const decodeFormat = (text: string): { format: TextFormat; text: string } | null => {
@@ -248,21 +282,25 @@ export const decodeFormat = (text: string): { format: TextFormat; text: string }
   if (!match) return null;
   
   const [, formatCode, content] = match;
+  const parts = formatCode.split('|');
   
-  if (formatCode === 'R') {
-    return { format: { type: 'rainbow' }, text: content };
-  }
-  if (formatCode.startsWith('G:')) {
-    return { format: { type: 'gradient', value: formatCode.slice(2) }, text: content };
-  }
-  if (formatCode.startsWith('C:')) {
-    return { format: { type: 'color', value: formatCode.slice(2) }, text: content };
-  }
-  if (formatCode.startsWith('B:')) {
-    return { format: { type: 'bg', value: formatCode.slice(2) }, text: content };
+  const format: TextFormat = { textStyle: 'none' };
+  
+  for (const part of parts) {
+    if (part === 'R') {
+      format.textStyle = 'rainbow';
+    } else if (part.startsWith('G:')) {
+      format.textStyle = 'gradient';
+      format.textValue = part.slice(2);
+    } else if (part.startsWith('C:')) {
+      format.textStyle = 'color';
+      format.textValue = part.slice(2);
+    } else if (part.startsWith('B:')) {
+      format.bgColor = part.slice(2);
+    }
   }
   
-  return null;
+  return { format, text: content };
 };
 
 export default TextFormatMenu;

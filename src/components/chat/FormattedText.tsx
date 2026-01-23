@@ -5,7 +5,7 @@ interface FormattedTextProps {
   className?: string;
 }
 
-// Rainbow animation CSS for individual characters
+// Rainbow colors for individual characters
 const rainbowColors = [
   '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7'
 ];
@@ -19,11 +19,13 @@ const FormattedText = ({ text, className = '' }: FormattedTextProps) => {
   }
   
   const { format, text: content } = decoded;
+  const bgStyle = format.bgColor ? { backgroundColor: `${format.bgColor}60` } : {};
+  const bgClass = format.bgColor ? 'px-1 rounded' : '';
   
-  switch (format.type) {
+  switch (format.textStyle) {
     case 'rainbow':
       return (
-        <span className={className}>
+        <span className={`${bgClass} ${className}`} style={bgStyle}>
           {content.split('').map((char, i) => (
             <span
               key={i}
@@ -41,8 +43,11 @@ const FormattedText = ({ text, className = '' }: FormattedTextProps) => {
     case 'gradient':
       return (
         <span
-          className={`bg-clip-text text-transparent font-medium ${className}`}
-          style={{ backgroundImage: format.value }}
+          className={`bg-clip-text text-transparent font-medium ${bgClass} ${className}`}
+          style={{ 
+            backgroundImage: format.textValue,
+            ...bgStyle 
+          }}
         >
           {content}
         </span>
@@ -50,22 +55,23 @@ const FormattedText = ({ text, className = '' }: FormattedTextProps) => {
     
     case 'color':
       return (
-        <span className={className} style={{ color: format.value, fontWeight: 500 }}>
-          {content}
-        </span>
-      );
-    
-    case 'bg':
-      return (
-        <span
-          className={`px-1 rounded text-white font-medium ${className}`}
-          style={{ backgroundColor: format.value }}
+        <span 
+          className={`font-medium ${bgClass} ${className}`} 
+          style={{ color: format.textValue, ...bgStyle }}
         >
           {content}
         </span>
       );
     
     default:
+      // Just background color, no text style
+      if (format.bgColor) {
+        return (
+          <span className={`px-1 rounded ${className}`} style={bgStyle}>
+            {content}
+          </span>
+        );
+      }
       return <span className={className}>{content}</span>;
   }
 };
