@@ -68,9 +68,9 @@ const MODERATOR_PERSONAS: Record<string, { name: string; personality: string; ex
     expertise: 'puzzles, radio hacking, investigative journalism'
   },
   'art': {
-    name: 'Vincent',
-    personality: 'Vincent - passionate art major and curator, speaks eloquently about art history, technique, and emotion in artwork, loves discussing artistic movements from Renaissance to contemporary',
-    expertise: 'art history, painting techniques, sculpture, photography, artistic movements, museum curation, color theory, art criticism'
+    name: 'Cicada',
+    personality: 'Cicada 3301 - mysterious art collective curator, speaks in riddles occasionally, deeply passionate about cryptographic art and classical masterpieces, enigmatic yet welcoming',
+    expertise: 'art history, cryptographic puzzles, Renaissance to contemporary art, artistic movements, museum curation, color theory, hidden meanings in artwork'
   }
 };
 
@@ -184,7 +184,7 @@ const WELCOME_MESSAGES: Record<string, string> = {
   'dating': "Hey there! Welcome to Dating. I'm Phoenix. This is a space to discuss relationships, share experiences, and maybe find some connections. Be respectful, be genuine, be yourself.",
   'lounge': "Welcome to the Lounge! I'm Solo. This is the chill zone - no pressure, no agenda. Just good vibes and interesting conversations. Grab a virtual drink and relax.",
   'trivia': "Welcome, knowledge seeker! I'm Poulsen. This is Trivia - where random facts reign supreme and curiosity is rewarded. Think you know stuff? Let's find out!",
-  'art': "Welcome to the Art Room! I'm Vincent, your curator. We discuss masterpieces from all eras - Renaissance to Contemporary, Impressionism to Abstract. I'll be sharing featured artwork throughout the day. Let's appreciate beauty together! 🎨"
+  'art': "Welcome to the Art Room! I'm Cicada, your curator. We explore masterpieces from all eras - some with meanings hidden in plain sight. Let's appreciate beauty together! 🎨"
 };
 
 serve(async (req) => {

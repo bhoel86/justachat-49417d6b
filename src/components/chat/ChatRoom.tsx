@@ -18,7 +18,8 @@ import RoomPasswordModal from "./RoomPasswordModal";
 import ArtDisplay from "./ArtDisplay";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
-import { getModerator, getWelcomeMessage, getRandomTip } from "@/lib/roomConfig";
+import { getModerator, getWelcomeMessage, getRandomTip, isAdultChannel } from "@/lib/roomConfig";
+import { moderateContent, shouldBlockMessage } from "@/lib/contentModeration";
 
 interface Message {
   id: string;
@@ -420,6 +421,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           const featured = await artCurator.fetchFeaturedArt();
           if (featured) {
             // Add art message with special formatting
+            const moderator = getModerator('art');
             const artMsg: Message = {
               id: `art-${Date.now()}`,
               content: `ART_DISPLAY:${JSON.stringify({
@@ -435,7 +437,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
               channel_id: currentChannel.id,
               created_at: new Date().toISOString(),
               isModerator: true,
-              profile: { username: `🎨 Vincent` }
+              profile: { username: `🎨 ${moderator.name}` }
             };
             setMessages(prev => [...prev, artMsg]);
           }
@@ -708,6 +710,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           addSystemMessage('Fetching a new masterpiece...');
           const featured = await artCurator.fetchFeaturedArt();
           if (featured) {
+            const moderator = getModerator('art');
             const artMsg: Message = {
               id: `art-${Date.now()}`,
               content: `ART_DISPLAY:${JSON.stringify({
@@ -723,7 +726,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
               channel_id: currentChannel.id,
               created_at: new Date().toISOString(),
               isModerator: true,
-              profile: { username: `🎨 Vincent` }
+              profile: { username: `🎨 ${moderator.name}` }
             };
             setMessages(prev => [...prev, artMsg]);
           } else {
@@ -747,7 +750,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
       return;
     }
 
-    if (isMuted) {
+    if (isMuted || isRoomMuted) {
       toast({
         variant: "destructive",
         title: "You are muted",
@@ -756,17 +759,47 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
       return;
     }
 
+    // Content moderation for non-18+ users
+    let finalContent = content;
+    const channelName = currentChannel.name || 'general';
+    const isInAdultChannel = isAdultChannel(channelName);
+    
+    if (!isInAdultChannel) {
+      // Check if message should be blocked entirely
+      if (shouldBlockMessage(content)) {
+        toast({
+          variant: "destructive",
+          title: "Message blocked",
+          description: "Your message contains inappropriate content."
+        });
+        return;
+      }
+      
+      // Moderate content (filter URLs and profanity)
+      const modResult = moderateContent(content, channelName, false);
+      finalContent = modResult.filteredMessage;
+      
+      // Show warning if content was filtered
+      if (modResult.warnings.length > 0) {
+        toast({
+          title: "Content filtered",
+          description: modResult.warnings.join('. '),
+          variant: "default"
+        });
+      }
+    }
+
     await supabaseUntyped
       .from('messages')
       .insert({
-        content,
+        content: finalContent,
         user_id: user.id,
         channel_id: currentChannel.id
       });
 
     // Check if this is a trivia answer (only in trivia channel with active question)
     if (triviaGame.isTriviaChannel && triviaGame.gameState.currentQuestion) {
-      const wasCorrect = await triviaGame.checkTriviaAnswer(content, username);
+      const wasCorrect = await triviaGame.checkTriviaAnswer(finalContent, username);
       if (wasCorrect) {
         // Answer was correct, trivia hook handles the response
         return;
@@ -774,8 +807,8 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     }
 
     // Check if moderator should respond
-    if (shouldModeratorRespond(content)) {
-      triggerModeratorResponse(content);
+    if (shouldModeratorRespond(finalContent)) {
+      triggerModeratorResponse(finalContent);
     }
   };
 
