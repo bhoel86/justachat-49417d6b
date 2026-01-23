@@ -375,9 +375,9 @@ const Home = () => {
                         </div>
                         <div className="flex flex-col">
                           <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap">
-                            💕 Dating
+                            💕 Find Your Match
                           </h3>
-                          <span className="text-[10px] sm:text-xs text-white/80">Find your match</span>
+                          <span className="text-[10px] sm:text-xs text-white/80">Start connecting today</span>
                         </div>
                       </div>
 
