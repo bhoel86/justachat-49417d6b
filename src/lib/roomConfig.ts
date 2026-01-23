@@ -124,7 +124,7 @@ export const MODERATORS: Record<string, ModeratorInfo> = {
   'dating': { name: 'Phoenix', displayName: 'Phoenix', avatar: '💕' },
   'lounge': { name: 'Solo', displayName: 'Solo', avatar: '☕' },
   'trivia': { name: 'Poulsen', displayName: 'Kevin Poulsen', avatar: '🧠' },
-  'art': { name: 'Vincent', displayName: 'Vincent (Art Major)', avatar: '🎨' },
+  'art': { name: 'Cicada', displayName: 'Cicada 3301', avatar: '🎨' },
 };
 
 // Room welcome messages (kept concise to avoid chat clutter)
@@ -141,7 +141,7 @@ export const WELCOME_MESSAGES: Record<string, string> = {
   'dating': "I'm Phoenix. Be genuine. 💫",
   'lounge': "I'm Solo. Chill zone. ☕",
   'trivia': "I'm Poulsen. Test your knowledge! 🎯",
-  'art': "I'm Vincent, your art curator. Let's explore masterpieces together! 🖼️",
+  'art': "I'm Cicada, your art curator. Let's explore masterpieces together! 🖼️",
 };
 
 // Tips of the day per room
@@ -234,4 +234,10 @@ export const getRoomTheme = (channelName: string): RoomTheme => {
 
 export const getDefaultTopic = (channelName: string): string => {
   return DEFAULT_TOPICS[channelName] || DEFAULT_TOPICS['general'];
+};
+
+// Check if channel is 18+ / adults-only
+export const isAdultChannel = (channelName: string): boolean => {
+  const adultChannels = ['adults-21-plus', 'adult', 'adults', 'nsfw'];
+  return adultChannels.includes(channelName.toLowerCase());
 };
