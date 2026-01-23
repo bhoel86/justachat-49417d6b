@@ -42,8 +42,8 @@ const RADIO_STATIONS: RadioStation[] = [
   { name: 'Trap Nation', videoId: 'f2xGxd9xPYA', artist: 'Trap Nation', genre: 'Trap', albumArt: 'https://i.ytimg.com/vi/f2xGxd9xPYA/hqdefault.jpg' },
   
   // Rock & Metal
-  { name: 'Rock Radio', videoId: 'uT3SBzmDxGk', artist: 'Best of Rock', genre: 'Rock', albumArt: 'https://i.ytimg.com/vi/uT3SBzmDxGk/hqdefault.jpg' },
-  { name: 'Metal Mix', videoId: 'CKAc3nYEatw', artist: 'Metal Sounds', genre: 'Metal', albumArt: 'https://i.ytimg.com/vi/CKAc3nYEatw/hqdefault.jpg' },
+  { name: 'Rock Classics', videoId: 'IO9XlQrEt2Y', artist: 'Classic Rock', genre: 'Rock', albumArt: 'https://i.ytimg.com/vi/IO9XlQrEt2Y/hqdefault.jpg' },
+  { name: 'Heavy Metal', videoId: 'HbvYeLxMKN8', artist: 'Metal Radio', genre: 'Metal', albumArt: 'https://i.ytimg.com/vi/HbvYeLxMKN8/hqdefault.jpg' },
   
   // EDM & Electronic
   { name: 'NCS Radio', videoId: '7tNtU5XFwrU', artist: 'NoCopyrightSounds', genre: 'EDM', albumArt: 'https://i.ytimg.com/vi/7tNtU5XFwrU/hqdefault.jpg' },
