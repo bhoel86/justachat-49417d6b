@@ -33,6 +33,10 @@ import datingBg from "@/assets/rooms/dating-bg.jpg";
 import loungeBg from "@/assets/rooms/lounge-bg.jpg";
 import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 
+// Banner and footer graphics
+import welcomeBanner from "@/assets/welcome-banner.png";
+import footerMascots from "@/assets/footer-mascots.png";
+
 interface Channel {
   id: string;
   name: string;
@@ -340,25 +344,35 @@ const Home = () => {
 
           {/* Center - Public Chat Preview */}
           <div className="flex-1 min-w-0">
-            <div className="bg-card rounded-2xl border border-border h-[calc(100vh-200px)] flex flex-col overflow-hidden">
-              {/* Public Chat Header */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
-                <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
-                  <Hash className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">#General</h3>
-                  <p className="text-xs text-muted-foreground">Public Chat • Click to join</p>
+            {/* Welcome Banner */}
+            <div className="relative rounded-2xl overflow-hidden mb-4 border border-border">
+              <img 
+                src={welcomeBanner} 
+                alt="Welcome to Justachat" 
+                className="w-full h-32 sm:h-40 object-cover"
+              />
+              {/* Welcome text overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <div className="text-center">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg">Welcome!</h2>
+                  <p className="text-sm sm:text-base text-white/90 drop-shadow-md mt-1">This is the main hangout spot.</p>
                 </div>
                 <Button 
                   onClick={() => {
                     const generalChannel = channels.find(c => c.name === 'general');
                     if (generalChannel) handleJoinRoom(generalChannel);
                   }}
-                  className="jac-gradient-bg hover:opacity-90"
+                  className="absolute right-4 top-4 jac-gradient-bg hover:opacity-90"
                 >
                   Join Chat
                 </Button>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border h-[calc(100vh-340px)] flex flex-col overflow-hidden">
+              {/* Topic bar */}
+              <div className="px-4 py-2 border-b border-border bg-primary/5">
+                <p className="text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
               </div>
               
               {/* Live Chat Preview */}
@@ -368,13 +382,38 @@ const Home = () => {
         </div>
         
         {/* Official Footer */}
-        <footer className="text-center mt-8 pt-6 border-t border-border/50">
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Justachat™. All rights reserved.
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
-          </p>
+        <footer className="mt-8 pt-6 border-t border-border/50">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Logo and tagline */}
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold jac-gradient-text">Justachat<sup className="text-xs">™</sup></h3>
+                <p className="text-xs text-muted-foreground">Chat. Connect. Chill.</p>
+              </div>
+            </div>
+            
+            {/* Mascots */}
+            <div className="flex-shrink-0">
+              <img 
+                src={footerMascots} 
+                alt="Justachat Mascots" 
+                className="h-16 sm:h-20 w-auto object-contain"
+              />
+            </div>
+            
+            {/* Copyright */}
+            <div className="text-center sm:text-right">
+              <p className="text-xs text-muted-foreground">
+                © {new Date().getFullYear()} Justachat™ All rights reserved.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
+              </p>
+            </div>
+          </div>
         </footer>
       </main>
     </div>
