@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      art_discussions: {
+        Row: {
+          art_piece_id: string
+          channel_id: string
+          discussion_summary: string | null
+          id: string
+          posted_at: string
+        }
+        Insert: {
+          art_piece_id: string
+          channel_id: string
+          discussion_summary?: string | null
+          id?: string
+          posted_at?: string
+        }
+        Update: {
+          art_piece_id?: string
+          channel_id?: string
+          discussion_summary?: string | null
+          id?: string
+          posted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "art_discussions_art_piece_id_fkey"
+            columns: ["art_piece_id"]
+            isOneToOne: false
+            referencedRelation: "art_pieces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "art_discussions_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      art_pieces: {
+        Row: {
+          artist: string
+          created_at: string
+          description: string | null
+          discussed_at: string | null
+          discussion_count: number | null
+          id: string
+          image_url: string
+          medium: string | null
+          period: string | null
+          source: string | null
+          source_id: string | null
+          title: string
+          year: string | null
+        }
+        Insert: {
+          artist: string
+          created_at?: string
+          description?: string | null
+          discussed_at?: string | null
+          discussion_count?: number | null
+          id?: string
+          image_url: string
+          medium?: string | null
+          period?: string | null
+          source?: string | null
+          source_id?: string | null
+          title: string
+          year?: string | null
+        }
+        Update: {
+          artist?: string
+          created_at?: string
+          description?: string | null
+          discussed_at?: string | null
+          discussion_count?: number | null
+          id?: string
+          image_url?: string
+          medium?: string | null
+          period?: string | null
+          source?: string | null
+          source_id?: string | null
+          title?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
