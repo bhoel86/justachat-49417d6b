@@ -589,7 +589,8 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
         align="end" 
         side="bottom"
         sideOffset={4}
-        className="w-48 bg-popover border border-border shadow-lg z-50">
+        avoidCollisions={false}
+        className="w-48 bg-popover border border-border shadow-lg z-50 max-h-80 overflow-y-auto">
         <DropdownMenuLabel className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-500/30 to-primary/30 flex items-center justify-center text-sm">
             {moderator.avatar}
@@ -711,7 +712,8 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
               align="start" 
               side="bottom"
               sideOffset={4}
-              className="w-48 bg-popover border border-border shadow-lg z-50">
+              avoidCollisions={false}
+              className="w-48 bg-popover border border-border shadow-lg z-50 max-h-80 overflow-y-auto">
               <DropdownMenuLabel className="flex items-center gap-2">
                 <UserAvatar
                   avatarUrl={member.avatar_url}
@@ -818,7 +820,8 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
             align="end" 
             side="bottom"
             sideOffset={4}
-            className="w-56 bg-popover border border-border shadow-lg z-50">
+            avoidCollisions={false}
+            className="w-56 bg-popover border border-border shadow-lg z-50 max-h-80 overflow-y-auto">
             {/* Moderation Actions */}
             {canModerate && (
               <>

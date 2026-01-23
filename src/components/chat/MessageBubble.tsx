@@ -71,7 +71,8 @@ const MessageBubble = ({
             align="start" 
             side="bottom"
             sideOffset={4}
-            className="w-48 bg-popover border border-border shadow-lg z-50">
+            avoidCollisions={false}
+            className="w-48 bg-popover border border-border shadow-lg z-50 max-h-80 overflow-y-auto">
             <DropdownMenuLabel className="flex items-center gap-2">
               <UserAvatar
                 avatarUrl={avatarUrl}
