@@ -288,12 +288,12 @@ const Home = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:h-[calc(100vh-60px)] lg:flex lg:flex-col">
         {/* Mobile: Stack vertically, Desktop: Side by side */}
-        <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 sm:gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 sm:gap-6 lg:flex-1 lg:min-h-0">
           {/* Room Cards - Horizontal scroll on mobile */}
           <div className="lg:w-80 xl:w-96 flex-shrink-0 lg:flex lg:flex-col">
-            <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4 lg:flex-1 lg:flex lg:flex-col">
+            <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4 lg:flex-1 lg:flex lg:flex-col lg:min-h-0">
               <div className="mb-3 sm:mb-4">
                 <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
                 <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
@@ -391,7 +391,7 @@ const Home = () => {
           </div>
 
           {/* Center - Public Chat Preview */}
-          <div className="flex-1 min-w-0 lg:flex lg:flex-col">
+          <div className="flex-1 min-w-0 lg:flex lg:flex-col lg:min-h-0">
             {/* Welcome Banner */}
             <div className="relative rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-border flex-shrink-0">
               <img 
@@ -418,7 +418,7 @@ const Home = () => {
             </div>
 
             {/* Chat Preview - Grows to fill remaining space */}
-            <div className="bg-card rounded-xl sm:rounded-2xl border border-border h-[50vh] lg:h-auto lg:flex-1 flex flex-col overflow-hidden">
+            <div className="bg-card rounded-xl sm:rounded-2xl border border-border h-[50vh] lg:h-auto lg:flex-1 lg:min-h-0 flex flex-col overflow-hidden">
               {/* Topic bar */}
               <div className="px-3 sm:px-4 py-1.5 sm:py-2 border-b border-border bg-primary/5">
                 <p className="text-xs sm:text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
