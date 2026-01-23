@@ -12,12 +12,26 @@ import {
 import UserAvatar from "@/components/avatar/UserAvatar";
 import FormattedText from "./FormattedText";
 
+type UserRole = 'owner' | 'admin' | 'moderator' | 'user';
+
+// Role-based username colors
+const getRoleColor = (role: UserRole): string => {
+  switch (role) {
+    case 'owner': return 'text-red-500';
+    case 'admin': return 'text-amber-400';
+    case 'moderator': return 'text-zinc-400';
+    case 'user': 
+    default: return 'text-blue-600 dark:text-blue-400';
+  }
+};
+
 interface MessageBubbleProps {
   id: string;
   message: string;
   sender: string;
   senderId?: string;
   senderAvatarUrl?: string | null;
+  senderRole?: UserRole;
   timestamp: Date;
   isOwn: boolean;
   isSystem?: boolean;
@@ -39,6 +53,7 @@ const MessageBubble = ({
   sender, 
   senderId,
   senderAvatarUrl,
+  senderRole = 'user',
   timestamp, 
   isOwn, 
   isSystem = false,
@@ -57,8 +72,9 @@ const MessageBubble = ({
   const displayMessage = translatedMessage && !showOriginal ? translatedMessage : message;
   
   // Username dropdown component with 3-dot menu
-  const UsernameWithDropdown = ({ username, userId, isOwnMessage, avatarUrl }: { username: string; userId?: string; isOwnMessage: boolean; avatarUrl?: string | null }) => {
-    if (!userId) return <span className="text-[10px] font-medium text-primary">{username}</span>;
+  const UsernameWithDropdown = ({ username, userId, isOwnMessage, avatarUrl, role }: { username: string; userId?: string; isOwnMessage: boolean; avatarUrl?: string | null; role: UserRole }) => {
+    const roleColorClass = getRoleColor(role);
+    if (!userId) return <span className={cn("text-[10px] font-medium", roleColorClass)}>{username}</span>;
     
     return (
       <div className="flex items-center gap-0.5">
@@ -144,7 +160,7 @@ const MessageBubble = ({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className="text-[10px] font-medium text-primary">{username}</span>
+        <span className={cn("text-[10px] font-medium", roleColorClass)}>{username}</span>
       </div>
     );
   };
@@ -214,9 +230,9 @@ const MessageBubble = ({
       >
         <div className="flex items-center gap-1">
           {!isOwn ? (
-            <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={false} avatarUrl={senderAvatarUrl} />
+            <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={false} avatarUrl={senderAvatarUrl} role={senderRole} />
           ) : (
-            <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={true} avatarUrl={senderAvatarUrl} />
+            <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={true} avatarUrl={senderAvatarUrl} role={senderRole} />
           )}
           <span
             className={cn(
