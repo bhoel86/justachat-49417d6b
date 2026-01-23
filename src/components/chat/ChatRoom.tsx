@@ -697,6 +697,42 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
         return;
       }
 
+      // Handle art commands
+      if (result.message.startsWith('ART_COMMAND:')) {
+        if (currentChannel?.name !== 'art') {
+          addSystemMessage('Art commands only work in the #art channel.');
+          return;
+        }
+        const action = result.message.split(':')[1];
+        if (action === 'new') {
+          addSystemMessage('Fetching a new masterpiece...');
+          const featured = await artCurator.fetchFeaturedArt();
+          if (featured) {
+            const artMsg: Message = {
+              id: `art-${Date.now()}`,
+              content: `ART_DISPLAY:${JSON.stringify({
+                imageUrl: featured.image_url,
+                title: featured.piece.title,
+                artist: featured.piece.artist,
+                year: featured.piece.year,
+                period: featured.piece.period,
+                medium: featured.piece.medium,
+                commentary: featured.commentary
+              })}`,
+              user_id: 'moderator',
+              channel_id: currentChannel.id,
+              created_at: new Date().toISOString(),
+              isModerator: true,
+              profile: { username: `🎨 Vincent` }
+            };
+            setMessages(prev => [...prev, artMsg]);
+          } else {
+            addSystemMessage('No art pieces available at the moment. Try again later!');
+          }
+        }
+        return;
+      }
+
       if (result.isSystemMessage && !result.broadcast) {
         addSystemMessage(result.message);
       } else if (result.broadcast) {

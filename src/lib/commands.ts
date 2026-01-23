@@ -1160,6 +1160,15 @@ const klinesCommand: CommandHandler = async (args, context) => {
   return { success: true, message: `**Active K-lines:**\n${list}`, isSystemMessage: true };
 };
 
+// Art room command - request new art piece
+const artCommand: CommandHandler = async (args, context) => {
+  return {
+    success: true,
+    message: 'ART_COMMAND:new',
+    isSystemMessage: false,
+  };
+};
+
 // Command registry
 const commands: Record<string, CommandHandler> = {
   help: helpCommand,
@@ -1209,6 +1218,9 @@ const commands: Record<string, CommandHandler> = {
   kline: klineCommand,
   unkline: unklineCommand,
   klines: klinesCommand,
+  // Art room commands
+  art: artCommand,
+  nextart: artCommand, // Alias
 };
 
 export const parseCommand = (input: string): { command: string; args: string[] } | null => {
