@@ -277,80 +277,122 @@ const Home = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold mb-3">Choose a Room</h2>
-          <p className="text-muted-foreground text-lg">Select a chat room to join the conversation</p>
-        </div>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Side - Room Cards */}
+          <div className="lg:w-80 xl:w-96 flex-shrink-0">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-2">Chat Rooms</h2>
+              <p className="text-muted-foreground text-sm">Select a room to join</p>
+            </div>
 
-        {loadingChannels ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-xl bg-card animate-pulse" />
-            ))}
+            {loadingChannels ? (
+              <div className="grid grid-cols-2 gap-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-xl bg-card animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-2 scrollbar-thin">
+                {channels.map((channel) => (
+                  <button
+                    key={channel.id}
+                    onClick={() => handleJoinRoom(channel)}
+                    className="group relative aspect-square rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
+                  >
+                    {/* Background image */}
+                    {roomBackgrounds[channel.name] && (
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
+                        style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
+                      />
+                    )}
+                    
+                    {/* Gradient overlay - lighter for darker themed rooms */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} ${
+                      ['lounge', 'politics', 'adults-21-plus'].includes(channel.name) 
+                        ? 'opacity-30 group-hover:opacity-40' 
+                        : 'opacity-20 group-hover:opacity-30'
+                    } transition-opacity`} />
+                    
+                    {/* Dark overlay for readability - lighter for brown/dark themed rooms */}
+                    <div className={`absolute inset-0 ${
+                      ['lounge', 'politics', 'adults-21-plus'].includes(channel.name)
+                        ? 'bg-black/15'
+                        : 'bg-black/30'
+                    }`} />
+                    
+                    {/* Vignette effect */}
+                    <div 
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)'
+                      }}
+                    />
+                    
+                    {/* Content */}
+                    <div className="relative h-full flex flex-col items-center justify-center p-3 text-center">
+                      <div className={`mb-2 p-3 rounded-full bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-lg group-hover:scale-110 transition-transform`}>
+                        {roomIcons[channel.name] || <Hash className="w-6 h-6" />}
+                      </div>
+                      <h3 className="font-semibold text-sm mb-0.5 text-white drop-shadow-md">
+                        #{formatRoomName(channel.name)}
+                      </h3>
+                    </div>
+
+                    {/* Hover effect overlay */}
+                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {channels.map((channel) => (
-              <button
-                key={channel.id}
-                onClick={() => handleJoinRoom(channel)}
-                className="group relative aspect-square rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
-              >
-                {/* Background image */}
-                {roomBackgrounds[channel.name] && (
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
-                    style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
-                  />
-                )}
-                
-                {/* Gradient overlay - lighter for darker themed rooms */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} ${
-                  ['lounge', 'politics', 'adults-21-plus'].includes(channel.name) 
-                    ? 'opacity-30 group-hover:opacity-40' 
-                    : 'opacity-20 group-hover:opacity-30'
-                } transition-opacity`} />
-                
-                {/* Dark overlay for readability - lighter for brown/dark themed rooms */}
-                <div className={`absolute inset-0 ${
-                  ['lounge', 'politics', 'adults-21-plus'].includes(channel.name)
-                    ? 'bg-black/15'
-                    : 'bg-black/30'
-                }`} />
-                
-                {/* Vignette effect */}
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)'
-                  }}
-                />
-                
-                {/* Content */}
-                <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
-                  <div className={`mb-3 p-4 rounded-full bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-lg group-hover:scale-110 transition-transform`}>
-                    {roomIcons[channel.name] || <Hash className="w-8 h-8" />}
-                  </div>
-                  <h3 className="font-semibold text-lg mb-1 text-white drop-shadow-md">
-                    #{formatRoomName(channel.name)}
-                  </h3>
-                  {channel.description && (
-                    <p className="text-xs text-white/80 line-clamp-2 drop-shadow">
-                      {channel.description}
-                    </p>
-                  )}
+
+          {/* Center - Public Chat Preview */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-card rounded-2xl border border-border h-[calc(100vh-200px)] flex flex-col overflow-hidden">
+              {/* Public Chat Header */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
+                <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
+                  <Hash className="w-5 h-5 text-primary-foreground" />
                 </div>
-
-                {/* Hover effect overlay */}
-                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
-            ))}
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground">#General</h3>
+                  <p className="text-xs text-muted-foreground">Public Chat • Click to join</p>
+                </div>
+                <Button 
+                  onClick={() => {
+                    const generalChannel = channels.find(c => c.name === 'general');
+                    if (generalChannel) handleJoinRoom(generalChannel);
+                  }}
+                  className="jac-gradient-bg hover:opacity-90"
+                >
+                  Join Chat
+                </Button>
+              </div>
+              
+              {/* Chat Preview Area */}
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-transparent to-primary/5">
+                <div className="h-20 w-20 rounded-2xl jac-gradient-bg flex items-center justify-center mb-6 animate-pulse-glow">
+                  <MessageSquare className="w-10 h-10 text-primary-foreground" />
+                </div>
+                <h2 className="text-2xl font-bold mb-3 jac-gradient-text">Welcome to Justachat<sup className="text-sm">™</sup></h2>
+                <p className="text-muted-foreground max-w-md mb-6">
+                  Join the #General chat to start chatting with the community, or select any room from the left to explore different topics.
+                </p>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    <span>{channels.length} Rooms</span>
+                  </div>
+                  <div className="h-4 w-px bg-border" />
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                    <span>Real-time Chat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Footer hint */}
-        <div className="text-center mt-12 text-muted-foreground text-sm">
-          <p>Click any room to join • Create your own rooms inside the chat</p>
         </div>
         
         {/* Official Footer */}
