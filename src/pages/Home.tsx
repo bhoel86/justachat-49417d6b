@@ -290,10 +290,10 @@ const Home = () => {
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Mobile: Stack vertically, Desktop: Side by side */}
-        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 sm:gap-6">
           {/* Room Cards - Horizontal scroll on mobile */}
-          <div className="lg:w-80 xl:w-96 flex-shrink-0">
-            <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4">
+          <div className="lg:w-80 xl:w-96 flex-shrink-0 lg:flex lg:flex-col">
+            <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4 lg:flex-1 lg:flex lg:flex-col">
               <div className="mb-3 sm:mb-4">
                 <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
                 <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
@@ -306,8 +306,8 @@ const Home = () => {
                   ))}
                 </div>
               ) : (
-                <>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 lg:max-h-[calc(100vh-380px)] lg:overflow-y-auto lg:pr-2 scrollbar-thin">
+                <div className="lg:flex-1 lg:flex lg:flex-col">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 lg:flex-1 lg:overflow-y-auto lg:pr-2 scrollbar-thin lg:content-start">
                     {channels.map((channel) => (
                       <button
                         key={channel.id}
@@ -385,7 +385,7 @@ const Home = () => {
                       <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>
