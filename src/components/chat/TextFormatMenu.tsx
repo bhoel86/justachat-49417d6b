@@ -41,9 +41,13 @@ const TEXT_COLORS = [
 ];
 
 const BG_COLORS = [
+  { name: 'Black', value: '#18181b', class: 'bg-zinc-900' },
+  { name: 'Gray', value: '#52525b', class: 'bg-zinc-600' },
+  { name: 'Slate', value: '#475569', class: 'bg-slate-600' },
   { name: 'Red', value: '#ef4444', class: 'bg-red-500' },
   { name: 'Orange', value: '#f97316', class: 'bg-orange-500' },
   { name: 'Amber', value: '#f59e0b', class: 'bg-amber-500' },
+  { name: 'Yellow', value: '#eab308', class: 'bg-yellow-500' },
   { name: 'Green', value: '#22c55e', class: 'bg-green-500' },
   { name: 'Cyan', value: '#06b6d4', class: 'bg-cyan-500' },
   { name: 'Blue', value: '#3b82f6', class: 'bg-blue-500' },
