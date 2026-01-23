@@ -44,6 +44,25 @@ const FAKE_USERS: FakeUser[] = [
   { username: "HappyCamper", avatarSeed: "happycamper" },
 ];
 
+// Location data for realistic location conversations
+const LOCATIONS = [
+  { city: "New York", region: "Brooklyn", country: "USA" },
+  { city: "Los Angeles", region: "Santa Monica", country: "USA" },
+  { city: "London", region: "Camden", country: "UK" },
+  { city: "Toronto", region: "Downtown", country: "Canada" },
+  { city: "Sydney", region: "Bondi", country: "Australia" },
+  { city: "Tokyo", region: "Shibuya", country: "Japan" },
+  { city: "Berlin", region: "Kreuzberg", country: "Germany" },
+  { city: "Paris", region: "Montmartre", country: "France" },
+  { city: "Miami", region: "South Beach", country: "USA" },
+  { city: "Chicago", region: "Lincoln Park", country: "USA" },
+  { city: "Dublin", region: "Temple Bar", country: "Ireland" },
+  { city: "Amsterdam", region: "Jordaan", country: "Netherlands" },
+  { city: "Vancouver", region: "Gastown", country: "Canada" },
+  { city: "Melbourne", region: "St Kilda", country: "Australia" },
+  { city: "Seattle", region: "Capitol Hill", country: "USA" },
+];
+
 // Conversation pairs for realistic back-and-forth
 const CONVERSATIONS = [
   { starter: "hey everyone!", replies: ["hey!", "what's up?", "yo!"] },
@@ -56,6 +75,39 @@ const CONVERSATIONS = [
   { starter: "just finished work", replies: ["nice! relax time", "same here", "congrats!"] },
   { starter: "weekend plans?", replies: ["sleeping lol", "nothing yet", "maybe going out"] },
   { starter: "how's everyone doing?", replies: ["great!", "pretty good", "can't complain"] },
+];
+
+// Location conversation templates
+const LOCATION_STARTERS = [
+  "where's everyone from?",
+  "anyone else from the US?",
+  "so where are you all chatting from?",
+  "curious - where is everyone located?",
+  "what country are you guys in?",
+];
+
+const LOCATION_RESPONSES = [
+  (loc: typeof LOCATIONS[0]) => `${loc.city}! 🙌`,
+  (loc: typeof LOCATIONS[0]) => `I'm from ${loc.city}, ${loc.country}`,
+  (loc: typeof LOCATIONS[0]) => `${loc.city} here`,
+  (loc: typeof LOCATIONS[0]) => `repping ${loc.city}!`,
+  (loc: typeof LOCATIONS[0]) => `${loc.country} 🌍`,
+];
+
+const LOCATION_FOLLOWUPS = [
+  (loc: typeof LOCATIONS[0]) => `oh nice! I've been to ${loc.city}`,
+  (loc: typeof LOCATIONS[0]) => `${loc.city}? what part?`,
+  (loc: typeof LOCATIONS[0]) => `I have family in ${loc.city}!`,
+  (loc: typeof LOCATIONS[0]) => `${loc.city} is awesome, visited last year`,
+  (loc: typeof LOCATIONS[0]) => `no way! I used to live near ${loc.region}`,
+  (loc: typeof LOCATIONS[0]) => `heard ${loc.city} is beautiful`,
+];
+
+const LOCATION_REPLIES = [
+  (loc: typeof LOCATIONS[0]) => `yeah ${loc.region} area!`,
+  (loc: typeof LOCATIONS[0]) => `near ${loc.region}, you know it?`,
+  (loc: typeof LOCATIONS[0]) => `the ${loc.region} side`,
+  (loc: typeof LOCATIONS[0]) => `downtown ${loc.city} mostly`,
 ];
 
 // Standalone messages
@@ -155,6 +207,94 @@ const FakeChatPreview = () => {
     }, 2000 + Math.random() * 3000);
   };
 
+  // Add location conversation (multi-part)
+  const addLocationConversation = () => {
+    const askerUser = getRandomUser();
+    const location1 = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
+    let location2 = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
+    while (location2.city === location1.city) {
+      location2 = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
+    }
+    
+    // Someone asks where everyone is from
+    const askMsg: FakeMessage = {
+      id: messageIdRef.current++,
+      username: askerUser.username,
+      message: LOCATION_STARTERS[Math.floor(Math.random() * LOCATION_STARTERS.length)],
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, askMsg].slice(-12));
+    
+    // First person responds with their location
+    setTimeout(() => {
+      let responder1 = getRandomUser();
+      while (responder1.username === askerUser.username) {
+        responder1 = getRandomUser();
+      }
+      
+      const responseFunc = LOCATION_RESPONSES[Math.floor(Math.random() * LOCATION_RESPONSES.length)];
+      const resp1Msg: FakeMessage = {
+        id: messageIdRef.current++,
+        username: responder1.username,
+        message: responseFunc(location1),
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, resp1Msg].slice(-12));
+      
+      // Second person also shares their location
+      setTimeout(() => {
+        let responder2 = getRandomUser();
+        while (responder2.username === askerUser.username || responder2.username === responder1.username) {
+          responder2 = getRandomUser();
+        }
+        
+        const responseFunc2 = LOCATION_RESPONSES[Math.floor(Math.random() * LOCATION_RESPONSES.length)];
+        const resp2Msg: FakeMessage = {
+          id: messageIdRef.current++,
+          username: responder2.username,
+          message: responseFunc2(location2),
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, resp2Msg].slice(-12));
+        
+        // Someone follows up about one of the locations
+        setTimeout(() => {
+          let followupUser = getRandomUser();
+          while ([askerUser.username, responder1.username, responder2.username].includes(followupUser.username)) {
+            followupUser = getRandomUser();
+          }
+          
+          const targetLocation = Math.random() > 0.5 ? location1 : location2;
+          const targetResponder = targetLocation === location1 ? responder1 : responder2;
+          const followupFunc = LOCATION_FOLLOWUPS[Math.floor(Math.random() * LOCATION_FOLLOWUPS.length)];
+          
+          const followupMsg: FakeMessage = {
+            id: messageIdRef.current++,
+            username: followupUser.username,
+            message: followupFunc(targetLocation),
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, followupMsg].slice(-12));
+          
+          // Original person replies with more detail
+          setTimeout(() => {
+            const replyFunc = LOCATION_REPLIES[Math.floor(Math.random() * LOCATION_REPLIES.length)];
+            const detailMsg: FakeMessage = {
+              id: messageIdRef.current++,
+              username: targetResponder.username,
+              message: replyFunc(targetLocation),
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, detailMsg].slice(-12));
+          }, 2000 + Math.random() * 2000);
+          
+        }, 2500 + Math.random() * 2000);
+        
+      }, 1500 + Math.random() * 2000);
+      
+    }, 2000 + Math.random() * 2500);
+  };
+
   // Add standalone message
   const addStandaloneMessage = () => {
     const user = getRandomUser();
@@ -203,11 +343,18 @@ const FakeChatPreview = () => {
 
   // Schedule new messages at random intervals
   useEffect(() => {
+    let messageCount = 0;
+    
     const scheduleNextMessage = () => {
       const delay = 10000 + Math.random() * 15000; // 10-25 seconds
       return setTimeout(() => {
-        // 70% chance for conversation, 30% for standalone
-        if (Math.random() > 0.3) {
+        messageCount++;
+        const rand = Math.random();
+        
+        // Every 3rd-4th message cycle, trigger a location conversation
+        if (messageCount % 4 === 0 || (messageCount > 2 && rand < 0.25)) {
+          addLocationConversation();
+        } else if (rand > 0.3) {
           addConversation();
         } else {
           addStandaloneMessage();
