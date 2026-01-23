@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.irc-gateway]
 verify_jwt = false
+
+[functions.audit-log]
+verify_jwt = false

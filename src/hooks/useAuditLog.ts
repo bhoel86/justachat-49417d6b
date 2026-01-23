@@ -36,15 +36,15 @@ export const useAuditLog = () => {
     if (!user || (!isOwner && !isAdmin)) return;
 
     try {
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert([{
-          user_id: user.id,
+      // Use edge function to create audit logs (bypasses RLS with service role)
+      const { error } = await supabase.functions.invoke('audit-log', {
+        body: {
           action,
-          resource_type: resourceType,
-          resource_id: resourceId || null,
+          resourceType,
+          resourceId: resourceId || null,
           details: details || null,
-        }]);
+        }
+      });
 
       if (error) {
         console.error('Audit log error:', error);
