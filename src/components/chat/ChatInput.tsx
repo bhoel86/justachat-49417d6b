@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX } from "lucide-react";
+import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -278,6 +278,22 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
                   />
                 </div>
               </div>
+
+              {/* Power/Reset Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={radio.resetRadio}
+                    className="h-7 w-7 hover:text-destructive"
+                  >
+                    <Power className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reset Radio</TooltipContent>
+              </Tooltip>
             </>
           )}
         </div>

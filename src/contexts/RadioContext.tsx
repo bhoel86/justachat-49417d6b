@@ -20,6 +20,7 @@ interface RadioContextType {
   setGenre: (genre: string) => void;
   seekTo: (seconds: number) => void;
   setVolume: (volume: number) => void;
+  resetRadio: () => void;
   albumArt: string | null;
   enableRadio: () => void;
   disableRadio: () => void;
@@ -308,6 +309,44 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const resetRadio = useCallback(() => {
+    // Clean up existing player
+    if (playerRef.current) {
+      try {
+        playerRef.current.destroy();
+      } catch (e) {
+        console.log('Player destroy error:', e);
+      }
+      playerRef.current = null;
+    }
+    
+    // Clear progress tracking
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+      progressInterval.current = null;
+    }
+    
+    // Reset state
+    setIsPlaying(false);
+    setIsInitialized(false);
+    setCurrentTime(0);
+    setDuration(0);
+    hasAutoStarted.current = false;
+    
+    // Remove old player container
+    const oldContainer = document.getElementById('youtube-radio-player');
+    if (oldContainer) {
+      oldContainer.remove();
+    }
+    
+    // Reinitialize after short delay
+    setTimeout(() => {
+      if (isEnabled && ytWindow.YT?.Player) {
+        initPlayer();
+      }
+    }, 500);
+  }, [isEnabled, initPlayer]);
+
   // Cleanup interval on unmount
   useEffect(() => {
     return () => {
@@ -337,6 +376,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       setGenre: handleSetGenre,
       seekTo,
       setVolume,
+      resetRadio,
       albumArt: isInitialized ? albumArt : null,
       enableRadio,
       disableRadio,
