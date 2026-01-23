@@ -381,28 +381,38 @@ const Home = () => {
           </div>
         </div>
         
-        {/* Footer - Subtle horizontal layout */}
-        <footer className="mt-6 py-4 bg-card/30">
-          <div className="flex items-center justify-between gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg jac-gradient-bg flex items-center justify-center">
-                <MessageSquare className="w-4 h-4 text-primary-foreground" />
+        {/* Footer - Matching example */}
+        <footer className="mt-8 py-6">
+          <div className="flex items-center justify-between">
+            {/* Logo and tagline - Left */}
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-sm font-semibold jac-gradient-text">Justachat<sup className="text-[8px]">™</sup></span>
+              <div>
+                <h3 className="text-lg font-bold jac-gradient-text">Justachat<sup className="text-[8px]">™</sup></h3>
+                <p className="text-xs text-muted-foreground">Chat. Connect. Chill.</p>
+              </div>
             </div>
             
-            {/* Mascots - Small inline */}
-            <img 
-              src={footerMascots} 
-              alt="Justachat Mascots" 
-              className="h-10 w-auto object-contain opacity-80"
-            />
+            {/* Mascots - Center, spread out */}
+            <div className="flex-1 flex justify-center">
+              <img 
+                src={footerMascots} 
+                alt="Justachat Mascots" 
+                className="h-14 w-auto object-contain"
+              />
+            </div>
             
-            {/* Copyright */}
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
-            </p>
+            {/* Copyright - Right */}
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">
+                © {new Date().getFullYear()} Justachat™ All rights reserved.
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
+              </p>
+            </div>
           </div>
         </footer>
       </main>

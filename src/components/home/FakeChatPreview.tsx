@@ -385,39 +385,39 @@ const FakeChatPreview = () => {
         </div>
         
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-2.5">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {messages.map((msg) => {
             const userData = getUserData(msg.username);
             return (
               <div
                 key={msg.id}
-                className="flex gap-2.5 animate-fade-in"
+                className="flex gap-1.5 animate-fade-in"
               >
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   <UserAvatar
                     avatarUrl={getAvatarUrl(userData.avatarSeed)}
                     username={msg.username}
-                    size="sm"
+                    size="xs"
                   />
                 </div>
                 
-                {/* Message content - no background */}
-                <div className="px-1 py-0.5 max-w-[85%]">
+                {/* Message bubble */}
+                <div className="bg-secondary/50 rounded-lg rounded-bl-sm px-2 py-1 max-w-[85%]">
                   <div className="flex items-center gap-1">
-                    <p className={`text-[11px] font-medium ${
+                    <p className={`text-[10px] font-medium ${
                       userData.isOwner ? 'text-amber-500' : 
                       userData.isAdmin ? 'text-red-500' : 'text-primary'
                     }`}>
                       {msg.username}
                     </p>
-                    {userData.isOwner && <Crown className="w-3 h-3 text-amber-500" />}
-                    {userData.isAdmin && <Shield className="w-3 h-3 text-red-500" />}
+                    {userData.isOwner && <Crown className="w-2.5 h-2.5 text-amber-500" />}
+                    {userData.isAdmin && <Shield className="w-2.5 h-2.5 text-red-500" />}
                     <span className="text-[9px] text-muted-foreground ml-1">
                       {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <p className="text-xs text-foreground leading-relaxed">{msg.message}</p>
+                  <p className="text-xs text-foreground leading-tight">{msg.message}</p>
                 </div>
               </div>
             );
