@@ -148,7 +148,7 @@ const BotChatModal = ({
                   BOT
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">{moderator.displayName} • Bot Moderator</p>
+              <p className="text-xs text-muted-foreground">{moderator.displayName} • Moderator</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
