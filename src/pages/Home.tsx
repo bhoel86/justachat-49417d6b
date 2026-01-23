@@ -293,99 +293,101 @@ const Home = () => {
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* Room Cards - Horizontal scroll on mobile */}
           <div className="lg:w-80 xl:w-96 flex-shrink-0">
-            <div className="mb-3 sm:mb-6">
-              <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
-              <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
-            </div>
-
-            {loadingChannels ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-16 sm:h-20 rounded-lg bg-card animate-pulse" />
-                ))}
+            <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4">
+              <div className="mb-3 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
+                <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 lg:max-h-[calc(100vh-340px)] lg:overflow-y-auto lg:pr-2 scrollbar-thin">
-                  {channels.map((channel) => (
-                    <button
-                      key={channel.id}
-                      onClick={() => handleJoinRoom(channel)}
-                      className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 active:scale-95"
+
+              {loadingChannels ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-16 sm:h-20 rounded-lg bg-card animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 lg:max-h-[calc(100vh-380px)] lg:overflow-y-auto lg:pr-2 scrollbar-thin">
+                    {channels.map((channel) => (
+                      <button
+                        key={channel.id}
+                        onClick={() => handleJoinRoom(channel)}
+                        className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 active:scale-95"
+                      >
+                        {/* Background image */}
+                        {roomBackgrounds[channel.name] && (
+                          <div 
+                            className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
+                            style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
+                          />
+                        )}
+                        
+                        {/* Gradient overlay */}
+                        <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                        
+                        {/* Dark overlay for readability */}
+                        <div className="absolute inset-0 bg-black/40" />
+                        
+                        {/* Content - stacked vertically */}
+                        <div className="relative h-full flex flex-col items-center justify-center gap-1 px-2 py-2">
+                          <div className={`p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
+                            {roomIcons[channel.name] ? (
+                              <div className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5">
+                                {roomIcons[channel.name]}
+                              </div>
+                            ) : (
+                              <Hash className="w-5 h-5" />
+                            )}
+                          </div>
+                          <h3 className="font-semibold text-[10px] sm:text-xs text-white drop-shadow-md text-center leading-tight">
+                            #{formatRoomName(channel.name)}
+                          </h3>
+                        </div>
+
+                        {/* Hover effect overlay */}
+                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Dating Section - Fixed at bottom */}
+                  <div className="mt-3 lg:mt-4">
+                    <Link
+                      to="/dating"
+                      className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
                     >
                       {/* Background image */}
-                      {roomBackgrounds[channel.name] && (
-                        <div 
-                          className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
-                          style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
-                        />
-                      )}
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
+                        style={{ backgroundImage: `url(${datingBg})` }}
+                      />
                       
                       {/* Gradient overlay */}
-                      <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                      <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-30 group-hover:opacity-40 transition-opacity" />
                       
                       {/* Dark overlay for readability */}
-                      <div className="absolute inset-0 bg-black/40" />
+                      <div className="absolute inset-0 bg-black/30" />
                       
-                      {/* Content - stacked vertically */}
-                      <div className="relative h-full flex flex-col items-center justify-center gap-1 px-2 py-2">
-                        <div className={`p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
-                          {roomIcons[channel.name] ? (
-                            <div className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5">
-                              {roomIcons[channel.name]}
-                            </div>
-                          ) : (
-                            <Hash className="w-5 h-5" />
-                          )}
+                      {/* Content */}
+                      <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
+                        <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
+                          <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
-                        <h3 className="font-semibold text-[10px] sm:text-xs text-white drop-shadow-md text-center leading-tight">
-                          #{formatRoomName(channel.name)}
-                        </h3>
+                        <div className="flex flex-col">
+                          <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap">
+                            💕 Dating
+                          </h3>
+                          <span className="text-[10px] sm:text-xs text-white/80">Find your match</span>
+                        </div>
                       </div>
 
                       {/* Hover effect overlay */}
-                      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </button>
-                  ))}
-                </div>
-                
-                {/* Dating Section - Fixed at bottom */}
-                <div className="mt-3 lg:mt-4">
-                  <Link
-                    to="/dating"
-                    className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
-                  >
-                    {/* Background image */}
-                    <div 
-                      className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
-                      style={{ backgroundImage: `url(${datingBg})` }}
-                    />
-                    
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-30 group-hover:opacity-40 transition-opacity" />
-                    
-                    {/* Dark overlay for readability */}
-                    <div className="absolute inset-0 bg-black/30" />
-                    
-                    {/* Content */}
-                    <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                      <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
-                        <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </div>
-                      <div className="flex flex-col">
-                        <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap">
-                          💕 Dating
-                        </h3>
-                        <span className="text-[10px] sm:text-xs text-white/80">Find your match</span>
-                      </div>
-                    </div>
-
-                    {/* Hover effect overlay */}
-                    <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Link>
-                </div>
-              </>
-            )}
+                      <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Center - Public Chat Preview */}
