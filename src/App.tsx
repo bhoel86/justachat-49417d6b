@@ -17,6 +17,7 @@ import AdminEmails from "./pages/AdminEmails";
 import AdminMessages from "./pages/AdminMessages";
 import AdminMutes from "./pages/AdminMutes";
 import AdminIRC from "./pages/AdminIRC";
+import DownloadProxy from "./pages/DownloadProxy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/admin/messages" element={<AdminMessages />} />
               <Route path="/admin/mutes" element={<AdminMutes />} />
               <Route path="/admin/irc" element={<AdminIRC />} />
+              <Route path="/download-proxy" element={<DownloadProxy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
