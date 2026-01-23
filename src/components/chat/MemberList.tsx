@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
@@ -32,6 +32,7 @@ interface Member {
   avatar?: string;
   avatar_url?: string | null;
   bio?: string | null;
+  ip_address?: string | null;
 }
 
 interface MemberListProps {
@@ -116,17 +117,34 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
       .from('user_roles')
       .select('user_id, role');
 
+    // Fetch IP addresses for admins/owners
+    let locationMap = new Map<string, string>();
+    if (isAdmin || isOwner) {
+      const { data: locations } = await supabaseUntyped
+        .from('user_locations')
+        .select('user_id, ip_address');
+      if (locations) {
+        locationMap = new Map(locations.map((l: { user_id: string; ip_address: string | null }) => [l.user_id, l.ip_address]));
+      }
+    }
+
     if (profiles) {
       const roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]) || []);
       
-      const memberList: Member[] = profiles.map((p: { user_id: string; username: string; avatar_url: string | null; bio: string | null }) => ({
-        user_id: p.user_id,
-        username: p.username,
-        role: (roleMap.get(p.user_id) || 'user') as Member['role'],
-        isOnline: onlineUserIds.has(p.user_id),
-        avatar_url: p.avatar_url,
-        bio: p.bio,
-      }));
+      const memberList: Member[] = profiles.map((p: { user_id: string; username: string; avatar_url: string | null; bio: string | null }) => {
+        const memberRole = (roleMap.get(p.user_id) || 'user') as Member['role'];
+        // Only include IP for non-admin/owner users
+        const showIp = (isAdmin || isOwner) && memberRole !== 'admin' && memberRole !== 'owner';
+        return {
+          user_id: p.user_id,
+          username: p.username,
+          role: memberRole,
+          isOnline: onlineUserIds.has(p.user_id),
+          avatar_url: p.avatar_url,
+          bio: p.bio,
+          ip_address: showIp ? locationMap.get(p.user_id) || null : null,
+        };
+      });
 
       // Sort by role priority and online status
       const rolePriority = { owner: 0, admin: 1, moderator: 2, user: 3 };
@@ -752,6 +770,15 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
           <Icon className={cn("h-3 w-3", config.color)} />
           <span className={cn("text-xs", config.color)}>{config.label}</span>
         </div>
+        {/* Show IP address for admins/owners viewing non-admin/owner users */}
+        {member.ip_address && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <Globe className="h-2.5 w-2.5 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {member.ip_address}
+            </span>
+          </div>
+        )}
         {/* Show currently playing music for current user */}
         {isCurrentUser && currentlyPlaying && (
           <div className="flex items-center gap-1 mt-0.5">
