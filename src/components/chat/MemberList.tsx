@@ -413,7 +413,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                     onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
                     onBioClick={member.user_id === user?.id ? () => setBioModalOpen(true) : undefined}
-                    currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentStation : null}
+                    currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentSong : null}
                   />
                 ))}
               </div>
@@ -443,7 +443,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                     onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
                     onBioClick={member.user_id === user?.id ? () => setBioModalOpen(true) : undefined}
-                    currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentStation : null}
+                    currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentSong : null}
                   />
                 ))}
               </div>

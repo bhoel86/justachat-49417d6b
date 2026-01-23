@@ -513,9 +513,9 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
               radio.skip();
               break;
             case 'nowplaying':
-              const station = radio.currentStation;
-              if (station && radio.isPlaying) {
-                addSystemMessage(`🎵 Now playing: **${station.name}** by ${station.artist}`);
+              const song = radio.currentSong;
+              if (song && radio.isPlaying) {
+                addSystemMessage(`🎵 Now playing: **${song.title}** by ${song.artist}`);
               } else {
                 addSystemMessage(`📻 Radio is not playing. Type /radio to start.`);
               }

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Send, AlertCircle, Radio, Play, Pause, SkipForward, Music } from "lucide-react";
+import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import EmojiPicker from "./EmojiPicker";
 import { useRadioOptional } from "@/contexts/RadioContext";
 
@@ -30,61 +31,105 @@ const ChatInput = ({ onSend, isMuted = false }: ChatInputProps) => {
       {/* Radio Player GUI */}
       {radio && (
         <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-lg">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Album Art */}
-            <div className={`relative w-10 h-10 rounded-lg overflow-hidden bg-primary/20 flex-shrink-0 ${radio.isPlaying ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}`}>
-              {radio.currentStation?.albumArt ? (
+            <div className={`relative w-12 h-12 rounded-lg overflow-hidden bg-primary/20 flex-shrink-0 ${radio.isPlaying ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}`}>
+              {radio.albumArt ? (
                 <img 
-                  src={radio.currentStation.albumArt} 
-                  alt={radio.currentStation.name}
+                  src={radio.albumArt} 
+                  alt={radio.currentSong?.title || 'Album art'}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Music className="h-5 w-5 text-primary" />
+                  <Music className="h-6 w-6 text-primary" />
                 </div>
               )}
               {radio.isPlaying && (
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                  <div className="flex items-end gap-0.5 h-3">
-                    <span className="w-0.5 bg-primary animate-pulse" style={{ height: '60%', animationDelay: '0ms' }} />
-                    <span className="w-0.5 bg-primary animate-pulse" style={{ height: '100%', animationDelay: '150ms' }} />
-                    <span className="w-0.5 bg-primary animate-pulse" style={{ height: '40%', animationDelay: '300ms' }} />
-                    <span className="w-0.5 bg-primary animate-pulse" style={{ height: '80%', animationDelay: '450ms' }} />
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                  <div className="flex items-end gap-0.5 h-4">
+                    <span className="w-1 bg-primary rounded-full animate-pulse" style={{ height: '60%', animationDelay: '0ms' }} />
+                    <span className="w-1 bg-primary rounded-full animate-pulse" style={{ height: '100%', animationDelay: '150ms' }} />
+                    <span className="w-1 bg-primary rounded-full animate-pulse" style={{ height: '40%', animationDelay: '300ms' }} />
+                    <span className="w-1 bg-primary rounded-full animate-pulse" style={{ height: '80%', animationDelay: '450ms' }} />
                   </div>
                 </div>
               )}
             </div>
             
             <div className="min-w-0 flex-1">
-              {radio.currentStation ? (
+              {radio.currentSong ? (
                 <>
-                  <p className="text-xs font-medium text-foreground truncate">
-                    {radio.currentStation.name}
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {radio.currentSong.title}
                   </p>
-                  <p className="text-[10px] text-muted-foreground truncate">
-                    {radio.currentStation.artist} • {radio.currentStation.genre}
+                  <p className="text-xs text-muted-foreground truncate">
+                    {radio.currentSong.artist}
                   </p>
                 </>
               ) : (
-                <p className="text-xs text-muted-foreground">Radio off</p>
+                <p className="text-xs text-muted-foreground">Click play to start</p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-1 ml-auto">
+          {/* Genre Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
+                {radio.currentGenre}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
+              {radio.genres.map((genre) => (
+                <DropdownMenuItem 
+                  key={genre} 
+                  onClick={() => radio.setGenre(genre)}
+                  className={radio.currentGenre === genre ? 'bg-primary/10' : ''}
+                >
+                  {genre}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Controls */}
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={radio.shuffle}
+              className="h-7 w-7"
+              title="Shuffle"
+            >
+              <Shuffle className="h-3 w-3" />
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={radio.previous}
+              className="h-7 w-7"
+              title="Previous"
+            >
+              <SkipBack className="h-3.5 w-3.5" />
+            </Button>
+
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={radio.toggle}
-              className="h-7 w-7"
+              className="h-8 w-8 bg-primary/10"
               title={radio.isPlaying ? 'Pause' : 'Play'}
             >
               {radio.isPlaying ? (
-                <Pause className="h-3.5 w-3.5" />
+                <Pause className="h-4 w-4" />
               ) : (
-                <Play className="h-3.5 w-3.5" />
+                <Play className="h-4 w-4" />
               )}
             </Button>
 
@@ -94,7 +139,7 @@ const ChatInput = ({ onSend, isMuted = false }: ChatInputProps) => {
               size="icon"
               onClick={radio.skip}
               className="h-7 w-7"
-              title="Skip"
+              title="Next"
             >
               <SkipForward className="h-3.5 w-3.5" />
             </Button>
