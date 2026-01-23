@@ -318,6 +318,14 @@ const Home = () => {
                     : 'bg-black/30'
                 }`} />
                 
+                {/* Vignette effect */}
+                <div 
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)'
+                  }}
+                />
+                
                 {/* Content */}
                 <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
                   <div className={`mb-3 p-4 rounded-full bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-lg group-hover:scale-110 transition-transform`}>
