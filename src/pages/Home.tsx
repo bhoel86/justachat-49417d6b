@@ -154,7 +154,7 @@ const Home = () => {
             <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
               <MessageSquare className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold brand jac-gradient-text">JAC Chat</h1>
+            <h1 className="text-2xl font-bold brand jac-gradient-text">Justachat<sup className="text-xs">™</sup></h1>
           </div>
           <div className="flex items-center gap-4">
             {/* Admin Dropdown - Owner/Admin Only - Placed LEFT of Welcome */}
@@ -336,6 +336,16 @@ const Home = () => {
         <div className="text-center mt-12 text-muted-foreground text-sm">
           <p>Click any room to join • Create your own rooms inside the chat</p>
         </div>
+        
+        {/* Official Footer */}
+        <footer className="text-center mt-8 pt-6 border-t border-border/50">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Justachat™. All rights reserved.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
+          </p>
+        </footer>
       </main>
     </div>
   );

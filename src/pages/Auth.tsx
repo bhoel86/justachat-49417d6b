@@ -317,7 +317,7 @@ const Auth = () => {
           }
         } else {
           toast({
-            title: "Welcome to JAC!",
+            title: "Welcome to Justachat™!",
             description: "Your account has been created successfully."
           });
         }
@@ -349,8 +349,8 @@ const Auth = () => {
           <div className="h-16 w-16 rounded-2xl jac-gradient-bg flex items-center justify-center mb-4 animate-pulse-glow">
             <MessageCircle className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="font-display text-4xl font-bold jac-gradient-text">JAC</h1>
-          <p className="text-muted-foreground mt-1">Just A Chat</p>
+          <h1 className="font-display text-4xl font-bold jac-gradient-text">Justachat<sup className="text-lg">™</sup></h1>
+          <p className="text-muted-foreground mt-1">Connect Instantly, Chat Freely</p>
         </div>
 
         {/* Form Card */}
@@ -588,6 +588,16 @@ const Auth = () => {
             </div>
           )}
         </div>
+        
+        {/* Official Footer */}
+        <footer className="mt-8 text-center">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Justachat™. All rights reserved.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
+          </p>
+        </footer>
       </div>
     </div>
   );

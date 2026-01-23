@@ -53,7 +53,7 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
               </div>
               {getRoleBadge()}
             </div>
-            <p className="text-xs text-muted-foreground">JAC - Just A Chat</p>
+            <p className="text-xs text-muted-foreground">Justachat™ • justachat.net</p>
           </div>
         </div>
         
