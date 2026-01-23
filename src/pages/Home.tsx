@@ -343,7 +343,7 @@ const Home = () => {
                 {/* Dating Section - Special Entry */}
                 <Link
                   to="/dating"
-                  className="group relative h-16 sm:h-20 min-w-[160px] sm:min-w-[180px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 snap-start active:scale-95"
+                  className="group relative h-20 sm:h-24 w-fit min-w-[180px] sm:min-w-[220px] lg:w-full lg:max-w-none flex-shrink-0 rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 snap-start active:scale-95"
                 >
                   {/* Background image */}
                   <div 
@@ -358,15 +358,15 @@ const Home = () => {
                   <div className="absolute inset-0 bg-black/30" />
                   
                   {/* Content */}
-                  <div className="relative h-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4">
-                    <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
-                      <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <div className="relative h-full flex items-center gap-4 px-4">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
+                      <Heart className="w-6 h-6 sm:w-7 sm:h-7" />
                     </div>
                     <div className="flex flex-col">
-                      <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap">
+                      <h3 className="font-bold text-base sm:text-lg text-white drop-shadow-lg whitespace-nowrap">
                         💕 Dating
                       </h3>
-                      <span className="text-[10px] sm:text-xs text-white/80">Find your match</span>
+                      <span className="text-xs text-white/80">Find your match</span>
                     </div>
                   </div>
 
