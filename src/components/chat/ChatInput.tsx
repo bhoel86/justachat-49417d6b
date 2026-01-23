@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap } from "lucide-react";
+import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -242,6 +242,41 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
                   </TooltipTrigger>
                   <TooltipContent>Next Genre</TooltipContent>
                 </Tooltip>
+              </div>
+
+              {/* Vertical Volume Slider */}
+              <div className="relative group/volume">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => radio.setVolume(radio.volume > 0 ? 0 : 50)}
+                      className="h-7 w-7"
+                    >
+                      {radio.volume === 0 ? (
+                        <VolumeX className="h-3.5 w-3.5" />
+                      ) : (
+                        <Volume2 className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{radio.volume === 0 ? 'Unmute' : 'Mute'}</TooltipContent>
+                </Tooltip>
+                
+                {/* Vertical slider popup */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/volume:flex flex-col items-center bg-popover border border-border rounded-lg p-2 shadow-lg z-50">
+                  <span className="text-[10px] text-muted-foreground mb-1">{radio.volume}%</span>
+                  <Slider
+                    value={[radio.volume]}
+                    max={100}
+                    step={1}
+                    orientation="vertical"
+                    onValueChange={(value) => radio.setVolume(value[0])}
+                    className="h-20 w-2"
+                  />
+                </div>
               </div>
             </>
           )}

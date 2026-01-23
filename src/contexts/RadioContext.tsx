@@ -9,6 +9,7 @@ interface RadioContextType {
   isEnabled: boolean;
   currentTime: number;
   duration: number;
+  volume: number;
   play: () => void;
   pause: () => void;
   skip: () => void;
@@ -18,6 +19,7 @@ interface RadioContextType {
   shuffle: () => void;
   setGenre: (genre: string) => void;
   seekTo: (seconds: number) => void;
+  setVolume: (volume: number) => void;
   albumArt: string | null;
   enableRadio: () => void;
   disableRadio: () => void;
@@ -68,6 +70,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [volume, setVolumeState] = useState(50);
   const progressInterval = useRef<number | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   
@@ -297,6 +300,14 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }
   }, [isInitialized]);
 
+  const setVolume = useCallback((newVolume: number) => {
+    const clampedVolume = Math.max(0, Math.min(100, newVolume));
+    setVolumeState(clampedVolume);
+    if (playerRef.current) {
+      playerRef.current.setVolume(clampedVolume);
+    }
+  }, []);
+
   // Cleanup interval on unmount
   useEffect(() => {
     return () => {
@@ -315,6 +326,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       isEnabled,
       currentTime,
       duration,
+      volume,
       play,
       pause,
       skip,
@@ -324,6 +336,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       shuffle,
       setGenre: handleSetGenre,
       seekTo,
+      setVolume,
       albumArt: isInitialized ? albumArt : null,
       enableRadio,
       disableRadio,
