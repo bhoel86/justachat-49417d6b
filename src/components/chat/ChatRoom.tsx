@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth, supabaseUntyped } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useTriviaGame } from "@/hooks/useTriviaGame";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
@@ -287,6 +288,15 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     setMessages(prev => [...prev, modMsg]);
   }, [currentChannel?.id]);
 
+  // Initialize trivia game hook
+  const triviaGame = useTriviaGame(
+    user?.id,
+    username,
+    currentChannel?.name,
+    addModeratorMessage,
+    addSystemMessage
+  );
+
   // Show welcome message and tip when entering a channel
   useEffect(() => {
     if (!currentChannel || loading) return;
@@ -517,6 +527,26 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
         return;
       }
 
+      // Handle trivia commands
+      if (result.message.startsWith('TRIVIA_COMMAND:')) {
+        const action = result.message.split(':')[1];
+        switch (action) {
+          case 'start':
+            triviaGame.startTrivia();
+            break;
+          case 'score':
+            triviaGame.showScore();
+            break;
+          case 'leaderboard':
+            triviaGame.showLeaderboard();
+            break;
+          case 'skip':
+            triviaGame.skipQuestion();
+            break;
+        }
+        return;
+      }
+
       if (result.isSystemMessage && !result.broadcast) {
         addSystemMessage(result.message);
       } else if (result.broadcast) {
@@ -548,7 +578,16 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
         channel_id: currentChannel.id
       });
 
-    // Check if AI moderator should respond
+    // Check if this is a trivia answer (only in trivia channel with active question)
+    if (triviaGame.isTriviaChannel && triviaGame.gameState.currentQuestion) {
+      const wasCorrect = await triviaGame.checkTriviaAnswer(content, username);
+      if (wasCorrect) {
+        // Answer was correct, trivia hook handles the response
+        return;
+      }
+    }
+
+    // Check if moderator should respond
     if (shouldModeratorRespond(content)) {
       triggerModeratorResponse(content);
     }

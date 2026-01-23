@@ -314,6 +314,36 @@ export type Database = {
         }
         Relationships: []
       }
+      trivia_scores: {
+        Row: {
+          correct_answers: number
+          created_at: string
+          id: string
+          points: number
+          total_answers: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          points?: number
+          total_answers?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          points?: number
+          total_answers?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_locations: {
         Row: {
           city: string | null

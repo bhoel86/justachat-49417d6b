@@ -77,7 +77,13 @@ const helpCommand: CommandHandler = async (args, context) => {
 /play - Play radio
 /pause - Pause radio
 /skip - Skip to next station
-/nowplaying - Show current song${modCommands}${adminCommands}`,
+/nowplaying - Show current song
+
+**Trivia Commands (in #trivia):**
+/trivia - Start trivia game
+/score - View your trivia stats
+/leaderboard - View top players
+/skipq - Skip current question${modCommands}${adminCommands}`,
     isSystemMessage: true,
   };
 };
@@ -640,6 +646,39 @@ const nowPlayingCommand: CommandHandler = async () => {
   };
 };
 
+// Trivia commands - return special tokens that ChatRoom will interpret
+const triviaCommand: CommandHandler = async () => {
+  return {
+    success: true,
+    message: 'TRIVIA_COMMAND:start',
+    isSystemMessage: false,
+  };
+};
+
+const scoreCommand: CommandHandler = async () => {
+  return {
+    success: true,
+    message: 'TRIVIA_COMMAND:score',
+    isSystemMessage: false,
+  };
+};
+
+const leaderboardCommand: CommandHandler = async () => {
+  return {
+    success: true,
+    message: 'TRIVIA_COMMAND:leaderboard',
+    isSystemMessage: false,
+  };
+};
+
+const skipQuestionCommand: CommandHandler = async () => {
+  return {
+    success: true,
+    message: 'TRIVIA_COMMAND:skip',
+    isSystemMessage: false,
+  };
+};
+
 // Command registry
 const commands: Record<string, CommandHandler> = {
   help: helpCommand,
@@ -665,6 +704,12 @@ const commands: Record<string, CommandHandler> = {
   skip: skipCommand,
   nowplaying: nowPlayingCommand,
   np: nowPlayingCommand, // Alias
+  // Trivia commands
+  trivia: triviaCommand,
+  score: scoreCommand,
+  leaderboard: leaderboardCommand,
+  lb: leaderboardCommand, // Alias
+  skipq: skipQuestionCommand,
 };
 
 export const parseCommand = (input: string): { command: string; args: string[] } | null => {
