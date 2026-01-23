@@ -154,21 +154,21 @@ const Home = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-primary-foreground" />
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold brand jac-gradient-text">Justachat<sup className="text-xs">™</sup></h1>
+            <h1 className="text-lg sm:text-2xl font-bold brand jac-gradient-text">Justachat<sup className="text-[8px] sm:text-xs">™</sup></h1>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Admin Dropdown - Owner/Admin Only - Placed LEFT of Welcome */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Admin Dropdown - Owner/Admin Only */}
             {(isOwner || isAdmin) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 border-primary/50 text-primary hover:bg-primary/10">
-                    <Shield className="w-4 h-4" />
-                    Admin Panel
+                  <Button variant="outline" size="sm" className="gap-1 sm:gap-2 border-primary/50 text-primary hover:bg-primary/10 text-xs sm:text-sm px-2 sm:px-3">
+                    <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Admin Panel</span>
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -268,41 +268,42 @@ const Home = () => {
               </DropdownMenu>
             )}
             
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
               <Users className="w-4 h-4" />
               <span className="text-sm">Welcome back!</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="px-2 sm:px-3">
+              <LogOut className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sign Out</span>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Side - Room Cards */}
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Mobile: Stack vertically, Desktop: Side by side */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+          {/* Room Cards - Horizontal scroll on mobile */}
           <div className="lg:w-80 xl:w-96 flex-shrink-0">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold mb-2">Chat Rooms</h2>
-              <p className="text-muted-foreground text-sm">Select a room to join</p>
+            <div className="mb-3 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
+              <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
             </div>
 
             {loadingChannels ? (
-              <div className="flex flex-col gap-2">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="h-12 rounded-lg bg-card animate-pulse" />
+              <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-12 min-w-[140px] lg:min-w-0 rounded-lg bg-card animate-pulse flex-shrink-0 lg:flex-shrink" />
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col gap-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-2 scrollbar-thin">
+              <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-280px)] lg:overflow-y-auto pb-2 lg:pb-0 lg:pr-2 scrollbar-thin snap-x lg:snap-none">
                 {channels.map((channel) => (
                   <button
                     key={channel.id}
                     onClick={() => handleJoinRoom(channel)}
-                    className="group relative h-12 rounded-lg overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20"
+                    className="group relative h-12 min-w-[140px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-lg overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
                   >
                     {/* Background image */}
                     {roomBackgrounds[channel.name] && (
@@ -319,17 +320,17 @@ const Home = () => {
                     <div className="absolute inset-0 bg-black/40" />
                     
                     {/* Content */}
-                    <div className="relative h-full flex items-center gap-3 px-3">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
+                    <div className="relative h-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3">
+                      <div className={`p-1.5 sm:p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
                         {roomIcons[channel.name] ? (
-                          <div className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-5 sm:[&>svg]:h-5">
                             {roomIcons[channel.name]}
                           </div>
                         ) : (
-                          <Hash className="w-5 h-5" />
+                          <Hash className="w-4 h-4 sm:w-5 sm:h-5" />
                         )}
                       </div>
-                      <h3 className="font-semibold text-sm text-white drop-shadow-md">
+                      <h3 className="font-semibold text-xs sm:text-sm text-white drop-shadow-md whitespace-nowrap">
                         #{formatRoomName(channel.name)}
                       </h3>
                     </div>
@@ -345,34 +346,35 @@ const Home = () => {
           {/* Center - Public Chat Preview */}
           <div className="flex-1 min-w-0">
             {/* Welcome Banner */}
-            <div className="relative rounded-2xl overflow-hidden mb-4 border border-border">
+            <div className="relative rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-border">
               <img 
                 src={welcomeBanner} 
                 alt="Welcome to Justachat" 
-                className="w-full h-32 sm:h-40 object-cover"
+                className="w-full h-24 sm:h-32 md:h-40 object-cover"
               />
               {/* Welcome text overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                 <div className="text-center">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg">Welcome!</h2>
-                  <p className="text-sm sm:text-base text-white/90 drop-shadow-md mt-1">This is the main hangout spot.</p>
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Welcome!</h2>
+                  <p className="text-xs sm:text-sm md:text-base text-white/90 drop-shadow-md mt-1">This is the main hangout spot.</p>
                 </div>
                 <Button 
                   onClick={() => {
                     const generalChannel = channels.find(c => c.name === 'general');
                     if (generalChannel) handleJoinRoom(generalChannel);
                   }}
-                  className="absolute right-4 top-4 jac-gradient-bg hover:opacity-90"
+                  className="absolute right-2 sm:right-4 top-2 sm:top-4 jac-gradient-bg hover:opacity-90 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 h-auto"
                 >
                   Join Chat
                 </Button>
               </div>
             </div>
 
-            <div className="bg-card rounded-2xl border border-border h-[calc(100vh-340px)] flex flex-col overflow-hidden">
+            {/* Chat Preview - Smaller on mobile */}
+            <div className="bg-card rounded-xl sm:rounded-2xl border border-border h-[50vh] sm:h-[calc(100vh-340px)] flex flex-col overflow-hidden">
               {/* Topic bar */}
-              <div className="px-4 py-2 border-b border-border bg-primary/5">
-                <p className="text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
+              <div className="px-3 sm:px-4 py-1.5 sm:py-2 border-b border-border bg-primary/5">
+                <p className="text-xs sm:text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
               </div>
               
               {/* Live Chat Preview */}
@@ -381,35 +383,35 @@ const Home = () => {
           </div>
         </div>
         
-        {/* Footer - Matching example */}
-        <footer className="mt-8 py-6">
-          <div className="flex items-center justify-between">
-            {/* Logo and tagline - Left */}
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-primary-foreground" />
+        {/* Footer - Mobile responsive */}
+        <footer className="mt-6 sm:mt-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:justify-between">
+            {/* Logo and tagline */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="text-lg font-bold jac-gradient-text">Justachat<sup className="text-[8px]">™</sup></h3>
-                <p className="text-xs text-muted-foreground">Chat. Connect. Chill.</p>
+                <h3 className="text-base sm:text-lg font-bold jac-gradient-text">Justachat<sup className="text-[6px] sm:text-[8px]">™</sup></h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Chat. Connect. Chill.</p>
               </div>
             </div>
             
-            {/* Mascots - Center, transparent background */}
-            <div className="flex-1 flex justify-center">
+            {/* Mascots - Hidden on very small screens */}
+            <div className="hidden xs:flex flex-1 justify-center">
               <img 
                 src={footerMascots} 
                 alt="Justachat Mascots" 
-                className="h-14 w-auto object-contain"
+                className="h-10 sm:h-14 w-auto object-contain"
               />
             </div>
             
-            {/* Copyright - Right */}
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">
+            {/* Copyright */}
+            <div className="text-center sm:text-right">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 © {new Date().getFullYear()} Justachat™ All rights reserved.
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                 <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
               </p>
             </div>

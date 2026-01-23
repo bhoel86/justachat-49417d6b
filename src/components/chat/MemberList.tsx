@@ -372,11 +372,11 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
 
   return (
     <>
-      <div className="w-60 bg-card border-l border-border flex flex-col h-full">
-        <div className="p-4 border-b border-border">
+      <div className="w-64 sm:w-60 bg-card border-l border-border flex flex-col h-full max-h-screen">
+        <div className="p-3 sm:p-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-foreground">Members</h2>
+            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <h2 className="font-semibold text-sm sm:text-base text-foreground">Members</h2>
           </div>
         </div>
 

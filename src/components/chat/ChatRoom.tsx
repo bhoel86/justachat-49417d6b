@@ -20,6 +20,9 @@ import { useRadioOptional } from "@/contexts/RadioContext";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
 import { getModerator, getWelcomeMessage, getRandomTip, isAdultChannel } from "@/lib/roomConfig";
 import { moderateContent, shouldBlockMessage } from "@/lib/contentModeration";
+import { Button } from "@/components/ui/button";
+import { Menu, Users, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -61,6 +64,9 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [pendingChannel, setPendingChannel] = useState<Channel | null>(null);
   const [translations, setTranslations] = useState<Record<string, { text: string; lang: string }>>({});
+  // Mobile sidebar state
+  const [showChannelSidebar, setShowChannelSidebar] = useState(false);
+  const [showMemberSidebar, setShowMemberSidebar] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -870,41 +876,96 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   if (isRoomBanned && currentChannel) {
     return (
       <div className="flex h-screen bg-background">
-        <ChannelList 
-          currentChannelId={currentChannel?.id} 
-          onChannelSelect={handleChannelSelect}
-        />
-        <div className="flex flex-col flex-1 items-center justify-center text-center p-6">
-          <div className="h-16 w-16 rounded-xl bg-destructive/20 flex items-center justify-center mb-4">
-            <span className="text-3xl">🚪</span>
+        <div className="hidden lg:block">
+          <ChannelList 
+            currentChannelId={currentChannel?.id} 
+            onChannelSelect={handleChannelSelect}
+          />
+        </div>
+        <div className="flex flex-col flex-1 items-center justify-center text-center p-4 sm:p-6">
+          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl bg-destructive/20 flex items-center justify-center mb-3 sm:mb-4">
+            <span className="text-2xl sm:text-3xl">🚪</span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Banned from #{currentChannel.name}</h1>
-          <p className="text-muted-foreground mb-4">You have been banned from this room by the room owner.</p>
-          <p className="text-sm text-muted-foreground">Select a different channel to continue chatting.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Banned from #{currentChannel.name}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">You have been banned from this room by the room owner.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Select a different channel to continue chatting.</p>
+          <Button 
+            variant="outline" 
+            className="mt-4 lg:hidden"
+            onClick={() => navigate('/')}
+          >
+            Back to Home
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Channel Sidebar */}
-      <ChannelList 
-        currentChannelId={currentChannel?.id} 
-        onChannelSelect={handleChannelSelect}
-      />
+    <div className="flex h-screen bg-background relative">
+      {/* Mobile overlay when sidebar is open */}
+      {(showChannelSidebar || showMemberSidebar) && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => {
+            setShowChannelSidebar(false);
+            setShowMemberSidebar(false);
+          }}
+        />
+      )}
+
+      {/* Channel Sidebar - Hidden on mobile unless toggled */}
+      <div className={cn(
+        "fixed lg:relative inset-y-0 left-0 z-40 transition-transform duration-300 lg:transition-none",
+        showChannelSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      )}>
+        <ChannelList 
+          currentChannelId={currentChannel?.id} 
+          onChannelSelect={(channel) => {
+            handleChannelSelect(channel);
+            setShowChannelSidebar(false);
+          }}
+        />
+      </div>
 
       {/* Main Chat Area */}
-      <div className="flex flex-col flex-1">
-        <ChatHeader 
-          onlineCount={onlineUserIds.size || 1} 
-          topic={topic}
-          channelName={currentChannel?.name || 'general'}
-          onLanguageClick={() => setShowLanguageModal(true)}
-          currentLanguage={preferredLanguage}
-        />
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Mobile Header Bar */}
+        <div className="flex items-center gap-2 px-2 py-2 border-b border-border bg-card lg:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowChannelSidebar(true)}
+            className="h-9 w-9"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate">#{currentChannel?.name || 'general'}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowMemberSidebar(true)}
+            className="h-9 w-9"
+          >
+            <Users className="h-5 w-5" />
+            <span className="sr-only">Members</span>
+          </Button>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden lg:block">
+          <ChatHeader 
+            onlineCount={onlineUserIds.size || 1} 
+            topic={topic}
+            channelName={currentChannel?.name || 'general'}
+            onLanguageClick={() => setShowLanguageModal(true)}
+            currentLanguage={preferredLanguage}
+          />
+        </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="h-8 w-8 rounded-xl jac-gradient-bg animate-pulse" />
@@ -969,8 +1030,22 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
         <ChatInput onSend={handleSend} isMuted={isMuted || isRoomMuted} canControlRadio={isAdmin || isOwner} onlineUsers={onlineUsers} />
       </div>
 
-      {/* Member Sidebar */}
-      <MemberList onlineUserIds={onlineUserIds} channelName={currentChannel?.name} />
+      {/* Member Sidebar - Hidden on mobile unless toggled */}
+      <div className={cn(
+        "fixed lg:relative inset-y-0 right-0 z-40 transition-transform duration-300 lg:transition-none",
+        showMemberSidebar ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+      )}>
+        {/* Close button for mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowMemberSidebar(false)}
+          className="absolute top-2 right-2 h-8 w-8 lg:hidden z-10"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+        <MemberList onlineUserIds={onlineUserIds} channelName={currentChannel?.name} />
+      </div>
 
       {/* Private Message Modal */}
       {pmTarget && user && (

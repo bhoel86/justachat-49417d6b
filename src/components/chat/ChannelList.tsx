@@ -271,7 +271,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
 
   if (loading) {
     return (
-      <div className="w-56 bg-secondary/30 border-r border-border p-4 flex items-center justify-center">
+      <div className="w-64 sm:w-56 bg-secondary/30 border-r border-border p-4 flex items-center justify-center">
         <div className="h-6 w-6 rounded-full jac-gradient-bg animate-pulse" />
       </div>
     );
