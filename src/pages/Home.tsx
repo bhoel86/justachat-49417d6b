@@ -312,7 +312,7 @@ const Home = () => {
                       <button
                         key={channel.id}
                         onClick={() => handleJoinRoom(channel)}
-                        className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 active:scale-95"
+                        className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-1 active:scale-95 active:translate-y-0"
                       >
                         {/* Background image */}
                         {roomBackgrounds[channel.name] && (
