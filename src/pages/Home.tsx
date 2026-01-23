@@ -395,12 +395,13 @@ const Home = () => {
               </div>
             </div>
             
-            {/* Mascots - Center, spread out */}
-            <div className="flex-1 flex justify-center">
+            {/* Mascots - Center, spread out with fade */}
+            <div className="flex-1 flex justify-center relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background pointer-events-none" />
               <img 
                 src={footerMascots} 
                 alt="Justachat Mascots" 
-                className="h-14 w-auto object-contain"
+                className="h-14 w-auto object-contain opacity-90"
               />
             </div>
             
