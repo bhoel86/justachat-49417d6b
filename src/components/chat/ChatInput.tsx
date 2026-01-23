@@ -1,20 +1,46 @@
 import { useState } from "react";
-import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio } from "lucide-react";
+import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
 import EmojiPicker from "./EmojiPicker";
 import { useRadioOptional } from "@/contexts/RadioContext";
 
+// Fun IRC-style user actions
+const USER_ACTIONS = {
+  funny: [
+    { emoji: "🐟", action: "slaps", suffix: "around with a large trout" },
+    { emoji: "🍕", action: "throws", suffix: "a slice of pizza at" },
+    { emoji: "🎸", action: "serenades", suffix: "with an air guitar solo" },
+    { emoji: "💨", action: "blows", suffix: "a raspberry at" },
+    { emoji: "🤡", action: "does", suffix: "a silly dance for" },
+    { emoji: "🎪", action: "juggles", suffix: "flaming torches for" },
+    { emoji: "🦆", action: "releases", suffix: "a rubber duck army on" },
+    { emoji: "🌮", action: "challenges", suffix: "to a taco eating contest" },
+  ],
+  nice: [
+    { emoji: "🙌", action: "high-fives", suffix: "" },
+    { emoji: "🤗", action: "gives", suffix: "a warm hug" },
+    { emoji: "🎉", action: "celebrates", suffix: "with confetti" },
+    { emoji: "⭐", action: "awards", suffix: "a gold star" },
+    { emoji: "☕", action: "offers", suffix: "a cup of coffee" },
+    { emoji: "🍪", action: "shares", suffix: "cookies with" },
+    { emoji: "👏", action: "applauds", suffix: "enthusiastically" },
+    { emoji: "💐", action: "gives", suffix: "a bouquet of flowers" },
+  ],
+};
+
 interface ChatInputProps {
   onSend: (message: string) => void;
   isMuted?: boolean;
   canControlRadio?: boolean;
+  onlineUsers?: { username: string }[];
 }
 
-const ChatInput = ({ onSend, isMuted = false, canControlRadio = false }: ChatInputProps) => {
+const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUsers = [] }: ChatInputProps) => {
   const [message, setMessage] = useState("");
+  const [selectedAction, setSelectedAction] = useState<{ emoji: string; action: string; suffix: string } | null>(null);
   const radio = useRadioOptional();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -27,6 +53,17 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false }: ChatInp
 
   const handleEmojiSelect = (emoji: string) => {
     setMessage(prev => prev + emoji);
+  };
+
+  // Handle action with selected user
+  const handleActionWithUser = (username: string) => {
+    if (selectedAction) {
+      const actionMessage = selectedAction.suffix 
+        ? `/me ${selectedAction.emoji} ${selectedAction.action} ${username} ${selectedAction.suffix}`
+        : `/me ${selectedAction.emoji} ${selectedAction.action} ${username}`;
+      onSend(actionMessage);
+      setSelectedAction(null);
+    }
   };
 
   // Format seconds to MM:SS
@@ -219,6 +256,85 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false }: ChatInp
       )}
       <div className="flex gap-2">
         <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+        
+        {/* User Actions Dropdown */}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 rounded-xl shrink-0"
+                >
+                  <Zap className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Fun Actions</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="start" className="w-56 bg-popover border border-border z-50">
+            {selectedAction ? (
+              <>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  {selectedAction.emoji} Select target for "{selectedAction.action}"
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {onlineUsers.length > 0 ? (
+                  onlineUsers.map((user) => (
+                    <DropdownMenuItem
+                      key={user.username}
+                      onClick={() => handleActionWithUser(user.username)}
+                      className="cursor-pointer"
+                    >
+                      @{user.username}
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled className="text-muted-foreground">
+                    No users online
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setSelectedAction(null)} className="text-muted-foreground">
+                  ← Back to actions
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <>
+                <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                  🤪 Funny
+                </DropdownMenuLabel>
+                {USER_ACTIONS.funny.map((action, idx) => (
+                  <DropdownMenuItem
+                    key={`funny-${idx}`}
+                    onClick={() => setSelectedAction(action)}
+                    className="cursor-pointer"
+                  >
+                    <span className="mr-2">{action.emoji}</span>
+                    {action.action} {action.suffix ? `... ${action.suffix.slice(0, 15)}...` : ''}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                  💖 Nice
+                </DropdownMenuLabel>
+                {USER_ACTIONS.nice.map((action, idx) => (
+                  <DropdownMenuItem
+                    key={`nice-${idx}`}
+                    onClick={() => setSelectedAction(action)}
+                    className="cursor-pointer"
+                  >
+                    <span className="mr-2">{action.emoji}</span>
+                    {action.action} {action.suffix ? `... ${action.suffix.slice(0, 15)}...` : ''}
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <input
           type="text"
           value={message}

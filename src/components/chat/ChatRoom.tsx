@@ -38,6 +38,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
   const { user, isAdmin, isOwner, role } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const [onlineUsers, setOnlineUsers] = useState<{ username: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [topic, setTopic] = useState('Welcome to JAC!');
@@ -249,7 +250,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     });
 
     presenceChannel
-      .on('presence', { event: 'sync' }, () => {
+      .on('presence', { event: 'sync' }, async () => {
         const state = presenceChannel.presenceState();
         const onlineIds = new Set<string>();
         Object.values(state).forEach((presences: any[]) => {
@@ -258,6 +259,19 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           });
         });
         setOnlineUserIds(onlineIds);
+        
+        // Fetch usernames for online users
+        if (onlineIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('username')
+            .in('user_id', Array.from(onlineIds));
+          if (profiles) {
+            setOnlineUsers(profiles.map(p => ({ username: p.username })));
+          }
+        } else {
+          setOnlineUsers([]);
+        }
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -717,7 +731,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
           <div ref={messagesEndRef} />
         </div>
         
-        <ChatInput onSend={handleSend} isMuted={isMuted} canControlRadio={isAdmin || isOwner} />
+        <ChatInput onSend={handleSend} isMuted={isMuted} canControlRadio={isAdmin || isOwner} onlineUsers={onlineUsers} />
       </div>
 
       {/* Member Sidebar */}
