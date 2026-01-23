@@ -140,6 +140,7 @@ export type Database = {
       }
       channels: {
         Row: {
+          bg_color: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -147,8 +148,12 @@ export type Database = {
           is_hidden: boolean
           is_private: boolean | null
           name: string
+          name_color: string | null
+          name_gradient_from: string | null
+          name_gradient_to: string | null
         }
         Insert: {
+          bg_color?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -156,8 +161,12 @@ export type Database = {
           is_hidden?: boolean
           is_private?: boolean | null
           name: string
+          name_color?: string | null
+          name_gradient_from?: string | null
+          name_gradient_to?: string | null
         }
         Update: {
+          bg_color?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -165,6 +174,9 @@ export type Database = {
           is_hidden?: boolean
           is_private?: boolean | null
           name?: string
+          name_color?: string | null
+          name_gradient_from?: string | null
+          name_gradient_to?: string | null
         }
         Relationships: []
       }

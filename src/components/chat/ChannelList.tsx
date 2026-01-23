@@ -40,6 +40,10 @@ export interface Channel {
   is_private: boolean;
   created_by: string | null;
   is_hidden?: boolean;
+  name_color?: string | null;
+  name_gradient_from?: string | null;
+  name_gradient_to?: string | null;
+  bg_color?: string | null;
 }
 
 interface ChannelListProps {
@@ -137,7 +141,11 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
         name: channelName,
         description: newChannelDesc.trim() || null,
         is_private: isPrivate,
-        created_by: user.id
+        created_by: user.id,
+        name_color: roomGradient ? null : roomTextColor,
+        name_gradient_from: roomGradient?.from || null,
+        name_gradient_to: roomGradient?.to || null,
+        bg_color: roomBgColor
       })
       .select()
       .single();
@@ -467,27 +475,65 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {channels.map((channel) => {
           const theme = getRoomTheme(channel.name);
+          const hasCustomGradient = channel.name_gradient_from && channel.name_gradient_to;
+          const hasCustomColor = channel.name_color;
+          const isSelected = currentChannelId === channel.id;
+          
+          // Custom style for channel name
+          const getChannelNameStyle = () => {
+            if (!isSelected) return {};
+            if (hasCustomGradient) {
+              return {
+                backgroundImage: `linear-gradient(90deg, ${channel.name_gradient_from}, ${channel.name_gradient_to})`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              };
+            }
+            if (hasCustomColor) {
+              return { color: channel.name_color };
+            }
+            return {};
+          };
+          
+          const getChannelBgStyle = () => {
+            if (!isSelected || !channel.bg_color) return {};
+            return { backgroundColor: `${channel.bg_color}30` };
+          };
+          
           return (
             <div
               key={channel.id}
               className={cn(
                 "group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors",
-                currentChannelId === channel.id
+                isSelected && !channel.bg_color
                   ? cn(theme.bgColor, "border border-current/20")
+                  : isSelected && channel.bg_color
+                  ? "border border-current/20"
                   : "hover:bg-secondary",
                 channel.is_hidden && "opacity-50"
               )}
+              style={getChannelBgStyle()}
               onClick={() => onChannelSelect(channel)}
             >
               {channel.is_private ? (
-                <Lock className={cn("h-3.5 w-3.5 shrink-0", currentChannelId === channel.id ? theme.textColor : "text-muted-foreground")} />
+                <Lock 
+                  className={cn("h-3.5 w-3.5 shrink-0", isSelected && !hasCustomColor && !hasCustomGradient ? theme.textColor : "text-muted-foreground")} 
+                  style={hasCustomColor && isSelected ? { color: channel.name_color! } : {}}
+                />
               ) : (
-                <Hash className={cn("h-3.5 w-3.5 shrink-0", currentChannelId === channel.id ? theme.textColor : "text-muted-foreground")} />
+                <Hash 
+                  className={cn("h-3.5 w-3.5 shrink-0", isSelected && !hasCustomColor && !hasCustomGradient ? theme.textColor : "text-muted-foreground")} 
+                  style={hasCustomColor && isSelected ? { color: channel.name_color! } : {}}
+                />
               )}
-              <span className={cn(
-                "flex-1 truncate text-xs font-medium",
-                currentChannelId === channel.id ? theme.textColor : "text-muted-foreground hover:text-foreground"
-              )}>
+              <span 
+                className={cn(
+                  "flex-1 truncate text-xs font-medium",
+                  isSelected && !hasCustomColor && !hasCustomGradient ? theme.textColor : "text-muted-foreground hover:text-foreground"
+                )}
+                style={getChannelNameStyle()}
+              >
                 {channel.name}
               </span>
               {channel.is_hidden && isAdmin && (
