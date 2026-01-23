@@ -82,10 +82,10 @@ const AdminUsers = () => {
     if (!user) return;
     
     try {
+      // Use upsert to handle users who may not have a role row yet
       const { error } = await supabaseUntyped
         .from('user_roles')
-        .update({ role: newRole })
-        .eq('user_id', userId);
+        .upsert({ user_id: userId, role: newRole }, { onConflict: 'user_id' });
 
       if (error) throw error;
 

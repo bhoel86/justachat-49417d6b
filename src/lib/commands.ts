@@ -195,10 +195,10 @@ const opCommand: CommandHandler = async (args, context) => {
     return { success: false, message: 'Cannot change role of admin or owner.' };
   }
 
+  // Use upsert to handle users who may not have a role row yet
   const { error } = await supabaseUntyped
     .from('user_roles')
-    .update({ role: 'moderator' })
-    .eq('user_id', targetUser.user_id);
+    .upsert({ user_id: targetUser.user_id, role: 'moderator' }, { onConflict: 'user_id' });
 
   if (error) {
     return { success: false, message: 'Failed to give operator status.' };
@@ -242,10 +242,10 @@ const deopCommand: CommandHandler = async (args, context) => {
     return { success: false, message: 'Only the owner can demote admins.' };
   }
 
+  // Use upsert to handle users who may not have a role row yet
   const { error } = await supabaseUntyped
     .from('user_roles')
-    .update({ role: 'user' })
-    .eq('user_id', targetUser.user_id);
+    .upsert({ user_id: targetUser.user_id, role: 'user' }, { onConflict: 'user_id' });
 
   if (error) {
     return { success: false, message: 'Failed to remove operator status.' };
@@ -283,10 +283,10 @@ const adminCommand: CommandHandler = async (args, context) => {
 
   const previousRole = await getUserRole(targetUser.user_id);
 
+  // Use upsert to handle users who may not have a role row yet
   const { error } = await supabaseUntyped
     .from('user_roles')
-    .update({ role: 'admin' })
-    .eq('user_id', targetUser.user_id);
+    .upsert({ user_id: targetUser.user_id, role: 'admin' }, { onConflict: 'user_id' });
 
   if (error) {
     return { success: false, message: 'Failed to give admin status.' };
@@ -327,10 +327,10 @@ const deadminCommand: CommandHandler = async (args, context) => {
     return { success: false, message: 'User is not an admin.' };
   }
 
+  // Use upsert to handle users who may not have a role row yet
   const { error } = await supabaseUntyped
     .from('user_roles')
-    .update({ role: 'moderator' })
-    .eq('user_id', targetUser.user_id);
+    .upsert({ user_id: targetUser.user_id, role: 'moderator' }, { onConflict: 'user_id' });
 
   if (error) {
     return { success: false, message: 'Failed to demote admin.' };

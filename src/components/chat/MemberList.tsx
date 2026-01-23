@@ -200,10 +200,10 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
 
   const handleRoleChange = async (memberId: string, newRole: Member['role']) => {
     try {
+      // Use upsert to handle users who may not have a role row yet
       const { error } = await supabaseUntyped
         .from('user_roles')
-        .update({ role: newRole })
-        .eq('user_id', memberId);
+        .upsert({ user_id: memberId, role: newRole }, { onConflict: 'user_id' });
 
       if (error) throw error;
 
