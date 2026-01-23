@@ -1,4 +1,4 @@
-// Famous hackers as bot moderator personas
+// Famous hackers as moderator personas
 export interface ModeratorInfo {
   name: string;
   displayName: string;

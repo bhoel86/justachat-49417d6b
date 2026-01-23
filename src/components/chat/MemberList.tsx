@@ -66,7 +66,7 @@ const roleConfig = {
   },
   bot: {
     icon: Bot,
-    label: 'Bot Mod',
+    label: 'Mod',
     color: 'text-cyan-400',
     bgColor: 'bg-cyan-400/10',
   },
@@ -362,10 +362,10 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
               </Link>
             </div>
           )}
-          {/* Bot Moderator - Always on top */}
+          {/* Channel Moderator - Always on top */}
           <div className="mb-4">
             <p className="text-xs font-medium text-muted-foreground uppercase px-2 mb-2">
-              Bot Moderator
+              Moderator
             </p>
             <div className="space-y-1">
               <BotMemberItem 
@@ -376,14 +376,14 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                 onBlockClick={() => {
                   toast({
                     variant: "destructive",
-                    title: "Cannot block bot moderators",
-                    description: "Bot moderators are essential for room management and cannot be blocked."
+                    title: "Cannot block moderators",
+                    description: "Moderators are essential for room management and cannot be blocked."
                   });
                 }}
                 onInfoClick={() => {
                   toast({
                     title: `${moderator.avatar} ${moderator.name}`,
-                    description: `${moderator.displayName} - Bot Moderator for #${channelName}. Personality based on famous hackers.`
+                    description: `${moderator.displayName} - Moderator for #${channelName}. Personality based on famous hackers.`
                   });
                 }}
               />
@@ -577,7 +577,7 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
           </div>
           <div>
             <p className="font-medium text-sm">{moderator.name}</p>
-            <p className="text-xs text-muted-foreground">Bot Moderator</p>
+            <p className="text-xs text-muted-foreground">Moderator</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
