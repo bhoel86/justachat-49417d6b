@@ -299,16 +299,16 @@ const Home = () => {
                 {/* Background image */}
                 {roomBackgrounds[channel.name] && (
                   <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-50 transition-opacity"
+                    className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
                     style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
                   />
                 )}
                 
                 {/* Gradient overlay */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} opacity-10 group-hover:opacity-20 transition-opacity`} />
+                <div className={`absolute inset-0 bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
                 
                 {/* Dark overlay for readability */}
-                <div className="absolute inset-0 bg-black/40" />
+                <div className="absolute inset-0 bg-black/30" />
                 
                 {/* Content */}
                 <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
