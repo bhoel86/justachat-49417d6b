@@ -184,7 +184,7 @@ const FakeChatPreview = () => {
       timestamp: new Date(),
     };
     
-    setMessages(prev => [...prev, starterMsg].slice(-12));
+    setMessages(prev => [...prev, starterMsg].slice(-20));
     setUsedConversations(prev => new Set([...prev, convo.index]));
     
     // Add reply after a delay
@@ -203,7 +203,7 @@ const FakeChatPreview = () => {
         replyTo: starterUser.username,
       };
       
-      setMessages(prev => [...prev, replyMsg].slice(-12));
+      setMessages(prev => [...prev, replyMsg].slice(-20));
     }, 2000 + Math.random() * 3000);
   };
 
@@ -223,7 +223,7 @@ const FakeChatPreview = () => {
       message: LOCATION_STARTERS[Math.floor(Math.random() * LOCATION_STARTERS.length)],
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, askMsg].slice(-12));
+    setMessages(prev => [...prev, askMsg].slice(-20));
     
     // First person responds with their location
     setTimeout(() => {
@@ -239,7 +239,7 @@ const FakeChatPreview = () => {
         message: responseFunc(location1),
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, resp1Msg].slice(-12));
+      setMessages(prev => [...prev, resp1Msg].slice(-20));
       
       // Second person also shares their location
       setTimeout(() => {
@@ -255,7 +255,7 @@ const FakeChatPreview = () => {
           message: responseFunc2(location2),
           timestamp: new Date(),
         };
-        setMessages(prev => [...prev, resp2Msg].slice(-12));
+        setMessages(prev => [...prev, resp2Msg].slice(-20));
         
         // Someone follows up about one of the locations
         setTimeout(() => {
@@ -274,7 +274,7 @@ const FakeChatPreview = () => {
             message: followupFunc(targetLocation),
             timestamp: new Date(),
           };
-          setMessages(prev => [...prev, followupMsg].slice(-12));
+          setMessages(prev => [...prev, followupMsg].slice(-20));
           
           // Original person replies with more detail
           setTimeout(() => {
@@ -285,7 +285,7 @@ const FakeChatPreview = () => {
               message: replyFunc(targetLocation),
               timestamp: new Date(),
             };
-            setMessages(prev => [...prev, detailMsg].slice(-12));
+            setMessages(prev => [...prev, detailMsg].slice(-20));
           }, 2000 + Math.random() * 2000);
           
         }, 2500 + Math.random() * 2000);
@@ -304,7 +304,7 @@ const FakeChatPreview = () => {
       message: STANDALONE_MESSAGES[Math.floor(Math.random() * STANDALONE_MESSAGES.length)],
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, msg].slice(-12));
+    setMessages(prev => [...prev, msg].slice(-20));
   };
 
   // Initialize with varied starting messages
@@ -380,44 +380,44 @@ const FakeChatPreview = () => {
       {/* Messages Area */}
       <div className="flex-1 flex flex-col">
         {/* Welcome Message */}
-        <div className="px-4 py-2 bg-primary/10 border-b border-border">
-          <p className="text-xs text-primary font-medium">{welcomeMessage}</p>
+        <div className="px-2 py-1 bg-primary/10 border-b border-border">
+          <p className="text-[10px] text-primary font-medium">{welcomeMessage}</p>
         </div>
         
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {messages.map((msg) => {
             const userData = getUserData(msg.username);
             return (
               <div
                 key={msg.id}
-                className="flex gap-2 animate-fade-in"
+                className="flex gap-1.5 animate-fade-in"
               >
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   <UserAvatar
                     avatarUrl={getAvatarUrl(userData.avatarSeed)}
                     username={msg.username}
-                    size="sm"
+                    size="xs"
                   />
                 </div>
                 
                 {/* Message bubble */}
-                <div className="bg-secondary/50 rounded-2xl rounded-bl-md px-3 py-2 max-w-[80%]">
-                  <div className="flex items-center gap-1.5">
-                    <p className={`text-xs font-medium ${
+                <div className="bg-secondary/50 rounded-lg rounded-bl-sm px-2 py-1 max-w-[85%]">
+                  <div className="flex items-center gap-1">
+                    <p className={`text-[10px] font-medium ${
                       userData.isOwner ? 'text-amber-500' : 
                       userData.isAdmin ? 'text-red-500' : 'text-primary'
                     }`}>
                       {msg.username}
                     </p>
-                    {userData.isOwner && <Crown className="w-3 h-3 text-amber-500" />}
-                    {userData.isAdmin && <Shield className="w-3 h-3 text-red-500" />}
+                    {userData.isOwner && <Crown className="w-2.5 h-2.5 text-amber-500" />}
+                    {userData.isAdmin && <Shield className="w-2.5 h-2.5 text-red-500" />}
+                    <span className="text-[9px] text-muted-foreground ml-1">
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
-                  <p className="text-sm text-foreground">{msg.message}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <p className="text-xs text-foreground leading-tight">{msg.message}</p>
                 </div>
               </div>
             );
@@ -426,8 +426,8 @@ const FakeChatPreview = () => {
         </div>
 
         {/* Fake input (disabled) */}
-        <div className="p-4 border-t border-border">
-          <div className="bg-input rounded-xl px-4 py-3 text-sm text-muted-foreground cursor-not-allowed">
+        <div className="p-2 border-t border-border">
+          <div className="bg-input rounded-lg px-3 py-2 text-xs text-muted-foreground cursor-not-allowed">
             Join the chat to send messages...
           </div>
         </div>
