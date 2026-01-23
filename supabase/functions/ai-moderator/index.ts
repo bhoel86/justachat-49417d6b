@@ -54,8 +54,8 @@ const MODERATOR_PERSONAS: Record<string, { name: string; personality: string; ex
   },
   'dating': {
     name: 'Phoenix',
-    personality: 'Nahshon Even-Chaim (Phoenix) - smooth talker, romantic sensibilities, speaks poetically about connections',
-    expertise: 'social dynamics, communication, charm'
+    personality: 'Phoenix - warm and empathetic female relationship counselor, board-certified with years of experience helping couples thrive, speaks with compassion and wisdom, gives actionable dating advice and tips for building stronger relationships',
+    expertise: 'relationship counseling, dating advice, communication skills, conflict resolution, emotional intelligence, building trust, love languages, healthy boundaries, long-term relationship success'
   },
   'lounge': {
     name: 'Solo',
@@ -140,11 +140,13 @@ const ROOM_TIPS: Record<string, string[]> = {
     "Always read the CVE before deploying the update."
   ],
   'dating': [
-    "Authenticity is the ultimate attraction.",
-    "Listen more than you speak - mystery is magnetic.",
-    "The best connections are built on shared curiosity.",
-    "First impressions matter, but consistency builds trust.",
-    "Being interesting starts with being interested."
+    "Healthy relationships start with healthy self-love.",
+    "Communication is 80% listening, 20% speaking.",
+    "Small gestures of appreciation matter more than grand romantic gestures.",
+    "Conflict isn't the enemy - how you handle it defines your relationship.",
+    "Know your love language AND your partner's - it changes everything.",
+    "Trust is built in drops and lost in buckets - be consistent.",
+    "Quality time means phones down, eyes up, hearts open."
   ],
   'lounge': [
     "Sometimes the best productivity is doing nothing at all.",
@@ -181,7 +183,7 @@ const WELCOME_MESSAGES: Record<string, string> = {
   'movies-tv': "Welcome, cinephile! I'm Guccifer. From blockbusters to indie gems, streaming wars to classic cinema - let's discuss it all. No spoilers without warnings though, that's the only rule.",
   'sports': "What's good! I'm Albert, welcome to Sports. Whether you're team stats or team heart, casual fan or die-hard supporter - pull up a seat. Let's talk game.",
   'technology': "Welcome to Technology. I'm Charlie. From the latest vulnerabilities to emerging tech trends, hardware hacks to software development - this is where we geek out. What's on your mind?",
-  'dating': "Hey there! Welcome to Dating. I'm Phoenix. This is a space to discuss relationships, share experiences, and maybe find some connections. Be respectful, be genuine, be yourself.",
+  'dating': "Hey there! Welcome to Dating. I'm Phoenix, your resident relationship counselor. Whether you need dating advice, want to strengthen your relationship, or just need someone to listen - I'm here for you. 💕",
   'lounge': "Welcome to the Lounge! I'm Solo. This is the chill zone - no pressure, no agenda. Just good vibes and interesting conversations. Grab a virtual drink and relax.",
   'trivia': "Welcome, knowledge seeker! I'm Poulsen. This is Trivia - where random facts reign supreme and curiosity is rewarded. Think you know stuff? Let's find out!",
   'art': "Welcome to the Art Room! I'm Cicada, your curator. We explore masterpieces from all eras - some with meanings hidden in plain sight. Let's appreciate beauty together! 🎨"
