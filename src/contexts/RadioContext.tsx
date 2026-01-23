@@ -4,6 +4,8 @@ interface RadioStation {
   name: string;
   artist: string;
   videoId: string;
+  genre: string;
+  albumArt: string;
 }
 
 interface RadioContextType {
@@ -30,12 +32,31 @@ export const useRadioOptional = () => {
 };
 
 const RADIO_STATIONS: RadioStation[] = [
-  { name: 'Lofi Hip Hop', videoId: 'jfKfPfyJRdk', artist: 'Lofi Girl' },
-  { name: 'Chillhop Radio', videoId: '5yx6BWlEVcY', artist: 'Chillhop Music' },
-  { name: 'Jazz Radio', videoId: 'Dx5qFachd3A', artist: 'Cafe Music BGM' },
-  { name: 'Synthwave Radio', videoId: '4xDzrJKXOOY', artist: 'Synthwave Goose' },
-  { name: 'Classical Piano', videoId: 'klPZIGQcrHA', artist: 'Rousseau' },
-  { name: 'Ambient Chill', videoId: 'S_MOd40zlYU', artist: 'Ambient Worlds' },
+  // Lofi & Chill
+  { name: 'Lofi Hip Hop', videoId: 'jfKfPfyJRdk', artist: 'Lofi Girl', genre: 'Lofi', albumArt: 'https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg' },
+  { name: 'Chillhop Radio', videoId: '5yx6BWlEVcY', artist: 'Chillhop Music', genre: 'Lofi', albumArt: 'https://i.ytimg.com/vi/5yx6BWlEVcY/hqdefault.jpg' },
+  { name: 'Ambient Chill', videoId: 'S_MOd40zlYU', artist: 'Ambient Worlds', genre: 'Ambient', albumArt: 'https://i.ytimg.com/vi/S_MOd40zlYU/hqdefault.jpg' },
+  
+  // Drill & Hip Hop
+  { name: 'UK Drill Mix', videoId: 'TbLAPUJQkKU', artist: 'Drill Central', genre: 'Drill', albumArt: 'https://i.ytimg.com/vi/TbLAPUJQkKU/hqdefault.jpg' },
+  { name: 'NY Drill Radio', videoId: 'bSCY0RlGqYE', artist: 'Drill Vibes', genre: 'Drill', albumArt: 'https://i.ytimg.com/vi/bSCY0RlGqYE/hqdefault.jpg' },
+  { name: 'Hip Hop Classics', videoId: '3sx0_8Ie0kM', artist: 'Old School Radio', genre: 'Hip Hop', albumArt: 'https://i.ytimg.com/vi/3sx0_8Ie0kM/hqdefault.jpg' },
+  
+  // Rock
+  { name: 'Rock Anthems', videoId: 'E-WHW-QNswE', artist: 'Rock Radio', genre: 'Rock', albumArt: 'https://i.ytimg.com/vi/E-WHW-QNswE/hqdefault.jpg' },
+  { name: 'Metal Radio', videoId: 'VTT6picaCoQ', artist: 'Heavy Tunes', genre: 'Metal', albumArt: 'https://i.ytimg.com/vi/VTT6picaCoQ/hqdefault.jpg' },
+  { name: 'Indie Rock', videoId: 'DbIxd1dHxOQ', artist: 'Indie Vibes', genre: 'Indie', albumArt: 'https://i.ytimg.com/vi/DbIxd1dHxOQ/hqdefault.jpg' },
+  
+  // EDM & Electronic
+  { name: 'EDM Party Mix', videoId: 'DiEwJTOderQ', artist: 'EDM Central', genre: 'EDM', albumArt: 'https://i.ytimg.com/vi/DiEwJTOderQ/hqdefault.jpg' },
+  { name: 'House Radio', videoId: 'mDFBTdToRmw', artist: 'House Nation', genre: 'House', albumArt: 'https://i.ytimg.com/vi/mDFBTdToRmw/hqdefault.jpg' },
+  { name: 'Dubstep Bass', videoId: 'iqQ9bLdHEPU', artist: 'Bass Drop', genre: 'Dubstep', albumArt: 'https://i.ytimg.com/vi/iqQ9bLdHEPU/hqdefault.jpg' },
+  { name: 'Synthwave Radio', videoId: '4xDzrJKXOOY', artist: 'Synthwave Goose', genre: 'Synthwave', albumArt: 'https://i.ytimg.com/vi/4xDzrJKXOOY/hqdefault.jpg' },
+  { name: 'Drum & Bass', videoId: '6SVe4hdDd8Y', artist: 'DnB Radio', genre: 'DnB', albumArt: 'https://i.ytimg.com/vi/6SVe4hdDd8Y/hqdefault.jpg' },
+  
+  // Jazz & Classical
+  { name: 'Jazz Radio', videoId: 'Dx5qFachd3A', artist: 'Cafe Music BGM', genre: 'Jazz', albumArt: 'https://i.ytimg.com/vi/Dx5qFachd3A/hqdefault.jpg' },
+  { name: 'Classical Piano', videoId: 'klPZIGQcrHA', artist: 'Rousseau', genre: 'Classical', albumArt: 'https://i.ytimg.com/vi/klPZIGQcrHA/hqdefault.jpg' },
 ];
 
 interface YTPlayer {

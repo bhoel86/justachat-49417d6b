@@ -30,9 +30,30 @@ const ChatInput = ({ onSend, isMuted = false }: ChatInputProps) => {
       {/* Radio Player GUI */}
       {radio && (
         <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-lg">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center ${radio.isPlaying ? 'animate-pulse' : ''}`}>
-              <Music className="h-4 w-4 text-primary" />
+          <div className="flex items-center gap-3">
+            {/* Album Art */}
+            <div className={`relative w-10 h-10 rounded-lg overflow-hidden bg-primary/20 flex-shrink-0 ${radio.isPlaying ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}`}>
+              {radio.currentStation?.albumArt ? (
+                <img 
+                  src={radio.currentStation.albumArt} 
+                  alt={radio.currentStation.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Music className="h-5 w-5 text-primary" />
+                </div>
+              )}
+              {radio.isPlaying && (
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                  <div className="flex items-end gap-0.5 h-3">
+                    <span className="w-0.5 bg-primary animate-pulse" style={{ height: '60%', animationDelay: '0ms' }} />
+                    <span className="w-0.5 bg-primary animate-pulse" style={{ height: '100%', animationDelay: '150ms' }} />
+                    <span className="w-0.5 bg-primary animate-pulse" style={{ height: '40%', animationDelay: '300ms' }} />
+                    <span className="w-0.5 bg-primary animate-pulse" style={{ height: '80%', animationDelay: '450ms' }} />
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="min-w-0 flex-1">
@@ -42,7 +63,7 @@ const ChatInput = ({ onSend, isMuted = false }: ChatInputProps) => {
                     {radio.currentStation.name}
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    {radio.currentStation.artist}
+                    {radio.currentStation.artist} • {radio.currentStation.genre}
                   </p>
                 </>
               ) : (
