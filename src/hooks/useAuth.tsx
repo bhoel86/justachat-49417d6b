@@ -66,6 +66,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Auto logout when browser window/tab closes
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Use sendBeacon for reliable logout on window close
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/logout`;
+      const headers = {
+        'Authorization': `Bearer ${session?.access_token}`,
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+      };
+      
+      // sendBeacon is more reliable than fetch for unload events
+      if (session?.access_token && navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify({})], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
+      }
+      
+      // Clear local storage to ensure session doesn't persist
+      localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_PROJECT_ID + '-auth-token');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [session]);
+
   const checkUserRole = async (userId: string) => {
     const { data } = await supabaseUntyped
       .from('user_roles')
