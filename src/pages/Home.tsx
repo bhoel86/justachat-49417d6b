@@ -304,11 +304,19 @@ const Home = () => {
                   />
                 )}
                 
-                {/* Gradient overlay */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                {/* Gradient overlay - lighter for darker themed rooms */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} ${
+                  ['lounge', 'politics', 'adults-21-plus'].includes(channel.name) 
+                    ? 'opacity-30 group-hover:opacity-40' 
+                    : 'opacity-20 group-hover:opacity-30'
+                } transition-opacity`} />
                 
-                {/* Dark overlay for readability */}
-                <div className="absolute inset-0 bg-black/30" />
+                {/* Dark overlay for readability - lighter for brown/dark themed rooms */}
+                <div className={`absolute inset-0 ${
+                  ['lounge', 'politics', 'adults-21-plus'].includes(channel.name)
+                    ? 'bg-black/15'
+                    : 'bg-black/30'
+                }`} />
                 
                 {/* Content */}
                 <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
