@@ -299,44 +299,44 @@ const Home = () => {
             {loadingChannels ? (
               <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-16 sm:h-20 min-w-[180px] lg:min-w-0 rounded-xl bg-card animate-pulse flex-shrink-0 lg:flex-shrink" />
+                  <div key={i} className="h-20 sm:h-24 min-w-[200px] lg:min-w-0 rounded-xl bg-card animate-pulse flex-shrink-0 lg:flex-shrink" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-380px)] lg:overflow-y-auto pb-2 lg:pb-0 lg:pr-2 scrollbar-thin snap-x lg:snap-none">
+                <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible lg:max-h-[calc(100vh-400px)] lg:overflow-y-auto pb-2 lg:pb-0 lg:pr-2 scrollbar-thin snap-x lg:snap-none">
                   {channels.map((channel) => (
                     <button
                       key={channel.id}
                       onClick={() => handleJoinRoom(channel)}
-                      className="group relative h-16 sm:h-20 min-w-[180px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md hover:shadow-primary/20 snap-start active:scale-95"
+                      className="group relative h-20 sm:h-24 min-w-[200px] lg:min-w-0 flex-shrink-0 lg:flex-shrink rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 snap-start active:scale-95"
                     >
-                      {/* Background image */}
+                      {/* Background image - more visible */}
                       {roomBackgrounds[channel.name] && (
                         <div 
-                          className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
+                          className="absolute inset-0 bg-cover bg-center opacity-60 group-hover:opacity-80 transition-opacity"
                           style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
                         />
                       )}
                       
                       {/* Gradient overlay */}
-                      <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                      <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-25 group-hover:opacity-35 transition-opacity`} />
                       
-                      {/* Dark overlay for readability */}
-                      <div className="absolute inset-0 bg-black/40" />
+                      {/* Dark overlay for readability - lighter */}
+                      <div className="absolute inset-0 bg-black/30" />
                       
                       {/* Content */}
-                      <div className="relative h-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4">
-                        <div className={`p-2.5 sm:p-3 rounded-xl bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
+                      <div className="relative h-full flex items-center gap-4 px-4 sm:px-5">
+                        <div className={`p-3 sm:p-3.5 rounded-xl bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-lg group-hover:scale-105 transition-transform`}>
                           {roomIcons[channel.name] ? (
-                            <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6 sm:[&>svg]:w-7 sm:[&>svg]:h-7">
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center [&>svg]:w-7 [&>svg]:h-7 sm:[&>svg]:w-8 sm:[&>svg]:h-8">
                               {roomIcons[channel.name]}
                             </div>
                           ) : (
-                            <Hash className="w-6 h-6 sm:w-7 sm:h-7" />
+                            <Hash className="w-7 h-7 sm:w-8 sm:h-8" />
                           )}
                         </div>
-                        <h3 className="font-semibold text-base sm:text-lg text-white drop-shadow-md whitespace-nowrap">
+                        <h3 className="font-bold text-lg sm:text-xl text-white drop-shadow-lg whitespace-nowrap">
                           #{formatRoomName(channel.name)}
                         </h3>
                       </div>
