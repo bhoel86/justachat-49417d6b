@@ -37,7 +37,7 @@ const navItems: NavItem[] = [
   { label: "Bots", href: "/admin/bots", icon: Bot, adminOnly: true },
   { label: "Emails", href: "/admin/emails", icon: Mail, ownerOnly: true },
   { label: "API Keys", href: "/admin/api", icon: Key, ownerOnly: true },
-  { label: "IRC Gateway", href: "/admin/irc", icon: Server, adminOnly: true },
+  
 ];
 
 interface AdminSidebarProps {
