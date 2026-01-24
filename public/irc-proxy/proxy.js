@@ -394,7 +394,10 @@ class RateLimiter {
     setInterval(() => this.cleanup(), 60000);
   }
   
-  canConnect(ip) {
+  canConnect(ip, isAllowlisted = false) {
+    // Allowlisted IPs bypass connection rate limiting
+    if (isAllowlisted) return { allowed: true };
+    
     const now = Date.now();
     const record = this.connectionAttempts.get(ip);
     if (!record || now > record.resetAt) {
@@ -445,6 +448,66 @@ class RateLimiter {
 const rateLimiter = new RateLimiter();
 
 // ============================================
+// Allowlist Management (exempt from rate-limiting / auto-ban)
+// ============================================
+
+class AllowlistManager {
+  constructor(dataDir) {
+    this.allowlistFile = path.join(dataDir, 'allowlist.json');
+    this.allowlist = new Map();
+    this.load();
+  }
+  
+  load() {
+    try {
+      if (fs.existsSync(this.allowlistFile)) {
+        const data = JSON.parse(fs.readFileSync(this.allowlistFile, 'utf8'));
+        this.allowlist = new Map(Object.entries(data));
+        log('info', `[ALLOWLIST] Loaded ${this.allowlist.size} entries`);
+      }
+    } catch (err) {
+      log('error', `[ALLOWLIST] Load failed: ${err.message}`);
+    }
+  }
+  
+  save() {
+    try {
+      fs.writeFileSync(this.allowlistFile, JSON.stringify(Object.fromEntries(this.allowlist), null, 2), 'utf8');
+    } catch (err) {
+      log('error', `[ALLOWLIST] Save failed: ${err.message}`);
+    }
+  }
+  
+  add(ip, label = 'Admin', addedBy = 'system') {
+    this.allowlist.set(ip, { label, addedAt: new Date().toISOString(), addedBy });
+    this.save();
+    fileLogger.audit('ALLOWLIST_ADD', ip, { label, by: addedBy });
+    log('info', `[ALLOWLIST] Added: ${ip} (${label})`);
+    return true;
+  }
+  
+  remove(ip, removedBy = 'system') {
+    const existed = this.allowlist.delete(ip);
+    if (existed) {
+      this.save();
+      fileLogger.audit('ALLOWLIST_REMOVE', ip, { by: removedBy });
+      log('info', `[ALLOWLIST] Removed: ${ip}`);
+    }
+    return existed;
+  }
+  
+  isAllowed(ip) {
+    return this.allowlist.has(ip);
+  }
+  
+  getAll() {
+    return Array.from(this.allowlist.entries()).map(([ip, data]) => ({ ip, ...data }));
+  }
+}
+
+const allowlistManager = new AllowlistManager(config.dataDir);
+
+// ============================================
 // Ban Management
 // ============================================
 
@@ -459,6 +522,8 @@ let saveTimeout = null;
 function scheduleSave() { if (saveTimeout) clearTimeout(saveTimeout); saveTimeout = setTimeout(() => storage.saveBans(Object.fromEntries(bannedIPs)), 1000); }
 
 function isIPBanned(ip) {
+  // Allowlisted IPs are never banned
+  if (allowlistManager.isAllowed(ip)) return false;
   const ban = bannedIPs.get(ip);
   if (!ban) return false;
   if (!ban.permanent && ban.expires && Date.now() > ban.expires) {
@@ -503,8 +568,9 @@ async function handleConnection(socket, isSecure = false) {
   const clientIP = socket.remoteAddress?.replace('::ffff:', '') || 'unknown';
   const clientPort = socket.remotePort;
   const connType = isSecure ? 'SSL' : 'TCP';
+  const isAllowlisted = allowlistManager.isAllowed(clientIP);
   
-  // Check ban
+  // Check ban (allowlisted IPs are exempt via isIPBanned)
   if (isIPBanned(clientIP)) {
     const ban = bannedIPs.get(clientIP);
     log('warn', `[REJECT] Banned: ${clientIP}`);
@@ -513,8 +579,8 @@ async function handleConnection(socket, isSecure = false) {
     return;
   }
   
-  // Check GeoIP
-  if (config.geoipEnabled) {
+  // Check GeoIP (allowlisted IPs bypass)
+  if (config.geoipEnabled && !isAllowlisted) {
     const geoCheck = await geoip.shouldAllow(clientIP);
     if (!geoCheck.allowed) {
       log('warn', `[REJECT] GeoIP: ${clientIP} (${geoCheck.countryCode})`);
@@ -524,8 +590,8 @@ async function handleConnection(socket, isSecure = false) {
     }
   }
   
-  // Check rate limit
-  const connCheck = rateLimiter.canConnect(clientIP);
+  // Check rate limit (allowlisted IPs bypass)
+  const connCheck = rateLimiter.canConnect(clientIP, isAllowlisted);
   if (!connCheck.allowed) {
     log('warn', `[REJECT] Rate: ${clientIP}`);
     fileLogger.security('REJECT_RATE', clientIP, 'Rate limited', { retryAfter: connCheck.retryAfter });
@@ -825,6 +891,63 @@ const adminServer = http.createServer((req, res) => {
     const logs = fileLogger.getRecentLogs(type, Math.min(lines, 500));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ type, count: logs.length, logs }));
+    return;
+  }
+  
+  // Allowlist - GET
+  if (reqPath === '/allowlist' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ allowlist: allowlistManager.getAll() }));
+    return;
+  }
+  
+  // Allowlist - ADD
+  if (reqPath === '/allowlist' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { ip, label } = JSON.parse(body);
+        if (!ip || !/^[\d.]+$/.test(ip)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Valid IP required' }));
+          return;
+        }
+        allowlistManager.add(ip, label || 'Admin', adminIP);
+        // Also unban if currently banned
+        if (bannedIPs.has(ip)) {
+          unbanIP(ip, adminIP);
+          rateLimiter.clearViolations(ip);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+    });
+    return;
+  }
+  
+  // Allowlist - REMOVE
+  if (reqPath === '/allowlist' && req.method === 'DELETE') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { ip } = JSON.parse(body);
+        if (allowlistManager.remove(ip, adminIP)) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        } else {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Not in allowlist' }));
+        }
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+    });
     return;
   }
   

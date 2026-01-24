@@ -59,6 +59,13 @@ interface ProxyConnection {
   city?: string;
 }
 
+interface AllowlistEntry {
+  ip: string;
+  label: string;
+  addedAt: string;
+  addedBy: string;
+}
+
 interface GeoIPStats {
   enabled: boolean;
   mode: string;
@@ -84,10 +91,13 @@ const AdminIRC = () => {
   const [connections, setConnections] = useState<ProxyConnection[]>([]);
   const [bans, setBans] = useState<string[]>([]);
   const [geoipStats, setGeoipStats] = useState<GeoIPStats | null>(null);
+  const [allowlist, setAllowlist] = useState<AllowlistEntry[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [banIpInput, setBanIpInput] = useState("");
+  const [allowlistIpInput, setAllowlistIpInput] = useState("");
+  const [allowlistLabelInput, setAllowlistLabelInput] = useState("Admin");
 
   useEffect(() => {
     if (!loading && (!user || (!isOwner && !isAdmin))) {
@@ -155,14 +165,29 @@ const AdminIRC = () => {
     }
   }, [proxyUrl, adminToken]);
 
+  const fetchAllowlist = useCallback(async () => {
+    if (!adminToken) return;
+    try {
+      const res = await fetch(`${proxyUrl}/allowlist`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAllowlist(data.allowlist || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch allowlist:", e);
+    }
+  }, [proxyUrl, adminToken]);
+
   const refreshAll = useCallback(async () => {
     setIsLoading(true);
     await fetchStatus();
     if (adminToken) {
-      await Promise.all([fetchConnections(), fetchBans(), fetchGeoIP()]);
+      await Promise.all([fetchConnections(), fetchBans(), fetchGeoIP(), fetchAllowlist()]);
     }
     setIsLoading(false);
-  }, [fetchStatus, fetchConnections, fetchBans, fetchGeoIP, adminToken]);
+  }, [fetchStatus, fetchConnections, fetchBans, fetchGeoIP, fetchAllowlist, adminToken]);
 
   // Auto-refresh every 5 seconds when connected
   useEffect(() => {
@@ -229,6 +254,49 @@ const AdminIRC = () => {
       }
     } catch (e) {
       toast.error("Failed to unban IP");
+    }
+  };
+
+  const addToAllowlist = async (ip: string, label: string) => {
+    try {
+      const res = await fetch(`${proxyUrl}/allowlist`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ip, label })
+      });
+      if (res.ok) {
+        toast.success(`Added ${ip} to allowlist`);
+        setAllowlistIpInput("");
+        await Promise.all([fetchAllowlist(), fetchBans()]);
+      } else {
+        toast.error("Failed to add to allowlist");
+      }
+    } catch (e) {
+      toast.error("Failed to add to allowlist");
+    }
+  };
+
+  const removeFromAllowlist = async (ip: string) => {
+    try {
+      const res = await fetch(`${proxyUrl}/allowlist`, {
+        method: 'DELETE',
+        headers: { 
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ip })
+      });
+      if (res.ok) {
+        toast.success(`Removed ${ip} from allowlist`);
+        await fetchAllowlist();
+      } else {
+        toast.error("Failed to remove from allowlist");
+      }
+    } catch (e) {
+      toast.error("Failed to remove from allowlist");
     }
   };
 
@@ -567,6 +635,65 @@ const AdminIRC = () => {
                     </Badge>
                   ))}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Admin/Owner Allowlist - Exempt from rate-limiting & auto-bans */}
+        {isConnected && adminToken && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Allowlist ({allowlist.length})
+              </CardTitle>
+              <CardDescription>
+                IPs on this list are exempt from rate-limiting, auto-bans, and GeoIP blocks. Use for admin/owner IPs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input 
+                  value={allowlistIpInput}
+                  onChange={(e) => setAllowlistIpInput(e.target.value)}
+                  placeholder="IP address..."
+                  className="flex-1"
+                />
+                <Input 
+                  value={allowlistLabelInput}
+                  onChange={(e) => setAllowlistLabelInput(e.target.value)}
+                  placeholder="Label (e.g. Admin)"
+                  className="w-40"
+                />
+                <Button onClick={() => addToAllowlist(allowlistIpInput, allowlistLabelInput)} disabled={!allowlistIpInput.trim()}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Add
+                </Button>
+              </div>
+              
+              {allowlist.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {allowlist.map((entry) => (
+                    <Badge key={entry.ip} variant="default" className="flex items-center gap-1 bg-primary/20 text-primary border border-primary/30">
+                      <Shield className="h-3 w-3" />
+                      {entry.ip}
+                      <span className="text-xs opacity-70">({entry.label})</span>
+                      <button 
+                        onClick={() => removeFromAllowlist(entry.ip)}
+                        className="ml-1 hover:bg-primary/30 rounded p-0.5"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {allowlist.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No IPs allowlisted. Add admin/owner IPs here to prevent accidental rate-limit bans.
+                </p>
               )}
             </CardContent>
           </Card>
