@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Lock, Send, Minus, Shield } from "lucide-react";
+import { X, Lock, Send, Minus, Shield, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
@@ -26,6 +26,11 @@ interface PrivateChatWindowProps {
   onFocus: () => void;
 }
 
+const MIN_WIDTH = 280;
+const MIN_HEIGHT = 300;
+const MAX_WIDTH = 500;
+const MAX_HEIGHT = 600;
+
 const PrivateChatWindow = ({
   targetUserId,
   targetUsername,
@@ -44,8 +49,11 @@ const PrivateChatWindow = ({
   const [targetOnline, setTargetOnline] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState(initialPosition);
+  const [size, setSize] = useState({ width: 320, height: 420 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -63,39 +71,62 @@ const PrivateChatWindow = ({
   // Dragging logic
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
     onFocus();
     setIsDragging(true);
-    const rect = windowRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      });
-    }
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+
+  // Resize logic
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onFocus();
+    setIsResizing(true);
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      width: size.width,
+      height: size.height
+    });
   };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      const newX = Math.max(0, Math.min(window.innerWidth - 320, e.clientX - dragOffset.x));
-      const newY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - dragOffset.y));
-      setPosition({ x: newX, y: newY });
+      if (isDragging) {
+        const newX = Math.max(0, Math.min(window.innerWidth - size.width, e.clientX - dragOffset.x));
+        const newY = Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffset.y));
+        setPosition({ x: newX, y: newY });
+      }
+      if (isResizing) {
+        const deltaX = e.clientX - resizeStart.x;
+        const deltaY = e.clientY - resizeStart.y;
+        const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width + deltaX));
+        const newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height + deltaY));
+        setSize({ width: newWidth, height: newHeight });
+      }
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      setIsResizing(false);
     };
 
-    if (isDragging) {
+    if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = 'none';
     }
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
     };
-  }, [isDragging, dragOffset]);
+  }, [isDragging, isResizing, dragOffset, resizeStart, size.width]);
 
   // Initialize encrypted session
   useEffect(() => {
@@ -270,23 +301,24 @@ const PrivateChatWindow = ({
     });
   };
 
+  const messageAreaHeight = size.height - 140; // Header + input + notices
+
   return (
     <div
       ref={windowRef}
-      onClick={onFocus}
-      className="fixed shadow-2xl rounded-xl overflow-hidden border border-border bg-card"
+      onMouseDown={onFocus}
+      className="fixed shadow-2xl rounded-xl overflow-hidden border-2 border-primary/30 bg-card animate-scale-in"
       style={{
         left: position.x,
         top: position.y,
         zIndex: zIndex,
-        width: isMinimized ? 280 : 320,
-        height: isMinimized ? 48 : 420,
-        transition: isDragging ? 'none' : 'width 0.2s, height 0.2s'
+        width: isMinimized ? 260 : size.width,
+        height: isMinimized ? 44 : size.height,
       }}
     >
       {/* Header - Draggable */}
       <div 
-        className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-primary/20 to-accent/20 cursor-move select-none"
+        className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-primary/30 to-accent/30 cursor-move select-none border-b border-border"
         onMouseDown={handleMouseDown}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -306,20 +338,20 @@ const PrivateChatWindow = ({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={() => setIsMinimized(!isMinimized)} 
-            className="h-6 w-6 rounded-full hover:bg-background/50"
+            onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }} 
+            className="h-6 w-6 rounded hover:bg-background/50"
           >
-            <Minus className="h-3 w-3" />
+            {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
           </Button>
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={handleClose} 
-            className="h-6 w-6 rounded-full hover:bg-destructive/20 hover:text-destructive"
+            onClick={(e) => { e.stopPropagation(); handleClose(); }} 
+            className="h-6 w-6 rounded hover:bg-destructive/20 hover:text-destructive"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -345,7 +377,10 @@ const PrivateChatWindow = ({
           )}
 
           {/* Messages */}
-          <div className="h-[260px] overflow-y-auto p-2 space-y-2 bg-background/50">
+          <div 
+            className="overflow-y-auto p-2 space-y-2 bg-background/50"
+            style={{ height: messageAreaHeight }}
+          >
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
                 <Lock className="h-8 w-8 mb-2 text-primary/30" />
@@ -402,6 +437,14 @@ const PrivateChatWindow = ({
                 <Send className="h-3.5 w-3.5" />
               </Button>
             </div>
+          </div>
+
+          {/* Resize Handle */}
+          <div
+            className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize group"
+            onMouseDown={handleResizeMouseDown}
+          >
+            <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/40 group-hover:border-primary transition-colors" />
           </div>
         </>
       )}
