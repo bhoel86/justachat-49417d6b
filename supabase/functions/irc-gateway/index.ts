@@ -550,8 +550,18 @@ async function handlePASS(session: IRCSession, params: string[]) {
     return;
   }
 
-  // Password format: email:password or just access_token
-  const password = params[0].replace(/^:/, "");
+  // Password format:
+  //  - email:password (recommended)
+  //  - email|password (mIRC-safe; some clients strip text before ':' when used as the /server "password" arg)
+  //  - access_token (JWT)
+  const raw = params[0].replace(/^:/, "");
+  let password = raw;
+  try {
+    // allow URL-encoded payloads (e.g. email%3Apassword)
+    if (/%[0-9A-Fa-f]{2}/.test(raw)) password = decodeURIComponent(raw);
+  } catch {
+    // ignore
+  }
   console.log(`[IRC] Processing PASS command (length: ${password.length})`);
   
   try {
@@ -560,11 +570,20 @@ async function handlePASS(session: IRCSession, params: string[]) {
     
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
-    if (password.includes(":")) {
-      // email:password format
-      const colonIndex = password.indexOf(":");
-      const email = password.substring(0, colonIndex);
-      const pass = password.substring(colonIndex + 1);
+    const delimiter = password.includes(":")
+      ? ":"
+      : password.includes("|")
+        ? "|"
+        : password.includes(";")
+          ? ";"
+          : password.includes(",")
+            ? ","
+            : null;
+
+    if (delimiter) {
+      const idx = password.indexOf(delimiter);
+      const email = password.substring(0, idx);
+      const pass = password.substring(idx + 1);
       
       console.log(`[IRC] Attempting auth for: ${email}`);
       
@@ -630,7 +649,10 @@ async function handlePASS(session: IRCSession, params: string[]) {
 
 async function completeRegistration(session: IRCSession) {
   if (!session.authenticated) {
-    sendIRC(session, `:${SERVER_NAME} NOTICE * :*** You must authenticate with PASS email:password before registering`);
+    sendIRC(
+      session,
+      `:${SERVER_NAME} NOTICE * :*** You must authenticate with PASS email:password (or email|password for mIRC) before registering`,
+    );
     return;
   }
 
@@ -2772,7 +2794,7 @@ Deno.serve(async (req) => {
       info: "Connect via WebSocket for IRC protocol access. Use wss://[host]/functions/v1/irc-gateway",
       instructions: [
         "1. Connect with a WebSocket-capable IRC client",
-        "2. Send: PASS your-email@example.com:your-password",
+         "2. Send: PASS your-email@example.com:your-password (or your-email@example.com|your-password for mIRC)",
         "3. Send: NICK your-nickname", 
         "4. Send: USER username 0 * :Real Name",
         "5. Use /list to see channels, /join #channel to join"
@@ -2806,7 +2828,7 @@ Deno.serve(async (req) => {
   socket.onopen = () => {
     sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Looking up your hostname...`);
     sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Found your hostname`);
-    sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Please authenticate with PASS email:password`);
+    sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Please authenticate with PASS email:password (or email|password for mIRC)`);
   };
 
   socket.onmessage = async (event) => {

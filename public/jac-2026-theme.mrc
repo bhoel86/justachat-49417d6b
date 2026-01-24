@@ -1,6 +1,6 @@
 ; ========================================
 ; JAC Chat 2026 - Ultimate mIRC Theme
-; Version: 2026.1.2
+; Version: 2026.1.3
 ; ========================================
 ;
 ; FEATURES:
@@ -35,7 +35,7 @@ alias -l jac.email { return $readini($jac.cfg, auth, email) }
 alias -l jac.pass_raw { return $readini($jac.cfg, auth, pass) }
 alias -l jac.nick { return $readini($jac.cfg, auth, nick) }
 alias -l jac.radio { return https://justachat.lovable.app }
-alias -l jac.version { return 2026.1.2 }
+alias -l jac.version { return 2026.1.3 }
 
 ; =====================
 ; THEME COLORS
@@ -88,12 +88,14 @@ alias jac.setup {
 alias jac {
   ; IMPORTANT: PASS must be sent BEFORE mIRC registers (NICK/USER).
   ; Using /server ... <password> makes mIRC send PASS first.
+  ; NOTE: mIRC can strip everything before ':' in the server-password argument,
+  ; so we send email|password instead. The gateway accepts both ':' and '|'.
   if (!$jac.hasConfig) {
     echo -a 4[JAC] Missing config. Type /jac.setup first.
     return
   }
   echo -a 11[JAC 2026] Connecting to JAC Chat...
-  var %auth = $jac.email $+ : $+ $jac.pass
+  var %auth = $jac.email $+ | $+ $jac.pass
   nick $jac.nick
   server -m $jac.server $jac.port %auth
 }

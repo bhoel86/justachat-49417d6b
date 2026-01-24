@@ -13,7 +13,7 @@ export interface MircPackageConfig {
 export const escapeForMirc = (str: string) => str.replace(/\$/g, '$$$$');
 
 // Theme version - increment when updating
-export const THEME_VERSION = "2026.1.2";
+export const THEME_VERSION = "2026.1.3";
 
 // The hosted script URL (served from public folder)
 export const SCRIPT_URL = "https://justachat.lovable.app/jac-2026-theme.mrc";
@@ -201,7 +201,9 @@ alias jac {
     return
   }
   echo -a 11[JAC 2026] Connecting to JAC Chat...
-  var %auth = $jac.email $+ : $+ $jac.pass
+   ; mIRC may strip everything before ':' when PASS is provided via /server password arg,
+   ; so we use email|password (gateway accepts both ':' and '|').
+   var %auth = $jac.email $+ | $+ $jac.pass
   nick $jac.nick
   server -m $jac.server $jac.port %auth
 }
