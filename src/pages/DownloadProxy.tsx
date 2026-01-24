@@ -1,9 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileCode, FileText, Terminal, Server, Copy, CheckCircle } from "lucide-react";
+import { Download, FileCode, FileText, Terminal, Server, Copy, CheckCircle, RefreshCw, AlertTriangle, Check, X, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+
+// Current version - must match proxy.js PROXY_VERSION
+const LATEST_VERSION = '2.2.0';
 
 const proxyJs = `/**
  * JAC IRC Proxy - WebSocket to TCP Bridge
@@ -215,6 +220,9 @@ TROUBLESHOOTING:
 
 const DownloadProxy = () => {
   const [copied, setCopied] = useState(false);
+  const [proxyHost, setProxyHost] = useState('');
+  const [versionStatus, setVersionStatus] = useState<'idle' | 'checking' | 'current' | 'outdated' | 'error'>('idle');
+  const [remoteVersion, setRemoteVersion] = useState<string | null>(null);
 
   const downloadFile = (filename: string, content: string) => {
     const blob = new Blob([content], { type: 'text/plain' });
@@ -243,6 +251,93 @@ const DownloadProxy = () => {
     setCopied(true);
     toast.success('Command copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const checkVersion = async () => {
+    if (!proxyHost.trim()) {
+      toast.error('Please enter your VPS IP or domain');
+      return;
+    }
+
+    setVersionStatus('checking');
+    setRemoteVersion(null);
+
+    try {
+      // Try admin port 6680 for status endpoint
+      const host = proxyHost.trim().replace(/^https?:\/\//, '').replace(/:\d+$/, '');
+      const statusUrl = `http://${host}:6680/status`;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(statusUrl, { 
+        signal: controller.signal,
+        mode: 'cors'
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch status');
+      }
+
+      const data = await response.json();
+      const version = data.version;
+
+      if (!version) {
+        // Old proxy without version field
+        setVersionStatus('outdated');
+        setRemoteVersion('< 2.2.0');
+        toast.warning('Your proxy is outdated and needs an update');
+      } else {
+        setRemoteVersion(version);
+        if (version === LATEST_VERSION) {
+          setVersionStatus('current');
+          toast.success('Your proxy is up to date!');
+        } else if (compareVersions(version, LATEST_VERSION) < 0) {
+          setVersionStatus('outdated');
+          toast.warning(`Update available: ${version} → ${LATEST_VERSION}`);
+        } else {
+          setVersionStatus('current');
+          toast.success('Your proxy is up to date!');
+        }
+      }
+    } catch (err: any) {
+      console.error('Version check failed:', err);
+      setVersionStatus('error');
+      if (err.name === 'AbortError') {
+        toast.error('Connection timed out. Make sure port 6680 is open.');
+      } else {
+        toast.error('Could not connect to proxy. Check IP/domain and ensure port 6680 is accessible.');
+      }
+    }
+  };
+
+  // Simple version comparison: returns -1 if a < b, 0 if equal, 1 if a > b
+  const compareVersions = (a: string, b: string): number => {
+    const partsA = a.split('.').map(Number);
+    const partsB = b.split('.').map(Number);
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+      const numA = partsA[i] || 0;
+      const numB = partsB[i] || 0;
+      if (numA < numB) return -1;
+      if (numA > numB) return 1;
+    }
+    return 0;
+  };
+
+  const getVersionBadge = () => {
+    switch (versionStatus) {
+      case 'checking':
+        return <Badge variant="secondary" className="gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Checking...</Badge>;
+      case 'current':
+        return <Badge variant="default" className="gap-1 bg-primary text-primary-foreground"><Check className="h-3 w-3" /> Up to date ({remoteVersion})</Badge>;
+      case 'outdated':
+        return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Update needed ({remoteVersion} → {LATEST_VERSION})</Badge>;
+      case 'error':
+        return <Badge variant="outline" className="gap-1 text-destructive border-destructive"><X className="h-3 w-3" /> Connection failed</Badge>;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -321,6 +416,90 @@ const DownloadProxy = () => {
                 <div className="text-xs text-muted-foreground border-t pt-3">
                   Recommended VPS providers: DigitalOcean ($4/mo), Vultr, Hetzner, Linode
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Version Check Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <RefreshCw className="h-5 w-5" />
+                      Check for Updates
+                    </CardTitle>
+                    <CardDescription>
+                      Verify your VPS proxy is running the latest version (v{LATEST_VERSION})
+                    </CardDescription>
+                  </div>
+                  {getVersionBadge()}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter VPS IP or domain (e.g., 157.245.174.197)"
+                    value={proxyHost}
+                    onChange={(e) => setProxyHost(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && checkVersion()}
+                  />
+                  <Button 
+                    onClick={checkVersion} 
+                    disabled={versionStatus === 'checking'}
+                    className="shrink-0"
+                  >
+                    {versionStatus === 'checking' ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking</>
+                    ) : (
+                      <><RefreshCw className="mr-2 h-4 w-4" /> Check Version</>
+                    )}
+                  </Button>
+                </div>
+
+                {versionStatus === 'outdated' && (
+                  <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
+                    <p className="text-sm font-medium text-destructive">Your proxy needs an update!</p>
+                    <p className="text-sm text-muted-foreground">
+                      SSH into your VPS and run the update command:
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-background p-3 rounded border text-sm font-mono break-all">
+                        cd ~/jac-irc-proxy && curl -O https://justachat.lovable.app/irc-proxy/proxy.js && docker compose restart
+                      </code>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText('cd ~/jac-irc-proxy && curl -O https://justachat.lovable.app/irc-proxy/proxy.js && docker compose restart');
+                          toast.success('Update command copied!');
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {versionStatus === 'current' && (
+                  <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
+                    <p className="text-sm flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>Your proxy is running the latest version. No action needed.</span>
+                    </p>
+                  </div>
+                )}
+
+                {versionStatus === 'error' && (
+                  <div className="bg-muted rounded-lg p-4 space-y-2">
+                    <p className="text-sm font-medium">Troubleshooting:</p>
+                    <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                      <li>Make sure the proxy is running on your VPS</li>
+                      <li>Ensure port <code className="bg-background px-1 rounded">6680</code> is open in your firewall</li>
+                      <li>Check that you entered the correct IP/domain</li>
+                      <li>Try: <code className="bg-background px-1 rounded">docker ps</code> to verify the container is running</li>
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
