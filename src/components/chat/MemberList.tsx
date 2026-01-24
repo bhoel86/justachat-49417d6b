@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
@@ -81,6 +81,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
   const [bioModalOpen, setBioModalOpen] = useState(false);
+  const [showOffline, setShowOffline] = useState(false);
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
   const radio = useRadioOptional();
@@ -451,33 +452,39 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
             </div>
           )}
 
-          {/* Offline Members */}
+          {/* Offline Members Toggle */}
           {offlineMembers.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase px-2 mb-2">
-                Offline — {offlineMembers.length}
-              </p>
-              <div className="space-y-1">
-                {offlineMembers.map((member) => (
-                  <MemberItem 
-                    key={member.user_id} 
-                    member={member}
-                    canManage={canManageRole(member)}
-                    canModerate={canModerate(member)}
-                    availableRoles={getAvailableRoles(member)}
-                    onRoleChange={handleRoleChange}
-                    onBan={() => handleBan(member)}
-                    onKick={() => handleKick(member)}
-                    onMute={(duration) => handleMute(member, duration)}
-                    onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
-                    isCurrentUser={member.user_id === user?.id}
-                    onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
-                    onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
-                    onBioClick={member.user_id === user?.id ? () => setBioModalOpen(true) : undefined}
-                    currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentSong : null}
-                  />
-                ))}
-              </div>
+              <button
+                onClick={() => setShowOffline(!showOffline)}
+                className="flex items-center gap-2 w-full px-2 mb-2 text-xs font-medium text-muted-foreground uppercase hover:text-foreground transition-colors"
+              >
+                {showOffline ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                <span>Offline — {offlineMembers.length}</span>
+              </button>
+              {showOffline && (
+                <div className="space-y-1">
+                  {offlineMembers.map((member) => (
+                    <MemberItem 
+                      key={member.user_id} 
+                      member={member}
+                      canManage={canManageRole(member)}
+                      canModerate={canModerate(member)}
+                      availableRoles={getAvailableRoles(member)}
+                      onRoleChange={handleRoleChange}
+                      onBan={() => handleBan(member)}
+                      onKick={() => handleKick(member)}
+                      onMute={(duration) => handleMute(member, duration)}
+                      onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
+                      isCurrentUser={member.user_id === user?.id}
+                      onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
+                      onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
+                      onBioClick={member.user_id === user?.id ? () => setBioModalOpen(true) : undefined}
+                      currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentSong : null}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
