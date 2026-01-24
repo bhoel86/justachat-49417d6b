@@ -100,6 +100,7 @@ const ERR = {
 };
 
 // mIRC color codes for role-based coloring
+// Format: \x03FG or \x03FG,BG where colors are 0-15
 const IRC_COLORS = {
   WHITE: "\x0300",
   BLACK: "\x0301",
@@ -123,7 +124,110 @@ const IRC_COLORS = {
   RESET: "\x0F",
 };
 
-// Room color mappings for mIRC
+// Room theme configuration for mIRC - includes foreground, background, and accent colors
+interface IRCRoomTheme {
+  fg: string;        // Foreground color code
+  bg: string;        // Background color code (number only for combining)
+  fgBg: string;      // Combined foreground,background format
+  accent: string;    // Accent color for highlights
+  banner: string;    // Banner text with background
+}
+
+const ROOM_IRC_THEMES: Record<string, IRCRoomTheme> = {
+  'general': { 
+    fg: "\x0302",      // Blue
+    bg: "01",          // Black background
+    fgBg: "\x0300,02", // White on blue
+    accent: "\x0311",  // Cyan accent
+    banner: "\x0315,02", // Silver on blue
+  },
+  'adults-21-plus': { 
+    fg: "\x0304",      // Red
+    bg: "01",          // Black background
+    fgBg: "\x0300,04", // White on red
+    accent: "\x0313",  // Pink accent
+    banner: "\x0315,04", // Silver on red
+  },
+  'music': { 
+    fg: "\x0306",      // Purple
+    bg: "01",          // Black background
+    fgBg: "\x0300,06", // White on purple
+    accent: "\x0313",  // Pink accent
+    banner: "\x0315,06", // Silver on purple
+  },
+  'help': { 
+    fg: "\x0303",      // Green
+    bg: "01",          // Black background
+    fgBg: "\x0300,03", // White on green
+    accent: "\x0309",  // Lime accent
+    banner: "\x0315,03", // Silver on green
+  },
+  'games': { 
+    fg: "\x0307",      // Orange
+    bg: "01",          // Black background
+    fgBg: "\x0301,07", // Black on orange
+    accent: "\x0308",  // Yellow accent
+    banner: "\x0301,07", // Black on orange
+  },
+  'politics': { 
+    fg: "\x0314",      // Grey
+    bg: "01",          // Black background
+    fgBg: "\x0300,14", // White on grey
+    accent: "\x0315",  // Silver accent
+    banner: "\x0300,14", // White on grey
+  },
+  'movies-tv': { 
+    fg: "\x0312",      // Royal blue
+    bg: "01",          // Black background
+    fgBg: "\x0300,12", // White on royal
+    accent: "\x0306",  // Purple accent
+    banner: "\x0315,12", // Silver on royal
+  },
+  'sports': { 
+    fg: "\x0309",      // Lime
+    bg: "01",          // Black background
+    fgBg: "\x0301,09", // Black on lime
+    accent: "\x0303",  // Green accent
+    banner: "\x0301,09", // Black on lime
+  },
+  'technology': { 
+    fg: "\x0311",      // Cyan
+    bg: "01",          // Black background
+    fgBg: "\x0301,11", // Black on cyan
+    accent: "\x0302",  // Blue accent
+    banner: "\x0301,11", // Black on cyan
+  },
+  'dating': { 
+    fg: "\x0313",      // Pink
+    bg: "01",          // Black background
+    fgBg: "\x0300,13", // White on pink  
+    accent: "\x0304",  // Red accent
+    banner: "\x0315,13", // Silver on pink
+  },
+  'lounge': { 
+    fg: "\x0307",      // Orange/Amber
+    bg: "01",          // Black background
+    fgBg: "\x0301,07", // Black on orange
+    accent: "\x0305",  // Brown accent
+    banner: "\x0301,07", // Black on orange
+  },
+  'trivia': { 
+    fg: "\x0310",      // Teal
+    bg: "01",          // Black background
+    fgBg: "\x0300,10", // White on teal
+    accent: "\x0311",  // Cyan accent
+    banner: "\x0315,10", // Silver on teal
+  },
+  'art': { 
+    fg: "\x0313",      // Pink/Rose
+    bg: "01",          // Black background
+    fgBg: "\x0300,05", // White on brown (artsy feel)
+    accent: "\x0307",  // Orange accent
+    banner: "\x0315,05", // Silver on brown
+  },
+};
+
+// Legacy simple color mappings (for basic coloring)
 const ROOM_IRC_COLORS: Record<string, string> = {
   'general': IRC_COLORS.BLUE,
   'adults-21-plus': IRC_COLORS.RED,
@@ -326,9 +430,24 @@ function getRoomColor(channelName: string): string {
   return ROOM_IRC_COLORS[channelName.toLowerCase()] || IRC_COLORS.BLUE;
 }
 
+function getRoomTheme(channelName: string): IRCRoomTheme {
+  return ROOM_IRC_THEMES[channelName.toLowerCase()] || ROOM_IRC_THEMES['general'];
+}
+
 function formatColoredRoomName(channelName: string): string {
-  const color = getRoomColor(channelName);
-  return `${IRC_COLORS.BOLD}${color}#${channelName}${IRC_COLORS.RESET}`;
+  const theme = getRoomTheme(channelName);
+  return `${IRC_COLORS.BOLD}${theme.fg}#${channelName}${IRC_COLORS.RESET}`;
+}
+
+function formatThemedBanner(text: string, channelName: string): string {
+  const theme = getRoomTheme(channelName);
+  // Use background color for banner effect
+  return `${IRC_COLORS.BOLD}${theme.banner} ${text} ${IRC_COLORS.RESET}`;
+}
+
+function formatThemedHeader(text: string, channelName: string): string {
+  const theme = getRoomTheme(channelName);
+  return `${IRC_COLORS.BOLD}${theme.fgBg} ${text} ${IRC_COLORS.RESET}`;
 }
 
 function getWelcomeInfo(channelName: string): { moderator: string; message: string; tips: string[] } {
@@ -611,9 +730,10 @@ async function handleJOIN(session: IRCSession, params: string[]) {
 
       // Send JOIN confirmation with colored room name
       const roomColor = getRoomColor(dbChannelName);
+      const roomTheme = getRoomTheme(dbChannelName);
       sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} JOIN ${channelName}`);
 
-      // Send topic with color
+      // Send topic with themed background color
       const { data: settingsData } = await session.supabase!
         .from("channel_settings")
         .select("topic")
@@ -622,7 +742,8 @@ async function handleJOIN(session: IRCSession, params: string[]) {
 
       const settings = settingsData as { topic: string | null } | null;
       const topicText = settings?.topic || channel.description || getDefaultTopicForRoom(dbChannelName);
-      const coloredTopic = `${roomColor}${topicText}${IRC_COLORS.RESET}`;
+      // Topic with themed foreground and background
+      const coloredTopic = `${roomTheme.fgBg} ${topicText} ${IRC_COLORS.RESET}`;
       sendNumeric(session, RPL.TOPIC, `${channelName} :${coloredTopic}`);
 
       // Get channel members for NAMES
@@ -710,10 +831,10 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       // Total user count
       const totalUsers = owners.length + admins.length + ops.length + users.length + botNames.length + 1;
       
-      // Send channel header with user count
+      // Send channel header with themed background banner
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
-      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${roomColor}══════ ${channelName.toUpperCase()} ══════${IRC_COLORS.RESET}`);
-      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.GREY}Online: ${IRC_COLORS.GREEN}${totalUsers} users${IRC_COLORS.RESET}`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${formatThemedHeader(`══════ ${channelName.toUpperCase()} ══════`, dbChannelName)}`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${roomTheme.accent}${IRC_COLORS.BOLD}Online:${IRC_COLORS.RESET} ${IRC_COLORS.GREEN}${totalUsers} users${IRC_COLORS.RESET}  ${IRC_COLORS.GREY}│${IRC_COLORS.RESET}  ${roomTheme.accent}${IRC_COLORS.BOLD}Theme:${IRC_COLORS.RESET} ${formatThemedBanner(dbChannelName.charAt(0).toUpperCase() + dbChannelName.slice(1), dbChannelName)}`);
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
       
       // Send grouped member sections
@@ -768,26 +889,27 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       // Send enhanced welcome message for the room with ASCII art
       const asciiArt = getAsciiArt(dbChannelName);
       
-      // ASCII art banner
+      // ASCII art banner with themed colors
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
       for (const line of asciiArt) {
-        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${roomColor}${line}${IRC_COLORS.RESET}`);
+        // Use themed foreground color for ASCII art
+        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${roomTheme.fg}${line}${IRC_COLORS.RESET}`);
       }
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
       
-      // Welcome divider
-      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${roomColor}══════════════════════════════════════════════════════════════${IRC_COLORS.RESET}`);
+      // Welcome divider with themed background
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${formatThemedHeader('════════════════════════════════════════════════════════════', dbChannelName)}`);
       
-      // Moderator message (colored)
-      sendIRC(session, `:${IRC_COLORS.GREEN}@${welcomeInfo.moderator}${IRC_COLORS.RESET}!${welcomeInfo.moderator}@mod.${SERVER_NAME} PRIVMSG ${channelName} :${IRC_COLORS.CYAN}${welcomeInfo.message}${IRC_COLORS.RESET}`);
+      // Moderator message with themed accent
+      sendIRC(session, `:${IRC_COLORS.GREEN}@${welcomeInfo.moderator}${IRC_COLORS.RESET}!${welcomeInfo.moderator}@mod.${SERVER_NAME} PRIVMSG ${channelName} :${roomTheme.accent}${welcomeInfo.message}${IRC_COLORS.RESET}`);
       
-      // Tips section
+      // Tips section with themed styling
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
-      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.GREY}${IRC_COLORS.BOLD}💡 Quick Tips:${IRC_COLORS.RESET}`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${roomTheme.fg}${IRC_COLORS.BOLD}💡 Quick Tips:${IRC_COLORS.RESET}`);
       for (const tip of welcomeInfo.tips) {
-        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.GREY}   ▸ ${tip}${IRC_COLORS.RESET}`);
+        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.GREY}   ${roomTheme.accent}▸${IRC_COLORS.RESET} ${IRC_COLORS.GREY}${tip}${IRC_COLORS.RESET}`);
       }
-      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${roomColor}══════════════════════════════════════════════════════════════${IRC_COLORS.RESET}`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${formatThemedHeader('════════════════════════════════════════════════════════════', dbChannelName)}`);
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
 
       // Join in database - use insert with conflict handling
