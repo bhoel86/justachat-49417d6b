@@ -920,6 +920,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           <ChannelList 
             currentChannelId={currentChannel?.id} 
             onChannelSelect={handleChannelSelect}
+            autoSelectFirst={false}
           />
         </div>
         <div className="flex flex-col flex-1 items-center justify-center text-center p-4 sm:p-6">
@@ -965,6 +966,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
             handleChannelSelect(channel);
             setShowChannelSidebar(false);
           }}
+          autoSelectFirst={false}
         />
       </div>
 
@@ -1089,7 +1091,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
                   onChannelSelect={(channel) => {
                     handleChannelSelect(channel);
                     setShowRoomSheet(false);
-                  }} 
+                  }}
+                  autoSelectFirst={false}
                 />
               </div>
             </SheetContent>

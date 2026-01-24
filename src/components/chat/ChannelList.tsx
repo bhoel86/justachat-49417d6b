@@ -49,6 +49,8 @@ export interface Channel {
 interface ChannelListProps {
   currentChannelId?: string;
   onChannelSelect: (channel: Channel) => void;
+  /** When true, selects the first channel when none is selected (legacy behavior). */
+  autoSelectFirst?: boolean;
 }
 
 // Color and gradient presets for rooms
@@ -72,7 +74,7 @@ const ROOM_GRADIENT_PRESETS = [
   { name: 'Royal', from: '#6366f1', to: '#a855f7' },
 ];
 
-const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) => {
+const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true }: ChannelListProps) => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -96,7 +98,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect }: ChannelListProps) =>
     if (data) {
       setChannels(data);
       // Auto-select general if no channel selected
-      if (!currentChannelId && data.length > 0) {
+      if (autoSelectFirst && !currentChannelId && data.length > 0) {
         onChannelSelect(data[0]);
       }
     }
