@@ -7,6 +7,9 @@
 # Usage:
 #   curl -fsSL https://justachat.net/irc-proxy/install.sh | bash
 #
+# With HTTPS Admin API (recommended):
+#   curl -fsSL https://justachat.net/irc-proxy/install.sh | bash -s -- --https-admin ircadmin.yourdomain.com
+#
 # If your domain isn't live yet, use the fallback host:
 #   curl -fsSL https://justachat.lovable.app/irc-proxy/install.sh | bash
 #
@@ -17,7 +20,8 @@
 #   4. Generate a secure admin token
 #   5. Build and start the proxy
 #   6. Configure firewall
-#   7. Display connection info
+#   7. (Optional) Set up HTTPS for Admin API with Caddy
+#   8. Display connection info
 #
 
 set -e
@@ -34,6 +38,26 @@ PRIMARY_BASE_URL="https://justachat.net/irc-proxy"
 # IMPORTANT: The published lovable.app domain may redirect to the custom domain if the
 # custom domain is set as Primary. Use the preview host as a reliable fallback.
 FALLBACK_BASE_URL="https://id-preview--3468328b-9f6a-4d30-ad57-93742355db43.lovable.app/irc-proxy"
+
+# Parse arguments
+HTTPS_ADMIN_DOMAIN=""
+HTTPS_METHOD="caddy"  # Default to Caddy (simpler, auto-HTTPS)
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --https-admin)
+      HTTPS_ADMIN_DOMAIN="$2"
+      shift 2
+      ;;
+    --https-method)
+      HTTPS_METHOD="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
 
 pick_base_url() {
   # Allow manual override: BASE_URL=https://.../irc-proxy curl ... | bash
@@ -59,9 +83,14 @@ INSTALL_DIR="/opt/justachat-irc"
 
 echo -e "${CYAN}"
 echo "============================================"
-echo "   JAC IRC Proxy - VPS Installer v2.1"
+echo "   JAC IRC Proxy - VPS Installer v2.2"
 echo "============================================"
 echo -e "${NC}"
+
+if [ -n "$HTTPS_ADMIN_DOMAIN" ]; then
+  echo -e "${GREEN}HTTPS Admin API will be configured for: ${HTTPS_ADMIN_DOMAIN}${NC}"
+  echo ""
+fi
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
@@ -69,7 +98,12 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-echo -e "${BLUE}[1/7] Checking dependencies...${NC}"
+TOTAL_STEPS=7
+if [ -n "$HTTPS_ADMIN_DOMAIN" ]; then
+  TOTAL_STEPS=8
+fi
+
+echo -e "${BLUE}[1/${TOTAL_STEPS}] Checking dependencies...${NC}"
 
 # Install Docker if not present
 if ! command -v docker &> /dev/null; then
@@ -92,7 +126,7 @@ else
   echo -e "${GREEN}Docker Compose is already installed${NC}"
 fi
 
-echo -e "${BLUE}[2/7] Setting up installation directory...${NC}"
+echo -e "${BLUE}[2/${TOTAL_STEPS}] Setting up installation directory...${NC}"
 
 # Stop and remove existing containers
 if [ -d "$INSTALL_DIR" ]; then
@@ -109,7 +143,7 @@ cd "$INSTALL_DIR"
 
 echo -e "${GREEN}Created $INSTALL_DIR${NC}"
 
-echo -e "${BLUE}[3/7] Downloading proxy files...${NC}"
+echo -e "${BLUE}[3/${TOTAL_STEPS}] Downloading proxy files...${NC}"
 
 # Download all required files
 FILES=("proxy.js" "package.json" "Dockerfile" "docker-compose.yml" ".env.example")
@@ -141,7 +175,7 @@ done
 
 echo -e "${GREEN}All files downloaded successfully${NC}"
 
-echo -e "${BLUE}[4/7] Configuring environment...${NC}"
+echo -e "${BLUE}[4/${TOTAL_STEPS}] Configuring environment...${NC}"
 
 # Generate secure admin token
 ADMIN_TOKEN=$(openssl rand -hex 32)
@@ -191,14 +225,14 @@ EOF
 
 echo -e "${GREEN}Environment configured${NC}"
 
-echo -e "${BLUE}[5/7] Building Docker image...${NC}"
+echo -e "${BLUE}[5/${TOTAL_STEPS}] Building Docker image...${NC}"
 
 # Build the Docker image
 docker-compose build --no-cache
 
 echo -e "${GREEN}Docker image built successfully${NC}"
 
-echo -e "${BLUE}[6/7] Starting proxy service...${NC}"
+echo -e "${BLUE}[6/${TOTAL_STEPS}] Starting proxy service...${NC}"
 
 # Start the containers (without certbot dependency for now)
 # Create a simplified docker-compose for non-SSL
@@ -223,16 +257,172 @@ else
   docker-compose logs --tail=20
 fi
 
-echo -e "${BLUE}[7/7] Configuring firewall...${NC}"
+echo -e "${BLUE}[7/${TOTAL_STEPS}] Configuring firewall...${NC}"
 
 # Configure UFW if available
 if command -v ufw &> /dev/null; then
   ufw allow 6667/tcp comment 'IRC Proxy - Plain'
   ufw allow 6697/tcp comment 'IRC Proxy - SSL'
   ufw allow 6680/tcp comment 'IRC Proxy - Admin API'
+  
+  # If setting up HTTPS admin, also allow 80 and 443
+  if [ -n "$HTTPS_ADMIN_DOMAIN" ]; then
+    ufw allow 80/tcp comment 'HTTP - Certbot'
+    ufw allow 443/tcp comment 'HTTPS - Admin API'
+  fi
+  
+  ufw reload 2>/dev/null || true
   echo -e "${GREEN}Firewall configured${NC}"
 else
   echo -e "${YELLOW}UFW not found - manually open ports 6667, 6697, 6680${NC}"
+  if [ -n "$HTTPS_ADMIN_DOMAIN" ]; then
+    echo -e "${YELLOW}Also open ports 80 and 443 for HTTPS${NC}"
+  fi
+fi
+
+# HTTPS Admin API Setup
+ADMIN_URL="http://${SERVER_IP}:6680"
+
+if [ -n "$HTTPS_ADMIN_DOMAIN" ]; then
+  echo -e "${BLUE}[8/${TOTAL_STEPS}] Setting up HTTPS Admin API...${NC}"
+  
+  # Check DNS first
+  echo -e "${YELLOW}Checking DNS for ${HTTPS_ADMIN_DOMAIN}...${NC}"
+  if host "$HTTPS_ADMIN_DOMAIN" > /dev/null 2>&1; then
+    RESOLVED_IP=$(host "$HTTPS_ADMIN_DOMAIN" | grep "has address" | head -1 | awk '{print $NF}')
+    if [ "$RESOLVED_IP" = "$SERVER_IP" ]; then
+      echo -e "${GREEN}✓ DNS correctly points to this server${NC}"
+    else
+      echo -e "${YELLOW}Warning: DNS points to ${RESOLVED_IP}, expected ${SERVER_IP}${NC}"
+      echo -e "${YELLOW}Continuing anyway - make sure DNS is configured correctly${NC}"
+    fi
+  else
+    echo -e "${YELLOW}Warning: DNS lookup failed for ${HTTPS_ADMIN_DOMAIN}${NC}"
+    echo -e "${YELLOW}Make sure to add an A record pointing to ${SERVER_IP}${NC}"
+  fi
+  
+  if [ "$HTTPS_METHOD" = "caddy" ]; then
+    # Install Caddy
+    echo -e "${YELLOW}Installing Caddy...${NC}"
+    apt-get update -qq
+    apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl > /dev/null 2>&1
+    
+    if [ ! -f /usr/share/keyrings/caddy-stable-archive-keyring.gpg ]; then
+      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg 2>/dev/null
+    fi
+    
+    echo "deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.gpg] https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main" | tee /etc/apt/sources.list.d/caddy-stable.list > /dev/null
+    apt-get update -qq
+    apt-get install -y -qq caddy > /dev/null 2>&1
+    
+    echo -e "${GREEN}Caddy installed${NC}"
+    
+    # Configure Caddy
+    echo -e "${YELLOW}Configuring Caddy for ${HTTPS_ADMIN_DOMAIN}...${NC}"
+    
+    # Backup existing config
+    if [ -f /etc/caddy/Caddyfile ]; then
+      cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.backup.$(date +%s) 2>/dev/null || true
+    fi
+    
+    cat > /etc/caddy/Caddyfile << CADDYEOF
+${HTTPS_ADMIN_DOMAIN} {
+    reverse_proxy localhost:6680
+    
+    header {
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Authorization, Content-Type, X-Admin-Token"
+    }
+    
+    @options method OPTIONS
+    handle @options {
+        respond 204
+    }
+}
+CADDYEOF
+    
+    # Start Caddy
+    systemctl enable caddy > /dev/null 2>&1
+    systemctl restart caddy
+    
+    echo -e "${GREEN}Caddy configured and started${NC}"
+    
+    # Wait for certificate provisioning
+    echo -e "${YELLOW}Waiting for SSL certificate provisioning...${NC}"
+    sleep 5
+    
+    # Verify HTTPS is working
+    if curl -sI "https://${HTTPS_ADMIN_DOMAIN}/status" 2>/dev/null | grep -q "200\|401"; then
+      echo -e "${GREEN}✓ HTTPS Admin API is live!${NC}"
+      ADMIN_URL="https://${HTTPS_ADMIN_DOMAIN}"
+    else
+      echo -e "${YELLOW}HTTPS not responding yet - may take a minute for SSL provisioning${NC}"
+      echo -e "${YELLOW}Check with: curl -I https://${HTTPS_ADMIN_DOMAIN}/status${NC}"
+      ADMIN_URL="https://${HTTPS_ADMIN_DOMAIN}"
+    fi
+    
+  elif [ "$HTTPS_METHOD" = "nginx" ]; then
+    # Install Nginx and Certbot
+    echo -e "${YELLOW}Installing Nginx and Certbot...${NC}"
+    apt-get update -qq
+    apt-get install -y -qq nginx certbot python3-certbot-nginx > /dev/null 2>&1
+    
+    echo -e "${GREEN}Nginx and Certbot installed${NC}"
+    
+    # Get certificate
+    echo -e "${YELLOW}Obtaining SSL certificate...${NC}"
+    certbot certonly --standalone --non-interactive --agree-tos --register-unsafely-without-email -d "${HTTPS_ADMIN_DOMAIN}" 2>/dev/null || {
+      echo -e "${YELLOW}Standalone failed, trying with Nginx...${NC}"
+      systemctl start nginx
+      certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d "${HTTPS_ADMIN_DOMAIN}" 2>/dev/null
+    }
+    
+    # Configure Nginx
+    cat > /etc/nginx/sites-available/irc-admin << NGINXEOF
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name ${HTTPS_ADMIN_DOMAIN};
+
+    ssl_certificate /etc/letsencrypt/live/${HTTPS_ADMIN_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${HTTPS_ADMIN_DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    add_header Access-Control-Allow-Origin "*" always;
+    add_header Access-Control-Allow-Methods "GET, POST, DELETE, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Authorization, Content-Type, X-Admin-Token" always;
+
+    if (\$request_method = 'OPTIONS') {
+        return 204;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:6680;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${HTTPS_ADMIN_DOMAIN};
+    return 301 https://\$server_name\$request_uri;
+}
+NGINXEOF
+    
+    ln -sf /etc/nginx/sites-available/irc-admin /etc/nginx/sites-enabled/
+    rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+    
+    nginx -t && systemctl restart nginx
+    
+    echo -e "${GREEN}Nginx configured${NC}"
+    ADMIN_URL="https://${HTTPS_ADMIN_DOMAIN}"
+  fi
 fi
 
 # Test the admin API
@@ -261,14 +451,26 @@ echo -e "  Port:     6667 (plain) or 6697 (SSL)"
 echo -e "  Password: your-email@example.com;your-password"
 echo ""
 echo -e "${YELLOW}Admin Panel Settings:${NC}"
-echo -e "  Proxy URL:   http://${SERVER_IP}:6680"
+echo -e "  Proxy URL:   ${ADMIN_URL}"
 echo -e "  Admin Token: ${ADMIN_TOKEN}"
+
+if [ -n "$HTTPS_ADMIN_DOMAIN" ]; then
+  echo ""
+  echo -e "${GREEN}✓ HTTPS Admin API enabled${NC}"
+  echo -e "  The web Admin Panel can now connect securely"
+fi
+
 echo ""
 echo -e "${YELLOW}Useful Commands:${NC}"
-echo -e "  View logs:     docker-compose logs -f"
-echo -e "  Restart:       docker-compose restart"
-echo -e "  Stop:          docker-compose down"
+echo -e "  View logs:     cd ${INSTALL_DIR} && docker-compose logs -f"
+echo -e "  Restart:       cd ${INSTALL_DIR} && docker-compose restart"
+echo -e "  Stop:          cd ${INSTALL_DIR} && docker-compose down"
 echo -e "  Test status:   curl http://localhost:6680/status"
+
+if [ -n "$HTTPS_ADMIN_DOMAIN" ]; then
+  echo -e "  Test HTTPS:    curl https://${HTTPS_ADMIN_DOMAIN}/status"
+fi
+
 echo ""
 echo -e "${CYAN}============================================${NC}"
 echo -e "${GREEN}Save your Admin Token above!${NC}"
