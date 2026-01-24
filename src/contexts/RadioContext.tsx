@@ -284,8 +284,12 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
 
   const disableRadio = useCallback(() => {
     setIsEnabled(false);
-    if (playerRef.current) {
-      playerRef.current.pauseVideo();
+    if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+      try {
+        playerRef.current.pauseVideo();
+      } catch (e) {
+        console.log('Pause error during disable:', e);
+      }
     }
     if (progressInterval.current) {
       clearInterval(progressInterval.current);
