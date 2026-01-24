@@ -3,7 +3,7 @@
 # JAC IRC Proxy - Update Script
 # ============================================
 #
-# Usage: curl -fsSL https://justachat.lovable.app/irc-proxy/update.sh | bash
+# Usage: curl -fsSL https://justachat.net/irc-proxy/update.sh | bash
 #
 # This script will:
 #   1. Backup current configuration
@@ -22,7 +22,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-BASE_URL="https://justachat.lovable.app/irc-proxy"
+BASE_URL="https://justachat.net/irc-proxy"
 INSTALL_DIR="/opt/justachat-irc"
 
 echo -e "${CYAN}"
@@ -41,7 +41,7 @@ fi
 if [ ! -d "$INSTALL_DIR" ]; then
   echo -e "${RED}[ERROR] No installation found at $INSTALL_DIR${NC}"
   echo -e "${YELLOW}Run the installer first:${NC}"
-  echo -e "  curl -fsSL https://justachat.lovable.app/irc-proxy/install.sh | bash"
+  echo -e "  curl -fsSL https://justachat.net/irc-proxy/install.sh | bash"
   exit 1
 fi
 

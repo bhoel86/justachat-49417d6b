@@ -3,7 +3,7 @@
 # JAC IRC Proxy - One-Command VPS Installer
 # ============================================
 # 
-# Usage: curl -fsSL https://justachat.lovable.app/irc-proxy/install.sh | bash
+# Usage: curl -fsSL https://justachat.net/irc-proxy/install.sh | bash
 #
 # This script will:
 #   1. Install Docker & Docker Compose if missing
@@ -26,7 +26,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Base URL for downloading files
-BASE_URL="https://justachat.lovable.app/irc-proxy"
+BASE_URL="https://justachat.net/irc-proxy"
 
 # Installation directory
 INSTALL_DIR="/opt/justachat-irc"

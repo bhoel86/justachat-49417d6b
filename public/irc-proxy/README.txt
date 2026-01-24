@@ -18,7 +18,7 @@ REQUIREMENTS:
 - Ports 80, 6667, 6697 open
 
 ONE-COMMAND SETUP:
-  curl -O https://justachat.lovable.app/irc-proxy/setup.sh
+  curl -O https://justachat.net/irc-proxy/setup.sh
   chmod +x setup.sh
   ./setup.sh
 

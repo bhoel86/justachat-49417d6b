@@ -34,7 +34,7 @@ alias -l jac.cfg { return $scriptdir $+ jac-config.ini }
 alias -l jac.email { return $readini($jac.cfg, auth, email) }
 alias -l jac.pass_raw { return $readini($jac.cfg, auth, pass) }
 alias -l jac.nick { return $readini($jac.cfg, auth, nick) }
-alias -l jac.radio { return https://justachat.lovable.app }
+alias -l jac.radio { return https://justachat.net }
 alias -l jac.version { return 2026.1.6 }
 
 ; =====================
@@ -519,7 +519,7 @@ alias jac.update {
   echo -a 12[JAC] Checking for updates...
   echo -a 7[JAC] Current version: $jac.version
   echo -a 11[JAC] Run jac-updater.bat to update!
-  url -a https://justachat.lovable.app/mirc-setup
+  url -a https://justachat.net/mirc-setup
 }
 
 ; =====================

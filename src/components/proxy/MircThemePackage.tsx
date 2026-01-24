@@ -39,7 +39,7 @@ const MircThemePackage = ({ isDownloadingZip, setIsDownloadingZip }: MircThemePa
         email,
         password,
         nickname,
-        radioStreamUrl: "https://justachat.lovable.app"
+        radioStreamUrl: "https://justachat.net"
       };
 
       const zip = new JSZip();

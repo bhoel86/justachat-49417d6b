@@ -19,7 +19,7 @@ export const escapeForMirc = (str: string) => str.replace(/\$/g, '$$$$');
 export const THEME_VERSION = "2026.1.6";
 
 // The hosted script URL (served from public folder)
-export const SCRIPT_URL = "https://justachat.lovable.app/jac-2026-theme.mrc";
+export const SCRIPT_URL = "https://justachat.net/jac-2026-theme.mrc";
 
 export const generateJacConfigIni = (config: MircPackageConfig) => {
   const email = config.email || "your-email@example.com";
@@ -115,7 +115,7 @@ pause
 export const generateThemeScript = (config: MircPackageConfig) => {
   const server = config.serverAddress || "157.245.174.197";
   // credentials now live in jac-config.ini so updater doesn't overwrite them
-  const radioUrl = config.radioStreamUrl || "https://justachat.lovable.app";
+  const radioUrl = config.radioStreamUrl || "https://justachat.net";
 
   return `; ========================================
 ; JAC Chat 2026 - Ultimate mIRC Theme
@@ -629,7 +629,7 @@ alias jac.update {
   echo -a 12[JAC] Checking for updates...
   echo -a 7[JAC] Current version: $jac.version
   echo -a 11[JAC] Run jac-updater.bat to update!
-  url -a https://justachat.lovable.app/mirc-setup
+  url -a https://justachat.net/mirc-setup
 }
 
 ; =====================
@@ -779,7 +779,7 @@ Run jac-updater.bat anytime to get the latest version!
 
 ════════════════════════════════════════════════════════════════
 
-© 2026 JAC Chat - https://justachat.lovable.app
+© 2026 JAC Chat - https://justachat.net
 Chat. Connect. Chill.
 
 ════════════════════════════════════════════════════════════════
