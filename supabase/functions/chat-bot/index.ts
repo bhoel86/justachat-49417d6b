@@ -552,12 +552,43 @@ async function cachePhoto(botId: string, photoType: string, photoUrl: string, su
 // Generate photo of the bot (with variations for "another" requests)
 async function generateBotPhoto(appearance: string, botName: string, apiKey: string, isVariation: boolean = false): Promise<string | null> {
   try {
-    // Add variation to prompt if requesting another photo
-    const variationText = isVariation 
-      ? ['different pose', 'different angle', 'different lighting', 'different outfit', 'different expression'][Math.floor(Math.random() * 5)]
-      : '';
+    // Photo settings for variety
+    const settings = [
+      'gym selfie with workout clothes, showing off fitness',
+      'mirror selfie at the gym, athletic wear',
+      'post-workout selfie, glowing skin',
+      'living room selfie on couch',
+      'outdoor selfie at a park',
+      'coffee shop selfie',
+      'bedroom mirror selfie, casual outfit',
+      'kitchen selfie, casual at home',
+      'car selfie',
+      'hiking trail selfie, athletic wear',
+    ];
     
-    const prompt = `Photorealistic portrait photo of a ${appearance}. ${isVariation ? `${variationText}.` : ''} Natural lighting, casual setting, looking at camera with a friendly expression. Shot on iPhone, candid selfie style. High quality, realistic, not AI-looking.`;
+    const expressions = [
+      'confident smirk',
+      'playful smile',
+      'flirty look',
+      'sultry gaze',
+      'biting lip slightly',
+      'winking',
+      'blowing a kiss',
+      'seductive smile',
+      'teasing expression',
+      'bedroom eyes',
+    ];
+    
+    // Pick random setting and expression for variations, or use defaults
+    const setting = isVariation 
+      ? settings[Math.floor(Math.random() * settings.length)]
+      : settings[Math.floor(Math.random() * 3)]; // First 3 are gym-focused
+    
+    const expression = expressions[Math.floor(Math.random() * expressions.length)];
+    
+    const prompt = `Photorealistic portrait photo of a ${appearance}. ${setting}. ${expression}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, attractive, not AI-looking.`;
+    
+    console.log("Generating photo with prompt:", prompt);
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
