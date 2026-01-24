@@ -552,10 +552,38 @@ async function handleConnection(socket, isSecure = false) {
   let ws = null;
   let buffer = '';
   let throttleWarnings = 0;
+  // mIRC (and many clients) sends PASS/NICK/USER immediately after TCP connect.
+  // If the WebSocket to the gateway isn't OPEN yet, those lines were previously dropped,
+  // leaving the client stuck at "Please authenticate". Buffer until WS is ready.
+  const pendingToGateway = [];
+  const MAX_PENDING_LINES = 200;
+
+  function queueToGateway(line) {
+    if (pendingToGateway.length >= MAX_PENDING_LINES) pendingToGateway.shift();
+    pendingToGateway.push(line);
+  }
+
+  function flushToGateway() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    while (pendingToGateway.length) {
+      const queued = pendingToGateway.shift();
+      try {
+        ws.send(queued);
+      } catch (e) {
+        // If send fails, stop flushing and re-queue the line.
+        pendingToGateway.unshift(queued);
+        break;
+      }
+    }
+  }
   
   try {
     ws = new WebSocket(config.wsUrl);
-    ws.on('open', () => { log('info', `[${connId}] Gateway connected`); fileLogger.connection('GATEWAY_OPEN', connId, clientIP); });
+    ws.on('open', () => {
+      log('info', `[${connId}] Gateway connected`);
+      fileLogger.connection('GATEWAY_OPEN', connId, clientIP);
+      flushToGateway();
+    });
     ws.on('message', (data) => { log('debug', `[${connId}] [GW->IRC]`, data.toString().trim()); socket.write(data.toString()); });
     ws.on('close', () => { log('info', `[${connId}] Gateway closed`); socket.end(); });
     ws.on('error', (err) => { log('error', `[${connId}] WS error:`, err.message); fileLogger.error('WEBSOCKET', err.message, { connId }); socket.end(); });
@@ -611,8 +639,15 @@ async function handleConnection(socket, isSecure = false) {
         fileLogger.connection('QUIT', connId, clientIP, { nick: conn.nickname });
       }
       
-      if (ws && ws.readyState === WebSocket.OPEN) ws.send(line);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(line);
+      } else {
+        queueToGateway(line);
+      }
     }
+
+    // If the gateway opened mid-chunk, flush any queued lines.
+    flushToGateway();
   });
   
   socket.on('close', () => {
