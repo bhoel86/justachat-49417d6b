@@ -30,8 +30,15 @@ services:
       - ADMIN_PORT=6680
       - ADMIN_TOKEN=${ADMIN_TOKEN:-}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DATA_DIR=/data
+      - RATE_CONN_PER_MIN=${RATE_CONN_PER_MIN:-5}
+      - RATE_MSG_PER_SEC=${RATE_MSG_PER_SEC:-10}
+      - RATE_MSG_BURST=${RATE_MSG_BURST:-20}
+      - RATE_AUTO_BAN=${RATE_AUTO_BAN:-3}
+      - RATE_BAN_DURATION=${RATE_BAN_DURATION:-60}
     volumes:
       - certs:/certs:ro
+      - proxy-data:/data
     depends_on:
       - certbot
     healthcheck:
@@ -77,3 +84,5 @@ volumes:
     name: jac-irc-certs
   certbot-www:
     name: jac-certbot-www
+  proxy-data:
+    name: jac-proxy-data
