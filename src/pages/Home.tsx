@@ -167,7 +167,7 @@ const Home = () => {
   }, [channels]);
 
   const handleJoinRoom = (channel: Channel) => {
-    navigate(`/chat/${channel.id}`);
+    navigate(`/chat/${channel.name}`);
   };
 
   const handleSignOut = async () => {
