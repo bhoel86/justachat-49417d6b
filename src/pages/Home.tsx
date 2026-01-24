@@ -361,24 +361,15 @@ const Home = () => {
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto bg-popover border border-border shadow-lg z-50">
-                  <DropdownMenuLabel className="flex items-center gap-2">
+                <DropdownMenuContent align="end" className="w-64 max-h-[80vh] overflow-y-auto bg-popover border border-border shadow-xl z-50">
+                  <DropdownMenuLabel className="flex items-center gap-2 sticky top-0 bg-popover z-10">
                     <Shield className="w-4 h-4 text-primary" />
                     {isOwner ? 'Owner Controls' : 'Admin Controls'}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   
-                  {isOwner && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
-                        <FileText className="w-4 h-4 text-primary" />
-                        <div>
-                          <span>Audit Logs</span>
-                          <p className="text-xs text-muted-foreground">View access history</p>
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
+                  {/* Moderation Section */}
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Moderation</DropdownMenuLabel>
                   
                   <DropdownMenuItem asChild>
                     <Link to="/admin/bans" className="flex items-center gap-2 cursor-pointer">
@@ -401,24 +392,14 @@ const Home = () => {
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem asChild>
-                    <Link to="/map" className="flex items-center gap-2 cursor-pointer">
-                      <MapPin className="w-4 h-4 text-primary" />
+                    <Link to="/admin/klines" className="flex items-center gap-2 cursor-pointer">
+                      <Server className="w-4 h-4 text-orange-500" />
                       <div>
-                        <span>User Locations</span>
-                        <p className="text-xs text-muted-foreground">View user map</p>
+                        <span>K-Lines</span>
+                        <p className="text-xs text-muted-foreground">Global IP bans</p>
                       </div>
                     </Link>
                   </DropdownMenuItem>
-                  
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin/users" className="flex items-center gap-2 cursor-pointer">
-                      <UserCog className="w-4 h-4 text-primary" />
-                      <div>
-                        <span>User Management</span>
-                        <p className="text-xs text-muted-foreground">Roles & permissions</p>
-                      </div>
-                    </Link>
-                    </DropdownMenuItem>
                   
                   <DropdownMenuItem asChild>
                     <Link to="/admin/messages" className="flex items-center gap-2 cursor-pointer">
@@ -430,12 +411,25 @@ const Home = () => {
                     </Link>
                   </DropdownMenuItem>
                   
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">User Management</DropdownMenuLabel>
+                  
                   <DropdownMenuItem asChild>
-                    <Link to="/admin/klines" className="flex items-center gap-2 cursor-pointer">
-                      <Server className="w-4 h-4 text-orange-500" />
+                    <Link to="/admin/users" className="flex items-center gap-2 cursor-pointer">
+                      <UserCog className="w-4 h-4 text-primary" />
                       <div>
-                        <span>K-Lines</span>
-                        <p className="text-xs text-muted-foreground">Global IP bans</p>
+                        <span>User Management</span>
+                        <p className="text-xs text-muted-foreground">Roles & permissions</p>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem asChild>
+                    <Link to="/map" className="flex items-center gap-2 cursor-pointer">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <div>
+                        <span>User Locations</span>
+                        <p className="text-xs text-muted-foreground">View user map</p>
                       </div>
                     </Link>
                   </DropdownMenuItem>
@@ -454,6 +448,16 @@ const Home = () => {
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="text-xs text-muted-foreground">Owner Only</DropdownMenuLabel>
+                      
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                          <FileText className="w-4 h-4 text-primary" />
+                          <div>
+                            <span>Audit Logs</span>
+                            <p className="text-xs text-muted-foreground">View access history</p>
+                          </div>
+                        </Link>
+                      </DropdownMenuItem>
                       
                       <DropdownMenuItem asChild>
                         <Link to="/admin/emails" className="flex items-center gap-2 cursor-pointer">
