@@ -13,6 +13,12 @@ interface BotMessage {
   timestamp: Date;
 }
 
+interface UserMemory {
+  topics: string[];
+  mood: string | null;
+  isReturning: boolean;
+}
+
 interface BotChatModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,7 +37,9 @@ const BotChatModal = ({
   const [messages, setMessages] = useState<BotMessage[]>([]);
   const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [userMemory, setUserMemory] = useState<UserMemory>({ topics: [], mood: null, isReturning: false });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasLoadedMemory = useRef(false);
   const { toast } = useToast();
 
   const scrollToBottom = () => {
@@ -42,22 +50,79 @@ const BotChatModal = ({
     scrollToBottom();
   }, [messages]);
 
-  // Add welcome message when opening
+  // Load user's conversation history when opening
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      setMessages([{
-        id: 'welcome',
-        content: `Hey! I'm ${moderator.name}. What's on your mind?`,
-        isBot: true,
-        timestamp: new Date()
-      }]);
+    const loadUserMemory = async () => {
+      if (!isOpen || hasLoadedMemory.current) return;
+      hasLoadedMemory.current = true;
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: topicsData } = await supabase
+          .from('user_conversation_topics')
+          .select('topics, mood')
+          .eq('user_id', user.id)
+          .eq('channel_name', channelName)
+          .single();
+
+        if (topicsData) {
+          setUserMemory({
+            topics: topicsData.topics || [],
+            mood: topicsData.mood,
+            isReturning: true
+          });
+
+          // Personalized welcome for returning users
+          const topicMention = topicsData.topics?.length > 0 
+            ? ` Last time we talked about ${topicsData.topics[0]}. How's that going?`
+            : '';
+          
+          setMessages([{
+            id: 'welcome',
+            content: `Hey, welcome back! Good to see you again.${topicMention} What's on your mind?`,
+            isBot: true,
+            timestamp: new Date()
+          }]);
+        } else {
+          // First time user
+          setMessages([{
+            id: 'welcome',
+            content: `Hey! I'm ${moderator.name}. What's on your mind?`,
+            isBot: true,
+            timestamp: new Date()
+          }]);
+        }
+      } catch (error) {
+        console.error('Error loading user memory:', error);
+        setMessages([{
+          id: 'welcome',
+          content: `Hey! I'm ${moderator.name}. What's on your mind?`,
+          isBot: true,
+          timestamp: new Date()
+        }]);
+      }
+    };
+
+    loadUserMemory();
+  }, [isOpen, channelName, moderator.name]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      hasLoadedMemory.current = false;
+      setMessages([]);
+      setUserMemory({ topics: [], mood: null, isReturning: false });
     }
-  }, [isOpen, moderator.name]);
+  }, [isOpen]);
 
   const getBotResponse = useCallback(async (userMessage: string) => {
     setIsTyping(true);
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const recentMsgs = messages.slice(-5).map(m => ({
         role: m.isBot ? 'assistant' : 'user',
         content: m.content
@@ -67,7 +132,11 @@ const BotChatModal = ({
         body: {
           channelName,
           userMessage,
-          recentMessages: recentMsgs
+          recentMessages: recentMsgs,
+          userId: user?.id,
+          isReturningUser: userMemory.isReturning,
+          userTopics: userMemory.topics,
+          lastMood: userMemory.mood
         }
       });
 
@@ -85,6 +154,16 @@ const BotChatModal = ({
           isBot: true,
           timestamp: new Date()
         }]);
+
+        // Update local memory with extracted topics
+        if (response.data.extractedTopics?.length > 0) {
+          setUserMemory(prev => ({
+            ...prev,
+            topics: [...new Set([...prev.topics, ...response.data.extractedTopics])].slice(0, 10),
+            mood: response.data.detectedMood || prev.mood,
+            isReturning: true
+          }));
+        }
       }
     } catch (error) {
       console.error('Bot response error:', error);
@@ -96,7 +175,7 @@ const BotChatModal = ({
     } finally {
       setIsTyping(false);
     }
-  }, [channelName, messages, toast]);
+  }, [channelName, messages, toast, userMemory]);
 
   const handleSend = async () => {
     if (!message.trim()) return;
@@ -121,7 +200,9 @@ const BotChatModal = ({
   };
 
   const handleClose = () => {
+    hasLoadedMemory.current = false;
     setMessages([]);
+    setUserMemory({ topics: [], mood: null, isReturning: false });
     onClose();
   };
 

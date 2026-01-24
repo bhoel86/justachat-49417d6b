@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -195,6 +196,65 @@ const WELCOME_MESSAGES: Record<string, string> = {
   'art': "Welcome to the Art Room! I'm Cicada, your curator. We explore masterpieces from all eras - some with meanings hidden in plain sight. Let's appreciate beauty together! 🎨"
 };
 
+// Extract topics from messages using simple keyword analysis
+function extractTopics(messages: Array<{ content: string }>): string[] {
+  const topicKeywords: Record<string, string[]> = {
+    'music': ['song', 'album', 'artist', 'band', 'guitar', 'piano', 'spotify', 'playlist', 'concert', 'music'],
+    'movies': ['movie', 'film', 'actor', 'director', 'netflix', 'watch', 'cinema', 'show', 'series', 'episode'],
+    'gaming': ['game', 'play', 'xbox', 'playstation', 'nintendo', 'steam', 'rpg', 'fps', 'multiplayer', 'level'],
+    'tech': ['code', 'programming', 'computer', 'software', 'app', 'website', 'phone', 'ai', 'tech', 'developer'],
+    'sports': ['team', 'score', 'win', 'game', 'player', 'match', 'championship', 'league', 'football', 'basketball'],
+    'relationships': ['dating', 'relationship', 'partner', 'love', 'breakup', 'marriage', 'crush', 'feelings', 'boyfriend', 'girlfriend'],
+    'food': ['eat', 'food', 'restaurant', 'cook', 'recipe', 'dinner', 'lunch', 'breakfast', 'pizza', 'coffee'],
+    'travel': ['travel', 'trip', 'vacation', 'flight', 'hotel', 'country', 'city', 'beach', 'adventure', 'explore'],
+    'work': ['job', 'work', 'boss', 'office', 'career', 'salary', 'interview', 'meeting', 'project', 'deadline'],
+    'health': ['gym', 'workout', 'health', 'diet', 'sleep', 'stress', 'doctor', 'medicine', 'exercise', 'fitness']
+  };
+
+  const foundTopics = new Set<string>();
+  const allText = messages.map(m => m.content.toLowerCase()).join(' ');
+
+  for (const [topic, keywords] of Object.entries(topicKeywords)) {
+    for (const keyword of keywords) {
+      if (allText.includes(keyword)) {
+        foundTopics.add(topic);
+        break;
+      }
+    }
+  }
+
+  return Array.from(foundTopics).slice(0, 5);
+}
+
+// Detect mood from messages
+function detectMood(messages: Array<{ content: string }>): string {
+  const allText = messages.map(m => m.content.toLowerCase()).join(' ');
+  
+  const moodIndicators = {
+    'happy': ['lol', 'haha', '😊', '😂', 'awesome', 'great', 'love', 'excited', 'happy', 'yay', '!'],
+    'frustrated': ['ugh', 'annoying', 'frustrated', 'hate', 'terrible', 'worst', 'angry', '😤', 'wtf'],
+    'sad': ['sad', 'depressed', 'lonely', 'miss', 'crying', '😢', '😭', 'down', 'upset'],
+    'curious': ['?', 'what', 'how', 'why', 'wondering', 'curious', 'interesting', 'tell me'],
+    'chill': ['cool', 'nice', 'okay', 'alright', 'whatever', 'meh', 'fine', 'relaxed']
+  };
+
+  let maxScore = 0;
+  let detectedMood = 'neutral';
+
+  for (const [mood, indicators] of Object.entries(moodIndicators)) {
+    let score = 0;
+    for (const indicator of indicators) {
+      if (allText.includes(indicator)) score++;
+    }
+    if (score > maxScore) {
+      maxScore = score;
+      detectedMood = mood;
+    }
+  }
+
+  return detectedMood;
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -202,8 +262,8 @@ serve(async (req) => {
   }
 
   try {
-    const { channelName, userMessage, recentMessages } = await req.json();
-    console.log(`AI Moderator request for channel: ${channelName}`);
+    const { channelName, userMessage, recentMessages, userId, isReturningUser, userTopics, lastMood } = await req.json();
+    console.log(`AI Moderator request for channel: ${channelName}, returning: ${isReturningUser}`);
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -213,6 +273,21 @@ serve(async (req) => {
     const persona = MODERATOR_PERSONAS[channelName] || MODERATOR_PERSONAS['general'];
     const tips = ROOM_TIPS[channelName] || ROOM_TIPS['general'];
     const randomTip = tips[Math.floor(Math.random() * tips.length)];
+
+    // Build memory context if user is returning
+    let memoryContext = '';
+    if (isReturningUser && userTopics && userTopics.length > 0) {
+      memoryContext = `\n\nIMPORTANT - USER MEMORY:
+You remember this user from before! Here's what you know about them:
+- Topics they've discussed before: ${userTopics.join(', ')}
+- Their typical mood: ${lastMood || 'unknown'}
+
+Use this knowledge naturally in conversation:
+- Reference past topics when relevant ("How's that ${userTopics[0]} thing going?")
+- Ask follow-up questions about their interests
+- Show you remember them ("Good to see you again! Last time we talked about...")
+- Be warm and familiar, like chatting with an old friend who dropped by`;
+    }
 
     const systemPrompt = `You are ${persona.name}, a chat room moderator. Your personality: ${persona.personality}. Your expertise areas: ${persona.expertise}.
 
@@ -229,7 +304,7 @@ CRITICAL RULES:
 
 Current tip of the day for this room: "${randomTip}"
 
-You may occasionally mention this tip naturally in conversation if relevant.`;
+You may occasionally mention this tip naturally in conversation if relevant.${memoryContext}`;
 
     // Build conversation history
     const messages = [
@@ -276,9 +351,57 @@ You may occasionally mention this tip naturally in conversation if relevant.`;
     const data = await response.json();
     const aiResponse = data.choices?.[0]?.message?.content || "Hey, what's up?";
 
+    // Extract topics and mood from the conversation to save for next time
+    const allMessages = [...(recentMessages || []).map((m: { content: string }) => ({ content: m.content })), { content: userMessage }];
+    const extractedTopics = extractTopics(allMessages);
+    const detectedMood = detectMood(allMessages);
+
+    // Save conversation topics to database if userId is provided
+    if (userId && channelName) {
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        
+        if (supabaseUrl && supabaseServiceKey) {
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          
+          // Get existing topics
+          const { data: existing } = await supabase
+            .from('user_conversation_topics')
+            .select('topics, interests')
+            .eq('user_id', userId)
+            .eq('channel_name', channelName)
+            .single();
+
+          // Merge with existing topics
+          const existingTopics = existing?.topics || [];
+          const mergedTopics = [...new Set([...existingTopics, ...extractedTopics])].slice(0, 10);
+          
+          // Upsert the conversation data
+          await supabase
+            .from('user_conversation_topics')
+            .upsert({
+              user_id: userId,
+              channel_name: channelName,
+              topics: mergedTopics,
+              mood: detectedMood,
+              last_messages: allMessages.slice(-5),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id,channel_name'
+            });
+        }
+      } catch (dbError) {
+        console.error('Error saving conversation topics:', dbError);
+        // Don't fail the request if DB save fails
+      }
+    }
+
     return new Response(JSON.stringify({ 
       response: aiResponse,
-      moderatorName: persona.name 
+      moderatorName: persona.name,
+      extractedTopics,
+      detectedMood
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

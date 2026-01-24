@@ -948,6 +948,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_conversation_topics: {
+        Row: {
+          channel_name: string
+          created_at: string
+          id: string
+          interests: string[]
+          last_messages: Json
+          mood: string | null
+          topics: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_name: string
+          created_at?: string
+          id?: string
+          interests?: string[]
+          last_messages?: Json
+          mood?: string | null
+          topics?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_name?: string
+          created_at?: string
+          id?: string
+          interests?: string[]
+          last_messages?: Json
+          mood?: string | null
+          topics?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_locations: {
         Row: {
           city: string | null
