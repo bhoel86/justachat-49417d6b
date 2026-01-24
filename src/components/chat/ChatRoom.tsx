@@ -1108,7 +1108,11 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         >
           <X className="h-4 w-4" />
         </Button>
-        <MemberList onlineUserIds={onlineUserIds} channelName={currentChannel?.name} />
+        <MemberList 
+          onlineUserIds={onlineUserIds} 
+          channelName={currentChannel?.name} 
+          onOpenPm={(userId, targetUsername) => privateChats.openChat(userId, targetUsername)}
+        />
       </div>
 
       {/* Private Chat Windows */}

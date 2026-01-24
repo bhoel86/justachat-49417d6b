@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { logModerationAction } from "@/lib/moderationAudit";
-import PrivateMessageModal from "./PrivateMessageModal";
+
 import BotChatModal from "./BotChatModal";
 import { getModerator, MODERATORS, type ModeratorInfo } from "@/lib/roomConfig";
 import UserAvatar from "@/components/avatar/UserAvatar";
@@ -39,6 +39,7 @@ interface Member {
 interface MemberListProps {
   onlineUserIds: Set<string>;
   channelName?: string;
+  onOpenPm?: (userId: string, username: string) => void;
 }
 
 const roleConfig = {
@@ -74,10 +75,9 @@ const roleConfig = {
   },
 };
 
-const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps) => {
+const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
@@ -455,7 +455,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                     onBan={() => handleBan(member)}
                     onKick={() => handleKick(member)}
                     onMute={(duration) => handleMute(member, duration)}
-                    onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
+                    onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
                     isCurrentUser={member.user_id === user?.id}
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                     onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
@@ -490,7 +490,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
                       onBan={() => handleBan(member)}
                       onKick={() => handleKick(member)}
                       onMute={(duration) => handleMute(member, duration)}
-                      onPmClick={member.user_id !== user?.id ? () => setPmTarget({ userId: member.user_id, username: member.username }) : undefined}
+                      onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
                       isCurrentUser={member.user_id === user?.id}
                       onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                       onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
@@ -504,18 +504,6 @@ const MemberList = ({ onlineUserIds, channelName = 'general' }: MemberListProps)
           )}
         </div>
       </div>
-
-      {/* Private Message Modal */}
-      {pmTarget && user && (
-        <PrivateMessageModal
-          isOpen={!!pmTarget}
-          onClose={() => setPmTarget(null)}
-          targetUserId={pmTarget.userId}
-          targetUsername={pmTarget.username}
-          currentUserId={user.id}
-          currentUsername={currentUsername}
-        />
-      )}
 
       {/* Bot Chat Modal */}
       {botChatTarget && (
