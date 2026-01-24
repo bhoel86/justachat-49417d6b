@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Server, Terminal, Copy, CheckCircle, ExternalLink, 
   Users, Shield, Ban, Wifi, WifiOff, RefreshCw, Send,
-  Clock, Lock, Unlock, Megaphone, UserX
+  Clock, Lock, Unlock, Megaphone, UserX, Globe, MapPin, Flag
 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
@@ -53,6 +53,22 @@ interface ProxyConnection {
   connected: string;
   messageCount: number;
   duration: number;
+  country?: string;
+  countryCode?: string;
+  city?: string;
+}
+
+interface GeoIPStats {
+  enabled: boolean;
+  mode: string;
+  countries: string[];
+  cacheSize: number;
+  lookups: number;
+  cacheHits: number;
+  blocked: number;
+  allowed: number;
+  failOpen: boolean;
+  cache: Record<string, { country: string; countryCode: string; city: string; cachedAt: number }>;
 }
 
 const AdminIRC = () => {
@@ -66,6 +82,7 @@ const AdminIRC = () => {
   const [status, setStatus] = useState<ProxyStatus | null>(null);
   const [connections, setConnections] = useState<ProxyConnection[]>([]);
   const [bans, setBans] = useState<string[]>([]);
+  const [geoipStats, setGeoipStats] = useState<GeoIPStats | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState("");
@@ -122,14 +139,29 @@ const AdminIRC = () => {
     }
   }, [proxyUrl, adminToken]);
 
+  const fetchGeoIP = useCallback(async () => {
+    if (!adminToken) return;
+    try {
+      const res = await fetch(`${proxyUrl}/geoip`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGeoipStats(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch GeoIP stats:", e);
+    }
+  }, [proxyUrl, adminToken]);
+
   const refreshAll = useCallback(async () => {
     setIsLoading(true);
     await fetchStatus();
     if (adminToken) {
-      await Promise.all([fetchConnections(), fetchBans()]);
+      await Promise.all([fetchConnections(), fetchBans(), fetchGeoIP()]);
     }
     setIsLoading(false);
-  }, [fetchStatus, fetchConnections, fetchBans, adminToken]);
+  }, [fetchStatus, fetchConnections, fetchBans, fetchGeoIP, adminToken]);
 
   // Auto-refresh every 5 seconds when connected
   useEffect(() => {
@@ -226,6 +258,42 @@ const AdminIRC = () => {
     if (seconds < 60) return `${seconds}s`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
     return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+  };
+
+  const getFlagEmoji = (countryCode: string) => {
+    if (!countryCode || countryCode.length !== 2) return '🌍';
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  };
+
+  const getCountryBreakdown = () => {
+    if (!geoipStats?.cache) return [];
+    const countryCounts: Record<string, { count: number; country: string; code: string }> = {};
+    
+    // Count from cache
+    Object.values(geoipStats.cache).forEach((entry) => {
+      const code = entry.countryCode;
+      if (code) {
+        if (!countryCounts[code]) {
+          countryCounts[code] = { count: 0, country: entry.country, code };
+        }
+        countryCounts[code].count++;
+      }
+    });
+
+    // Also count from active connections
+    connections.forEach((conn) => {
+      if (conn.countryCode) {
+        if (!countryCounts[conn.countryCode]) {
+          countryCounts[conn.countryCode] = { count: 0, country: conn.country || conn.countryCode, code: conn.countryCode };
+        }
+      }
+    });
+
+    return Object.values(countryCounts).sort((a, b) => b.count - a.count);
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -383,6 +451,7 @@ const AdminIRC = () => {
                     <TableHead>ID</TableHead>
                     <TableHead>Nickname</TableHead>
                     <TableHead>IP Address</TableHead>
+                    <TableHead>Location</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Duration</TableHead>
                     <TableHead>Messages</TableHead>
@@ -400,6 +469,20 @@ const AdminIRC = () => {
                         )}
                       </TableCell>
                       <TableCell className="font-mono text-sm">{conn.ip}</TableCell>
+                      <TableCell>
+                        {conn.countryCode ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-lg" title={conn.country}>
+                              {getFlagEmoji(conn.countryCode)}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              {conn.city || conn.country || conn.countryCode}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={conn.secure ? "default" : "secondary"}>
                           {conn.secure ? 'SSL' : 'TCP'}
@@ -484,6 +567,124 @@ const AdminIRC = () => {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* GeoIP Stats */}
+        {isConnected && adminToken && geoipStats && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                GeoIP Statistics
+                <Badge variant={geoipStats.enabled ? "default" : "secondary"} className="ml-2">
+                  {geoipStats.enabled ? 'Enabled' : 'Disabled'}
+                </Badge>
+                {geoipStats.enabled && (
+                  <Badge variant={geoipStats.mode === 'block' ? "destructive" : "outline"}>
+                    Mode: {geoipStats.mode}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Stats Grid */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-muted-foreground">Total Lookups</span>
+                    </div>
+                    <p className="text-2xl font-bold">{geoipStats.lookups}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-muted-foreground">Cache Hits</span>
+                    </div>
+                    <p className="text-2xl font-bold">{geoipStats.cacheHits}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {geoipStats.lookups > 0 
+                        ? `${Math.round((geoipStats.cacheHits / geoipStats.lookups) * 100)}% hit rate`
+                        : 'No lookups yet'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-muted-foreground">Allowed</span>
+                    </div>
+                    <p className="text-2xl font-bold text-primary">{geoipStats.allowed}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2">
+                      <Ban className="h-4 w-4 text-destructive" />
+                      <span className="text-sm text-muted-foreground">Blocked</span>
+                    </div>
+                    <p className="text-2xl font-bold text-destructive">{geoipStats.blocked}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Country Filter List */}
+              {geoipStats.enabled && geoipStats.countries.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    <Flag className="h-4 w-4" />
+                    {geoipStats.mode === 'block' ? 'Blocked Countries' : 'Allowed Countries'}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {geoipStats.countries.map((code) => (
+                      <Badge 
+                        key={code} 
+                        variant={geoipStats.mode === 'block' ? "destructive" : "default"}
+                        className="flex items-center gap-1"
+                      >
+                        <span className="text-sm">{getFlagEmoji(code)}</span>
+                        {code}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Country Breakdown */}
+              {getCountryBreakdown().length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Connection Origins (from cache)
+                  </h4>
+                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                    {getCountryBreakdown().slice(0, 12).map((item) => (
+                      <div 
+                        key={item.code} 
+                        className="flex items-center justify-between p-2 bg-muted rounded-lg"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{getFlagEmoji(item.code)}</span>
+                          <span className="text-sm font-medium">{item.country}</span>
+                        </div>
+                        <Badge variant="secondary">{item.count}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Configuration Info */}
+              <div className="text-xs text-muted-foreground border-t pt-3 space-y-1">
+                <p>Cache size: {geoipStats.cacheSize} entries</p>
+                <p>Fail-open: {geoipStats.failOpen ? 'Yes (allows on lookup failure)' : 'No (blocks on lookup failure)'}</p>
+              </div>
             </CardContent>
           </Card>
         )}
