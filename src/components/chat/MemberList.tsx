@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe, Eye, EyeOff, Zap, Lock } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe, Eye, EyeOff, Zap, Lock, ServerCrash } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getBotsForChannel } from "@/lib/chatBots";
@@ -359,6 +359,49 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
     }
   };
 
+  const handleKline = async (targetMember: Member) => {
+    if (!user || !targetMember.ip_address) return;
+    try {
+      const { error } = await supabase
+        .from('klines')
+        .insert({
+          ip_pattern: targetMember.ip_address,
+          set_by: user.id,
+          reason: `K-Lined by ${currentUsername || 'admin'}`
+        });
+
+      if (error) throw error;
+
+      await logModerationAction({
+        action: 'add_kline',
+        moderatorId: user.id,
+        targetUserId: targetMember.user_id,
+        targetUsername: targetMember.username,
+        details: { ip_pattern: targetMember.ip_address, reason: `K-Lined by ${currentUsername || 'admin'}` }
+      });
+
+      toast({
+        title: "K-Line added",
+        description: `${targetMember.username} (${targetMember.ip_address}) has been K-Lined from the network.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to add K-Line",
+        description: "You don't have permission to K-Line this user.",
+      });
+    }
+  };
+
+  const canKline = (targetMember: Member): boolean => {
+    if (!isAdmin && !isOwner) return false;
+    if (targetMember.user_id === user?.id) return false;
+    if (targetMember.role === 'owner') return false;
+    if (!isOwner && targetMember.role === 'admin') return false;
+    if (!targetMember.ip_address) return false;
+    return true;
+  };
+
   const getAvailableRoles = (targetMember: Member): Member['role'][] => {
     if (isOwner) {
       // Owner can assign any role except owner (there's only one owner)
@@ -471,11 +514,13 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
                     member={member} 
                     canManage={canManageRole(member)}
                     canModerate={canModerate(member)}
+                    canKline={canKline(member)}
                     availableRoles={getAvailableRoles(member)}
                     onRoleChange={handleRoleChange}
                     onBan={() => handleBan(member)}
                     onKick={() => handleKick(member)}
                     onMute={(duration) => handleMute(member, duration)}
+                    onKline={() => handleKline(member)}
                     onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
                     onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
                     isCurrentUser={member.user_id === user?.id}
@@ -508,11 +553,13 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
                       member={member}
                       canManage={canManageRole(member)}
                       canModerate={canModerate(member)}
+                      canKline={canKline(member)}
                       availableRoles={getAvailableRoles(member)}
                       onRoleChange={handleRoleChange}
                       onBan={() => handleBan(member)}
                       onKick={() => handleKick(member)}
                       onMute={(duration) => handleMute(member, duration)}
+                      onKline={() => handleKline(member)}
                       onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
                       onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
                       isCurrentUser={member.user_id === user?.id}
@@ -699,11 +746,13 @@ interface MemberItemProps {
   member: Member;
   canManage: boolean;
   canModerate: boolean;
+  canKline: boolean;
   availableRoles: Member['role'][];
   onRoleChange: (memberId: string, newRole: Member['role']) => void;
   onBan: () => void;
   onKick: () => void;
   onMute: (duration?: number) => void;
+  onKline: () => void;
   onPmClick?: () => void;
   onAction?: (actionMessage: string) => void;
   isCurrentUser: boolean;
@@ -714,7 +763,7 @@ interface MemberItemProps {
   currentlyPlaying?: { title: string; artist: string } | null;
 }
 
-const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChange, onBan, onKick, onMute, onPmClick, onAction, isCurrentUser, onAvatarClick, onUsernameClick, onBioClick, onPasswordClick, currentlyPlaying }: MemberItemProps) => {
+const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, onRoleChange, onBan, onKick, onMute, onKline, onPmClick, onAction, isCurrentUser, onAvatarClick, onUsernameClick, onBioClick, onPasswordClick, currentlyPlaying }: MemberItemProps) => {
   const config = roleConfig[member.role] || roleConfig.user;
   const Icon = config.icon;
 
@@ -932,7 +981,7 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
       )}
 
       {/* Moderation & Role management dropdown */}
-      {!isCurrentUser && (canManage || canModerate) && (
+      {!isCurrentUser && (canManage || canModerate || canKline) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button 
@@ -1004,6 +1053,23 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
                   className="flex items-center gap-2 cursor-pointer pl-8 text-amber-500/80"
                 >
                   <span className="text-xs">Mute indefinitely</span>
+                </DropdownMenuItem>
+              </>
+            )}
+            
+            {/* K-Line (Network Ban) - Admin/Owner only */}
+            {canKline && (
+              <>
+                {canModerate && <DropdownMenuSeparator />}
+                <DropdownMenuItem 
+                  onClick={onKline}
+                  className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-600"
+                >
+                  <ServerCrash className="h-4 w-4" />
+                  <div>
+                    <span>K-Line User</span>
+                    <p className="text-xs text-muted-foreground">Ban IP from network</p>
+                  </div>
                 </DropdownMenuItem>
               </>
             )}
