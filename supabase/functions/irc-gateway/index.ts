@@ -118,8 +118,109 @@ const IRC_COLORS = {
   GREY: "\x0314",
   SILVER: "\x0315",
   BOLD: "\x02",
+  ITALIC: "\x1D",
+  UNDERLINE: "\x1F",
   RESET: "\x0F",
 };
+
+// Room color mappings for mIRC
+const ROOM_IRC_COLORS: Record<string, string> = {
+  'general': IRC_COLORS.BLUE,
+  'adults-21-plus': IRC_COLORS.RED,
+  'music': IRC_COLORS.PURPLE,
+  'help': IRC_COLORS.GREEN,
+  'games': IRC_COLORS.ORANGE,
+  'politics': IRC_COLORS.GREY,
+  'movies-tv': IRC_COLORS.ROYAL,
+  'sports': IRC_COLORS.LIME,
+  'technology': IRC_COLORS.CYAN,
+  'dating': IRC_COLORS.PINK,
+  'lounge': IRC_COLORS.ORANGE,
+  'trivia': IRC_COLORS.TEAL,
+  'art': IRC_COLORS.PINK,
+};
+
+// Room welcome messages for IRC (enhanced versions)
+const ROOM_WELCOME_MESSAGES: Record<string, { moderator: string; message: string; tips: string[] }> = {
+  'general': {
+    moderator: 'Mitnick',
+    message: "Welcome to #general! I'm Kevin Mitnick, your channel moderator. This is the main hub - chat freely, be cool, and remember: the best hackers are the best learners.",
+    tips: ["Use /list to see all channels", "Type /msg <nick> to private message someone", "Bots are here to chat - try mentioning them!"]
+  },
+  'adults-21-plus': {
+    moderator: 'Lamo',
+    message: "Welcome to #adults-21-plus! I'm Adrian Lamo. This is a 21+ space for mature conversations. Keep it classy, keep it real.",
+    tips: ["Age verification applies", "Respect all participants", "Report issues with /msg admin"]
+  },
+  'music': {
+    moderator: 'Dr. Geo',
+    message: "Welcome to #music! I'm Dr. Geo, Music Theory PhD. Drop any song and I'll break down the theory - key changes, chord progressions, production techniques. Let's geek out!",
+    tips: ["Ask about any song's theory", "Share what you're listening to", "Discuss artists and genres"]
+  },
+  'help': {
+    moderator: 'Mudge',
+    message: "Welcome to #help! I'm Mudge, your friendly neighborhood helper. No question is too basic here - that's what we're for. Fire away!",
+    tips: ["Describe your issue clearly", "Check /topic for common solutions", "Be patient - help is coming!"]
+  },
+  'games': {
+    moderator: 'Barnaby',
+    message: "Welcome to #games! I'm Barnaby Jack. Whether you're speedrunning, grinding ranks, or just casual gaming - you're among friends. GG!",
+    tips: ["Share your current games", "LFG posts welcome", "Discuss esports and streams"]
+  },
+  'politics': {
+    moderator: 'Sabu',
+    message: "Welcome to #politics! I'm Sabu, your unbiased political analyst. We break down news from ALL perspectives here. Facts matter, civility required.",
+    tips: ["Cite sources when possible", "Attack ideas, not people", "Multiple viewpoints encouraged"]
+  },
+  'movies-tv': {
+    moderator: 'Guccifer',
+    message: "Welcome to #movies-tv! I'm Guccifer, your film industry insider. Drop any movie and I'll give you the FULL breakdown - budgets, salaries, behind-the-scenes drama, box office analysis.",
+    tips: ["Ask about any film's budget", "Get actor salary breakdowns", "Behind-the-scenes stories available"]
+  },
+  'sports': {
+    moderator: 'Albert',
+    message: "Welcome to #sports! I'm Albert Gonzalez. All sports, all leagues, all the time. Scores, trades, fantasy advice - let's talk game!",
+    tips: ["Share hot takes", "Fantasy league discussion", "Live game reactions welcome"]
+  },
+  'technology': {
+    moderator: 'Charlie',
+    message: "Welcome to #technology! I'm Charlie Miller. From coding to gadgets, AI to cybersecurity - if it's tech, we're talking about it. Let's geek out!",
+    tips: ["Ask coding questions", "Share tech news", "Discuss new gadgets and innovations"]
+  },
+  'dating': {
+    moderator: 'Phoenix',
+    message: "Welcome to #dating! I'm Phoenix, your relationship counselor. Whether you're seeking advice, sharing experiences, or just here to connect - this is your space.",
+    tips: ["Be respectful always", "Share experiences openly", "Ask for relationship advice"]
+  },
+  'lounge': {
+    moderator: 'Solo',
+    message: "Welcome to #lounge! I'm Solo. This is the chill zone - no pressure, no agenda, just good vibes. Grab a coffee and relax.",
+    tips: ["Slow-paced conversations", "Random topics welcome", "Just hang out"]
+  },
+  'trivia': {
+    moderator: 'Poulsen',
+    message: "Welcome to #trivia! I'm Kevin Poulsen. Test your knowledge! Type /trivia to start a game. Every question is a chance to learn something new.",
+    tips: ["Type /trivia to play", "Points tracked on leaderboard", "Learn while having fun"]
+  },
+  'art': {
+    moderator: 'Cicada',
+    message: "Welcome to #art! I'm Cicada 3301, your art curator. We explore masterpieces from every era - classical, modern, digital. What art moves you?",
+    tips: ["Discuss any artwork", "Share your own creations", "Art history discussions welcome"]
+  },
+};
+
+function getRoomColor(channelName: string): string {
+  return ROOM_IRC_COLORS[channelName.toLowerCase()] || IRC_COLORS.BLUE;
+}
+
+function formatColoredRoomName(channelName: string): string {
+  const color = getRoomColor(channelName);
+  return `${IRC_COLORS.BOLD}${color}#${channelName}${IRC_COLORS.RESET}`;
+}
+
+function getWelcomeInfo(channelName: string): { moderator: string; message: string; tips: string[] } {
+  return ROOM_WELCOME_MESSAGES[channelName.toLowerCase()] || ROOM_WELCOME_MESSAGES['general'];
+}
 
 function sendIRC(session: IRCSession, message: string) {
   try {
@@ -378,10 +479,11 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       }
       channelSubscriptions.get(channel.id)!.add(session.sessionId);
 
-      // Send JOIN confirmation
+      // Send JOIN confirmation with colored room name
+      const roomColor = getRoomColor(dbChannelName);
       sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} JOIN ${channelName}`);
 
-      // Send topic
+      // Send topic with color
       const { data: settingsData } = await session.supabase!
         .from("channel_settings")
         .select("topic")
@@ -389,11 +491,9 @@ async function handleJOIN(session: IRCSession, params: string[]) {
         .maybeSingle();
 
       const settings = settingsData as { topic: string | null } | null;
-      if (settings?.topic) {
-        sendNumeric(session, RPL.TOPIC, `${channelName} :${settings.topic}`);
-      } else {
-        sendNumeric(session, RPL.NOTOPIC, `${channelName} :No topic is set`);
-      }
+      const topicText = settings?.topic || channel.description || getDefaultTopicForRoom(dbChannelName);
+      const coloredTopic = `${roomColor}${topicText}${IRC_COLORS.RESET}`;
+      sendNumeric(session, RPL.TOPIC, `${channelName} :${coloredTopic}`);
 
       // Get channel members for NAMES
       const { data: members } = await session.supabase!
@@ -473,6 +573,25 @@ async function handleJOIN(session: IRCSession, params: string[]) {
         sendIRC(session, `:${SERVER_NAME} MODE ${channelName} +o ${session.nick}`);
       }
 
+      // Send enhanced welcome message for the room
+      const welcomeInfo = getWelcomeInfo(dbChannelName);
+      // Reuse roomColor from earlier in this scope
+      
+      // Welcome header
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${roomColor}════════════════════════════════════════${IRC_COLORS.RESET}`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${roomColor}  Welcome to ${formatColoredRoomName(dbChannelName)}!${IRC_COLORS.RESET}`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${roomColor}════════════════════════════════════════${IRC_COLORS.RESET}`);
+      
+      // Moderator message
+      sendIRC(session, `:${welcomeInfo.moderator}!${welcomeInfo.moderator}@mod.${SERVER_NAME} PRIVMSG ${channelName} :${IRC_COLORS.CYAN}${welcomeInfo.message}${IRC_COLORS.RESET}`);
+      
+      // Tips
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.GREY}${IRC_COLORS.ITALIC}Tips:${IRC_COLORS.RESET}`);
+      for (const tip of welcomeInfo.tips) {
+        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.GREY}  • ${tip}${IRC_COLORS.RESET}`);
+      }
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.GREY}${IRC_COLORS.ITALIC}────────────────────────────────────────${IRC_COLORS.RESET}`);
+
       // Join in database - use insert with conflict handling
       await (session.supabase as any)
         .from("channel_members")
@@ -486,6 +605,26 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       sendNumeric(session, ERR.NOSUCHCHANNEL, `${channelName} :No such channel`);
     }
   }
+}
+
+// Default room topics for IRC
+function getDefaultTopicForRoom(channelName: string): string {
+  const topics: Record<string, string> = {
+    'general': 'Welcome to the main chat - anything goes!',
+    'adults-21-plus': '21+ only - mature conversations welcome',
+    'music': 'Share tunes, discuss artists, discover new sounds 🎵',
+    'help': 'Got questions? We got answers! No judgment zone 💡',
+    'games': 'Gaming discussions, LFG, streams & esports 🎮',
+    'politics': 'Unbiased current events analysis & fact-based discussion 📰',
+    'movies-tv': 'Full movie breakdowns - budgets, salaries, behind-the-scenes 🎬',
+    'sports': 'All sports talk - scores, trades, fantasy 🏆',
+    'technology': 'Tech news, coding, gadgets & innovations 💻',
+    'dating': 'Connection & relationship discussions 💕',
+    'lounge': 'Chill vibes only - unwind and relax ☕',
+    'trivia': 'Test your knowledge! Type /trivia to play 🧠',
+    'art': 'Art appreciation from all eras - masterpieces discussed daily 🎨',
+  };
+  return topics[channelName.toLowerCase()] || 'Welcome to this channel!';
 }
 
 async function handlePART(session: IRCSession, params: string[]) {
@@ -688,7 +827,8 @@ async function triggerBotResponse(
         if (msgs.length > 25) msgs.shift();
         recentChannelMessages.set(channelId, msgs);
 
-        // Also relay directly to IRC users (in case realtime is slow)
+        // Also relay directly to IRC users (in case realtime is slow) - with color
+        const coloredBotName = `${IRC_COLORS.CYAN}${visibleBotName}${IRC_COLORS.RESET}`;
         const subscribers = channelSubscriptions.get(channelId);
         if (subscribers) {
           for (const subscriberId of subscribers) {
@@ -696,7 +836,7 @@ async function triggerBotResponse(
             if (subscriberSession && subscriberSession.registered) {
               sendIRC(
                 subscriberSession,
-                `:${visibleBotName}!${visibleBotName}@bot.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
+                `:${coloredBotName}!${visibleBotName}@bot.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
               );
             }
           }
@@ -1631,13 +1771,14 @@ if (supabaseUrl && supabaseServiceKey) {
       if (msgs.length > 25) msgs.shift();
       recentChannelMessages.set(channelId, msgs);
       
-      // Relay to IRC users
+      // Relay to IRC users with color
+      const coloredBotName = `${IRC_COLORS.CYAN}${visibleBotName}${IRC_COLORS.RESET}`;
       for (const subscriberId of subscribers) {
         const subscriberSession = sessions.get(subscriberId);
         if (subscriberSession && subscriberSession.registered) {
           sendIRC(
             subscriberSession,
-            `:${visibleBotName}!${visibleBotName}@bot.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
+            `:${coloredBotName}!${visibleBotName}@bot.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
           );
         }
       }
