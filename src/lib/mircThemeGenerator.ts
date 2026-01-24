@@ -13,7 +13,7 @@ export interface MircPackageConfig {
 export const escapeForMirc = (str: string) => str.replace(/\$/g, '$$$$');
 
 // Theme version - increment when updating
-export const THEME_VERSION = "2026.1.0";
+export const THEME_VERSION = "2026.1.1";
 
 // The hosted script URL (served from public folder)
 export const SCRIPT_URL = "https://justachat.lovable.app/jac-2026-theme.mrc";
@@ -132,6 +132,7 @@ alias -l jac.nick { return ${nick} }
 alias -l jac.radio { return ${radioUrl} }
 alias -l jac.version { return ${THEME_VERSION} }
 alias -l jac.channel { return #general }
+alias -l jac.isJac { return $iif($serverip == $jac.server,1,0) }
 
 ; =====================
 ; STARTUP
@@ -146,23 +147,23 @@ on *:START:{
 ; =====================
 
 alias jac {
+  ; IMPORTANT: PASS must be sent BEFORE mIRC registers (NICK/USER).
+  ; Using /server ... <password> makes mIRC send PASS first.
   echo -a 11[JAC 2026] Connecting to JAC Chat...
-  server -m $jac.server $jac.port
+  var %auth = $jac.email $+ : $+ $jac.pass
+  nick $jac.nick
+  server -m $jac.server $jac.port %auth
 }
 
 on *:CONNECT:{
-  if ($server == $jac.server) {
-    var %auth = $jac.email $+ : $+ $jac.pass
-    raw -q PASS %auth
-    raw -q NICK $jac.nick
-    raw -q USER $jac.nick 0 * :JAC 2026 User
+  if ($jac.isJac) {
     .timerjac.keepalive 0 90 raw -q PING :keepalive
   }
 }
 
 ; RPL_WELCOME (001) - Successfully registered, now auto-join
 raw 001:*:{
-  if ($server == $jac.server) {
+  if ($jac.isJac) {
     echo -a 3[JAC] Logged in as $jac.nick
     jac.toolbar.create
     ; Auto-join default channel after 2 second delay
@@ -171,7 +172,7 @@ raw 001:*:{
 }
 
 on *:DISCONNECT:{
-  if ($server == $jac.server) {
+  if ($jac.isJac) {
     .timerjac.keepalive off
     .timerjac.autojoin off
     echo -a 7[JAC] Disconnected. Reconnecting in 10s...

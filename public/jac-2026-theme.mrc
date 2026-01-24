@@ -1,6 +1,6 @@
 ; ========================================
 ; JAC Chat 2026 - Ultimate mIRC Theme
-; Version: 2026.1.0
+; Version: 2026.1.1
 ; ========================================
 ;
 ; FEATURES:
@@ -33,7 +33,7 @@ alias -l jac.email { return your-email@example.com }
 alias -l jac.pass { return your-password }
 alias -l jac.nick { return YourNick }
 alias -l jac.radio { return https://justachat.lovable.app }
-alias -l jac.version { return 2026.1.0 }
+alias -l jac.version { return 2026.1.1 }
 
 ; =====================
 ; THEME COLORS
@@ -50,24 +50,27 @@ on *:START:{
 ; MAIN CONNECTION
 ; =====================
 
+alias -l jac.isJac { return $iif($serverip == $jac.server,1,0) }
+
 alias jac {
+  ; IMPORTANT: PASS must be sent BEFORE mIRC registers (NICK/USER).
+  ; Using /server ... <password> makes mIRC send PASS first.
   echo -a 11[JAC 2026] Connecting to JAC Chat...
-  server -m $jac.server $jac.port
+  var %auth = $jac.email $+ : $+ $jac.pass
+  nick $jac.nick
+  server -m $jac.server $jac.port %auth
 }
 
 on *:CONNECT:{
-  if ($server == $jac.server) {
-    var %auth = $jac.email $+ : $+ $jac.pass
-    raw -q PASS %auth
-    raw -q NICK $jac.nick
-    raw -q USER $jac.nick 0 * :JAC 2026 User
+  if ($jac.isJac) {
+    ; Keepalive (after socket open)
     .timerjac.keepalive 0 90 raw -q PING :keepalive
   }
 }
 
 ; RPL_WELCOME (001) - Successfully registered, now auto-join
 raw 001:*:{
-  if ($server == $jac.server) {
+  if ($jac.isJac) {
     echo -a 3[JAC] Logged in as $jac.nick
     jac.toolbar.create
     ; Auto-join default channel
@@ -76,7 +79,7 @@ raw 001:*:{
 }
 
 on *:DISCONNECT:{
-  if ($server == $jac.server) {
+  if ($jac.isJac) {
     .timerjac.keepalive off
     .timerjac.autojoin off
     echo -a 7[JAC] Disconnected. Reconnecting in 10s...
