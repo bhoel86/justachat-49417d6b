@@ -361,7 +361,7 @@ const Home = () => {
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-popover border border-border shadow-lg z-50">
+                <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto bg-popover border border-border shadow-lg z-50">
                   <DropdownMenuLabel className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-primary" />
                     {isOwner ? 'Owner Controls' : 'Admin Controls'}
