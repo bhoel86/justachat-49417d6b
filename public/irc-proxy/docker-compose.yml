@@ -36,8 +36,17 @@ services:
       - RATE_MSG_BURST=${RATE_MSG_BURST:-20}
       - RATE_AUTO_BAN=${RATE_AUTO_BAN:-3}
       - RATE_BAN_DURATION=${RATE_BAN_DURATION:-60}
+      - LOG_TO_FILE=${LOG_TO_FILE:-true}
+      - LOG_DIR=/logs
+      - LOG_MAX_SIZE_MB=${LOG_MAX_SIZE_MB:-10}
+      - LOG_MAX_FILES=${LOG_MAX_FILES:-5}
+      - GEOIP_ENABLED=${GEOIP_ENABLED:-false}
+      - GEOIP_MODE=${GEOIP_MODE:-block}
+      - GEOIP_COUNTRIES=${GEOIP_COUNTRIES:-}
     volumes:
       - certs:/certs:ro
+      - proxy-data:/data
+      - proxy-logs:/logs
       - proxy-data:/data
     depends_on:
       - certbot
@@ -85,4 +94,7 @@ volumes:
   certbot-www:
     name: jac-certbot-www
   proxy-data:
+    name: jac-proxy-data
+  proxy-logs:
+    name: jac-proxy-logs
     name: jac-proxy-data
