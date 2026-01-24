@@ -12,7 +12,8 @@ import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
 import MemberList from "./MemberList";
 import ChannelList, { Channel } from "./ChannelList";
-import PrivateMessageModal from "./PrivateMessageModal";
+import PrivateChatWindow from "./PrivateChatWindow";
+import { usePrivateChats } from "@/hooks/usePrivateChats";
 import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
 import RoomSettingsModal from "./RoomSettingsModal";
 import RoomPasswordModal from "./RoomPasswordModal";
@@ -60,7 +61,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const [isRoomOwner, setIsRoomOwner] = useState(false);
   const [isRoomAdmin, setIsRoomAdmin] = useState(false);
   const [username, setUsername] = useState('');
-  const [pmTarget, setPmTarget] = useState<{ userId: string; username: string } | null>(null);
+  // Private chats hook - moved pmTarget to hook-based system
   const [preferredLanguage, setPreferredLanguage] = useState('en');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showRoomSettings, setShowRoomSettings] = useState(false);
@@ -78,6 +79,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const radio = useRadioOptional();
   
   const { translateMessage, isTranslating, getCachedTranslation } = useTranslation(preferredLanguage);
+  
+  // Private chats system
+  const privateChats = usePrivateChats(user?.id || '', username);
 
   // Enable radio when entering chat room, disable when leaving
   useEffect(() => {
@@ -680,7 +684,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         const parts = result.message.split(':');
         const targetUserId = parts[1];
         const targetUsername = parts[2];
-        setPmTarget({ userId: targetUserId, username: targetUsername });
+        privateChats.openChat(targetUserId, targetUsername);
         return;
       }
 
@@ -861,8 +865,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   };
 
   // User action handlers for MessageBubble dropdown
-  const handlePmClick = (userId: string, username: string) => {
-    setPmTarget({ userId, username });
+  const handlePmClick = (userId: string, targetUsername: string) => {
+    privateChats.openChat(userId, targetUsername);
   };
 
   const handleBlockClick = (userId: string, username: string) => {
@@ -1107,17 +1111,20 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         <MemberList onlineUserIds={onlineUserIds} channelName={currentChannel?.name} />
       </div>
 
-      {/* Private Message Modal */}
-      {pmTarget && user && (
-        <PrivateMessageModal
-          isOpen={!!pmTarget}
-          onClose={() => setPmTarget(null)}
-          targetUserId={pmTarget.userId}
-          targetUsername={pmTarget.username}
-          currentUserId={user.id}
-          currentUsername={username}
+      {/* Private Chat Windows */}
+      {privateChats.chats.map(chat => (
+        <PrivateChatWindow
+          key={chat.id}
+          targetUserId={chat.targetUserId}
+          targetUsername={chat.targetUsername}
+          currentUserId={privateChats.currentUserId}
+          currentUsername={privateChats.currentUsername}
+          onClose={() => privateChats.closeChat(chat.id)}
+          initialPosition={chat.position}
+          zIndex={chat.zIndex}
+          onFocus={() => privateChats.bringToFront(chat.id)}
         />
-      )}
+      ))}
 
       {/* Language Settings Modal */}
       {user && (
