@@ -89,12 +89,15 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const privateChats = usePrivateChats(user?.id || '', username);
 
   // Enable radio when entering chat room, disable when leaving
+  // Also clear messages on unmount (user closes/leaves chat)
   useEffect(() => {
     if (radio?.enableRadio) {
       radio.enableRadio();
     }
     
     return () => {
+      // Clear messages when leaving chat - ephemeral for user
+      setMessages([]);
       if (radio?.disableRadio) {
         radio.disableRadio();
       }
@@ -266,39 +269,13 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
   }, [currentChannel]);
 
-  // Fetch messages for current channel
+  // Clear messages when switching channels - don't load history (ephemeral chat for users)
   useEffect(() => {
     if (!currentChannel) return;
-
-    const fetchMessages = async () => {
-      setLoading(true);
-      const { data, error } = await supabaseUntyped
-        .from('messages')
-        .select(`id, content, user_id, created_at, channel_id`)
-        .eq('channel_id', currentChannel.id)
-        .order('created_at', { ascending: true })
-        .limit(100);
-
-      if (!error && data) {
-        const userIds = [...new Set(data.map((msg: Message) => msg.user_id))];
-        let profileMap = new Map();
-        
-        if (userIds.length > 0) {
-          const { data: profiles } = await supabaseUntyped
-            .from('profiles')
-            .select('user_id, username, avatar_url')
-            .in('user_id', userIds);
-          profileMap = new Map(profiles?.map((p: { user_id: string; username: string; avatar_url?: string | null }) => [p.user_id, p]) || []);
-        }
-
-        setMessages(data.map((msg: Message) => ({
-          ...msg,
-          profile: profileMap.get(msg.user_id) as { username: string } | undefined
-        })));
-      }
-      setLoading(false);
-    };
-    fetchMessages();
+    
+    // Clear any existing messages and start fresh - chat is ephemeral for users
+    setMessages([]);
+    setLoading(false);
   }, [currentChannel]);
 
   // Subscribe to real-time messages for current channel
