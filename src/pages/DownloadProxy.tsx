@@ -86,6 +86,35 @@ const DownloadProxy = () => {
               </li>
               <li>Click <strong>Add</strong>, then <strong>Select</strong>, then <strong>Connect</strong></li>
             </ol>
+
+            <div className="border-t pt-4 mt-4 space-y-3">
+              <p className="font-medium">No-script quick connect (type in the status window)</p>
+              <p className="text-muted-foreground text-xs">
+                If you don’t want to use any script, you must either set the <strong>Password</strong> field in your server entry
+                (recommended), or connect with <code className="bg-muted px-1 rounded">/server</code> including the password.
+                If mIRC connects without sending PASS right away, you’ll get disconnected ("timed out").
+              </p>
+
+              <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-2">
+                <div>
+                  <span className="text-muted-foreground">Non-SSL:</span>
+                  <code className="block mt-1 text-foreground">/server 157.245.174.197 6667 bhoel86@gmail.com:Khoel15$$</code>
+                </div>
+                <div className="border-t border-border pt-2">
+                  <span className="text-muted-foreground">SSL:</span>
+                  <code className="block mt-1 text-foreground">/server -ssl 157.245.174.197 6697 bhoel86@gmail.com:Khoel15$$</code>
+                </div>
+                <div className="border-t border-border pt-2">
+                  <span className="text-muted-foreground">Then join a room:</span>
+                  <code className="block mt-1 text-foreground">/join #general</code>
+                </div>
+              </div>
+
+              <p className="text-muted-foreground text-xs">
+                <strong>Important:</strong> the <code className="bg-muted px-1 rounded">/join</code> command is only for after you’re connected.
+                It won’t log you in.
+              </p>
+            </div>
             
             <div className="border-t pt-4 mt-4 space-y-3">
               <p className="font-medium text-sm">⚠️ Important: Password Escaping in Scripts</p>
