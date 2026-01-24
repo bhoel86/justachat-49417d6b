@@ -489,6 +489,138 @@ async function handlePART(session: IRCSession, params: string[]) {
   }
 }
 
+// Bot personality IDs (matching chat-bot edge function)
+const BOT_PERSONALITY_IDS = [
+  'user-nova', 'user-max', 'user-luna', 'user-jay', 'user-sage',
+  'user-marcus', 'user-pixel', 'user-riley', 'user-kai', 'user-zoe'
+];
+
+// Track recent messages for bot context
+const recentChannelMessages: Map<string, Array<{ username: string; content: string }>> = new Map();
+
+async function triggerBotResponse(
+  channelId: string,
+  channelName: string,
+  userMessage: string,
+  senderUsername: string,
+  supabaseClient: any
+) {
+  try {
+    // Check if bots are enabled for this channel
+    const { data: botSettings } = await supabaseClient
+      .from("bot_settings")
+      .select("enabled, allowed_channels")
+      .limit(1)
+      .single();
+
+    const settings = botSettings as { enabled: boolean; allowed_channels: string[] } | null;
+    if (!settings?.enabled || !settings.allowed_channels?.includes(channelName)) {
+      console.log(`[Bot] Bots not enabled for channel ${channelName}`);
+      return;
+    }
+
+    // 25% chance for a bot to respond
+    if (Math.random() > 0.25) {
+      console.log(`[Bot] Skipping response (random chance)`);
+      return;
+    }
+
+    // Get recent messages for context
+    const recentMessages = recentChannelMessages.get(channelId) || [];
+    
+    // Pick a random bot personality
+    const botId = BOT_PERSONALITY_IDS[Math.floor(Math.random() * BOT_PERSONALITY_IDS.length)];
+
+    console.log(`[Bot] Triggering bot ${botId} response in ${channelName}`);
+
+    // Random delay 5-15 seconds to seem human
+    const delay = 5000 + Math.random() * 10000;
+    
+    setTimeout(async () => {
+      try {
+        // Call the chat-bot edge function
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/chat-bot`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${supabaseAnonKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            botId,
+            context: channelName,
+            recentMessages: [
+              ...recentMessages.slice(-15),
+              { username: senderUsername, content: userMessage }
+            ],
+            respondTo: userMessage,
+            isConversationStarter: false,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error(`[Bot] chat-bot function error: ${response.status}`);
+          return;
+        }
+
+        const data = await response.json();
+        if (!data.message || !data.username) {
+          console.error(`[Bot] Invalid response from chat-bot`);
+          return;
+        }
+
+        console.log(`[Bot] ${data.username}: ${data.message}`);
+
+        // Insert bot message into database using service role
+        const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        
+        // We need a bot user ID - use a consistent fake ID for bots
+        const botUserId = `bot-${botId}`;
+        
+        // Insert the message (the realtime subscription will relay it to IRC clients)
+        const { error } = await serviceClient
+          .from("messages")
+          .insert({
+            channel_id: channelId,
+            user_id: botUserId,
+            content: data.message,
+          });
+
+        if (error) {
+          console.error(`[Bot] Failed to insert bot message:`, error);
+          return;
+        }
+
+        // Update recent messages cache
+        const msgs = recentChannelMessages.get(channelId) || [];
+        msgs.push({ username: data.username, content: data.message });
+        if (msgs.length > 25) msgs.shift();
+        recentChannelMessages.set(channelId, msgs);
+
+        // Also relay directly to IRC users (in case realtime is slow)
+        const subscribers = channelSubscriptions.get(channelId);
+        if (subscribers) {
+          for (const subscriberId of subscribers) {
+            const subscriberSession = sessions.get(subscriberId);
+            if (subscriberSession && subscriberSession.registered) {
+              sendIRC(
+                subscriberSession,
+                `:${data.username}!${data.username}@bot.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.error(`[Bot] Error generating response:`, e);
+      }
+    }, delay);
+  } catch (e) {
+    console.error(`[Bot] Error checking bot settings:`, e);
+  }
+}
+
 async function handlePRIVMSG(session: IRCSession, params: string[]) {
   if (!session.registered) {
     sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
@@ -510,11 +642,11 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
     try {
       const { data: channelData } = await session.supabase!
         .from("channels")
-        .select("id")
+        .select("id, name")
         .ilike("name", dbChannelName)
         .maybeSingle();
 
-      const channel = channelData as { id: string } | null;
+      const channel = channelData as { id: string; name: string } | null;
 
       if (!channel) {
         sendNumeric(session, ERR.NOSUCHCHANNEL, `${target} :No such channel`);
@@ -533,12 +665,91 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
       if (error) {
         console.error("Failed to insert message:", error);
         sendNumeric(session, ERR.CANNOTSENDTOCHAN, `${target} :Cannot send to channel`);
+        return;
       }
+
+      // Update recent messages for bot context
+      const msgs = recentChannelMessages.get(channel.id) || [];
+      msgs.push({ username: session.nick || 'unknown', content: message });
+      if (msgs.length > 25) msgs.shift();
+      recentChannelMessages.set(channel.id, msgs);
+
+      // Trigger potential bot response
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+      
+      triggerBotResponse(channel.id, channel.name, message, session.nick || 'unknown', serviceClient);
+      
     } catch (e) {
       console.error("PRIVMSG error:", e);
     }
   } else {
-    // Private message to user
+    // Private message to user - check if it's a bot
+    const botNames = Object.values(BOT_PERSONALITY_IDS).map(id => {
+      const nameMap: Record<string, string> = {
+        'user-nova': 'NovaStarr',
+        'user-max': 'MaxChillin',
+        'user-luna': 'LunaRose',
+        'user-jay': 'JayPlays',
+        'user-sage': 'SageVibes',
+        'user-marcus': 'MarcusBeats',
+        'user-pixel': 'RetroKid88',
+        'user-riley': 'RileyAdventures',
+        'user-kai': 'KaiThinks',
+        'user-zoe': 'ZoeTech',
+      };
+      return { id, name: nameMap[id] };
+    });
+    
+    const targetBot = botNames.find(b => b.name.toLowerCase() === target.toLowerCase());
+    
+    if (targetBot) {
+      // Handle PM to a bot
+      console.log(`[Bot PM] ${session.nick} -> ${targetBot.name}: ${message}`);
+      
+      // Delay response 3-8 seconds
+      const delay = 3000 + Math.random() * 5000;
+      
+      setTimeout(async () => {
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+          
+          const response = await fetch(`${supabaseUrl}/functions/v1/chat-bot`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${supabaseAnonKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              botId: targetBot.id,
+              context: "private",
+              recentMessages: [],
+              respondTo: message,
+              isPM: true,
+              pmPartnerName: session.nick,
+            }),
+          });
+
+          if (!response.ok) {
+            console.error(`[Bot PM] chat-bot function error: ${response.status}`);
+            return;
+          }
+
+          const data = await response.json();
+          if (data.message) {
+            sendIRC(session, `:${targetBot.name}!${targetBot.name}@bot.${SERVER_NAME} PRIVMSG ${session.nick} :${data.message}`);
+          }
+        } catch (e) {
+          console.error(`[Bot PM] Error:`, e);
+        }
+      }, delay);
+      
+      return;
+    }
+    
+    // Regular user PM
     try {
       const { data: targetData } = await session.supabase!
         .from("profiles")
