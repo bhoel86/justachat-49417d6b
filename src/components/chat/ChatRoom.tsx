@@ -13,6 +13,7 @@ import MessageBubble from "./MessageBubble";
 import MemberList from "./MemberList";
 import ChannelList, { Channel } from "./ChannelList";
 import PrivateChatWindow from "./PrivateChatWindow";
+import PMTray from "./PMTray";
 import { usePrivateChats } from "@/hooks/usePrivateChats";
 import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
 import RoomSettingsModal from "./RoomSettingsModal";
@@ -1115,8 +1116,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         />
       </div>
 
-      {/* Private Chat Windows */}
-      {privateChats.chats.map(chat => (
+      {/* Private Chat Windows - Only active (non-minimized) */}
+      {privateChats.activeChats.map(chat => (
         <PrivateChatWindow
           key={chat.id}
           targetUserId={chat.targetUserId}
@@ -1124,11 +1125,20 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           currentUserId={privateChats.currentUserId}
           currentUsername={privateChats.currentUsername}
           onClose={() => privateChats.closeChat(chat.id)}
+          onMinimize={() => privateChats.minimizeChat(chat.id)}
+          onNewMessage={() => privateChats.setUnread(chat.id)}
           initialPosition={chat.position}
           zIndex={chat.zIndex}
           onFocus={() => privateChats.bringToFront(chat.id)}
         />
       ))}
+
+      {/* PM Minimize Tray */}
+      <PMTray
+        minimizedChats={privateChats.minimizedChats}
+        onRestore={(chatId) => privateChats.restoreChat(chatId)}
+        onClose={(chatId) => privateChats.closeChat(chatId)}
+      />
 
       {/* Language Settings Modal */}
       {user && (

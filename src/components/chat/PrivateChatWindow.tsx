@@ -21,6 +21,8 @@ interface PrivateChatWindowProps {
   currentUserId: string;
   currentUsername: string;
   onClose: () => void;
+  onMinimize: () => void;
+  onNewMessage?: () => void;
   initialPosition?: { x: number; y: number };
   zIndex: number;
   onFocus: () => void;
@@ -37,6 +39,8 @@ const PrivateChatWindow = ({
   currentUserId,
   currentUsername,
   onClose,
+  onMinimize,
+  onNewMessage,
   initialPosition = { x: 100, y: 100 },
   zIndex,
   onFocus
@@ -47,7 +51,6 @@ const PrivateChatWindow = ({
   const [sessionId, setSessionId] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const [targetOnline, setTargetOnline] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState(initialPosition);
   const [size, setSize] = useState({ width: 320, height: 420 });
   const [isDragging, setIsDragging] = useState(false);
@@ -312,8 +315,8 @@ const PrivateChatWindow = ({
         left: position.x,
         top: position.y,
         zIndex: zIndex,
-        width: isMinimized ? 260 : size.width,
-        height: isMinimized ? 44 : size.height,
+        width: size.width,
+        height: size.height,
       }}
     >
       {/* Header - Draggable */}
@@ -330,22 +333,20 @@ const PrivateChatWindow = ({
           </div>
           <div className="min-w-0">
             <p className="font-medium text-sm text-foreground truncate">{targetUsername}</p>
-            {!isMinimized && (
-              <div className="flex items-center gap-1 text-[10px] text-green-500">
-                <Lock className="h-2.5 w-2.5" />
-                <span>Encrypted</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1 text-[10px] text-green-500">
+              <Lock className="h-2.5 w-2.5" />
+              <span>Encrypted</span>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }} 
+            onClick={(e) => { e.stopPropagation(); onMinimize(); }} 
             className="h-6 w-6 rounded hover:bg-background/50"
           >
-            {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+            <Minus className="h-3 w-3" />
           </Button>
           <Button 
             variant="ghost" 
@@ -358,96 +359,92 @@ const PrivateChatWindow = ({
         </div>
       </div>
 
-      {!isMinimized && (
-        <>
-          {/* Security Notice */}
-          <div className="px-2 py-1 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-1.5">
-            <Shield className="h-3 w-3 text-amber-500 shrink-0" />
-            <span className="text-[10px] text-amber-500 truncate">
-              Admins can review for moderation
-            </span>
-          </div>
+      {/* Security Notice */}
+      <div className="px-2 py-1 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-1.5">
+        <Shield className="h-3 w-3 text-amber-500 shrink-0" />
+        <span className="text-[10px] text-amber-500 truncate">
+          Admins can review for moderation
+        </span>
+      </div>
 
-          {/* Connection Status */}
-          {!isConnected && (
-            <div className="px-2 py-1.5 bg-muted flex items-center justify-center gap-2">
-              <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              <span className="text-[10px] text-muted-foreground">Connecting...</span>
-            </div>
-          )}
-
-          {/* Messages */}
-          <div 
-            className="overflow-y-auto p-2 space-y-2 bg-background/50"
-            style={{ height: messageAreaHeight }}
-          >
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
-                <Lock className="h-8 w-8 mb-2 text-primary/30" />
-                <p className="text-xs font-medium">Encrypted chat</p>
-                <p className="text-[10px] mt-1 text-amber-500">Messages destroyed on close</p>
-              </div>
-            ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-xl px-2.5 py-1.5 ${
-                      msg.isOwn
-                        ? 'bg-primary text-primary-foreground rounded-br-sm'
-                        : 'bg-muted text-foreground rounded-bl-sm'
-                    }`}
-                  >
-                    {!msg.isOwn && (
-                      <p className="text-[10px] font-medium mb-0.5 opacity-70">{msg.senderName}</p>
-                    )}
-                    <p className="text-xs break-words">{msg.content}</p>
-                    <p className="text-[9px] opacity-50 mt-0.5 text-right">
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          <div className="p-2 border-t border-border bg-card">
-            <div className="flex gap-1.5">
-              <EmojiPicker onEmojiSelect={handleEmojiSelect} />
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Message..."
-                disabled={!isConnected}
-                className="flex-1 bg-input rounded-lg px-2.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50"
-              />
-              <Button
-                onClick={handleSend}
-                disabled={!message.trim() || !isConnected}
-                variant="jac"
-                size="icon"
-                className="h-8 w-8 rounded-lg shrink-0"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Resize Handle */}
-          <div
-            className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize group"
-            onMouseDown={handleResizeMouseDown}
-          >
-            <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/40 group-hover:border-primary transition-colors" />
-          </div>
-        </>
+      {/* Connection Status */}
+      {!isConnected && (
+        <div className="px-2 py-1.5 bg-muted flex items-center justify-center gap-2">
+          <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <span className="text-[10px] text-muted-foreground">Connecting...</span>
+        </div>
       )}
+
+      {/* Messages */}
+      <div 
+        className="overflow-y-auto p-2 space-y-2 bg-background/50"
+        style={{ height: messageAreaHeight }}
+      >
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
+            <Lock className="h-8 w-8 mb-2 text-primary/30" />
+            <p className="text-xs font-medium">Encrypted chat</p>
+            <p className="text-[10px] mt-1 text-amber-500">Messages destroyed on close</p>
+          </div>
+        ) : (
+          messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[85%] rounded-xl px-2.5 py-1.5 ${
+                  msg.isOwn
+                    ? 'bg-primary text-primary-foreground rounded-br-sm'
+                    : 'bg-muted text-foreground rounded-bl-sm'
+                }`}
+              >
+                {!msg.isOwn && (
+                  <p className="text-[10px] font-medium mb-0.5 opacity-70">{msg.senderName}</p>
+                )}
+                <p className="text-xs break-words">{msg.content}</p>
+                <p className="text-[9px] opacity-50 mt-0.5 text-right">
+                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-2 border-t border-border bg-card">
+        <div className="flex gap-1.5">
+          <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder="Message..."
+            disabled={!isConnected}
+            className="flex-1 bg-input rounded-lg px-2.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50"
+          />
+          <Button
+            onClick={handleSend}
+            disabled={!message.trim() || !isConnected}
+            variant="jac"
+            size="icon"
+            className="h-8 w-8 rounded-lg shrink-0"
+          >
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Resize Handle */}
+      <div
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize group"
+        onMouseDown={handleResizeMouseDown}
+      >
+        <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/40 group-hover:border-primary transition-colors" />
+      </div>
     </div>
   );
 };

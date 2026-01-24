@@ -6,6 +6,8 @@ interface PrivateChat {
   targetUsername: string;
   position: { x: number; y: number };
   zIndex: number;
+  isMinimized: boolean;
+  hasUnread: boolean;
 }
 
 export const usePrivateChats = (currentUserId: string, currentUsername: string) => {
@@ -16,8 +18,13 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     // Check if chat already exists
     const existingChat = chats.find(c => c.targetUserId === targetUserId);
     if (existingChat) {
-      // Bring to front
-      bringToFront(existingChat.id);
+      // Restore if minimized and bring to front
+      setChats(prev => prev.map(c => 
+        c.id === existingChat.id 
+          ? { ...c, isMinimized: false, hasUnread: false, zIndex: topZIndex + 1 } 
+          : c
+      ));
+      setTopZIndex(prev => prev + 1);
       return;
     }
 
@@ -31,7 +38,9 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
       targetUserId,
       targetUsername,
       position: { x: baseX, y: baseY },
-      zIndex: topZIndex + 1
+      zIndex: topZIndex + 1,
+      isMinimized: false,
+      hasUnread: false
     };
 
     setTopZIndex(prev => prev + 1);
@@ -45,15 +54,42 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
   const bringToFront = useCallback((chatId: string) => {
     setTopZIndex(prev => prev + 1);
     setChats(prev => prev.map(c => 
-      c.id === chatId ? { ...c, zIndex: topZIndex + 1 } : c
+      c.id === chatId ? { ...c, zIndex: topZIndex + 1, hasUnread: false } : c
     ));
   }, [topZIndex]);
 
+  const minimizeChat = useCallback((chatId: string) => {
+    setChats(prev => prev.map(c => 
+      c.id === chatId ? { ...c, isMinimized: true } : c
+    ));
+  }, []);
+
+  const restoreChat = useCallback((chatId: string) => {
+    setTopZIndex(prev => prev + 1);
+    setChats(prev => prev.map(c => 
+      c.id === chatId ? { ...c, isMinimized: false, hasUnread: false, zIndex: topZIndex + 1 } : c
+    ));
+  }, [topZIndex]);
+
+  const setUnread = useCallback((chatId: string) => {
+    setChats(prev => prev.map(c => 
+      c.id === chatId && c.isMinimized ? { ...c, hasUnread: true } : c
+    ));
+  }, []);
+
+  const minimizedChats = chats.filter(c => c.isMinimized);
+  const activeChats = chats.filter(c => !c.isMinimized);
+
   return {
     chats,
+    activeChats,
+    minimizedChats,
     openChat,
     closeChat,
     bringToFront,
+    minimizeChat,
+    restoreChat,
+    setUnread,
     currentUserId,
     currentUsername
   };
