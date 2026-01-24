@@ -1334,6 +1334,58 @@ async function triggerModeratorResponse(
   }
 }
 
+// CTCP (Client-To-Client Protocol) response constants
+const CTCP_DELIM = "\x01";
+const JAC_VERSION = "Justachat™ IRC Gateway 1.0 - https://justachat.lovable.app";
+const JAC_CLIENTINFO = "VERSION PING TIME USERINFO CLIENTINFO SOURCE";
+
+function handleCTCPRequest(session: IRCSession, sender: string, ctcpCommand: string): boolean {
+  const parts = ctcpCommand.split(" ");
+  const cmd = parts[0].toUpperCase();
+  const args = parts.slice(1).join(" ");
+  
+  switch (cmd) {
+    case "VERSION":
+      // Send themed VERSION reply
+      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}VERSION ${IRC_COLORS.BOLD}${IRC_COLORS.CYAN}Justachat™${IRC_COLORS.RESET} ${IRC_COLORS.GREY}IRC Gateway v1.0${IRC_COLORS.RESET} ${IRC_COLORS.PINK}♥${IRC_COLORS.RESET} ${IRC_COLORS.GREY}Chat. Connect. Chill.${IRC_COLORS.RESET}${CTCP_DELIM}`);
+      return true;
+      
+    case "PING":
+      // Echo back the ping timestamp
+      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}PING ${args}${CTCP_DELIM}`);
+      return true;
+      
+    case "TIME":
+      // Return server time
+      const now = new Date();
+      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}TIME ${now.toUTCString()}${CTCP_DELIM}`);
+      return true;
+      
+    case "USERINFO":
+      // Return user info with branding
+      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}USERINFO ${session.nick} on ${IRC_COLORS.CYAN}Justachat™${IRC_COLORS.RESET} - ${session.realname || 'JAC User'}${CTCP_DELIM}`);
+      return true;
+      
+    case "CLIENTINFO":
+      // List supported CTCP commands
+      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}CLIENTINFO ${JAC_CLIENTINFO}${CTCP_DELIM}`);
+      return true;
+      
+    case "SOURCE":
+      // Return source URL
+      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}SOURCE https://justachat.lovable.app${CTCP_DELIM}`);
+      return true;
+      
+    case "FINGER":
+      // Return user info
+      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}FINGER ${session.nick} (${session.realname || 'JAC User'}) - Idle: 0 seconds${CTCP_DELIM}`);
+      return true;
+      
+    default:
+      return false;
+  }
+}
+
 async function handlePRIVMSG(session: IRCSession, params: string[]) {
   if (!session.registered) {
     sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
@@ -1347,6 +1399,17 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
 
   const target = params[0];
   const message = params.slice(1).join(" ").replace(/^:/, "");
+
+  // Handle CTCP requests (messages wrapped in \x01)
+  if (message.startsWith(CTCP_DELIM) && message.endsWith(CTCP_DELIM)) {
+    const ctcpContent = message.slice(1, -1);
+    console.log(`[CTCP] ${session.nick} received CTCP: ${ctcpContent}`);
+    
+    // Handle the CTCP request
+    if (handleCTCPRequest(session, target, ctcpContent)) {
+      return; // CTCP handled, don't process as regular message
+    }
+  }
 
   if (target.startsWith("#")) {
     // Channel message
