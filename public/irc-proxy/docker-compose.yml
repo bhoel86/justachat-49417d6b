@@ -1,26 +1,17 @@
-# JAC IRC Proxy - Docker Compose with Auto-SSL
+# JAC IRC Proxy - Docker Compose with Auto-SSL & Admin API
 # 
-# Automatic Let's Encrypt certificate provisioning and renewal.
+# SETUP:
+#   1. Copy .env.docker to .env and configure
+#   2. Get certificate: docker-compose --profile init up certbot-init
+#   3. Start: docker-compose up -d
 #
-# FIRST TIME SETUP:
-#   1. Edit .env file with your domain and email
-#   2. Run: docker-compose up -d
-#   3. Get initial certificate: docker-compose run --rm certbot
-#   4. Restart proxy: docker-compose restart irc-proxy
-#
-# MANUAL RENEWAL (if needed):
-#   docker-compose run --rm certbot renew
-#
-# VIEW LOGS:
-#   docker-compose logs -f irc-proxy
-#
-# STOP:
-#   docker-compose down
+# ADMIN PANEL:
+#   Set ADMIN_TOKEN in .env, then access via JAC Admin Panel
+#   or directly at http://your-server:6680
 
 version: '3.8'
 
 services:
-  # Main IRC Proxy
   irc-proxy:
     build: .
     container_name: jac-irc-proxy
@@ -28,6 +19,7 @@ services:
     ports:
       - "6667:6667"
       - "6697:6697"
+      - "6680:6680"
     environment:
       - HOST=0.0.0.0
       - PORT=6667
@@ -35,6 +27,8 @@ services:
       - SSL_PORT=6697
       - SSL_CERT=/certs/live/${DOMAIN:-localhost}/fullchain.pem
       - SSL_KEY=/certs/live/${DOMAIN:-localhost}/privkey.pem
+      - ADMIN_PORT=6680
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
       - certs:/certs:ro
@@ -51,7 +45,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Certbot for Let's Encrypt certificates
   certbot:
     image: certbot/certbot:latest
     container_name: jac-certbot
@@ -61,7 +54,6 @@ services:
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
     restart: unless-stopped
 
-  # Initial certificate generation (run once)
   certbot-init:
     image: certbot/certbot:latest
     container_name: jac-certbot-init
