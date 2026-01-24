@@ -5,6 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
 import EmojiPicker from "./EmojiPicker";
 import { useToast } from "@/hooks/use-toast";
+import { CHAT_BOTS, ROOM_BOTS } from "@/lib/chatBots";
+
+// Get bot ID from user ID if it's a simulated user
+const getBotIdFromUserId = (userId: string): string | null => {
+  // Check if this is a simulated user ID format (e.g., "sim-user-nova", "sim-gen-1")
+  if (!userId.startsWith('sim-')) return null;
+  
+  const botId = userId.replace('sim-', '');
+  const allBots = [...CHAT_BOTS, ...ROOM_BOTS];
+  const bot = allBots.find(b => b.id === botId);
+  return bot ? botId : null;
+};
 
 interface PrivateMessage {
   id: string;
@@ -57,11 +69,17 @@ const PrivateChatWindow = ({
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [isBotTyping, setIsBotTyping] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const windowRef = useRef<HTMLDivElement>(null);
+  const botResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+
+  // Check if target user is a bot
+  const targetBotId = getBotIdFromUserId(targetUserId);
+  const isTargetBot = !!targetBotId;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -233,6 +251,68 @@ const PrivateChatWindow = ({
     }
   }, [targetUserId, targetUsername, sessionId]);
 
+  // Generate bot response for PM
+  const generateBotResponse = useCallback(async (userMessage: string) => {
+    if (!targetBotId) return;
+
+    // Random delay between 3-12 seconds for realistic typing
+    const delay = 3000 + Math.random() * 9000;
+    
+    setIsBotTyping(true);
+    
+    botResponseTimeoutRef.current = setTimeout(async () => {
+      try {
+        const recentMsgs = messages.slice(-15).map(m => ({
+          username: m.isOwn ? currentUsername : targetUsername,
+          content: m.content,
+        }));
+
+        const { data, error } = await supabase.functions.invoke('chat-bot', {
+          body: {
+            botId: targetBotId,
+            context: 'private-message',
+            recentMessages: recentMsgs,
+            respondTo: userMessage,
+            isPM: true,
+            pmPartnerName: currentUsername,
+          },
+        });
+
+        if (error) {
+          console.error('Bot PM response error:', error);
+          setIsBotTyping(false);
+          return;
+        }
+
+        if (data?.message) {
+          const botMsgId = `bot-${Date.now()}-${Math.random()}`;
+          setMessages(prev => [...prev, {
+            id: botMsgId,
+            content: data.message,
+            senderId: targetUserId,
+            senderName: targetUsername,
+            timestamp: new Date(),
+            isOwn: false
+          }]);
+          onNewMessage?.();
+        }
+      } catch (err) {
+        console.error('Failed to get bot response:', err);
+      } finally {
+        setIsBotTyping(false);
+      }
+    }, delay);
+  }, [targetBotId, messages, currentUsername, targetUsername, targetUserId, onNewMessage]);
+
+  // Cleanup bot response timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (botResponseTimeoutRef.current) {
+        clearTimeout(botResponseTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSend = async () => {
     if (!message.trim() || !sessionKey || !channelRef.current) return;
 
@@ -281,6 +361,11 @@ const PrivateChatWindow = ({
 
       monitorMessage(trimmedMessage, currentUserId, currentUsername);
       setMessage('');
+
+      // Trigger bot response if chatting with a simulated user
+      if (isTargetBot) {
+        generateBotResponse(trimmedMessage);
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       toast({
@@ -409,6 +494,22 @@ const PrivateChatWindow = ({
               </div>
             </div>
           ))
+        )}
+        {/* Typing indicator for bot */}
+        {isBotTyping && (
+          <div className="flex justify-start">
+            <div className="bg-muted text-foreground rounded-xl rounded-bl-sm px-3 py-2">
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-medium opacity-70">{targetUsername}</span>
+                <span className="text-[10px] opacity-50 ml-1">typing</span>
+                <span className="flex gap-0.5 ml-1">
+                  <span className="w-1 h-1 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1 h-1 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1 h-1 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </span>
+              </div>
+            </div>
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>
