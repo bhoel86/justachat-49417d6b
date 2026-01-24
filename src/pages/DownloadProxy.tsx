@@ -87,10 +87,24 @@ const DownloadProxy = () => {
               <li>Click <strong>Add</strong>, then <strong>Select</strong>, then <strong>Connect</strong></li>
             </ol>
             
-            <div className="border-t pt-4 mt-4">
+            <div className="border-t pt-4 mt-4 space-y-3">
+              <p className="font-medium text-sm">⚠️ Important: Password Escaping in Scripts</p>
               <p className="text-muted-foreground text-xs">
-                <strong>Tip:</strong> If your password contains a <code className="bg-muted px-1 rounded">$</code> character, 
-                you need to double it in mIRC scripts (e.g., <code className="bg-muted px-1 rounded">Pass$$word</code> becomes <code className="bg-muted px-1 rounded">Pass$$$$word</code>).
+                If your password contains <code className="bg-muted px-1 rounded">$</code> characters, 
+                you must <strong>double each $</strong> in mIRC scripts and Perform blocks:
+              </p>
+              <div className="bg-muted/50 rounded-lg p-3 text-xs space-y-2 font-mono">
+                <div className="flex flex-col gap-1">
+                  <span className="text-muted-foreground">Example password: <code className="text-foreground">Khoel15$$</code></span>
+                  <span className="text-muted-foreground">In mIRC script: <code className="text-primary">Khoel15$$$$</code></span>
+                </div>
+                <div className="border-t border-border pt-2 mt-2">
+                  <span className="text-muted-foreground">Command in script:</span>
+                  <code className="block mt-1 text-primary">/raw -q PASS email@example.com:Khoel15$$$$</code>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                <strong>Note:</strong> When typing directly in the mIRC status window (not in a script), use your password as-is without doubling.
               </p>
             </div>
           </CardContent>
