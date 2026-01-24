@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isOwner: boolean;
+  isModerator: boolean;
   role: AppRole | null;
   signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -33,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isAdmin = role === 'admin' || role === 'owner';
   const isOwner = role === 'owner';
+  const isModerator = role === 'moderator' || role === 'admin' || role === 'owner';
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -119,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isOwner, role, signUp, signIn, signOut, logoutFromChat }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isOwner, isModerator, role, signUp, signIn, signOut, logoutFromChat }}>
       {children}
     </AuthContext.Provider>
   );

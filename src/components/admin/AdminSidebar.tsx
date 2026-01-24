@@ -22,18 +22,20 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   ownerOnly?: boolean;
+  adminOnly?: boolean;
+  moderatorAllowed?: boolean;
 }
 
 const navItems: NavItem[] = [
   { label: "Audit Logs", href: "/admin", icon: Shield, ownerOnly: true },
-  { label: "Users", href: "/admin/users", icon: Users },
-  { label: "Bans", href: "/admin/bans", icon: Ban },
-  { label: "Mutes", href: "/admin/mutes", icon: VolumeX },
-  { label: "Messages", href: "/admin/messages", icon: MessageSquare },
-  { label: "Bots", href: "/admin/bots", icon: Bot },
+  { label: "Users", href: "/admin/users", icon: Users, adminOnly: true },
+  { label: "Bans", href: "/admin/bans", icon: Ban, moderatorAllowed: true },
+  { label: "Mutes", href: "/admin/mutes", icon: VolumeX, moderatorAllowed: true },
+  { label: "Messages", href: "/admin/messages", icon: MessageSquare, adminOnly: true },
+  { label: "Bots", href: "/admin/bots", icon: Bot, adminOnly: true },
   { label: "Emails", href: "/admin/emails", icon: Mail, ownerOnly: true },
   { label: "API Keys", href: "/admin/api", icon: Key, ownerOnly: true },
-  { label: "IRC Gateway", href: "/admin/irc", icon: Server },
+  { label: "IRC Gateway", href: "/admin/irc", icon: Server, adminOnly: true },
 ];
 
 interface AdminSidebarProps {
@@ -42,10 +44,20 @@ interface AdminSidebarProps {
 
 export const AdminSidebar = ({ children }: AdminSidebarProps) => {
   const location = useLocation();
-  const { isOwner } = useAuth();
+  const { isOwner, isAdmin, isModerator } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
-  const filteredItems = navItems.filter(item => !item.ownerOnly || isOwner);
+  const filteredItems = navItems.filter(item => {
+    // Owner sees everything
+    if (isOwner) return true;
+    // Owner-only items hidden from non-owners
+    if (item.ownerOnly) return false;
+    // Admin sees admin-only and moderator-allowed items
+    if (isAdmin) return true;
+    // Moderator sees only moderator-allowed items
+    if (isModerator) return item.moderatorAllowed;
+    return false;
+  });
 
   return (
     <div className="min-h-screen bg-background flex">

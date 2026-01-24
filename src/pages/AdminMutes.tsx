@@ -24,7 +24,7 @@ interface MuteRecord {
 }
 
 const AdminMutes = () => {
-  const { user, loading, isOwner, isAdmin } = useAuth();
+  const { user, loading, isOwner, isAdmin, isModerator } = useAuth();
   const [mutes, setMutes] = useState<MuteRecord[]>([]);
   const [mutesLoading, setMutesLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,10 +68,10 @@ const AdminMutes = () => {
   };
 
   useEffect(() => {
-    if (isOwner || isAdmin) {
+    if (isModerator) {
       fetchMutes();
     }
-  }, [isOwner, isAdmin]);
+  }, [isModerator]);
 
   const handleUnmute = async (muteId: string, username: string, targetUserId: string) => {
     if (!user) return;
@@ -116,7 +116,7 @@ const AdminMutes = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!isOwner && !isAdmin) {
+  if (!isModerator) {
     return <Navigate to="/" replace />;
   }
 

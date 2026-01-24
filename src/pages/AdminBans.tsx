@@ -24,7 +24,7 @@ interface BanRecord {
 }
 
 const AdminBans = () => {
-  const { user, loading, isOwner, isAdmin } = useAuth();
+  const { user, loading, isOwner, isAdmin, isModerator } = useAuth();
   const [bans, setBans] = useState<BanRecord[]>([]);
   const [bansLoading, setBansLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,10 +68,10 @@ const AdminBans = () => {
   };
 
   useEffect(() => {
-    if (isOwner || isAdmin) {
+    if (isModerator) {
       fetchBans();
     }
-  }, [isOwner, isAdmin]);
+  }, [isModerator]);
 
   const handleUnban = async (banId: string, username: string, targetUserId: string) => {
     if (!user) return;
@@ -116,7 +116,7 @@ const AdminBans = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!isOwner && !isAdmin) {
+  if (!isModerator) {
     return <Navigate to="/" replace />;
   }
 
