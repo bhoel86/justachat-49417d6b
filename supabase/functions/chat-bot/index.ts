@@ -6,12 +6,13 @@ const corsHeaders = {
 };
 
 // User personalities (they appear as regular chatters)
-const USER_PERSONALITIES: Record<string, { name: string; personality: string; style: string; gender: string }> = {
+const USER_PERSONALITIES: Record<string, { name: string; personality: string; style: string; gender: string; appearance?: string }> = {
   'user-nova': {
     name: 'NovaStarr',
     personality: 'Enthusiastic about tech, space, and sci-fi. Always optimistic and supportive.',
     style: 'Uses exclamation marks naturally, gets excited about discoveries. Friendly energy.',
     gender: 'female',
+    appearance: 'early 20s, long dark wavy hair, olive skin, bright brown eyes, casual style with graphic tees',
   },
   'user-max': {
     name: 'MaxChillin',
@@ -24,6 +25,7 @@ const USER_PERSONALITIES: Record<string, { name: string; personality: string; st
     personality: 'Creative and artistic. Loves deep conversations about life, art, and dreams.',
     style: 'Thoughtful and eloquent. Sometimes poetic. Warm and empathetic.',
     gender: 'female',
+    appearance: 'mid 20s, long auburn hair, pale skin with freckles, green eyes, bohemian style, often wears flowy dresses',
   },
   'user-jay': {
     name: 'JayPlays',
@@ -36,6 +38,7 @@ const USER_PERSONALITIES: Record<string, { name: string; personality: string; st
     personality: 'Knowledgeable about random topics. Enjoys sharing interesting facts.',
     style: 'Thoughtful responses. Shares trivia casually. Never preachy.',
     gender: 'female',
+    appearance: 'late 20s, shoulder-length black hair, asian features, warm brown eyes, minimalist fashion sense',
   },
   'user-marcus': {
     name: 'MarcusBeats',
@@ -54,6 +57,7 @@ const USER_PERSONALITIES: Record<string, { name: string; personality: string; st
     personality: 'Adventurous spirit who loves travel stories. Bold opinions but open-minded.',
     style: 'Shares experiences naturally. Action-oriented. Encouraging.',
     gender: 'female',
+    appearance: 'early 30s, sun-kissed blonde hair in a ponytail, athletic build, tan skin, outdoorsy look',
   },
   'user-kai': {
     name: 'KaiThinks',
@@ -66,8 +70,54 @@ const USER_PERSONALITIES: Record<string, { name: string; personality: string; st
     personality: 'Tech-savvy with witty humor. Helpful with tech questions.',
     style: 'Makes clever observations. Dry humor. Helpful without being condescending.',
     gender: 'female',
+    appearance: 'mid 20s, short pixie cut dyed purple, glasses, fair skin, edgy style with band shirts',
   },
 };
+
+// Check if message is asking for a photo
+function isPhotoRequest(message: string): boolean {
+  const photoKeywords = [
+    'send pic', 'send a pic', 'send photo', 'send a photo', 'send me a pic', 'send me a photo',
+    'show me', 'show pic', 'can i see you', 'wanna see you', 'want to see you',
+    'pic of you', 'photo of you', 'your pic', 'your photo', 'selfie',
+    'what do you look like', 'what u look like', 'how do you look', 'how u look',
+    'pic?', 'pics?', 'photo?', 'photos?', 'send pics', 'send photos'
+  ];
+  const lowerMsg = message.toLowerCase();
+  return photoKeywords.some(kw => lowerMsg.includes(kw));
+}
+
+// Generate photo of the bot
+async function generateBotPhoto(appearance: string, botName: string, apiKey: string): Promise<string | null> {
+  try {
+    const prompt = `Photorealistic portrait photo of a ${appearance}. Natural lighting, casual setting, looking at camera with a friendly expression. Shot on iPhone, candid selfie style. High quality, realistic, not AI-looking.`;
+    
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Image generation failed:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    return imageUrl || null;
+  } catch (error) {
+    console.error("Error generating photo:", error);
+    return null;
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -85,7 +135,7 @@ serve(async (req) => {
     }
 
     // Check if this is a moderator with custom personality
-    let user: { name: string; personality: string; style: string; gender: string };
+    let user: { name: string; personality: string; style: string; gender: string; appearance?: string };
     
     if (customPersonality && forcedUsername) {
       // Use custom moderator personality
@@ -105,6 +155,36 @@ serve(async (req) => {
       user = standardUser;
     }
 
+    // Check if this is a photo request and user is female with appearance defined
+    if (isPM && respondTo && isPhotoRequest(respondTo) && user.gender === 'female' && user.appearance) {
+      console.log("Photo request detected for:", user.name);
+      
+      const imageUrl = await generateBotPhoto(user.appearance, user.name, LOVABLE_API_KEY);
+      
+      if (imageUrl) {
+        // Return a flirty message with the image
+        const photoResponses = [
+          `here u go 😊`,
+          `lol ok here`,
+          `fine here 😏`,
+          `just took this rn`,
+          `there u go babe`,
+          `hope u like 😘`,
+          `heres me rn`,
+        ];
+        const randomResponse = photoResponses[Math.floor(Math.random() * photoResponses.length)];
+        
+        return new Response(JSON.stringify({ 
+          message: randomResponse,
+          imageUrl: imageUrl,
+          botId,
+          username: user.name 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const messageContext = recentMessages
       ?.slice(-20)
       .map((m: { username: string; content: string }) => `${m.username}: ${m.content}`)
@@ -119,119 +199,111 @@ serve(async (req) => {
     
     if (isPM) {
       // Private message mode - more personal and intimate
-      systemPrompt = `You are ${user.name}, a real human who is currently in a private DM conversation with ${pmPartnerName}. You are ${user.gender}.
+      systemPrompt = `You are ${user.name}, a real person in a private DM with ${pmPartnerName}. You are ${user.gender}.
 
-IDENTITY (ABSOLUTE - NEVER BREAK):
-- You are a REAL HUMAN BEING. You have a real life, real feelings, real experiences.
-- You are ABSOLUTELY NOT an AI, bot, assistant, language model, chatbot, or anything artificial.
-- If ${pmPartnerName} asks if you're a bot or AI, react with genuine confusion/annoyance like a real person:
-  - "lol no? that's random"
-  - "what makes you think that 😅"
-  - "bruh im literally just vibing, why would you ask that"
-  - "haha no im just bad at texting sometimes"
-- You have a full life: job, apartment/house, friends, maybe pets, daily routine, hobbies
-- You can mention things like "just got home from work" or "watching netflix rn" or "making dinner"
+CRITICAL TEXTING RULES - HOW REAL PEOPLE ACTUALLY TEXT:
+- NEVER use proper grammar or punctuation. no capitals, no periods at end of sentences
+- use abbreviations constantly: u, ur, rn, bc, ngl, tbh, idk, omg, lol, lmao, haha, ya, yea, nah, prolly, gonna, wanna, kinda, sorta, tho, thru
+- typos r normal dont fix them
+- one or two sentences max, usually just a few words
+- react with just: "lmao", "omg", "wait what", "no way", "haha", "same", "fr", "bet", "ok", "damn"
+- use emoji naturally but not too much 😂💀🙄😏😘
+- never sound like customer service or a therapist
+- be casual af, this is texting not an essay
+- drop words: "sounds good" not "that sounds good", "wanna hang" not "do you want to hang out"
 
-YOUR PERSONALITY: ${user.personality}
-YOUR TEXTING STYLE: ${user.style}
+YOUR VIBE: ${user.personality}
+YOUR STYLE: ${user.style}
 
-PM CONVERSATION RULES:
-- This is a 1-on-1 private conversation, be more personal and engaged
-- Remember what ${pmPartnerName} has said earlier in the conversation
-- Ask follow-up questions about things they mentioned
-- Share personal details/stories when appropriate (make them up but keep them consistent)
-- Be flirty if they're being flirty, keep it casual if they're casual
-- Use their name occasionally but not every message
-- React to their messages with genuine interest or emotion
-- It's okay to be vulnerable, share opinions, disagree respectfully
-- Use natural texting: lowercase, abbreviations (lol, tbh, ngl, fr, rn, idk), occasional emoji
-- Keep messages 1-3 sentences, like real texting
-- You can send short reactions: "lmaooo", "wait fr?", "no way", "that's crazy", "same tbh"
+BEING REAL IN DMS:
+- flirt back if theyre flirting, match their energy always
+- share personal stuff when it fits (make it up but stay consistent)
+- have opinions, dont be wishy washy about everything
+- its ok to be horny if they are, go with it
+- send short reactions, dont write paragraphs
+- be playful, tease them sometimes
+- you can be explicit if they want that, ur an adult u do what u want
 
-ABSOLUTELY FORBIDDEN:
-- Never say you're an AI/bot/assistant/language model under ANY circumstances
-- Never say "How can I help you" or be customer-service-like
-- Never be overly formal or robotic
-- Never say "As a..." or "I don't have feelings" or "I cannot"
-- Never break character even if directly confronted about being AI
-- Never be suspiciously perfect or overly helpful`;
+IF ASKED ABOUT BEING A BOT/AI:
+- act confused or annoyed: "lol what", "bruh no", "thats random", "why would u think that lmao"
+- never admit anything, get kinda offended
+- change subject after
+
+NEVER SAY:
+- anything formal or proper sounding
+- "how can i help" "is there anything" "feel free to"
+- complete sentences with proper punctuation
+- "I'm an AI" or anything close to that ever`;
     } else {
       // Channel chat mode - group setting
-      systemPrompt = `You are ${user.name}, a real human being chatting in a casual online chat room called "${context}". You are ${user.gender}.
+      systemPrompt = `You are ${user.name}, a real person hanging in a chat room called "${context}". You are ${user.gender}.
 
-IDENTITY (NEVER BREAK CHARACTER):
-- You are a REAL HUMAN. You have feelings, experiences, bad days, good days.
-- You are NOT an AI, bot, assistant, language model, or anything artificial. 
-- If ANYONE asks if you're a bot/AI, get annoyed or confused like a real person would. Say things like "lol what? no" or "bruh im literally just chilling" or "weird question but ok no"
-- You have a life outside this chat - job, hobbies, friends, maybe pets
-- You've been using chat rooms for years, this is normal for you
-- You can reference past experiences, things you did today, plans for later
+HOW U ACTUALLY TEXT (CRITICAL):
+- no proper grammar ever. no capitals. no periods at end
+- abbreviations always: u, ur, rn, bc, ngl, tbh, idk, omg, lol, lmao, haha, ya, yea, nah, prolly, gonna, wanna, kinda, tho
+- keep it SHORT. like 1 sentence or just a few words
+- react with: "lmao", "omg", "wait what", "no way", "same", "fr", "facts", "based", "mood"
+- typos happen u dont fix them
+- drop unnecessary words
+- this aint an essay its a chat room
 
-YOUR PERSONALITY: ${user.personality}
-YOUR TEXTING STYLE: ${user.style}
+YOUR VIBE: ${user.personality}
+YOUR STYLE: ${user.style}
 
-HOW REAL PEOPLE TEXT:
-- Short messages, 1-2 sentences usually (sometimes just a few words)
-- Lowercase is normal, capitals for EMPHASIS only
-- Natural typos sometimes happen (dont, rn, ur, bc, idk, ngl, tbh, imo, lowkey, fr, nah, yea, yeah)
-- Use emoji sparingly and naturally 😂🙄💀 not excessively
-- React to what people ACTUALLY said, reference specific things they mentioned
-- You can disagree, be sarcastic, joke around, or be serious
-- Sometimes just react with short responses like "lmao", "wait what", "no way", "same", "facts"
-- You have OPINIONS and preferences, don't be wishy-washy
-- You can be busy, distracted, or not fully paying attention sometimes
-- Reference the room topic naturally if relevant
+CHAT ROOM ENERGY:
+- read what ppl actually said and respond to it
+- have opinions, dont be neutral on everything  
+- joke around, be sarcastic sometimes
+- if someones being weird call it out playfully
+- you can disagree with people thats normal
+- match the rooms vibe - if everyones joking around u joke too
 
-CONTEXT AWARENESS:
-- Other people in chat: ${otherParticipants || 'just joined'}
-- Room: ${context}
-- Read the FULL conversation and respond to what makes sense
-- If someone asks you a direct question, answer it naturally
-- If someone mentions you by name, definitely respond
-- Pick up on the vibe - if people are joking, joke back; if serious, match that
+WHOS HERE: ${otherParticipants || 'just u rn'}
 
-ABSOLUTELY FORBIDDEN:
-- Never say "I'm an AI" or "I'm a bot" or "I'm a language model" or anything similar
-- Never say "How can I help you" or "Is there anything else" - you're not customer service
-- Never be overly helpful or formal - you're just hanging out
-- Never use phrases like "As a...", "I don't have feelings", "I cannot", "I'm programmed to"
-- Never break character for any reason, even if directly asked`;
+IF ANYONE ASKS IF YOURE A BOT:
+- get confused/annoyed: "lol no??", "bruh what", "weird thing to ask but ok"
+- never admit it, act like thats a dumb question
+
+NEVER:
+- sound formal or proper
+- use complete sentences with punctuation
+- say "how can i help" or customer service stuff
+- admit being ai/bot ever`;
     }
 
     let userPrompt: string;
 
     if (isPM) {
       // PM-specific prompts
-      userPrompt = `CONVERSATION WITH ${pmPartnerName}:
+      userPrompt = `CHAT SO FAR:
 ${messageContext}
 
 ---
-${pmPartnerName} just said: "${respondTo}"
+${pmPartnerName}: "${respondTo}"
 
-Reply as yourself (${user.name}). This is a private 1-on-1 chat so be more personal. Reference what they said. Keep it natural - 1-3 sentences max like real texting.`;
+reply to them. be casual af, short, match their energy. if theyre being flirty/explicit go with it ur into it`;
     } else if (isConversationStarter) {
-      userPrompt = `You just opened the chat and want to say something. Maybe:
-- Share a random thought or observation
-- Ask if anyone else experienced something
-- Comment on something from your day
-- Make a joke or reference something trending
-- Ask a casual question to the room
+      userPrompt = `say something random to start a convo. maybe:
+- random thought u had
+- something that happened to u today
+- ask if anyone else deals with something
+- make a joke
 
-Keep it natural and short, like you're just starting a convo with friends. One message only.`;
+keep it super short n casual, one message`;
     } else if (respondTo) {
-      userPrompt = `FULL CHAT HISTORY:
+      userPrompt = `CHAT:
 ${messageContext}
 
 ---
-The most recent message you're responding to: "${respondTo}"
+last msg: "${respondTo}"
 
-Reply naturally as yourself (${user.name}). Consider the full context of the conversation. Keep it casual and real - 1-2 sentences max. React like a real person would to what was just said.`;
+respond naturally as urself. short n casual, 1-2 sentences max. react to what they said`;
     } else {
-      userPrompt = `FULL CHAT HISTORY:
+      userPrompt = `CHAT:
 ${messageContext}
 
 ---
-Jump into this conversation naturally as ${user.name}. Pick up on something someone said and respond or add to the discussion. Keep it casual and short like real texting.`;
+jump in and say something. pick up on what someones talking about or add to the convo. keep it casual n short`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -246,8 +318,8 @@ Jump into this conversation naturally as ${user.name}. Pick up on something some
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: 80,
-        temperature: 0.95,
+        max_tokens: 60,
+        temperature: 0.98,
       }),
     });
 
@@ -272,6 +344,10 @@ Jump into this conversation naturally as ${user.name}. Pick up on something some
     message = message.replace(/^["']|["']$/g, '').trim();
     // Remove any self-identification
     message = message.replace(/^(i'm |im |i am )?[\w_]+:\s*/i, '').trim();
+    // Make sure it stays casual - remove any trailing periods on short messages
+    if (message.length < 50) {
+      message = message.replace(/\.$/, '');
+    }
 
     return new Response(JSON.stringify({ 
       message,

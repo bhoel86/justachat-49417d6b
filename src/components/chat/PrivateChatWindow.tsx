@@ -26,6 +26,7 @@ interface PrivateMessage {
   timestamp: Date;
   isOwn: boolean;
   seenByBot?: boolean;
+  imageUrl?: string;
 }
 
 interface PrivateChatWindowProps {
@@ -295,7 +296,8 @@ const PrivateChatWindow = ({
             senderId: targetUserId,
             senderName: targetUsername,
             timestamp: new Date(),
-            isOwn: false
+            isOwn: false,
+            imageUrl: data.imageUrl || undefined,
           }]);
           onNewMessage?.();
         }
@@ -507,6 +509,17 @@ const PrivateChatWindow = ({
                   <p className="text-[10px] font-medium mb-0.5 opacity-70">{msg.senderName}</p>
                 )}
                 <p className="text-xs break-words">{msg.content}</p>
+                {/* Display image if present */}
+                {msg.imageUrl && (
+                  <div className="mt-1.5">
+                    <img 
+                      src={msg.imageUrl} 
+                      alt="Shared photo" 
+                      className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => window.open(msg.imageUrl, '_blank')}
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-end gap-1 mt-0.5">
                   <span className="text-[9px] opacity-50">
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
