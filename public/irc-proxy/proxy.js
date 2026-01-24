@@ -36,6 +36,9 @@
  *   GEOIP_FAIL_OPEN     - Allow if lookup fails (default: true)
  */
 
+// Version - update this when making changes
+const PROXY_VERSION = '2.2.0';
+
 const net = require('net');
 const tls = require('tls');
 const http = require('http');
@@ -685,10 +688,11 @@ const adminServer = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const reqPath = url.pathname;
   
-  // Public status
+  // Public status (includes version for update checks)
   if (reqPath === '/status' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
+      version: PROXY_VERSION,
       uptime: Math.floor((Date.now() - startTime) / 1000),
       connections: activeConnections.size,
       totalConnections: connectionCount,
