@@ -218,13 +218,19 @@ const AdminIRC = () => {
   }, [proxyUrl, adminToken]);
 
   const refreshAll = useCallback(async () => {
+    if (!proxyUrl.trim()) {
+      toast.error("Please enter a Proxy Admin URL");
+      return;
+    }
     setIsLoading(true);
-    await fetchStatus();
-    if (adminToken) {
+    toast.loading("Connecting to proxy...", { id: "proxy-connect" });
+    const connected = await fetchStatus();
+    toast.dismiss("proxy-connect");
+    if (connected && adminToken) {
       await Promise.all([fetchConnections(), fetchBans(), fetchGeoIP(), fetchAllowlist()]);
     }
     setIsLoading(false);
-  }, [fetchStatus, fetchConnections, fetchBans, fetchGeoIP, fetchAllowlist, adminToken]);
+  }, [fetchStatus, fetchConnections, fetchBans, fetchGeoIP, fetchAllowlist, adminToken, proxyUrl]);
 
   // Auto-refresh every 5 seconds when connected
   useEffect(() => {
