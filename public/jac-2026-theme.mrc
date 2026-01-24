@@ -1,103 +1,6 @@
-// JAC mIRC 2026 Theme Generator
-// Creates a complete mIRC customization package with 1-click updater
-
-export interface MircPackageConfig {
-  serverAddress: string;
-  email: string;
-  password: string;
-  nickname: string;
-  radioStreamUrl?: string;
-}
-
-// Escape $ for mIRC scripts (must be doubled)
-export const escapeForMirc = (str: string) => str.replace(/\$/g, '$$$$');
-
-// Theme version - increment when updating
-export const THEME_VERSION = "2026.1.0";
-
-// The hosted script URL (served from public folder)
-export const SCRIPT_URL = "https://justachat.lovable.app/jac-2026-theme.mrc";
-
-// Generate the 1-click updater batch file
-export const generateUpdaterBat = () => {
-  return `@echo off
-title JAC 2026 mIRC Updater
-color 0B
-echo.
-echo ╔════════════════════════════════════════════════════════════╗
-echo ║                                                            ║
-echo ║            JAC CHAT 2026 - MIRC UPDATER                    ║
-echo ║                                                            ║
-echo ╚════════════════════════════════════════════════════════════╝
-echo.
-echo [*] Downloading latest JAC 2026 theme...
-echo.
-
-:: Try to find mIRC installation
-set "MIRC_PATH="
-if exist "%APPDATA%\\mIRC" set "MIRC_PATH=%APPDATA%\\mIRC"
-if exist "%PROGRAMFILES%\\mIRC" set "MIRC_PATH=%PROGRAMFILES%\\mIRC"
-if exist "%PROGRAMFILES(x86)%\\mIRC" set "MIRC_PATH=%PROGRAMFILES(x86)%\\mIRC"
-
-:: Download the theme script
-echo [*] Downloading jac-2026-theme.mrc...
-curl -L -o "%TEMP%\\jac-2026-theme.mrc" "${SCRIPT_URL}" 2>nul
-if %errorlevel% neq 0 (
-    powershell -Command "Invoke-WebRequest -Uri '${SCRIPT_URL}' -OutFile '%TEMP%\\jac-2026-theme.mrc'" 2>nul
-)
-
-if not exist "%TEMP%\\jac-2026-theme.mrc" (
-    echo.
-    echo [!] ERROR: Failed to download theme file.
-    echo [!] Please check your internet connection.
-    pause
-    exit /b 1
-)
-
-echo [+] Download complete!
-echo.
-
-:: Copy to mIRC folder if found
-if defined MIRC_PATH (
-    echo [*] Found mIRC at: %MIRC_PATH%
-    copy /Y "%TEMP%\\jac-2026-theme.mrc" "%MIRC_PATH%\\scripts\\jac-2026-theme.mrc" 2>nul
-    if %errorlevel% equ 0 (
-        echo [+] Installed to mIRC scripts folder!
-    ) else (
-        copy /Y "%TEMP%\\jac-2026-theme.mrc" "%MIRC_PATH%\\jac-2026-theme.mrc" 2>nul
-        echo [+] Installed to mIRC folder!
-    )
-) else (
-    echo [*] mIRC folder not found automatically.
-    echo [*] Theme saved to: %TEMP%\\jac-2026-theme.mrc
-)
-
-echo.
-echo ╔════════════════════════════════════════════════════════════╗
-echo ║                    UPDATE COMPLETE!                        ║
-echo ╠════════════════════════════════════════════════════════════╣
-echo ║  Next steps:                                               ║
-echo ║  1. Open mIRC                                              ║
-echo ║  2. Press Alt+R (Remote Scripts)                          ║
-echo ║  3. File -^> Load -^> Select jac-2026-theme.mrc             ║
-echo ║  4. Type /jac to connect!                                  ║
-echo ╚════════════════════════════════════════════════════════════╝
-echo.
-pause
-`;
-};
-
-// Generate the main theme script (to be hosted at /public/jac-2026-theme.mrc)
-export const generateThemeScript = (config: MircPackageConfig) => {
-  const server = config.serverAddress || "157.245.174.197";
-  const escapedEmail = escapeForMirc(config.email || "your-email@example.com");
-  const escapedPassword = escapeForMirc(config.password || "your-password");
-  const nick = config.nickname || "YourNick";
-  const radioUrl = config.radioStreamUrl || "https://justachat.lovable.app";
-
-  return `; ========================================
+; ========================================
 ; JAC Chat 2026 - Ultimate mIRC Theme
-; Version: ${THEME_VERSION}
+; Version: 2026.1.0
 ; ========================================
 ;
 ; FEATURES:
@@ -124,13 +27,13 @@ export const generateThemeScript = (config: MircPackageConfig) => {
 ; CONFIGURATION
 ; =====================
 
-alias -l jac.server { return ${server} }
+alias -l jac.server { return 157.245.174.197 }
 alias -l jac.port { return 6667 }
-alias -l jac.email { return ${escapedEmail} }
-alias -l jac.pass { return ${escapedPassword} }
-alias -l jac.nick { return ${nick} }
-alias -l jac.radio { return ${radioUrl} }
-alias -l jac.version { return ${THEME_VERSION} }
+alias -l jac.email { return your-email@example.com }
+alias -l jac.pass { return your-password }
+alias -l jac.nick { return YourNick }
+alias -l jac.radio { return https://justachat.lovable.app }
+alias -l jac.version { return 2026.1.0 }
 
 ; =====================
 ; THEME COLORS
@@ -645,88 +548,4 @@ on *:LOAD:{
   jac.applyTheme
 }
 
-; --- JAC 2026 v${THEME_VERSION} ---
-`;
-};
-
-// Generate README
-export const generateMircReadme = () => {
-  return `════════════════════════════════════════════════════════════════
-           JAC CHAT 2026 - MIRC THEME PACKAGE
-════════════════════════════════════════════════════════════════
-
-VERSION: ${THEME_VERSION}
-
-════════════════════════════════════════════════════════════════
-                    QUICK START
-════════════════════════════════════════════════════════════════
-
-1. Run jac-updater.bat to install/update
-2. Open mIRC → Alt+R → Load jac-2026-theme.mrc
-3. Type /jac to connect!
-
-════════════════════════════════════════════════════════════════
-                    FEATURES
-════════════════════════════════════════════════════════════════
-
-✓ Dark theme matching JAC web interface
-✓ Emoji picker (/jac.emoji)
-✓ User actions - slap, hug, etc (/jac.actions)
-✓ Quick commands (/jac.commands)
-✓ Text formatter (/jac.format)
-✓ Radio player (/jac.radio)
-✓ DCC file transfer
-✓ Custom toolbar
-✓ Right-click menus
-✓ 1-click updater
-
-════════════════════════════════════════════════════════════════
-                    COMMANDS
-════════════════════════════════════════════════════════════════
-
-/jac           - Connect to JAC Chat
-/jac.help      - Show all commands
-/jac.update    - Check for updates
-/jac.emoji     - Emoji picker
-/jac.actions   - User actions
-/jac.commands  - Quick commands
-/jac.format    - Text formatter
-/jac.radio     - Radio player
-
-════════════════════════════════════════════════════════════════
-                    CREDENTIALS
-════════════════════════════════════════════════════════════════
-
-Edit these in the script (Alt+R → select file → edit):
-
-  alias -l jac.email { return your-email@example.com }
-  alias -l jac.pass { return your-password }
-  alias -l jac.nick { return YourNick }
-
-NOTE: If password contains $, double it! (pa$$word → pa$$$$word)
-
-════════════════════════════════════════════════════════════════
-                    UPDATE
-════════════════════════════════════════════════════════════════
-
-Run jac-updater.bat anytime to get the latest version!
-
-════════════════════════════════════════════════════════════════
-
-© 2026 JAC Chat - https://justachat.lovable.app
-Chat. Connect. Chill.
-
-════════════════════════════════════════════════════════════════
-`;
-};
-
-// Generate servers.ini
-export const generateServersIni = (serverAddress: string) => {
-  const server = serverAddress || "157.245.174.197";
-  return `[servers]
-n0=JAC:JAC Chat 2026SERVER:${server}:6667GROUP:JAC
-
-[networks]
-n0=JAC Chat 2026
-`;
-};
+; --- JAC 2026 v2026.1.0 ---

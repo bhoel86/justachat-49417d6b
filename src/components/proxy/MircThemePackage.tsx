@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Archive, Download, Loader2, Eye, EyeOff, Sparkles, Radio, Smile, Zap, Palette, Command } from "lucide-react";
+import { Archive, Download, Loader2, Eye, EyeOff, Sparkles, Radio, Smile, Zap, Palette, Command, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
-import { generateThemeScript, generateMircReadme, generateServersIni, type MircPackageConfig } from "@/lib/mircThemeGenerator";
+import { generateThemeScript, generateMircReadme, generateServersIni, generateUpdaterBat, THEME_VERSION, type MircPackageConfig } from "@/lib/mircThemeGenerator";
 import { Badge } from "@/components/ui/badge";
 
 interface MircThemePackageProps {
@@ -44,13 +44,16 @@ const MircThemePackage = ({ isDownloadingZip, setIsDownloadingZip }: MircThemePa
 
       const zip = new JSZip();
       
-      // Main theme script with all features
+      // Main theme script with credentials
       zip.file("jac-2026-theme.mrc", generateThemeScript(config));
+      
+      // 1-click updater
+      zip.file("jac-updater.bat", generateUpdaterBat());
       
       // Server configuration
       zip.file("servers.ini", generateServersIni(serverAddress));
       
-      // Comprehensive README
+      // README
       zip.file("README.txt", generateMircReadme());
       
       const content = await zip.generateAsync({ type: "blob" });
@@ -64,7 +67,7 @@ const MircThemePackage = ({ isDownloadingZip, setIsDownloadingZip }: MircThemePa
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast.success("Downloaded JAC 2026 Theme! Load jac-2026-theme.mrc in mIRC and type /jac to connect!");
+      toast.success("Downloaded JAC 2026 Theme! Load jac-2026-theme.mrc and type /jac");
     } catch (err) {
       console.error("Failed to create theme package:", err);
       toast.error("Failed to create package");
@@ -73,43 +76,53 @@ const MircThemePackage = ({ isDownloadingZip, setIsDownloadingZip }: MircThemePa
     }
   };
 
+  const downloadUpdaterOnly = () => {
+    const updater = generateUpdaterBat();
+    const blob = new Blob([updater], { type: "application/x-batch" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jac-updater.bat";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded updater! Run it to get the latest theme.");
+  };
+
   const features = [
-    { icon: Palette, label: "Dark Theme", desc: "Matches web colors" },
+    { icon: Palette, label: "Dark Theme", desc: "Matches web" },
     { icon: Smile, label: "Emoji Picker", desc: "4 categories" },
-    { icon: Zap, label: "User Actions", desc: "Slap, hug, wave..." },
-    { icon: Command, label: "Quick Commands", desc: "One-click ops" },
-    { icon: Palette, label: "Text Formatter", desc: "Colors & styles" },
-    { icon: Radio, label: "Radio Player", desc: "Embedded controls" },
+    { icon: Zap, label: "User Actions", desc: "Slap, hug..." },
+    { icon: Command, label: "Quick Cmds", desc: "One-click" },
+    { icon: Palette, label: "Formatter", desc: "Colors" },
+    { icon: Radio, label: "Radio", desc: "Embedded" },
   ];
 
   return (
     <Card className="border-primary relative overflow-hidden">
-      {/* Gradient accent */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
       
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            JAC 2026 Ultimate mIRC Theme
+            JAC 2026 mIRC Theme
           </CardTitle>
-          <Badge variant="secondary" className="text-xs">v2026.1</Badge>
+          <Badge variant="secondary" className="text-xs">v{THEME_VERSION}</Badge>
         </div>
         <CardDescription>
-          Complete mIRC customization with dark theme, emoji picker, user actions, radio player, and more!
+          Complete mIRC customization with dark theme, emoji picker, user actions, radio player & 1-click updater
         </CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-6">
         {/* Feature grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {features.map(({ icon: Icon, label, desc }) => (
-            <div key={label} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+            <div key={label} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-muted/50 text-center">
               <Icon className="h-4 w-4 text-primary shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-medium truncate">{label}</p>
-                <p className="text-xs text-muted-foreground truncate">{desc}</p>
-              </div>
+              <p className="text-xs font-medium">{label}</p>
             </div>
           ))}
         </div>
@@ -117,7 +130,7 @@ const MircThemePackage = ({ isDownloadingZip, setIsDownloadingZip }: MircThemePa
         {/* Credentials form */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="theme-server">Server Address</Label>
+            <Label htmlFor="theme-server">Server</Label>
             <Input
               id="theme-server"
               placeholder="157.245.174.197"
@@ -171,45 +184,53 @@ const MircThemePackage = ({ isDownloadingZip, setIsDownloadingZip }: MircThemePa
           </div>
         </div>
 
-        <Button
-          onClick={downloadThemePackage}
-          size="lg"
-          className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-          disabled={isDownloadingZip}
-        >
-          {isDownloadingZip ? (
-            <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Creating Theme Package...</>
-          ) : (
-            <><Archive className="mr-2 h-5 w-5" /> Download JAC 2026 Theme Package</>
-          )}
-        </Button>
+        {/* Download buttons */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Button
+            onClick={downloadThemePackage}
+            size="lg"
+            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            disabled={isDownloadingZip}
+          >
+            {isDownloadingZip ? (
+              <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Creating...</>
+            ) : (
+              <><Archive className="mr-2 h-5 w-5" /> Download Full Package</>
+            )}
+          </Button>
+          
+          <Button
+            onClick={downloadUpdaterOnly}
+            size="lg"
+            variant="outline"
+            className="w-full"
+          >
+            <RefreshCw className="mr-2 h-5 w-5" /> 1-Click Updater Only
+          </Button>
+        </div>
 
         {/* Quick start */}
-        <div className="bg-muted/50 rounded-lg p-4 space-y-3 text-sm">
+        <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
           <p className="font-medium flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            After downloading:
+            Quick Start:
           </p>
-          <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-            <li>Extract the ZIP file</li>
-            <li>Open mIRC and press <kbd className="px-1.5 py-0.5 bg-background rounded text-xs font-mono">Alt+R</kbd></li>
-            <li>Click <strong>File → Load</strong> and select <code className="bg-background px-1 rounded">jac-2026-theme.mrc</code></li>
-            <li>Type <code className="bg-background px-1 rounded">/jac</code> to connect with all features!</li>
+          <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-xs">
+            <li>Extract ZIP and load <code className="bg-background px-1 rounded">jac-2026-theme.mrc</code> in mIRC (Alt+R)</li>
+            <li>Type <code className="bg-background px-1 rounded">/jac</code> to connect!</li>
+            <li>Run <code className="bg-background px-1 rounded">jac-updater.bat</code> anytime for updates</li>
           </ol>
         </div>
 
-        {/* Available commands preview */}
-        <div className="border-t pt-4 space-y-2">
-          <p className="text-sm font-medium">Included Commands:</p>
-          <div className="flex flex-wrap gap-2">
-            {["/jac.emoji", "/jac.actions", "/jac.commands", "/jac.format", "/jac.radio"].map(cmd => (
-              <code key={cmd} className="text-xs bg-muted px-2 py-1 rounded font-mono">{cmd}</code>
-            ))}
-          </div>
+        {/* Commands preview */}
+        <div className="flex flex-wrap gap-2">
+          {["/jac", "/jac.emoji", "/jac.actions", "/jac.commands", "/jac.format", "/jac.radio", "/jac.update"].map(cmd => (
+            <code key={cmd} className="text-xs bg-muted px-2 py-1 rounded font-mono">{cmd}</code>
+          ))}
         </div>
 
         <div className="text-xs text-muted-foreground border-t pt-3">
-          <strong>Note:</strong> Your credentials are embedded in the script. Keep it private and don't share.
+          <strong>Note:</strong> Credentials are embedded in the script. Keep it private.
         </div>
       </CardContent>
     </Card>
