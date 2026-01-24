@@ -203,8 +203,8 @@ const Home = () => {
             {/* Site Navigation Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-                  <Menu className="w-4 h-4" />
+                <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 border-primary/50 hover:border-primary hover:bg-primary/10">
+                  <Menu className="w-4 h-4 text-primary" />
                   <span className="hidden sm:inline">Menu</span>
                   <ChevronDown className="w-3 h-3" />
                 </Button>

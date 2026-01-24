@@ -89,11 +89,36 @@ const ERR = {
   NONICKNAMEGIVEN: "431",
   ERRONEUSNICKNAME: "432",
   NICKNAMEINUSE: "433",
+  USERNOTINCHANNEL: "441",
   NOTONCHANNEL: "442",
+  USERONCHANNEL: "443",
   NOTREGISTERED: "451",
   NEEDMOREPARAMS: "461",
   ALREADYREGISTRED: "462",
   PASSWDMISMATCH: "464",
+  CHANOPRIVSNEEDED: "482",
+};
+
+// mIRC color codes for role-based coloring
+const IRC_COLORS = {
+  WHITE: "\x0300",
+  BLACK: "\x0301",
+  BLUE: "\x0302",
+  GREEN: "\x0303",
+  RED: "\x0304",
+  BROWN: "\x0305",
+  PURPLE: "\x0306",
+  ORANGE: "\x0307",
+  YELLOW: "\x0308",
+  LIME: "\x0309",
+  TEAL: "\x0310",
+  CYAN: "\x0311",
+  ROYAL: "\x0312",
+  PINK: "\x0313",
+  GREY: "\x0314",
+  SILVER: "\x0315",
+  BOLD: "\x02",
+  RESET: "\x0F",
 };
 
 function sendIRC(session: IRCSession, message: string) {
@@ -905,6 +930,291 @@ async function handleWHOIS(session: IRCSession, params: string[]) {
   }
 }
 
+// Helper to check if user has op privileges in a channel
+async function hasChannelOps(session: IRCSession, channelId: string): Promise<boolean> {
+  if (!session.supabase || !session.userId) return false;
+  
+  try {
+    // Check global roles
+    const { data: roleData } = await session.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.userId)
+      .maybeSingle();
+    
+    const role = (roleData as { role: string } | null)?.role;
+    if (role === 'owner' || role === 'admin' || role === 'moderator') {
+      return true;
+    }
+    
+    // Check if channel creator
+    const { data: channelData } = await session.supabase
+      .from("channels")
+      .select("created_by")
+      .eq("id", channelId)
+      .maybeSingle();
+    
+    if ((channelData as { created_by: string } | null)?.created_by === session.userId) {
+      return true;
+    }
+    
+    // Check room admins
+    const { data: roomAdminData } = await session.supabase
+      .from("room_admins")
+      .select("id")
+      .eq("channel_id", channelId)
+      .eq("user_id", session.userId)
+      .maybeSingle();
+    
+    return !!roomAdminData;
+  } catch (e) {
+    console.error("hasChannelOps error:", e);
+    return false;
+  }
+}
+
+async function handleMODE(session: IRCSession, params: string[]) {
+  if (!session.registered) {
+    sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
+    return;
+  }
+  
+  if (params.length === 0) {
+    sendNumeric(session, ERR.NEEDMOREPARAMS, "MODE :Not enough parameters");
+    return;
+  }
+  
+  const target = params[0];
+  
+  // Channel mode
+  if (target.startsWith("#")) {
+    const channelName = target;
+    const dbChannelName = channelName.slice(1).toLowerCase();
+    
+    try {
+      const { data: channelData } = await session.supabase!
+        .from("channels")
+        .select("id")
+        .ilike("name", dbChannelName)
+        .maybeSingle();
+      
+      const channel = channelData as { id: string } | null;
+      
+      if (!channel) {
+        sendNumeric(session, ERR.NOSUCHCHANNEL, `${channelName} :No such channel`);
+        return;
+      }
+      
+      // If no mode specified, return current modes
+      if (params.length === 1) {
+        sendNumeric(session, RPL.CHANNELMODEIS, `${channelName} +nt`);
+        return;
+      }
+      
+      const modeString = params[1];
+      const modeTarget = params[2];
+      
+      // Check if user has ops
+      const hasOps = await hasChannelOps(session, channel.id);
+      if (!hasOps) {
+        sendNumeric(session, ERR.CHANOPRIVSNEEDED, `${channelName} :You're not channel operator`);
+        return;
+      }
+      
+      // Handle +o/-o (op/deop user)
+      if ((modeString === "+o" || modeString === "-o") && modeTarget) {
+        // Find target user
+        const { data: targetData } = await session.supabase!
+          .from("profiles")
+          .select("user_id, username")
+          .ilike("username", modeTarget)
+          .maybeSingle();
+        
+        const targetProfile = targetData as { user_id: string; username: string } | null;
+        
+        if (!targetProfile) {
+          sendNumeric(session, ERR.NOSUCHNICK, `${modeTarget} :No such nick`);
+          return;
+        }
+        
+        if (modeString === "+o") {
+          // Add to room_admins
+          await (session.supabase as any)
+            .from("room_admins")
+            .upsert({
+              channel_id: channel.id,
+              user_id: targetProfile.user_id,
+              granted_by: session.userId
+            }, { onConflict: 'channel_id,user_id' });
+          
+          // Broadcast mode change
+          sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} MODE ${channelName} +o ${targetProfile.username}`);
+          
+          // Notify target if connected
+          for (const [, s] of sessions) {
+            if (s.userId === targetProfile.user_id && s.registered && s !== session) {
+              sendIRC(s, `:${session.nick}!${session.user}@irc.${SERVER_NAME} MODE ${channelName} +o ${targetProfile.username}`);
+            }
+          }
+        } else {
+          // Remove from room_admins
+          await session.supabase!
+            .from("room_admins")
+            .delete()
+            .eq("channel_id", channel.id)
+            .eq("user_id", targetProfile.user_id);
+          
+          // Broadcast mode change
+          sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} MODE ${channelName} -o ${targetProfile.username}`);
+          
+          // Notify target if connected
+          for (const [, s] of sessions) {
+            if (s.userId === targetProfile.user_id && s.registered && s !== session) {
+              sendIRC(s, `:${session.nick}!${session.user}@irc.${SERVER_NAME} MODE ${channelName} -o ${targetProfile.username}`);
+            }
+          }
+        }
+        return;
+      }
+      
+      // Handle +b/-b (ban/unban)
+      if ((modeString === "+b" || modeString === "-b") && modeTarget) {
+        const { data: targetData } = await session.supabase!
+          .from("profiles")
+          .select("user_id, username")
+          .ilike("username", modeTarget)
+          .maybeSingle();
+        
+        const targetProfile = targetData as { user_id: string; username: string } | null;
+        
+        if (!targetProfile) {
+          sendNumeric(session, ERR.NOSUCHNICK, `${modeTarget} :No such nick`);
+          return;
+        }
+        
+        if (modeString === "+b") {
+          // Add room ban
+          await (session.supabase as any)
+            .from("room_bans")
+            .upsert({
+              channel_id: channel.id,
+              user_id: targetProfile.user_id,
+              banned_by: session.userId!,
+              reason: "Banned via IRC"
+            }, { onConflict: 'channel_id,user_id' });
+          
+          sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} MODE ${channelName} +b ${targetProfile.username}!*@*`);
+        } else {
+          // Remove room ban
+          await session.supabase!
+            .from("room_bans")
+            .delete()
+            .eq("channel_id", channel.id)
+            .eq("user_id", targetProfile.user_id);
+          
+          sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} MODE ${channelName} -b ${targetProfile.username}!*@*`);
+        }
+        return;
+      }
+      
+      // Default: just echo the mode
+      sendNumeric(session, RPL.CHANNELMODEIS, `${channelName} +nt`);
+      
+    } catch (e) {
+      console.error("MODE error:", e);
+    }
+  } else {
+    // User mode - just acknowledge
+    sendIRC(session, `:${session.nick} MODE ${session.nick} :+i`);
+  }
+}
+
+async function handleKICK(session: IRCSession, params: string[]) {
+  if (!session.registered) {
+    sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
+    return;
+  }
+  
+  if (params.length < 2) {
+    sendNumeric(session, ERR.NEEDMOREPARAMS, "KICK :Not enough parameters");
+    return;
+  }
+  
+  const channelName = params[0];
+  const targetNick = params[1];
+  const reason = params.slice(2).join(" ").replace(/^:/, "") || "Kicked";
+  
+  if (!channelName.startsWith("#")) {
+    sendNumeric(session, ERR.NOSUCHCHANNEL, `${channelName} :No such channel`);
+    return;
+  }
+  
+  const dbChannelName = channelName.slice(1).toLowerCase();
+  
+  try {
+    const { data: channelData } = await session.supabase!
+      .from("channels")
+      .select("id")
+      .ilike("name", dbChannelName)
+      .maybeSingle();
+    
+    const channel = channelData as { id: string } | null;
+    
+    if (!channel) {
+      sendNumeric(session, ERR.NOSUCHCHANNEL, `${channelName} :No such channel`);
+      return;
+    }
+    
+    // Check if kicker has ops
+    const hasOps = await hasChannelOps(session, channel.id);
+    if (!hasOps) {
+      sendNumeric(session, ERR.CHANOPRIVSNEEDED, `${channelName} :You're not channel operator`);
+      return;
+    }
+    
+    // Find target user
+    const { data: targetData } = await session.supabase!
+      .from("profiles")
+      .select("user_id, username")
+      .ilike("username", targetNick)
+      .maybeSingle();
+    
+    const targetProfile = targetData as { user_id: string; username: string } | null;
+    
+    if (!targetProfile) {
+      sendNumeric(session, ERR.NOSUCHNICK, `${targetNick} :No such nick`);
+      return;
+    }
+    
+    // Remove from channel_members
+    await session.supabase!
+      .from("channel_members")
+      .delete()
+      .eq("channel_id", channel.id)
+      .eq("user_id", targetProfile.user_id);
+    
+    // Broadcast kick to kicker
+    sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} KICK ${channelName} ${targetProfile.username} :${reason}`);
+    
+    // Notify target if connected via IRC and remove from their channel list
+    for (const [, s] of sessions) {
+      if (s.userId === targetProfile.user_id && s.registered) {
+        sendIRC(s, `:${session.nick}!${session.user}@irc.${SERVER_NAME} KICK ${channelName} ${targetProfile.username} :${reason}`);
+        s.channels.delete(channel.id);
+        
+        // Remove from channel subscription tracking
+        const subscribers = channelSubscriptions.get(channel.id);
+        if (subscribers) {
+          subscribers.delete(s.sessionId);
+        }
+      }
+    }
+    
+  } catch (e) {
+    console.error("KICK error:", e);
+  }
+}
+
 function handlePING(session: IRCSession, params: string[]) {
   const token = params[0] || SERVER_NAME;
   sendIRC(session, `:${SERVER_NAME} PONG ${SERVER_NAME} :${token}`);
@@ -992,10 +1302,10 @@ async function handleIRCCommand(session: IRCSession, line: string) {
       handleQUIT(session, params);
       break;
     case "MODE":
-      // Stub for MODE command
-      if (params[0]?.startsWith("#")) {
-        sendNumeric(session, RPL.CHANNELMODEIS, `${params[0]} +nt`);
-      }
+      await handleMODE(session, params);
+      break;
+    case "KICK":
+      await handleKICK(session, params);
       break;
     case "WHO":
       // Stub for WHO command
@@ -1170,14 +1480,36 @@ if (supabaseUrl && supabaseServiceKey) {
           senderUsername = (senderProfile as { username: string } | null)?.username || "unknown";
         }
 
-        // Get channel name
-        const { data: channelData } = await realtimeClient
-          .from("channels")
-          .select("name")
-          .eq("id", newMessage.channel_id)
-          .single();
+        // Get channel info and user role for coloring
+        const [channelResult, roleResult] = await Promise.all([
+          realtimeClient
+            .from("channels")
+            .select("name")
+            .eq("id", newMessage.channel_id)
+            .single(),
+          !newMessage.user_id.startsWith("bot-") 
+            ? realtimeClient
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", newMessage.user_id)
+                .maybeSingle()
+            : Promise.resolve({ data: null })
+        ]);
 
-        const channelName = `#${(channelData as { name: string } | null)?.name || "unknown"}`;
+        const channelName = `#${(channelResult.data as { name: string } | null)?.name || "unknown"}`;
+        const userRole = (roleResult.data as { role: string } | null)?.role;
+
+        // Apply mIRC color to sender name based on role
+        let coloredSenderName = senderUsername;
+        if (userRole === 'owner') {
+          coloredSenderName = `${IRC_COLORS.BOLD}${IRC_COLORS.YELLOW}${senderUsername}${IRC_COLORS.RESET}`;
+        } else if (userRole === 'admin') {
+          coloredSenderName = `${IRC_COLORS.BOLD}${IRC_COLORS.RED}${senderUsername}${IRC_COLORS.RESET}`;
+        } else if (userRole === 'moderator') {
+          coloredSenderName = `${IRC_COLORS.GREEN}${senderUsername}${IRC_COLORS.RESET}`;
+        } else if (senderHost === "bot") {
+          coloredSenderName = `${IRC_COLORS.CYAN}${senderUsername}${IRC_COLORS.RESET}`;
+        }
 
         // Relay message to all subscribed IRC sessions (except sender for non-bot messages)
         for (const subscriberId of subscribers) {
@@ -1187,9 +1519,10 @@ if (supabaseUrl && supabaseServiceKey) {
             subscriberSession.registered &&
             (newMessage.user_id.startsWith("bot-") || subscriberSession.userId !== newMessage.user_id) // Always relay bot messages, skip echo for own messages
           ) {
+            // Send with colored sender name in the message prefix
             sendIRC(
               subscriberSession,
-              `:${senderUsername}!${senderUsername}@${senderHost}.${SERVER_NAME} PRIVMSG ${channelName} :${newMessage.content}`
+              `:${coloredSenderName}!${senderUsername}@${senderHost}.${SERVER_NAME} PRIVMSG ${channelName} :${newMessage.content}`
             );
             console.log(`[Realtime] Relayed ${senderHost} message from ${senderUsername} to ${subscriberSession.nick}`);
           }
