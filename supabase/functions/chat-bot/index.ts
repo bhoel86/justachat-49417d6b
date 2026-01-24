@@ -554,39 +554,29 @@ async function generateBotPhoto(appearance: string, botName: string, apiKey: str
   try {
     // Photo settings for variety
     const settings = [
-      'gym selfie with workout clothes, showing off fitness',
-      'mirror selfie at the gym, athletic wear',
-      'post-workout selfie, glowing skin',
-      'living room selfie on couch',
+      'gym selfie in athletic wear',
       'outdoor selfie at a park',
       'coffee shop selfie',
-      'bedroom mirror selfie, casual outfit',
-      'kitchen selfie, casual at home',
+      'living room selfie',
+      'hiking trail selfie',
+      'restaurant selfie',
       'car selfie',
-      'hiking trail selfie, athletic wear',
+      'beach boardwalk selfie',
     ];
     
     const expressions = [
-      'confident smirk',
-      'playful smile',
-      'flirty look',
-      'sultry gaze',
-      'biting lip slightly',
-      'winking',
-      'blowing a kiss',
-      'seductive smile',
-      'teasing expression',
-      'bedroom eyes',
+      'friendly smile',
+      'warm smile',
+      'happy expression',
+      'cheerful look',
+      'natural smile',
+      'relaxed expression',
     ];
     
-    // Pick random setting and expression for variations, or use defaults
-    const setting = isVariation 
-      ? settings[Math.floor(Math.random() * settings.length)]
-      : settings[Math.floor(Math.random() * 3)]; // First 3 are gym-focused
-    
+    const setting = settings[Math.floor(Math.random() * settings.length)];
     const expression = expressions[Math.floor(Math.random() * expressions.length)];
     
-    const prompt = `Photorealistic portrait photo of a ${appearance}. ${setting}. ${expression}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, attractive, not AI-looking.`;
+    const prompt = `Photorealistic portrait photo of a ${appearance}. ${setting}. ${expression}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, not AI-looking.`;
     
     console.log("Generating photo with prompt:", prompt);
     
