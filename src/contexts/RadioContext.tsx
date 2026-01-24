@@ -74,6 +74,15 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   const [volume, setVolumeState] = useState(50);
   const progressInterval = useRef<number | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
+  const isMountedRef = useRef(true);
+  
+  // Track mounted state to prevent state updates after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   
   const genres = ['All', ...MUSIC_LIBRARY.map(g => g.name)];
   
@@ -150,6 +159,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       },
       events: {
         onReady: (event: { target: YTPlayer }) => {
+          if (!isMountedRef.current) return;
           event.target.setVolume(50);
           event.target.playVideo();
           setIsPlaying(true);
@@ -158,20 +168,21 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
             clearInterval(progressInterval.current);
           }
           progressInterval.current = window.setInterval(() => {
-            if (playerRef.current) {
+            if (playerRef.current && isMountedRef.current) {
               setCurrentTime(playerRef.current.getCurrentTime() || 0);
               setDuration(playerRef.current.getDuration() || 0);
             }
           }, 500);
         },
         onStateChange: (event: { data: number }) => {
+          if (!isMountedRef.current) return;
           if (ytWindow.YT?.PlayerState) {
             if (event.data === ytWindow.YT.PlayerState.PLAYING) {
               setIsPlaying(true);
               // Resume progress tracking
               if (!progressInterval.current) {
                 progressInterval.current = window.setInterval(() => {
-                  if (playerRef.current) {
+                  if (playerRef.current && isMountedRef.current) {
                     setCurrentTime(playerRef.current.getCurrentTime() || 0);
                     setDuration(playerRef.current.getDuration() || 0);
                   }
@@ -187,7 +198,9 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
         },
       },
     });
-    setIsInitialized(true);
+    if (isMountedRef.current) {
+      setIsInitialized(true);
+    }
   }, [currentSong?.videoId]);
 
   const play = useCallback(() => {
@@ -351,11 +364,26 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }, 500);
   }, [isEnabled, initPlayer]);
 
-  // Cleanup interval on unmount
+  // Cleanup interval and player on unmount
   useEffect(() => {
     return () => {
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
+        progressInterval.current = null;
+      }
+      // Clean up player on unmount
+      if (playerRef.current) {
+        try {
+          playerRef.current.destroy();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+        playerRef.current = null;
+      }
+      // Clean up global callback
+      const ytWin = window as YTWindow;
+      if (ytWin.onYouTubeIframeAPIReady) {
+        ytWin.onYouTubeIframeAPIReady = undefined;
       }
     };
   }, []);
