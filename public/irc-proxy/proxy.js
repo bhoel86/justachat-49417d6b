@@ -1,19 +1,27 @@
 /**
- * JAC IRC Proxy - WebSocket to TCP Bridge
+ * JAC IRC Proxy - WebSocket to TCP/TLS Bridge
  * Allows mIRC and other traditional IRC clients to connect to JAC
  * 
  * Environment Variables:
- *   WS_URL    - WebSocket gateway URL (default: production JAC gateway)
- *   HOST      - Host to bind to (default: 127.0.0.1, use 0.0.0.0 for public)
- *   PORT      - Port to listen on (default: 6667)
- *   LOG_LEVEL - Logging level: debug, info, warn, error (default: info)
+ *   WS_URL      - WebSocket gateway URL (default: production JAC gateway)
+ *   HOST        - Host to bind to (default: 127.0.0.1, use 0.0.0.0 for public)
+ *   PORT        - Port to listen on (default: 6667)
+ *   SSL_ENABLED - Enable SSL/TLS (default: false)
+ *   SSL_PORT    - SSL port (default: 6697)
+ *   SSL_CERT    - Path to SSL certificate file
+ *   SSL_KEY     - Path to SSL private key file
+ *   SSL_CA      - Path to CA bundle (optional)
+ *   LOG_LEVEL   - Logging level: debug, info, warn, error (default: info)
  * 
  * Usage: 
- *   Local:  node proxy.js
- *   Public: HOST=0.0.0.0 PORT=6667 node proxy.js
+ *   Local:      node proxy.js
+ *   Public:     HOST=0.0.0.0 node proxy.js
+ *   With SSL:   SSL_ENABLED=true SSL_CERT=cert.pem SSL_KEY=key.pem node proxy.js
  */
 
 const net = require('net');
+const tls = require('tls');
+const fs = require('fs');
 const WebSocket = require('ws');
 
 // Load .env file if present
@@ -28,6 +36,11 @@ const config = {
   wsUrl: process.env.WS_URL || 'wss://hliytlezggzryetekpvo.supabase.co/functions/v1/irc-gateway',
   host: process.env.HOST || '127.0.0.1',
   port: parseInt(process.env.PORT || '6667', 10),
+  sslEnabled: process.env.SSL_ENABLED === 'true',
+  sslPort: parseInt(process.env.SSL_PORT || '6697', 10),
+  sslCert: process.env.SSL_CERT || '',
+  sslKey: process.env.SSL_KEY || '',
+  sslCa: process.env.SSL_CA || '',
   logLevel: process.env.LOG_LEVEL || 'info'
 };
 
@@ -46,17 +59,24 @@ function log(level, ...args) {
 let connectionCount = 0;
 const activeConnections = new Map();
 
-const server = net.createServer((socket) => {
+// Connection handler (shared between TCP and TLS)
+function handleConnection(socket, isSecure = false) {
   const connId = ++connectionCount;
   const clientAddr = `${socket.remoteAddress}:${socket.remotePort}`;
+  const connType = isSecure ? 'SSL' : 'TCP';
   
-  log('info', `[${connId}] New IRC client connected from ${clientAddr}`);
+  log('info', `[${connId}] New ${connType} client connected from ${clientAddr}`);
   
   let ws = null;
   let buffer = '';
   let authenticated = false;
   
-  activeConnections.set(connId, { socket, clientAddr, connected: new Date() });
+  activeConnections.set(connId, { 
+    socket, 
+    clientAddr, 
+    connected: new Date(),
+    secure: isSecure 
+  });
   
   // Connect to JAC WebSocket
   try {
@@ -111,7 +131,7 @@ const server = net.createServer((socket) => {
   });
   
   socket.on('close', () => {
-    log('info', `[${connId}] IRC client disconnected from ${clientAddr}`);
+    log('info', `[${connId}] ${connType} client disconnected from ${clientAddr}`);
     activeConnections.delete(connId);
     if (ws) ws.close();
   });
@@ -121,7 +141,41 @@ const server = net.createServer((socket) => {
     activeConnections.delete(connId);
     if (ws) ws.close();
   });
+}
+
+// Create TCP server
+const tcpServer = net.createServer((socket) => {
+  handleConnection(socket, false);
 });
+
+// Create TLS server if SSL is enabled
+let tlsServer = null;
+if (config.sslEnabled) {
+  if (!config.sslCert || !config.sslKey) {
+    log('error', 'SSL_ENABLED=true but SSL_CERT and SSL_KEY not provided');
+    process.exit(1);
+  }
+  
+  try {
+    const tlsOptions = {
+      cert: fs.readFileSync(config.sslCert),
+      key: fs.readFileSync(config.sslKey),
+    };
+    
+    if (config.sslCa) {
+      tlsOptions.ca = fs.readFileSync(config.sslCa);
+    }
+    
+    tlsServer = tls.createServer(tlsOptions, (socket) => {
+      handleConnection(socket, true);
+    });
+    
+    log('info', 'SSL/TLS server initialized');
+  } catch (err) {
+    log('error', 'Failed to initialize SSL:', err.message);
+    process.exit(1);
+  }
+}
 
 // Graceful shutdown
 function shutdown() {
@@ -132,9 +186,18 @@ function shutdown() {
     conn.socket.end();
   }
   
-  server.close(() => {
-    log('info', 'Proxy shut down complete');
-    process.exit(0);
+  const servers = [tcpServer];
+  if (tlsServer) servers.push(tlsServer);
+  
+  let closed = 0;
+  servers.forEach(server => {
+    server.close(() => {
+      closed++;
+      if (closed === servers.length) {
+        log('info', 'Proxy shut down complete');
+        process.exit(0);
+      }
+    });
   });
   
   // Force exit after 5 seconds
@@ -147,46 +210,74 @@ function shutdown() {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-// Start server
-server.listen(config.port, config.host, () => {
-  console.log('');
-  console.log('='.repeat(60));
-  console.log('JAC IRC Proxy Started');
-  console.log('='.repeat(60));
-  console.log('');
-  console.log('Configuration:');
-  console.log(`  Host:     ${config.host}`);
-  console.log(`  Port:     ${config.port}`);
-  console.log(`  Gateway:  ${config.wsUrl}`);
-  console.log(`  Log Level: ${config.logLevel}`);
-  console.log('');
-  
-  if (config.host === '0.0.0.0') {
-    console.log('⚠️  PUBLIC MODE - Accepting connections from any IP');
-    console.log('');
-    console.log('mIRC Settings (for remote users):');
-    console.log('  Server: <your-server-ip>');
-    console.log(`  Port: ${config.port}`);
-    console.log('  Password: email@example.com:password');
-  } else {
-    console.log('mIRC Settings:');
-    console.log(`  Server: ${config.host}`);
-    console.log(`  Port: ${config.port}`);
-    console.log('  Password: email@example.com:password');
-  }
-  
-  console.log('');
-  console.log('Waiting for connections...');
-  console.log('');
+// Start servers
+console.log('');
+console.log('='.repeat(60));
+console.log('JAC IRC Proxy Started');
+console.log('='.repeat(60));
+console.log('');
+console.log('Configuration:');
+console.log(`  Host:      ${config.host}`);
+console.log(`  TCP Port:  ${config.port}`);
+if (config.sslEnabled) {
+  console.log(`  SSL Port:  ${config.sslPort}`);
+  console.log(`  SSL Cert:  ${config.sslCert}`);
+}
+console.log(`  Gateway:   ${config.wsUrl}`);
+console.log(`  Log Level: ${config.logLevel}`);
+console.log('');
+
+// Start TCP server
+tcpServer.listen(config.port, config.host, () => {
+  log('info', `TCP server listening on ${config.host}:${config.port}`);
 });
 
-server.on('error', (err) => {
+// Start TLS server if enabled
+if (tlsServer) {
+  tlsServer.listen(config.sslPort, config.host, () => {
+    log('info', `SSL server listening on ${config.host}:${config.sslPort}`);
+  });
+}
+
+if (config.host === '0.0.0.0') {
+  console.log('⚠️  PUBLIC MODE - Accepting connections from any IP');
+  console.log('');
+  console.log('mIRC Settings (for remote users):');
+  console.log('  Server: <your-server-ip>');
+  console.log(`  Port: ${config.port} (plain) or ${config.sslPort} (SSL)`);
+  console.log('  Password: email@example.com:password');
+  if (config.sslEnabled) {
+    console.log('  SSL: Enable for port ' + config.sslPort);
+  }
+} else {
+  console.log('mIRC Settings:');
+  console.log(`  Server: ${config.host}`);
+  console.log(`  Port: ${config.port}`);
+  console.log('  Password: email@example.com:password');
+}
+
+console.log('');
+console.log('Waiting for connections...');
+console.log('');
+
+tcpServer.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    log('error', `Port ${config.port} is already in use. Close other IRC servers first.`);
+    log('error', `Port ${config.port} is already in use.`);
   } else if (err.code === 'EADDRNOTAVAIL') {
-    log('error', `Cannot bind to ${config.host}. Check your network configuration.`);
+    log('error', `Cannot bind to ${config.host}.`);
   } else {
-    log('error', 'Server error:', err.message);
+    log('error', 'TCP server error:', err.message);
   }
   process.exit(1);
 });
+
+if (tlsServer) {
+  tlsServer.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      log('error', `SSL port ${config.sslPort} is already in use.`);
+    } else {
+      log('error', 'SSL server error:', err.message);
+    }
+    process.exit(1);
+  });
+}

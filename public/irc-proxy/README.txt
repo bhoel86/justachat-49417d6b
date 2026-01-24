@@ -3,6 +3,7 @@ JAC IRC Proxy v2.0
 ========================================
 
 Connect mIRC, HexChat, and other IRC clients to JAC chat.
+Supports both plain TCP (6667) and SSL/TLS (6697) connections.
 
 
 ========================================
@@ -32,8 +33,13 @@ The easiest way to host publicly.
 REQUIREMENTS:
 - Docker & Docker Compose
 
-QUICK START:
+QUICK START (no SSL):
   docker-compose up -d
+
+WITH SSL:
+  1. Create certs folder: mkdir certs
+  2. Add your certificates (see SSL section below)
+  3. Run: SSL_ENABLED=true docker-compose up -d
 
 VIEW LOGS:
   docker-compose logs -f
@@ -41,19 +47,11 @@ VIEW LOGS:
 STOP:
   docker-compose down
 
-CUSTOM PORT:
-Edit docker-compose.yml:
-  ports:
-    - "7000:6667"
-
-BUILD & RUN MANUALLY:
-  docker build -t jac-irc-proxy .
-  docker run -d -p 6667:6667 --name jac-irc jac-irc-proxy
-
 YOUR USERS' MIRC SETTINGS:
 - Server: your-vps-ip-address
-- Port: 6667
+- Port: 6667 (plain) or 6697 (SSL)
 - Password: their-email@example.com:their-password
+- SSL: Enable if using port 6697
 
 
 ========================================
@@ -62,23 +60,18 @@ OPTION 3: NODE.JS ON VPS
 
 If you prefer not to use Docker.
 
-REQUIREMENTS:
-- Linux VPS (Ubuntu, Debian, etc.)
-- Node.js 14+
-- Open port 6667
+QUICK SETUP (no SSL):
+  npm install
+  HOST=0.0.0.0 node proxy.js
 
-QUICK SETUP:
-1. Upload proxy files to your VPS
-2. Run: npm install
-3. Run: HOST=0.0.0.0 node proxy.js
+WITH SSL:
+  npm install
+  HOST=0.0.0.0 SSL_ENABLED=true \
+  SSL_CERT=/path/to/fullchain.pem \
+  SSL_KEY=/path/to/privkey.pem \
+  node proxy.js
 
-USING .ENV FILE:
-1. Copy .env.example to .env
-2. Edit .env with your settings
-3. Run: npm install
-4. Run: node proxy.js
-
-RUNNING AS A SERVICE (systemd):
+SYSTEMD SERVICE:
 Create /etc/systemd/system/jac-irc.service:
 
   [Unit]
@@ -91,56 +84,99 @@ Create /etc/systemd/system/jac-irc.service:
   WorkingDirectory=/path/to/irc-proxy
   Environment=HOST=0.0.0.0
   Environment=PORT=6667
+  Environment=SSL_ENABLED=true
+  Environment=SSL_PORT=6697
+  Environment=SSL_CERT=/etc/letsencrypt/live/irc.example.com/fullchain.pem
+  Environment=SSL_KEY=/etc/letsencrypt/live/irc.example.com/privkey.pem
   ExecStart=/usr/bin/node proxy.js
   Restart=on-failure
 
   [Install]
   WantedBy=multi-user.target
 
-Then run:
-  sudo systemctl daemon-reload
-  sudo systemctl enable jac-irc
-  sudo systemctl start jac-irc
+
+========================================
+SSL/TLS SETUP
+========================================
+
+Standard IRC SSL port is 6697. You need SSL certificates.
+
+OPTION A - LET'S ENCRYPT (Recommended):
+
+  # Install certbot
+  sudo apt install certbot
+  
+  # Get certificate (stop any web servers on port 80 first)
+  sudo certbot certonly --standalone -d irc.yourdomain.com
+  
+  # Certificates are saved to:
+  #   /etc/letsencrypt/live/irc.yourdomain.com/fullchain.pem
+  #   /etc/letsencrypt/live/irc.yourdomain.com/privkey.pem
+
+OPTION B - SELF-SIGNED (Testing only):
+
+  openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout privkey.pem -out fullchain.pem \
+    -subj "/CN=irc.localhost"
+
+  Note: Clients will show a certificate warning.
+
+RUNNING WITH SSL:
+
+  SSL_ENABLED=true \
+  SSL_PORT=6697 \
+  SSL_CERT=/path/to/fullchain.pem \
+  SSL_KEY=/path/to/privkey.pem \
+  HOST=0.0.0.0 \
+  node proxy.js
+
+MIRC SSL SETTINGS:
+1. Server address: your-server-ip
+2. Port: 6697
+3. Check "SSL" or "Use SSL for this server"
+4. Password: email@example.com:password
 
 
 ========================================
 ENVIRONMENT VARIABLES
 ========================================
 
-WS_URL    - WebSocket gateway URL
-            Default: JAC production gateway
+WS_URL      - WebSocket gateway URL
+              Default: JAC production gateway
 
-HOST      - IP to bind to
-            127.0.0.1 = local only (default)
-            0.0.0.0 = public/all interfaces
+HOST        - IP to bind to
+              127.0.0.1 = local only (default)
+              0.0.0.0 = public/all interfaces
 
-PORT      - Port number (default: 6667)
+PORT        - TCP port (default: 6667)
 
-LOG_LEVEL - debug, info, warn, error
-            Default: info
+SSL_ENABLED - Enable SSL/TLS (true/false)
+SSL_PORT    - SSL port (default: 6697)
+SSL_CERT    - Path to certificate file
+SSL_KEY     - Path to private key file
+SSL_CA      - Path to CA bundle (optional)
+
+LOG_LEVEL   - debug, info, warn, error
+              Default: info
 
 
 ========================================
 TROUBLESHOOTING
 ========================================
 
-"Port 6667 in use"
-  - Another IRC server is running
-  - Use a different port: PORT=6668 node proxy.js
+"Port in use"
+  - Use different ports: PORT=7000 SSL_PORT=7001
 
-"Cannot bind to 0.0.0.0"
-  - Try running with sudo (Linux)
-  - Check firewall settings
+"SSL handshake failed"
+  - Check certificate paths are correct
+  - Ensure key file permissions (chmod 600)
+  - Verify cert matches domain
 
-"Connection refused" (for remote users)
-  - Check firewall allows port 6667
+"Connection refused" (remote users)
+  - Check firewall allows ports 6667/6697
   - Verify proxy is running with HOST=0.0.0.0
 
-"WebSocket error"
-  - Check internet connection
-  - Verify WS_URL is correct
-
-View debug logs:
+Debug mode:
   LOG_LEVEL=debug node proxy.js
 
 Docker logs:

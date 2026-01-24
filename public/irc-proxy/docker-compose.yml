@@ -1,7 +1,10 @@
 # JAC IRC Proxy - Docker Compose
 # 
-# Quick start:
+# Quick start (no SSL):
 #   docker-compose up -d
+#
+# With SSL (see SSL section below):
+#   docker-compose --profile ssl up -d
 #
 # View logs:
 #   docker-compose logs -f
@@ -18,12 +21,20 @@ services:
     restart: unless-stopped
     ports:
       - "6667:6667"
+      - "6697:6697"
     environment:
       - HOST=0.0.0.0
       - PORT=6667
+      - SSL_ENABLED=${SSL_ENABLED:-false}
+      - SSL_PORT=6697
+      - SSL_CERT=/certs/fullchain.pem
+      - SSL_KEY=/certs/privkey.pem
       - LOG_LEVEL=info
-      # Uncomment to use a custom gateway URL:
+      # Uncomment for custom gateway:
       # - WS_URL=wss://your-custom-gateway-url
+    volumes:
+      # Mount SSL certificates (create ./certs/ folder with your certs)
+      - ./certs:/certs:ro
     healthcheck:
       test: ["CMD", "pgrep", "-x", "node"]
       interval: 30s
@@ -34,3 +45,32 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+# ===========================================
+# SSL SETUP INSTRUCTIONS
+# ===========================================
+#
+# 1. Create a certs folder:
+#      mkdir certs
+#
+# 2. Option A - Let's Encrypt (recommended):
+#      # Install certbot
+#      sudo apt install certbot
+#      
+#      # Get certificate (standalone mode, stop any web servers first)
+#      sudo certbot certonly --standalone -d irc.yourdomain.com
+#      
+#      # Copy certs to proxy folder
+#      sudo cp /etc/letsencrypt/live/irc.yourdomain.com/fullchain.pem ./certs/
+#      sudo cp /etc/letsencrypt/live/irc.yourdomain.com/privkey.pem ./certs/
+#      sudo chown $USER:$USER ./certs/*.pem
+#
+# 2. Option B - Self-signed (for testing):
+#      openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#        -keyout certs/privkey.pem -out certs/fullchain.pem \
+#        -subj "/CN=irc.localhost"
+#
+# 3. Enable SSL in docker-compose:
+#      SSL_ENABLED=true docker-compose up -d
+#
+# 4. Users connect to port 6697 with SSL enabled in their client
