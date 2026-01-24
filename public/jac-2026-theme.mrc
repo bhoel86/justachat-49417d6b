@@ -1,6 +1,6 @@
 ; ========================================
 ; JAC Chat 2026 - Ultimate mIRC Theme
-; Version: 2026.1.4
+; Version: 2026.1.5
 ; ========================================
 ;
 ; FEATURES:
@@ -35,7 +35,7 @@ alias -l jac.email { return $readini($jac.cfg, auth, email) }
 alias -l jac.pass_raw { return $readini($jac.cfg, auth, pass) }
 alias -l jac.nick { return $readini($jac.cfg, auth, nick) }
 alias -l jac.radio { return https://justachat.lovable.app }
-alias -l jac.version { return 2026.1.4 }
+alias -l jac.version { return 2026.1.5 }
 
 ; =====================
 ; THEME COLORS
@@ -94,8 +94,9 @@ alias jac {
     return
   }
   echo -a 11[JAC 2026] Connecting to JAC Chat...
-  ; Use ':' here. Using a literal '|' breaks in mIRC scripts because '|' is a command separator.
-  var %auth = $jac.email $+ $chr(58) $+ $jac.pass
+  ; mIRC strips everything before ':' in the /server password argument (server password becomes just the password).
+  ; The gateway accepts multiple delimiters, so we use ';' which is safe in mIRC scripts.
+  var %auth = $jac.email $+ $chr(59) $+ $jac.pass
   nick $jac.nick
   server -m $jac.server $jac.port %auth
 }

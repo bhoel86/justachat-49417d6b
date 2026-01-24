@@ -16,7 +16,7 @@ export const escapeForMirc = (str: string) => str.replace(/\$/g, '$$$$');
 // NOTE: mIRC treats '|' as a command separator in scripts, so NEVER build auth strings
 // with a literal pipe. Use email:password instead.
 // (The gateway accepts both ':' and '|', but ':' is safe for mIRC scripting.)
-export const THEME_VERSION = "2026.1.4";
+export const THEME_VERSION = "2026.1.5";
 
 // The hosted script URL (served from public folder)
 export const SCRIPT_URL = "https://justachat.lovable.app/jac-2026-theme.mrc";
@@ -205,8 +205,9 @@ alias jac {
     return
   }
   echo -a 11[JAC 2026] Connecting to JAC Chat...
-   ; Use ':' here. Using a literal '|' breaks in mIRC scripts because '|' is a command separator.
-   var %auth = $jac.email $+ $chr(58) $+ $jac.pass
+   ; mIRC strips everything before ':' in the /server password argument.
+   ; The gateway accepts multiple delimiters, so we use ';' which is safe in mIRC scripts.
+   var %auth = $jac.email $+ $chr(59) $+ $jac.pass
   nick $jac.nick
   server -m $jac.server $jac.port %auth
 }
