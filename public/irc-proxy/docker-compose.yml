@@ -1,20 +1,26 @@
-# JAC IRC Proxy - Docker Compose
+# JAC IRC Proxy - Docker Compose with Auto-SSL
 # 
-# Quick start (no SSL):
-#   docker-compose up -d
+# Automatic Let's Encrypt certificate provisioning and renewal.
 #
-# With SSL (see SSL section below):
-#   docker-compose --profile ssl up -d
+# FIRST TIME SETUP:
+#   1. Edit .env file with your domain and email
+#   2. Run: docker-compose up -d
+#   3. Get initial certificate: docker-compose run --rm certbot
+#   4. Restart proxy: docker-compose restart irc-proxy
 #
-# View logs:
-#   docker-compose logs -f
+# MANUAL RENEWAL (if needed):
+#   docker-compose run --rm certbot renew
 #
-# Stop:
+# VIEW LOGS:
+#   docker-compose logs -f irc-proxy
+#
+# STOP:
 #   docker-compose down
 
 version: '3.8'
 
 services:
+  # Main IRC Proxy
   irc-proxy:
     build: .
     container_name: jac-irc-proxy
@@ -25,16 +31,15 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=6667
-      - SSL_ENABLED=${SSL_ENABLED:-false}
+      - SSL_ENABLED=${SSL_ENABLED:-true}
       - SSL_PORT=6697
-      - SSL_CERT=/certs/fullchain.pem
-      - SSL_KEY=/certs/privkey.pem
-      - LOG_LEVEL=info
-      # Uncomment for custom gateway:
-      # - WS_URL=wss://your-custom-gateway-url
+      - SSL_CERT=/certs/live/${DOMAIN:-localhost}/fullchain.pem
+      - SSL_KEY=/certs/live/${DOMAIN:-localhost}/privkey.pem
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
-      # Mount SSL certificates (create ./certs/ folder with your certs)
-      - ./certs:/certs:ro
+      - certs:/certs:ro
+    depends_on:
+      - certbot
     healthcheck:
       test: ["CMD", "pgrep", "-x", "node"]
       interval: 30s
@@ -46,31 +51,37 @@ services:
         max-size: "10m"
         max-file: "3"
 
-# ===========================================
-# SSL SETUP INSTRUCTIONS
-# ===========================================
-#
-# 1. Create a certs folder:
-#      mkdir certs
-#
-# 2. Option A - Let's Encrypt (recommended):
-#      # Install certbot
-#      sudo apt install certbot
-#      
-#      # Get certificate (standalone mode, stop any web servers first)
-#      sudo certbot certonly --standalone -d irc.yourdomain.com
-#      
-#      # Copy certs to proxy folder
-#      sudo cp /etc/letsencrypt/live/irc.yourdomain.com/fullchain.pem ./certs/
-#      sudo cp /etc/letsencrypt/live/irc.yourdomain.com/privkey.pem ./certs/
-#      sudo chown $USER:$USER ./certs/*.pem
-#
-# 2. Option B - Self-signed (for testing):
-#      openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-#        -keyout certs/privkey.pem -out certs/fullchain.pem \
-#        -subj "/CN=irc.localhost"
-#
-# 3. Enable SSL in docker-compose:
-#      SSL_ENABLED=true docker-compose up -d
-#
-# 4. Users connect to port 6697 with SSL enabled in their client
+  # Certbot for Let's Encrypt certificates
+  certbot:
+    image: certbot/certbot:latest
+    container_name: jac-certbot
+    volumes:
+      - certs:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
+    restart: unless-stopped
+
+  # Initial certificate generation (run once)
+  certbot-init:
+    image: certbot/certbot:latest
+    container_name: jac-certbot-init
+    volumes:
+      - certs:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    command: >
+      certonly --standalone
+      --non-interactive
+      --agree-tos
+      --email ${ACME_EMAIL:-admin@example.com}
+      --domains ${DOMAIN:-localhost}
+      --preferred-challenges http
+    ports:
+      - "80:80"
+    profiles:
+      - init
+
+volumes:
+  certs:
+    name: jac-irc-certs
+  certbot-www:
+    name: jac-certbot-www
