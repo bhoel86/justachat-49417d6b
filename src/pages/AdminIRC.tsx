@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import IRCTestClient from "@/components/admin/IRCTestClient";
 import { IRCLogViewer } from "@/components/admin/IRCLogViewer";
+import { proxyAdminRequest } from "@/lib/ircProxyAdmin";
 import {
   Table,
   TableBody,
@@ -124,17 +125,19 @@ const AdminIRC = () => {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${proxyUrl}/status`, {
-        signal: AbortSignal.timeout(5000)
+      const relay = await proxyAdminRequest<ProxyStatus>({
+        proxyUrl,
+        path: "/status",
+        timeoutMs: 5000,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setStatus(data);
+
+      if (relay.ok) {
+        setStatus((relay.data as ProxyStatus) ?? null);
         setIsConnected(true);
         toast.success("Connected to IRC proxy");
         return true;
       } else {
-        toast.error(`Proxy returned ${res.status}: ${res.statusText}`);
+        toast.error(`Proxy returned ${relay.status}${relay.statusText ? `: ${relay.statusText}` : ""}`);
         setIsConnected(false);
       }
     } catch (e) {
@@ -160,13 +163,12 @@ const AdminIRC = () => {
   const fetchConnections = useCallback(async () => {
     if (!adminToken) return;
     try {
-      const res = await fetch(`${proxyUrl}/connections`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+      const relay = await proxyAdminRequest<{ connections?: ProxyConnection[] }>({
+        proxyUrl,
+        adminToken,
+        path: "/connections",
       });
-      if (res.ok) {
-        const data = await res.json();
-        setConnections(data.connections || []);
-      }
+      if (relay.ok) setConnections(relay.data?.connections || []);
     } catch (e) {
       console.error("Failed to fetch connections:", e);
     }
@@ -175,13 +177,12 @@ const AdminIRC = () => {
   const fetchBans = useCallback(async () => {
     if (!adminToken) return;
     try {
-      const res = await fetch(`${proxyUrl}/bans`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+      const relay = await proxyAdminRequest<{ bans?: string[] }>({
+        proxyUrl,
+        adminToken,
+        path: "/bans",
       });
-      if (res.ok) {
-        const data = await res.json();
-        setBans(data.bans || []);
-      }
+      if (relay.ok) setBans(relay.data?.bans || []);
     } catch (e) {
       console.error("Failed to fetch bans:", e);
     }
@@ -190,13 +191,12 @@ const AdminIRC = () => {
   const fetchGeoIP = useCallback(async () => {
     if (!adminToken) return;
     try {
-      const res = await fetch(`${proxyUrl}/geoip`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+      const relay = await proxyAdminRequest<GeoIPStats>({
+        proxyUrl,
+        adminToken,
+        path: "/geoip",
       });
-      if (res.ok) {
-        const data = await res.json();
-        setGeoipStats(data);
-      }
+      if (relay.ok) setGeoipStats((relay.data as GeoIPStats) ?? null);
     } catch (e) {
       console.error("Failed to fetch GeoIP stats:", e);
     }
@@ -205,13 +205,12 @@ const AdminIRC = () => {
   const fetchAllowlist = useCallback(async () => {
     if (!adminToken) return;
     try {
-      const res = await fetch(`${proxyUrl}/allowlist`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+      const relay = await proxyAdminRequest<{ allowlist?: AllowlistEntry[] }>({
+        proxyUrl,
+        adminToken,
+        path: "/allowlist",
       });
-      if (res.ok) {
-        const data = await res.json();
-        setAllowlist(data.allowlist || []);
-      }
+      if (relay.ok) setAllowlist(relay.data?.allowlist || []);
     } catch (e) {
       console.error("Failed to fetch allowlist:", e);
     }
@@ -249,11 +248,13 @@ const AdminIRC = () => {
 
   const kickConnection = async (id: number) => {
     try {
-      const res = await fetch(`${proxyUrl}/kick/${id}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${adminToken}` }
+      const relay = await proxyAdminRequest({
+        proxyUrl,
+        adminToken,
+        path: `/kick/${id}`,
+        method: "POST",
       });
-      if (res.ok) {
+      if (relay.ok) {
         toast.success(`Kicked connection #${id}`);
         await fetchConnections();
       } else {
@@ -266,15 +267,14 @@ const AdminIRC = () => {
 
   const banIP = async (ip: string, kickExisting = true) => {
     try {
-      const res = await fetch(`${proxyUrl}/ban`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ip, kickExisting })
+      const relay = await proxyAdminRequest({
+        proxyUrl,
+        adminToken,
+        path: "/ban",
+        method: "POST",
+        body: { ip, kickExisting },
       });
-      if (res.ok) {
+      if (relay.ok) {
         toast.success(`Banned IP: ${ip}`);
         setBanIpInput("");
         await Promise.all([fetchConnections(), fetchBans()]);
@@ -288,15 +288,14 @@ const AdminIRC = () => {
 
   const unbanIP = async (ip: string) => {
     try {
-      const res = await fetch(`${proxyUrl}/unban`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ip })
+      const relay = await proxyAdminRequest({
+        proxyUrl,
+        adminToken,
+        path: "/unban",
+        method: "POST",
+        body: { ip },
       });
-      if (res.ok) {
+      if (relay.ok) {
         toast.success(`Unbanned IP: ${ip}`);
         await fetchBans();
       } else {
@@ -309,15 +308,14 @@ const AdminIRC = () => {
 
   const addToAllowlist = async (ip: string, label: string) => {
     try {
-      const res = await fetch(`${proxyUrl}/allowlist`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ip, label })
+      const relay = await proxyAdminRequest({
+        proxyUrl,
+        adminToken,
+        path: "/allowlist",
+        method: "POST",
+        body: { ip, label },
       });
-      if (res.ok) {
+      if (relay.ok) {
         toast.success(`Added ${ip} to allowlist`);
         setAllowlistIpInput("");
         await Promise.all([fetchAllowlist(), fetchBans()]);
@@ -331,15 +329,14 @@ const AdminIRC = () => {
 
   const removeFromAllowlist = async (ip: string) => {
     try {
-      const res = await fetch(`${proxyUrl}/allowlist`, {
-        method: 'DELETE',
-        headers: { 
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ip })
+      const relay = await proxyAdminRequest({
+        proxyUrl,
+        adminToken,
+        path: "/allowlist",
+        method: "DELETE",
+        body: { ip },
       });
-      if (res.ok) {
+      if (relay.ok) {
         toast.success(`Removed ${ip} from allowlist`);
         await fetchAllowlist();
       } else {
@@ -395,15 +392,14 @@ const AdminIRC = () => {
       
       // Unban if needed
       if (isBanned) {
-        const unbanRes = await fetch(`${proxyUrl}/unban`, {
-          method: 'POST',
-          headers: { 
-            Authorization: `Bearer ${adminToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ ip })
+        const unbanRelay = await proxyAdminRequest({
+          proxyUrl,
+          adminToken,
+          path: "/unban",
+          method: "POST",
+          body: { ip },
         });
-        if (!unbanRes.ok) {
+        if (!unbanRelay.ok) {
           toast.error(`Failed to unban IP: ${ip}`);
           return;
         }
@@ -412,15 +408,14 @@ const AdminIRC = () => {
       // Add to allowlist
       const isAllowlisted = allowlist.some(e => e.ip === ip);
       if (!isAllowlisted) {
-        const allowRes = await fetch(`${proxyUrl}/allowlist`, {
-          method: 'POST',
-          headers: { 
-            Authorization: `Bearer ${adminToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ ip, label: `Admin (${user?.email?.split('@')[0] || 'self'})` })
+        const allowRelay = await proxyAdminRequest({
+          proxyUrl,
+          adminToken,
+          path: "/allowlist",
+          method: "POST",
+          body: { ip, label: `Admin (${user?.email?.split('@')[0] || 'self'})` },
         });
-        if (!allowRes.ok) {
+        if (!allowRelay.ok) {
           toast.error(`Failed to allowlist IP: ${ip}`);
           return;
         }
@@ -448,17 +443,15 @@ const AdminIRC = () => {
   const broadcast = async () => {
     if (!broadcastMessage.trim()) return;
     try {
-      const res = await fetch(`${proxyUrl}/broadcast`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message: broadcastMessage })
+      const relay = await proxyAdminRequest<{ sent?: number }>({
+        proxyUrl,
+        adminToken,
+        path: "/broadcast",
+        method: "POST",
+        body: { message: broadcastMessage },
       });
-      if (res.ok) {
-        const data = await res.json();
-        toast.success(`Broadcast sent to ${data.sent} connections`);
+      if (relay.ok) {
+        toast.success(`Broadcast sent to ${relay.data?.sent ?? 0} connections`);
         setBroadcastMessage("");
       } else {
         toast.error("Failed to broadcast");

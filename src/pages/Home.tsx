@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import FakeChatPreview from "@/components/home/FakeChatPreview";
+import { proxyAdminRequest } from "@/lib/ircProxyAdmin";
 
 // Room background images
 import generalBg from "@/assets/rooms/general-bg.jpg";
@@ -222,26 +223,24 @@ const Home = () => {
       }
 
       // Unban the IP
-      const unbanRes = await fetch(`${proxyUrl}/unban`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ip: myIp })
+      const unbanRelay = await proxyAdminRequest({
+        proxyUrl,
+        adminToken,
+        path: "/unban",
+        method: "POST",
+        body: { ip: myIp },
       });
 
       // Add to allowlist
-      const allowRes = await fetch(`${proxyUrl}/allowlist`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ ip: myIp, label: `Admin (${user?.email?.split('@')[0] || 'self'})` })
+      const allowRelay = await proxyAdminRequest({
+        proxyUrl,
+        adminToken,
+        path: "/allowlist",
+        method: "POST",
+        body: { ip: myIp, label: `Admin (${user?.email?.split('@')[0] || 'self'})` },
       });
 
-      if (unbanRes.ok || allowRes.ok) {
+      if (unbanRelay.ok || allowRelay.ok) {
         toast.success(`Unbanned & allowlisted your IP: ${myIp}`);
       } else {
         toast.error("Failed to unban/allowlist IP");
