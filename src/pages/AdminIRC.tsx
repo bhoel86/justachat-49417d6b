@@ -86,7 +86,7 @@ const AdminIRC = () => {
   
   // Proxy admin state - load from localStorage
   const [proxyUrl, setProxyUrl] = useState(() => 
-    localStorage.getItem('irc_proxy_url') || "http://localhost:6680"
+    localStorage.getItem('irc_proxy_url') || "http://157.245.174.197:8080"
   );
   const [adminToken, setAdminToken] = useState(() => 
     localStorage.getItem('irc_admin_token') || ""
@@ -218,16 +218,23 @@ const AdminIRC = () => {
   }, [proxyUrl, adminToken]);
 
   const refreshAll = useCallback(async () => {
+    console.log("[IRC Admin] Connect clicked, URL:", proxyUrl);
     if (!proxyUrl.trim()) {
       toast.error("Please enter a Proxy Admin URL");
       return;
     }
     setIsLoading(true);
-    toast.loading("Connecting to proxy...", { id: "proxy-connect" });
-    const connected = await fetchStatus();
-    toast.dismiss("proxy-connect");
-    if (connected && adminToken) {
-      await Promise.all([fetchConnections(), fetchBans(), fetchGeoIP(), fetchAllowlist()]);
+    toast("Connecting to proxy...", { id: "proxy-connect", duration: 10000 });
+    try {
+      const connected = await fetchStatus();
+      toast.dismiss("proxy-connect");
+      if (connected && adminToken) {
+        await Promise.all([fetchConnections(), fetchBans(), fetchGeoIP(), fetchAllowlist()]);
+      }
+    } catch (err) {
+      console.error("[IRC Admin] Error:", err);
+      toast.dismiss("proxy-connect");
+      toast.error("Connection failed - check console for details");
     }
     setIsLoading(false);
   }, [fetchStatus, fetchConnections, fetchBans, fetchGeoIP, fetchAllowlist, adminToken, proxyUrl]);
