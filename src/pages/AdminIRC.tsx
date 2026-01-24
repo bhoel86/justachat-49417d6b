@@ -87,7 +87,7 @@ const AdminIRC = () => {
   
   // Proxy admin state - load from localStorage
   const [proxyUrl, setProxyUrl] = useState(() => 
-    localStorage.getItem('irc_proxy_url') || "http://157.245.174.197:6680"
+    localStorage.getItem('irc_proxy_url') || "https://ircadmin.justachat.net"
   );
   const [adminToken, setAdminToken] = useState(() => 
     localStorage.getItem('irc_admin_token') || ""
