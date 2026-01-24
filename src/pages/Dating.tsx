@@ -62,6 +62,7 @@ interface DatingProfile {
   photos: string[];
   is_verified: boolean;
   profile_complete: boolean;
+  opted_in: boolean;
 }
 
 interface Match {
@@ -99,6 +100,7 @@ const defaultProfile: Partial<DatingProfile> = {
   has_children: false,
   is_verified: false,
   profile_complete: false,
+  opted_in: false,
 };
 
 const Dating = () => {
@@ -211,15 +213,28 @@ const Dating = () => {
     const excludeIds = swipedIds?.map((s: { swiped_id: string }) => s.swiped_id) || [];
     excludeIds.push(user.id);
     
-    let query = supabaseUntyped
-      .from('profiles')
-      .select('user_id, username, avatar_url, bio');
+    // Only fetch dating profiles that have opted in
+    const { data: optedInProfiles } = await supabaseUntyped
+      .from('dating_profiles')
+      .select('user_id')
+      .eq('opted_in', true);
     
-    if (excludeIds.length > 0) {
-      query = query.not('user_id', 'in', `(${excludeIds.join(',')})`);
+    const optedInUserIds = optedInProfiles?.map((p: { user_id: string }) => p.user_id) || [];
+    
+    // Filter to only users who have opted in and haven't been swiped
+    const eligibleUserIds = optedInUserIds.filter((id: string) => !excludeIds.includes(id));
+    
+    if (eligibleUserIds.length === 0) {
+      setProfiles([]);
+      setLoading(false);
+      return;
     }
     
-    const { data: profilesData } = await query.limit(20);
+    const { data: profilesData } = await supabaseUntyped
+      .from('profiles')
+      .select('user_id, username, avatar_url, bio')
+      .in('user_id', eligibleUserIds)
+      .limit(20);
     
     if (profilesData) {
       const enrichedProfiles: DatingProfile[] = await Promise.all(
@@ -822,7 +837,34 @@ const Dating = () => {
               <TabsTrigger value="about">About</TabsTrigger>
             </TabsList>
             
-            <ScrollArea className="h-[60vh] mt-4">
+            {/* Opt-in Toggle - Must be enabled to appear in dating pool */}
+            <div className="mb-4 p-4 rounded-lg border border-pink-500/30 bg-pink-500/5">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-pink-500" />
+                    Join Dating Pool
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable this to appear in other users' swipe cards and find matches
+                  </p>
+                </div>
+                <Switch
+                  checked={myProfile?.opted_in || false}
+                  onCheckedChange={(checked) => {
+                    setMyProfile(prev => prev ? {...prev, opted_in: checked} : null);
+                    saveProfile({ opted_in: checked });
+                  }}
+                />
+              </div>
+              {!myProfile?.opted_in && (
+                <p className="text-xs text-amber-500 mt-2">
+                  ⚠️ Your profile is hidden. Enable to start matching!
+                </p>
+              )}
+            </div>
+            
+            <ScrollArea className="h-[50vh]">
               {/* Basic Info Tab */}
               <TabsContent value="basic" className="space-y-4 pr-4">
                 <div className="grid grid-cols-2 gap-4">

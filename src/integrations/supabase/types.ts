@@ -414,6 +414,7 @@ export type Database = {
           max_distance_km: number | null
           min_age: number | null
           occupation: string | null
+          opted_in: boolean
           pets: string | null
           photos: string[] | null
           profile_complete: boolean | null
@@ -452,6 +453,7 @@ export type Database = {
           max_distance_km?: number | null
           min_age?: number | null
           occupation?: string | null
+          opted_in?: boolean
           pets?: string | null
           photos?: string[] | null
           profile_complete?: boolean | null
@@ -490,6 +492,7 @@ export type Database = {
           max_distance_km?: number | null
           min_age?: number | null
           occupation?: string | null
+          opted_in?: boolean
           pets?: string | null
           photos?: string[] | null
           profile_complete?: boolean | null
