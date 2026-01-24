@@ -270,7 +270,7 @@ async function completeRegistration(session: IRCSession) {
   sendNumeric(session, RPL.YOURHOST, `:Your host is ${SERVER_NAME}, running version ${SERVER_VERSION}`);
   sendNumeric(session, RPL.CREATED, `:This server was created for JAC - Just A Chat`);
   sendNumeric(session, RPL.MYINFO, `${SERVER_NAME} ${SERVER_VERSION} o o`);
-  sendNumeric(session, RPL.ISUPPORT, "CHANTYPES=# PREFIX=(ov)@+ NETWORK=JACNet CASEMAPPING=ascii :are supported by this server");
+  sendNumeric(session, RPL.ISUPPORT, "CHANTYPES=# PREFIX=(qaov)~&@+ NETWORK=JACNet CASEMAPPING=ascii :are supported by this server");
 
   // Send MOTD
   sendNumeric(session, RPL.MOTDSTART, `:- ${SERVER_NAME} Message of the Day -`);
@@ -386,10 +386,19 @@ async function handleJOIN(session: IRCSession, params: string[]) {
         .select("user_id")
         .eq("channel_id", channel.id);
 
-      // Check global roles for the current user
+      // Check global roles for all users
       const { data: userRoles } = await session.supabase!
         .from("user_roles")
         .select("user_id, role");
+
+      // Get channel owner
+      const { data: channelOwnerData } = await session.supabase!
+        .from("channels")
+        .select("created_by")
+        .eq("id", channel.id)
+        .single();
+
+      const channelOwnerId = (channelOwnerData as { created_by: string | null } | null)?.created_by;
 
       const memberList = members as { user_id: string }[] | null;
       const profileList = profiles as { user_id: string; username: string }[] | null;
@@ -398,13 +407,29 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       
       const profileMap = new Map(profileList?.map((p) => [p.user_id, p.username]) || []);
       const roomAdminSet = new Set(roomAdminList?.map((a) => a.user_id) || []);
-      const globalAdmins = new Set(rolesList?.filter(r => r.role === 'admin' || r.role === 'owner').map(r => r.user_id) || []);
       
-      // Build member names with prefixes (@ for ops, + for voice)
+      // Build role maps
+      const globalOwners = new Set(rolesList?.filter(r => r.role === 'owner').map(r => r.user_id) || []);
+      const globalAdmins = new Set(rolesList?.filter(r => r.role === 'admin').map(r => r.user_id) || []);
+      const globalMods = new Set(rolesList?.filter(r => r.role === 'moderator').map(r => r.user_id) || []);
+      
+      // Build member names with IRC prefixes:
+      // ~ = owner (channel creator or global owner)
+      // & = admin (global admin)  
+      // @ = op (room admin or global moderator)
+      // (no prefix) = regular user
       const memberNames = memberList?.map((m) => {
         const username = profileMap.get(m.user_id) || "unknown";
-        const isOp = roomAdminSet.has(m.user_id) || globalAdmins.has(m.user_id);
-        return isOp ? `@${username}` : username;
+        
+        // Check hierarchy: owner > admin > mod > user
+        if (globalOwners.has(m.user_id) || m.user_id === channelOwnerId) {
+          return `~${username}`;
+        } else if (globalAdmins.has(m.user_id)) {
+          return `&${username}`;
+        } else if (roomAdminSet.has(m.user_id) || globalMods.has(m.user_id)) {
+          return `@${username}`;
+        }
+        return username;
       }).join(" ") || session.nick;
 
       // Add simulated bots to the channel (subset of 10 per room)
@@ -414,8 +439,12 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       sendNumeric(session, RPL.NAMREPLY, `= ${channelName} :${allNames}`);
       sendNumeric(session, RPL.ENDOFNAMES, `${channelName} :End of /NAMES list`);
       
-      // Grant operator status to the current user if they're an admin/owner
-      if (globalAdmins.has(session.userId!) || roomAdminSet.has(session.userId!)) {
+      // Grant appropriate mode to the current user based on their role
+      if (globalOwners.has(session.userId!) || session.userId === channelOwnerId) {
+        sendIRC(session, `:${SERVER_NAME} MODE ${channelName} +qo ${session.nick} ${session.nick}`);
+      } else if (globalAdmins.has(session.userId!)) {
+        sendIRC(session, `:${SERVER_NAME} MODE ${channelName} +ao ${session.nick} ${session.nick}`);
+      } else if (roomAdminSet.has(session.userId!) || globalMods.has(session.userId!)) {
         sendIRC(session, `:${SERVER_NAME} MODE ${channelName} +o ${session.nick}`);
       }
 
@@ -551,8 +580,8 @@ async function triggerBotResponse(
 
     const mentioned = getMentionedBotName(userMessage, channelName);
     const force = opts?.force === true || mentioned !== null;
-    // Default: 35% chance to respond unless mentioned
-    if (!force && Math.random() > 0.35) {
+    // Default: 50% chance to respond unless mentioned (more chatty)
+    if (!force && Math.random() > 0.50) {
       console.log(`[Bot] Skipping response (random chance)`);
       return;
     }
@@ -1172,4 +1201,125 @@ if (supabaseUrl && supabaseServiceKey) {
     });
 
   console.log("[IRC Gateway] Realtime message relay initialized");
+
+  // ============================================
+  // Periodic Bot Conversation Starters
+  // ============================================
+  // Every 60-120 seconds, pick a random channel with IRC users and have a bot start a conversation
+  
+  const lastBotActivity: Map<string, number> = new Map();
+  
+  async function startBotConversation() {
+    try {
+      // Get channels with active IRC subscribers
+      const activeChannels = Array.from(channelSubscriptions.entries())
+        .filter(([, subs]) => subs.size > 0);
+      
+      if (activeChannels.length === 0) return;
+      
+      // Pick a random active channel
+      const [channelId, subscribers] = activeChannels[Math.floor(Math.random() * activeChannels.length)];
+      
+      // Check if we've had recent activity in this channel
+      const lastActivity = lastBotActivity.get(channelId) || 0;
+      if (Date.now() - lastActivity < 45000) return; // At least 45s between bot messages
+      
+      // Get channel info
+      const { data: channelData } = await realtimeClient
+        .from("channels")
+        .select("name")
+        .eq("id", channelId)
+        .single();
+      
+      const channelName = (channelData as { name: string } | null)?.name;
+      if (!channelName) return;
+      
+      // Check if bots are enabled for this channel
+      const { data: botSettings } = await realtimeClient
+        .from("bot_settings")
+        .select("enabled, allowed_channels")
+        .limit(1)
+        .single();
+      
+      const settings = botSettings as { enabled: boolean; allowed_channels: string[] } | null;
+      if (!settings?.enabled || !settings.allowed_channels?.includes(channelName)) return;
+      
+      // Pick a random bot
+      const botId = BOT_PERSONALITY_IDS[Math.floor(Math.random() * BOT_PERSONALITY_IDS.length)];
+      const visibleBotName = pickVisibleBotNameForChannel(channelName);
+      
+      console.log(`[Bot Auto] Starting conversation in #${channelName} as ${visibleBotName}`);
+      
+      // Get recent messages for context
+      const recentMessages = recentChannelMessages.get(channelId) || [];
+      
+      // Call the chat-bot function
+      const response = await fetch(`${supabaseUrl}/functions/v1/chat-bot`, {
+        method: "POST",
+        headers: {
+          apikey: supabaseServiceKey!,
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          botId,
+          context: channelName,
+          recentMessages: recentMessages.slice(-10),
+          isConversationStarter: true,
+        }),
+      });
+      
+      if (!response.ok) {
+        console.error(`[Bot Auto] chat-bot error: ${response.status}`);
+        return;
+      }
+      
+      const data = await response.json();
+      if (!data.message) return;
+      
+      console.log(`[Bot Auto] ${visibleBotName}: ${data.message}`);
+      
+      // Insert into database
+      const botUserId = `bot-${normalizeNick(visibleBotName) || botId}`;
+      
+      await realtimeClient
+        .from("messages")
+        .insert({
+          channel_id: channelId,
+          user_id: botUserId,
+          content: data.message,
+        });
+      
+      lastBotActivity.set(channelId, Date.now());
+      
+      // Update recent messages cache
+      const msgs = recentChannelMessages.get(channelId) || [];
+      msgs.push({ username: visibleBotName, content: data.message });
+      if (msgs.length > 25) msgs.shift();
+      recentChannelMessages.set(channelId, msgs);
+      
+      // Relay to IRC users
+      for (const subscriberId of subscribers) {
+        const subscriberSession = sessions.get(subscriberId);
+        if (subscriberSession && subscriberSession.registered) {
+          sendIRC(
+            subscriberSession,
+            `:${visibleBotName}!${visibleBotName}@bot.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[Bot Auto] Error:", e);
+    }
+  }
+  
+  // Start periodic bot conversations (every 60-120 seconds)
+  setInterval(() => {
+    // 40% chance each interval to start a conversation
+    if (Math.random() < 0.4) {
+      startBotConversation();
+    }
+  }, 60000 + Math.random() * 60000);
+  
+  console.log("[IRC Gateway] Bot auto-chat initialized");
 }
