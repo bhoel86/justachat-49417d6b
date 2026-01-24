@@ -1718,14 +1718,85 @@ async function handleWHOIS(session: IRCSession, params: string[]) {
       return;
     }
 
-    sendNumeric(session, RPL.WHOISUSER, `${profile.username} ${profile.username} irc.${SERVER_NAME} * :${profile.bio || "JAC User"}`);
+    // Get user's role
+    const { data: roleData } = await session.supabase!
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", profile.user_id)
+      .maybeSingle();
+    
+    const role = (roleData as { role: string } | null)?.role || "user";
+
+    // Get location info
+    const { data: locationData } = await session.supabase!
+      .from("user_locations")
+      .select("city, country, country_code, ip_address")
+      .eq("user_id", profile.user_id)
+      .maybeSingle();
+    
+    const location = locationData as { city: string | null; country: string | null; country_code: string | null; ip_address: string | null } | null;
+
+    // Generate hashed IP for display
+    const hashedIp = hashIpForDisplay(profile.user_id);
+    
+    // Format registration date
+    const regDate = new Date(profile.created_at);
+    const regDateStr = regDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+    // RPL_WHOISUSER: <nick> <user> <host> * :<realname>
+    sendNumeric(session, RPL.WHOISUSER, `${profile.username} ${profile.username} ${hashedIp}.users.jac.chat * :${profile.bio || "JAC User"}`);
+    
+    // RPL_WHOISSERVER: <nick> <server> :<server info>
     sendNumeric(session, RPL.WHOISSERVER, `${profile.username} ${SERVER_NAME} :JAC IRC Gateway`);
+    
+    // RPL_WHOISCHANNELS: Show channels they're in (simplified - just show if online)
+    const isOnline = Array.from(sessions.values()).some(s => s.userId === profile.user_id && s.registered);
+    
+    // Custom numeric 320 - WHOISSPECIAL for role display
+    const roleColors: Record<string, string> = {
+      'owner': `${IRC_COLORS.BOLD}${IRC_COLORS.YELLOW}`,
+      'admin': `${IRC_COLORS.BOLD}${IRC_COLORS.RED}`,
+      'moderator': `${IRC_COLORS.GREEN}`,
+      'user': `${IRC_COLORS.CYAN}`
+    };
+    const roleColor = roleColors[role] || IRC_COLORS.CYAN;
+    const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
+    sendNumeric(session, "320", `${profile.username} :${roleColor}${roleDisplay}${IRC_COLORS.RESET} on ${IRC_COLORS.CYAN}Justachat™${IRC_COLORS.RESET}`);
+    
+    // Location info (RPL 312 alternative - using 320 for custom info)
+    if (location && (location.city || location.country)) {
+      const countryFlag = location.country_code ? getCountryFlag(location.country_code) : "";
+      const locationStr = [location.city, location.country].filter(Boolean).join(", ");
+      sendNumeric(session, "320", `${profile.username} :${IRC_COLORS.GREY}Location:${IRC_COLORS.RESET} ${countryFlag} ${locationStr}`);
+    }
+    
+    // Hashed IP display
+    sendNumeric(session, "320", `${profile.username} :${IRC_COLORS.GREY}Host:${IRC_COLORS.RESET} ${hashedIp}.users.jac.chat`);
+    
+    // Registration date
+    sendNumeric(session, "320", `${profile.username} :${IRC_COLORS.GREY}Registered:${IRC_COLORS.RESET} ${regDateStr}`);
+    
+    // Online status
+    const statusColor = isOnline ? IRC_COLORS.GREEN : IRC_COLORS.GREY;
+    const statusText = isOnline ? "Online" : "Offline";
+    sendNumeric(session, "320", `${profile.username} :${IRC_COLORS.GREY}Status:${IRC_COLORS.RESET} ${statusColor}${statusText}${IRC_COLORS.RESET}`);
+    
     sendNumeric(session, RPL.ENDOFWHOIS, `${profile.username} :End of WHOIS list`);
   } catch (e) {
     console.error("WHOIS error:", e);
     sendNumeric(session, ERR.NOSUCHNICK, `${targetNick} :No such nick`);
     sendNumeric(session, RPL.ENDOFWHOIS, `${targetNick} :End of WHOIS list`);
   }
+}
+
+// Helper to get country flag emoji from country code
+function getCountryFlag(countryCode: string): string {
+  if (!countryCode || countryCode.length !== 2) return "";
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map((char) => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
 }
 
 // Helper to check if user has op privileges in a channel
