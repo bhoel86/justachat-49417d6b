@@ -672,7 +672,13 @@ async function handleJOIN(session: IRCSession, params: string[]) {
 
       // Add simulated bots to the channel (subset of 10 per room)
       const botNames = getBotsForChannel(dbChannelName);
-      const allNames = memberNames + (botNames.length > 0 ? " " + botNames.join(" ") : "");
+      
+      // Add room moderator bot with @ prefix (operator status)
+      const welcomeInfo = getWelcomeInfo(dbChannelName);
+      const moderatorName = `@${welcomeInfo.moderator}`;
+      
+      // Combine all names: members + moderator + bots
+      const allNames = memberNames + ` ${moderatorName}` + (botNames.length > 0 ? " " + botNames.join(" ") : "");
 
       sendNumeric(session, RPL.NAMREPLY, `= ${channelName} :${allNames}`);
       sendNumeric(session, RPL.ENDOFNAMES, `${channelName} :End of /NAMES list`);
@@ -687,7 +693,7 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       }
 
       // Send enhanced welcome message for the room with ASCII art
-      const welcomeInfo = getWelcomeInfo(dbChannelName);
+      // Reuse welcomeInfo from earlier
       const asciiArt = getAsciiArt(dbChannelName);
       
       // ASCII art banner
