@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileCode, FileText, Terminal, Server, Copy, CheckCircle, RefreshCw, AlertTriangle, Check, X, Loader2 } from "lucide-react";
+import { Download, FileCode, FileText, Terminal, Server, Copy, CheckCircle, RefreshCw, AlertTriangle, Check, X, Loader2, Archive } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import JSZip from "jszip";
 
 // Current version - must match proxy.js PROXY_VERSION
 const LATEST_VERSION = '2.2.0';
@@ -111,14 +112,22 @@ server.on('error', (err) => {
 
 const packageJson = `{
   "name": "jac-irc-proxy",
-  "version": "1.0.0",
-  "description": "WebSocket to TCP proxy for connecting mIRC to JAC",
+  "version": "2.2.0",
+  "description": "WebSocket to TCP proxy for connecting mIRC to JAC - supports local and VPS hosting",
   "main": "proxy.js",
   "scripts": {
-    "start": "node proxy.js"
+    "start": "node proxy.js",
+    "start:public": "HOST=0.0.0.0 node proxy.js",
+    "start:debug": "LOG_LEVEL=debug node proxy.js"
   },
   "dependencies": {
     "ws": "^8.14.2"
+  },
+  "optionalDependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 }`;
 
@@ -242,6 +251,188 @@ const DownloadProxy = () => {
     setTimeout(() => downloadFile('install.bat', installBat), 200);
     setTimeout(() => downloadFile('START.bat', startBat), 300);
     setTimeout(() => downloadFile('README.txt', readmeTxt), 400);
+  };
+
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+
+  const downloadZip = async () => {
+    setIsDownloadingZip(true);
+    try {
+      // Fetch the actual production proxy.js from public folder
+      const proxyResponse = await fetch('/irc-proxy/proxy.js');
+      const actualProxyJs = proxyResponse.ok ? await proxyResponse.text() : proxyJs;
+      
+      const pkgResponse = await fetch('/irc-proxy/package.json');
+      const actualPackageJson = pkgResponse.ok ? await pkgResponse.text() : packageJson;
+
+      const zip = new JSZip();
+      
+      // Add all files to the zip
+      zip.file('proxy.js', actualProxyJs);
+      zip.file('package.json', actualPackageJson);
+      zip.file('install.bat', installBat);
+      zip.file('START.bat', startBat);
+      zip.file('README.txt', readmeTxt);
+      
+      // Generate the zip
+      const content = await zip.generateAsync({ type: 'blob' });
+      
+      // Download it
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'jac-irc-proxy.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Downloaded jac-irc-proxy.zip');
+    } catch (err) {
+      console.error('Failed to create zip:', err);
+      toast.error('Failed to create zip file');
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
+  const downloadVpsZip = async () => {
+    setIsDownloadingZip(true);
+    try {
+      // Fetch the actual production files
+      const proxyResponse = await fetch('/irc-proxy/proxy.js');
+      const actualProxyJs = proxyResponse.ok ? await proxyResponse.text() : '';
+      
+      const pkgResponse = await fetch('/irc-proxy/package.json');
+      const actualPackageJson = pkgResponse.ok ? await pkgResponse.text() : '';
+
+      if (!actualProxyJs || !actualPackageJson) {
+        throw new Error('Could not fetch proxy files');
+      }
+
+      const dockerCompose = `version: "3.8"
+services:
+  irc-proxy:
+    image: node:20-alpine
+    container_name: irc_proxy_1
+    working_dir: /app
+    volumes:
+      - ./proxy.js:/app/proxy.js:ro
+      - ./package.json:/app/package.json:ro
+      - ./node_modules:/app/node_modules
+    command: sh -c "npm install --silent && node proxy.js"
+    ports:
+      - "6667:6667"
+      - "6697:6697"
+      - "6680:6680"
+    environment:
+      - HOST=0.0.0.0
+    restart: unless-stopped
+`;
+
+      const installSh = `#!/bin/bash
+# JAC IRC Proxy - VPS Install Script
+set -e
+
+echo "========================================"
+echo "JAC IRC Proxy Installer"
+echo "========================================"
+
+# Install deps in container
+docker run --rm -v "$(pwd):/app" -w /app node:20-alpine npm install
+
+# Remove old container if exists
+docker rm -f irc_proxy_1 2>/dev/null || true
+
+# Start container
+docker run -d \\
+  --name irc_proxy_1 \\
+  --restart unless-stopped \\
+  -v "$(pwd)/proxy.js:/app/proxy.js:ro" \\
+  -v "$(pwd)/package.json:/app/package.json:ro" \\
+  -v "$(pwd)/node_modules:/app/node_modules" \\
+  -w /app \\
+  -e HOST=0.0.0.0 \\
+  -p 6667:6667 \\
+  -p 6697:6697 \\
+  -p 6680:6680 \\
+  node:20-alpine node proxy.js
+
+echo ""
+echo "========================================"
+echo "IRC Proxy Started!"
+echo "========================================"
+echo ""
+echo "Connect mIRC to:"
+echo "  Server: $(curl -s ifconfig.me || echo 'your-server-ip')"
+echo "  Port: 6667"
+echo "  Password: email@example.com:password"
+echo ""
+docker logs --tail=20 irc_proxy_1
+`;
+
+      const vpsReadme = `JAC IRC Proxy - VPS Installation
+=================================
+
+REQUIREMENTS:
+- VPS with Docker installed
+- Ports 6667, 6697, 6680 open
+
+INSTALLATION:
+1. Upload this entire folder to your VPS (e.g., ~/jac-irc-proxy)
+2. cd ~/jac-irc-proxy
+3. chmod +x install.sh
+4. ./install.sh
+
+MANUAL INSTALLATION (if script fails):
+  docker run --rm -v "$(pwd):/app" -w /app node:20-alpine npm install
+  
+  docker run -d --name irc_proxy_1 --restart unless-stopped \\
+    -v "$(pwd)/proxy.js:/app/proxy.js:ro" \\
+    -v "$(pwd)/package.json:/app/package.json:ro" \\
+    -v "$(pwd)/node_modules:/app/node_modules" \\
+    -w /app -e HOST=0.0.0.0 \\
+    -p 6667:6667 -p 6697:6697 -p 6680:6680 \\
+    node:20-alpine node proxy.js
+
+MANAGEMENT:
+  View logs:    docker logs -f irc_proxy_1
+  Restart:      docker restart irc_proxy_1
+  Stop:         docker stop irc_proxy_1
+  Start:        docker start irc_proxy_1
+  Remove:       docker rm -f irc_proxy_1
+
+USER CONNECTION:
+  Server: your-vps-ip
+  Port: 6667 (or 6697 for SSL)
+  Password: email@example.com:password
+`;
+
+      const zip = new JSZip();
+      zip.file('proxy.js', actualProxyJs);
+      zip.file('package.json', actualPackageJson);
+      zip.file('docker-compose.yml', dockerCompose);
+      zip.file('install.sh', installSh);
+      zip.file('README.txt', vpsReadme);
+      
+      const content = await zip.generateAsync({ type: 'blob' });
+      
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'jac-irc-proxy-vps.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Downloaded jac-irc-proxy-vps.zip');
+    } catch (err) {
+      console.error('Failed to create VPS zip:', err);
+      toast.error('Failed to create VPS zip file');
+    } finally {
+      setIsDownloadingZip(false);
+    }
   };
 
   const deployCommand = 'curl -sSL https://justachat.net/irc-proxy/deploy.sh | bash';
@@ -419,6 +610,54 @@ const DownloadProxy = () => {
               </CardContent>
             </Card>
 
+            {/* Download VPS ZIP Card */}
+            <Card className="border-dashed">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Archive className="h-5 w-5" />
+                  Alternative: Download VPS Bundle
+                </CardTitle>
+                <CardDescription>
+                  Having trouble with copy-paste? Download a verified ZIP with all files
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button 
+                  onClick={downloadVpsZip} 
+                  size="lg" 
+                  variant="outline"
+                  className="w-full"
+                  disabled={isDownloadingZip}
+                >
+                  {isDownloadingZip ? (
+                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Creating ZIP...</>
+                  ) : (
+                    <><Archive className="mr-2 h-5 w-5" /> Download jac-irc-proxy-vps.zip</>
+                  )}
+                </Button>
+                
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p className="font-medium">After downloading:</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Upload the extracted folder to your VPS via SFTP (FileZilla, WinSCP)</li>
+                    <li>SSH into your VPS and <code className="bg-muted px-1 rounded">cd</code> to the folder</li>
+                    <li>Run: <code className="bg-muted px-1 rounded">chmod +x install.sh && ./install.sh</code></li>
+                  </ol>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-3 text-xs space-y-1">
+                  <p><strong>Included files:</strong></p>
+                  <ul className="grid grid-cols-2 gap-1 text-muted-foreground">
+                    <li>• proxy.js (v{LATEST_VERSION})</li>
+                    <li>• package.json</li>
+                    <li>• docker-compose.yml</li>
+                    <li>• install.sh</li>
+                    <li>• README.txt</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Version Check Card */}
             <Card>
               <CardHeader>
@@ -508,17 +747,30 @@ const DownloadProxy = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
+                  <Archive className="h-5 w-5 text-primary" />
                   Download Local Proxy
                 </CardTitle>
                 <CardDescription>
                   Run the proxy on your own computer (each user needs to download and run this)
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button onClick={downloadAll} size="lg" className="w-full">
+              <CardContent className="space-y-3">
+                <Button 
+                  onClick={downloadZip} 
+                  size="lg" 
+                  className="w-full"
+                  disabled={isDownloadingZip}
+                >
+                  {isDownloadingZip ? (
+                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Creating ZIP...</>
+                  ) : (
+                    <><Archive className="mr-2 h-5 w-5" /> Download jac-irc-proxy.zip (Recommended)</>
+                  )}
+                </Button>
+                
+                <Button onClick={downloadAll} size="lg" variant="outline" className="w-full">
                   <Download className="mr-2 h-5 w-5" />
-                  Download All Files (5 files)
+                  Download Individual Files (5 files)
                 </Button>
               </CardContent>
             </Card>
