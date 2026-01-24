@@ -13,7 +13,10 @@ export interface MircPackageConfig {
 export const escapeForMirc = (str: string) => str.replace(/\$/g, '$$$$');
 
 // Theme version - increment when updating
-export const THEME_VERSION = "2026.1.3";
+// NOTE: mIRC treats '|' as a command separator in scripts, so NEVER build auth strings
+// with a literal pipe. Use email:password instead.
+// (The gateway accepts both ':' and '|', but ':' is safe for mIRC scripting.)
+export const THEME_VERSION = "2026.1.4";
 
 // The hosted script URL (served from public folder)
 export const SCRIPT_URL = "https://justachat.lovable.app/jac-2026-theme.mrc";
@@ -116,7 +119,7 @@ export const generateThemeScript = (config: MircPackageConfig) => {
 
   return `; ========================================
 ; JAC Chat 2026 - Ultimate mIRC Theme
-; Version: ${THEME_VERSION}
+ ; Version: ${THEME_VERSION}
 ; ========================================
 ;
 ; FEATURES:
@@ -197,13 +200,13 @@ alias jac {
   ; IMPORTANT: PASS must be sent BEFORE mIRC registers (NICK/USER).
   ; Using /server ... <password> makes mIRC send PASS first.
   if (!$jac.hasConfig) {
-    echo -a 4[JAC] Missing config. Type /jac.setup first.
+    echo -a 4[JAC] Missing config. Running /jac.setup...
+    jac.setup
     return
   }
   echo -a 11[JAC 2026] Connecting to JAC Chat...
-   ; mIRC may strip everything before ':' when PASS is provided via /server password arg,
-   ; so we use email|password (gateway accepts both ':' and '|').
-   var %auth = $jac.email $+ | $+ $jac.pass
+   ; Use ':' here. Using a literal '|' breaks in mIRC scripts because '|' is a command separator.
+   var %auth = $jac.email $+ $chr(58) $+ $jac.pass
   nick $jac.nick
   server -m $jac.server $jac.port %auth
 }
