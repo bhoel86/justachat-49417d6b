@@ -599,8 +599,9 @@ async function handleConnection(socket, isSecure = false) {
   
   socket.on('data', (data) => {
     buffer += data.toString();
-    const lines = buffer.split('\r\n');
-    buffer = lines.pop();
+    // Some clients may send LF-only. Support both CRLF and LF.
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() || '';
     
     for (const line of lines) {
       if (!line.trim()) continue;
