@@ -7,6 +7,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useTriviaGame } from "@/hooks/useTriviaGame";
 import { useArtCurator } from "@/hooks/useArtCurator";
 import { useChatBots } from "@/hooks/useChatBots";
+import { useAutoLocation } from "@/hooks/useAutoLocation";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
@@ -51,7 +52,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const { user, isAdmin, isOwner, role } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
-  const [onlineUsers, setOnlineUsers] = useState<{ username: string }[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<{ username: string; avatarUrl?: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [topic, setTopic] = useState('Welcome to JAC!');
@@ -78,6 +79,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const radio = useRadioOptional();
+  
+  // Auto-track user location via IP
+  useAutoLocation();
   
   const { translateMessage, isTranslating, getCachedTranslation } = useTranslation(preferredLanguage);
   

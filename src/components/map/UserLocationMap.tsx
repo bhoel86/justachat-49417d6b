@@ -2,12 +2,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useLocationConsent } from "@/hooks/useLocationConsent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, RefreshCw, Users, Globe, Loader2, ShieldCheck } from "lucide-react";
+import { MapPin, RefreshCw, Users, Globe, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import LocationConsentDialog from "./LocationConsentDialog";
 
 interface UserLocation {
   id: string;
@@ -29,14 +27,6 @@ interface UserLocationMapProps {
 
 const UserLocationMap = ({ showControls = true, height = "400px" }: UserLocationMapProps) => {
   const { user } = useAuth();
-  const { 
-    hasConsent, 
-    showConsentDialog, 
-    promptForConsent, 
-    grantConsent, 
-    denyConsent,
-    consentStatus 
-  } = useLocationConsent();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
@@ -190,19 +180,14 @@ const UserLocationMap = ({ showControls = true, height = "400px" }: UserLocation
     }
   }, []);
 
-  // Update current user's location (only if consent granted)
+  // Manual refresh of user's location
   const updateMyLocation = async () => {
     if (!user) {
       toast({
         title: "Not logged in",
-        description: "Please log in to share your location.",
+        description: "Please log in to update your location.",
         variant: "destructive"
       });
-      return;
-    }
-
-    if (!hasConsent) {
-      promptForConsent();
       return;
     }
 
@@ -236,12 +221,6 @@ const UserLocationMap = ({ showControls = true, height = "400px" }: UserLocation
     }
   };
 
-  // Handle consent granted - update location
-  const handleConsentGranted = () => {
-    grantConsent();
-    // Location will update on next render due to useEffect below
-  };
-
   // Initial fetch and realtime subscription
   useEffect(() => {
     fetchLocations();
@@ -260,89 +239,59 @@ const UserLocationMap = ({ showControls = true, height = "400px" }: UserLocation
     };
   }, [fetchLocations]);
 
-  // Auto-update location on mount (only if consent granted)
-  useEffect(() => {
-    if (user && hasConsent) {
-      updateMyLocation();
-    } else if (user && consentStatus === "pending") {
-      // Prompt for consent on first visit
-      promptForConsent();
-    }
-  }, [user, hasConsent, consentStatus]);
-
   const uniqueCountries = [...new Set(locations.map(l => l.country))].length;
 
   return (
-    <>
-      <LocationConsentDialog
-        open={showConsentDialog}
-        onAccept={handleConsentGranted}
-        onDecline={denyConsent}
-      />
-      
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Globe className="h-5 w-5 text-primary" />
-              Live User Map
-            </CardTitle>
-            {showControls && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mr-4">
-                  <span className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {locations.length} online
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    {uniqueCountries} countries
-                  </span>
-                </div>
-                {hasConsent ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={updateMyLocation}
-                    disabled={updating}
-                  >
-                    {updating ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    <span className="ml-2">Update Location</span>
-                  </Button>
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Globe className="h-5 w-5 text-primary" />
+            Live User Map
+          </CardTitle>
+          {showControls && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mr-4">
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {locations.length} users
+                </span>
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  {uniqueCountries} countries
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={updateMyLocation}
+                disabled={updating || !user}
+              >
+                {updating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={promptForConsent}
-                    className="text-muted-foreground"
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                    <span className="ml-2">Share Location</span>
-                  </Button>
+                  <RefreshCw className="h-4 w-4" />
                 )}
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div 
-            ref={mapRef} 
-            style={{ height, width: '100%', borderRadius: '0.5rem' }}
-            className="bg-secondary"
-          >
-            {!mapLoaded && (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </>
+                <span className="ml-2">Refresh</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div 
+          ref={mapRef} 
+          style={{ height, width: '100%', borderRadius: '0.5rem' }}
+          className="bg-secondary"
+        >
+          {!mapLoaded && (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
