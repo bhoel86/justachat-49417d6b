@@ -28,10 +28,47 @@ function normalizeProxyBase(proxyUrl: string): string {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error("Proxy URL must be http or https");
   }
-  // Reduce SSRF surface: the admin API is expected to be on a dedicated port.
-  if (url.port !== "6680") {
-    throw new Error("Proxy URL must use port 6680");
+  // Reduce SSRF surface: only allow common public ports.
+  // We support:
+  // - direct admin API on :6680
+  // - HTTPS reverse proxy on :443 (e.g., Caddy/Nginx fronting :6680)
+  const port = url.port || (url.protocol === "https:" ? "443" : "80");
+  const allowedPorts = new Set(["443", "80", "6680"]);
+  if (!allowedPorts.has(port)) {
+    throw new Error("Proxy URL must use port 443, 80, or 6680");
   }
+
+  // Block obvious local/private targets when the user provides an IP literal.
+  // (If a hostname resolves to private IP via DNS, we can't reliably detect that
+  // here without DNS resolution; this still blocks the most dangerous cases.)
+  const host = url.hostname.toLowerCase();
+  if (host === "localhost") {
+    throw new Error("Proxy URL hostname must not be localhost");
+  }
+  const isIpv4 = /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
+  if (isIpv4) {
+    const parts = host.split(".").map((n) => Number(n));
+    const [a, b] = parts;
+    const invalid = parts.some((n) => Number.isNaN(n) || n < 0 || n > 255);
+    if (invalid) throw new Error("Invalid IP address in proxyUrl");
+    const isPrivate =
+      a === 10 ||
+      a === 127 ||
+      (a === 192 && b === 168) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 169 && b === 254);
+    if (isPrivate) {
+      throw new Error("Proxy URL must not target private or loopback IPs");
+    }
+  }
+  const isIpv6 = host.includes(":");
+  if (isIpv6) {
+    // Extremely conservative: reject common private/link-local/loopback prefixes.
+    if (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) {
+      throw new Error("Proxy URL must not target private or loopback IPv6");
+    }
+  }
+
   if (url.pathname && url.pathname !== "/") {
     throw new Error("Proxy URL must not include a path");
   }
@@ -39,7 +76,10 @@ function normalizeProxyBase(proxyUrl: string): string {
     throw new Error("Proxy URL must not include query/hash");
   }
 
-  return `${url.protocol}//${url.host}`;
+  // Rebuild host with an explicit port only when it's non-default.
+  const defaultPort = url.protocol === "https:" ? "443" : "80";
+  const hostWithPort = port === defaultPort ? url.hostname : `${url.hostname}:${port}`;
+  return `${url.protocol}//${hostWithPort}`;
 }
 
 Deno.serve(async (req) => {
