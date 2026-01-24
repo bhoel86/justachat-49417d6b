@@ -27,7 +27,9 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 PRIMARY_BASE_URL="https://justachat.net/irc-proxy"
-FALLBACK_BASE_URL="https://justachat.lovable.app/irc-proxy"
+# IMPORTANT: The published lovable.app domain may redirect to the custom domain if the
+# custom domain is set as Primary. Use the preview host as a reliable fallback.
+FALLBACK_BASE_URL="https://id-preview--3468328b-9f6a-4d30-ad57-93742355db43.lovable.app/irc-proxy"
 
 pick_base_url() {
   # Allow manual override: BASE_URL=https://.../irc-proxy curl ... | bash

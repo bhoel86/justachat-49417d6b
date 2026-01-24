@@ -20,7 +20,7 @@ REQUIREMENTS:
 ONE-COMMAND SETUP:
   curl -O https://justachat.net/irc-proxy/setup.sh
   # If your domain isn't live yet:
-  # curl -O https://justachat.lovable.app/irc-proxy/setup.sh
+  # curl -O https://id-preview--3468328b-9f6a-4d30-ad57-93742355db43.lovable.app/irc-proxy/setup.sh
   chmod +x setup.sh
   ./setup.sh
 
