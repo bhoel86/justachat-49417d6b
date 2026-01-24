@@ -97,6 +97,8 @@ const AdminIRC = () => {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [banIpInput, setBanIpInput] = useState("");
   const [allowlistIpInput, setAllowlistIpInput] = useState("");
+  const [myIp, setMyIp] = useState<string | null>(null);
+  const [isUnbanningMyIp, setIsUnbanningMyIp] = useState(false);
   const [allowlistLabelInput, setAllowlistLabelInput] = useState("Admin");
 
   useEffect(() => {
@@ -297,6 +299,101 @@ const AdminIRC = () => {
       }
     } catch (e) {
       toast.error("Failed to remove from allowlist");
+    }
+  };
+
+  const detectMyIp = async (): Promise<string | null> => {
+    try {
+      // Try multiple IP detection services for reliability
+      const services = [
+        'https://api.ipify.org?format=json',
+        'https://api.my-ip.io/v2/ip.json',
+      ];
+      
+      for (const service of services) {
+        try {
+          const res = await fetch(service, { signal: AbortSignal.timeout(3000) });
+          if (res.ok) {
+            const data = await res.json();
+            const ip = data.ip || data.IP;
+            if (ip) {
+              setMyIp(ip);
+              return ip;
+            }
+          }
+        } catch {
+          continue;
+        }
+      }
+      return null;
+    } catch (e) {
+      console.error("Failed to detect IP:", e);
+      return null;
+    }
+  };
+
+  const unbanAndAllowlistMyIp = async () => {
+    setIsUnbanningMyIp(true);
+    try {
+      // Detect user's current IP
+      const ip = myIp || await detectMyIp();
+      if (!ip) {
+        toast.error("Could not detect your IP address");
+        return;
+      }
+
+      // Check if IP is currently banned
+      const isBanned = bans.includes(ip);
+      
+      // Unban if needed
+      if (isBanned) {
+        const unbanRes = await fetch(`${proxyUrl}/unban`, {
+          method: 'POST',
+          headers: { 
+            Authorization: `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ ip })
+        });
+        if (!unbanRes.ok) {
+          toast.error(`Failed to unban IP: ${ip}`);
+          return;
+        }
+      }
+
+      // Add to allowlist
+      const isAllowlisted = allowlist.some(e => e.ip === ip);
+      if (!isAllowlisted) {
+        const allowRes = await fetch(`${proxyUrl}/allowlist`, {
+          method: 'POST',
+          headers: { 
+            Authorization: `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ ip, label: `Admin (${user?.email?.split('@')[0] || 'self'})` })
+        });
+        if (!allowRes.ok) {
+          toast.error(`Failed to allowlist IP: ${ip}`);
+          return;
+        }
+      }
+
+      // Refresh data
+      await Promise.all([fetchBans(), fetchAllowlist()]);
+      
+      if (isBanned && !isAllowlisted) {
+        toast.success(`Unbanned & allowlisted your IP: ${ip}`);
+      } else if (isBanned) {
+        toast.success(`Unbanned your IP: ${ip}`);
+      } else if (!isAllowlisted) {
+        toast.success(`Allowlisted your IP: ${ip}`);
+      } else {
+        toast.info(`Your IP (${ip}) is already allowlisted`);
+      }
+    } catch (e) {
+      toast.error("Failed to unban/allowlist your IP");
+    } finally {
+      setIsUnbanningMyIp(false);
     }
   };
 
@@ -653,6 +750,30 @@ const AdminIRC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Quick unban/allowlist my IP button */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <Button 
+                  onClick={unbanAndAllowlistMyIp} 
+                  disabled={isUnbanningMyIp}
+                  variant="default"
+                  className="flex-shrink-0"
+                >
+                  {isUnbanningMyIp ? (
+                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Shield className="h-4 w-4 mr-2" />
+                  )}
+                  Unban & Allowlist My IP
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {myIp ? (
+                    <>Your detected IP: <code className="font-mono text-foreground">{myIp}</code></>
+                  ) : (
+                    <>Quickly unban your current IP and add it to the allowlist</>
+                  )}
+                </span>
+              </div>
+
               <div className="flex gap-2">
                 <Input 
                   value={allowlistIpInput}
