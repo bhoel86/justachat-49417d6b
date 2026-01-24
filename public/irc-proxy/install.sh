@@ -40,8 +40,8 @@ pick_base_url() {
     return 0
   fi
 
-  # Prefer justachat.net when it is live
-  if curl -fsSIL --max-time 5 "${PRIMARY_BASE_URL}/proxy.js" >/dev/null 2>&1; then
+  # Prefer justachat.net when it is live (silently check, no error output)
+  if curl -fsIL --connect-timeout 3 --max-time 5 "${PRIMARY_BASE_URL}/proxy.js" >/dev/null 2>/dev/null; then
     echo "$PRIMARY_BASE_URL"
     return 0
   fi
