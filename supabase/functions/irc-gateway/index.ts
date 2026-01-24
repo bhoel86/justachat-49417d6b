@@ -160,6 +160,7 @@ async function handlePASS(session: IRCSession, params: string[]) {
 
   // Password format: email:password or just access_token
   const password = params[0].replace(/^:/, "");
+  console.log(`[IRC] Processing PASS command (length: ${password.length})`);
   
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -169,7 +170,12 @@ async function handlePASS(session: IRCSession, params: string[]) {
     
     if (password.includes(":")) {
       // email:password format
-      const [email, pass] = password.split(":", 2);
+      const colonIndex = password.indexOf(":");
+      const email = password.substring(0, colonIndex);
+      const pass = password.substring(colonIndex + 1);
+      
+      console.log(`[IRC] Attempting auth for: ${email}`);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password: pass,
@@ -190,10 +196,12 @@ async function handlePASS(session: IRCSession, params: string[]) {
           },
         },
       });
-      console.log(`User authenticated: ${data.user.id}`);
+      console.log(`[IRC] User authenticated: ${data.user.id}`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Authentication successful`);
       
       // Try to complete registration now that auth is done
       if (session.nick && session.user && !session.registered) {
+        console.log(`[IRC] Completing registration after PASS (nick: ${session.nick}, user: ${session.user})`);
         await completeRegistration(session);
       }
     } else {
@@ -214,7 +222,8 @@ async function handlePASS(session: IRCSession, params: string[]) {
           },
         },
       });
-      console.log(`User authenticated via token: ${data.user.id}`);
+      console.log(`[IRC] User authenticated via token: ${data.user.id}`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Authentication successful`);
       
       // Try to complete registration now that auth is done
       if (session.nick && session.user && !session.registered) {
