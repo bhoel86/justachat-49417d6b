@@ -828,10 +828,11 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
-            align="end" 
+            align="start" 
             side="left"
-            sideOffset={4}
-            className="w-56 bg-popover border border-border shadow-lg z-[100] max-h-80 overflow-y-auto">
+            alignOffset={-10}
+            sideOffset={8}
+            className="w-56 bg-popover border border-border shadow-xl z-[9999] max-h-[70vh] overflow-y-auto">
             {/* Moderation Actions */}
             {canModerate && (
               <>
