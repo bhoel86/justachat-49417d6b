@@ -47,7 +47,6 @@ services:
       - certs:/certs:ro
       - proxy-data:/data
       - proxy-logs:/logs
-      - proxy-data:/data
     depends_on:
       - certbot
     healthcheck:
@@ -97,4 +96,3 @@ volumes:
     name: jac-proxy-data
   proxy-logs:
     name: jac-proxy-logs
-    name: jac-proxy-data
