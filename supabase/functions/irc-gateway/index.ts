@@ -2825,10 +2825,21 @@ Deno.serve(async (req) => {
   sessions.set(sessionId, session);
   console.log(`New IRC connection: ${sessionId}`);
 
+  // Keep-alive interval to prevent Edge Function timeout
+  let keepAliveInterval: number | null = null;
+
   socket.onopen = () => {
     sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Looking up your hostname...`);
     sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Found your hostname`);
     sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Please authenticate with PASS email:password (or email|password for mIRC)`);
+    
+    // Send PING every 30 seconds to keep the connection alive
+    keepAliveInterval = setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        sendIRC(session, `PING :${SERVER_NAME}`);
+        session.lastPing = Date.now();
+      }
+    }, 30000);
   };
 
   socket.onmessage = async (event) => {
@@ -2842,10 +2853,14 @@ Deno.serve(async (req) => {
 
   socket.onerror = (error) => {
     console.error(`WebSocket error for ${sessionId}:`, error);
+    if (keepAliveInterval) clearInterval(keepAliveInterval);
   };
 
   socket.onclose = () => {
     console.log(`IRC connection closed: ${sessionId}`);
+    
+    // Clear keep-alive interval
+    if (keepAliveInterval) clearInterval(keepAliveInterval);
     
     // Clean up channel subscriptions on close
     for (const channelId of session.channels) {
