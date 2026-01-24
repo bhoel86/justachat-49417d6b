@@ -820,13 +820,13 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       // & = admin (global admin) - Red
       // @ = op (room admin or global moderator / room moderator) - Green
       // + = bot - Cyan
-      // (no prefix) = regular user
+      // (no prefix) = regular user - Cyan
       const coloredOwners = owners.map(u => `${IRC_COLORS.BOLD}${IRC_COLORS.YELLOW}~${u}${IRC_COLORS.RESET}`);
       const coloredAdmins = admins.map(u => `${IRC_COLORS.BOLD}${IRC_COLORS.RED}&${u}${IRC_COLORS.RESET}`);
       const coloredOps = ops.map(u => `${IRC_COLORS.GREEN}@${u}${IRC_COLORS.RESET}`);
       const coloredModerator = `${IRC_COLORS.GREEN}@${welcomeInfo.moderator}${IRC_COLORS.RESET}`;
       const coloredBots = botNames.map(b => `${IRC_COLORS.CYAN}+${b}${IRC_COLORS.RESET}`);
-      const coloredUsers = users.map(u => u);
+      const coloredUsers = users.map(u => `${IRC_COLORS.CYAN}${u}${IRC_COLORS.RESET}`);
       
       // Total user count
       const totalUsers = owners.length + admins.length + ops.length + users.length + botNames.length + 1;
