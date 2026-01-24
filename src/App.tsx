@@ -18,6 +18,7 @@ import AdminMessages from "./pages/AdminMessages";
 import AdminMutes from "./pages/AdminMutes";
 import AdminIRC from "./pages/AdminIRC";
 import AdminBots from "./pages/AdminBots";
+import AdminKlines from "./pages/AdminKlines";
 import DownloadProxy from "./pages/DownloadProxy";
 import Dating from "./pages/Dating";
 import NotFound from "./pages/NotFound";
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="/admin/mutes" element={<AdminMutes />} />
               <Route path="/admin/irc" element={<AdminIRC />} />
               <Route path="/admin/bots" element={<AdminBots />} />
+              <Route path="/admin/klines" element={<AdminKlines />} />
               <Route path="/download-proxy" element={<DownloadProxy />} />
               <Route path="/dating" element={<Dating />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

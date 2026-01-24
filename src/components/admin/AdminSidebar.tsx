@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Bot,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
   { label: "Users", href: "/admin/users", icon: Users, adminOnly: true },
   { label: "Bans", href: "/admin/bans", icon: Ban, moderatorAllowed: true },
   { label: "Mutes", href: "/admin/mutes", icon: VolumeX, moderatorAllowed: true },
+  { label: "K-Lines", href: "/admin/klines", icon: Globe, adminOnly: true },
   { label: "Messages", href: "/admin/messages", icon: MessageSquare, adminOnly: true },
   { label: "Bots", href: "/admin/bots", icon: Bot, adminOnly: true },
   { label: "Emails", href: "/admin/emails", icon: Mail, ownerOnly: true },

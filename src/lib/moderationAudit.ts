@@ -7,13 +7,16 @@ type ModerationAction =
   | 'unmute_user'
   | 'change_role'
   | 'kick_user'
-  | 'delete_message';
+  | 'delete_message'
+  | 'add_kline'
+  | 'remove_kline';
 
 interface ModerationLogParams {
   action: ModerationAction;
   moderatorId: string;
-  targetUserId: string;
+  targetUserId?: string;
   targetUsername: string;
+  reason?: string;
   details?: Record<string, unknown>;
 }
 
@@ -22,6 +25,7 @@ export const logModerationAction = async ({
   moderatorId,
   targetUserId,
   targetUsername,
+  reason,
   details
 }: ModerationLogParams): Promise<void> => {
   try {
@@ -31,9 +35,10 @@ export const logModerationAction = async ({
         user_id: moderatorId,
         action,
         resource_type: 'moderation',
-        resource_id: targetUserId,
+        resource_id: targetUserId || null,
         details: {
           target_username: targetUsername,
+          reason,
           ...details
         } as unknown as null, // Type workaround
       }]);
