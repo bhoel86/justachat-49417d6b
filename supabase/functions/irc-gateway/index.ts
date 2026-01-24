@@ -821,6 +821,12 @@ const ALL_IRC_BOT_NAMES = Array.from(
   new Set(Object.values(channelBots).flat())
 );
 
+// Get all moderator names
+const ALL_MODERATOR_NAMES = Object.values(ROOM_WELCOME_MESSAGES).map(r => r.moderator);
+
+// Combined list of all bots including moderators
+const ALL_BOT_NAMES = [...ALL_IRC_BOT_NAMES, ...ALL_MODERATOR_NAMES];
+
 function normalizeNick(nick: string) {
   return nick.toLowerCase().replace(/[^a-z0-9_\-\[\]\\`^{}]/g, "");
 }
@@ -838,6 +844,55 @@ function getMentionedBotName(message: string, channelName: string): string | nul
     const n = normalizeNick(bot);
     if (!n) continue;
     if (content.includes(`@${n}`) || content.includes(n)) return bot;
+  }
+  return null;
+}
+
+// Check if a moderator is mentioned in the message
+function getMentionedModerator(message: string, channelName: string): string | null {
+  const content = message.toLowerCase();
+  const welcomeInfo = ROOM_WELCOME_MESSAGES[channelName.toLowerCase()];
+  
+  if (welcomeInfo) {
+    const modName = welcomeInfo.moderator;
+    const n = normalizeNick(modName);
+    if (n && (content.includes(`@${n}`) || content.includes(n))) {
+      return modName;
+    }
+  }
+  
+  // Also check all moderators (user might be asking about a mod from another channel)
+  for (const [room, info] of Object.entries(ROOM_WELCOME_MESSAGES)) {
+    const n = normalizeNick(info.moderator);
+    if (n && (content.includes(`@${n}`) || content.includes(n))) {
+      return info.moderator;
+    }
+  }
+  
+  return null;
+}
+
+// Get moderator personality context
+function getModeratorContext(modName: string): { room: string; personality: string } | null {
+  for (const [room, info] of Object.entries(ROOM_WELCOME_MESSAGES)) {
+    if (info.moderator === modName) {
+      const personalities: Record<string, string> = {
+        'Mitnick': 'You are Kevin Mitnick, legendary hacker turned security consultant. You speak with authority about hacking, security, and social engineering. You share stories from your past and give wise advice.',
+        'Lamo': 'You are Adrian Lamo, the "homeless hacker". You are introspective, philosophical about ethics in hacking. You keep conversations mature and thoughtful.',
+        'Dr. Geo': 'You are Dr. Geo, a Music Theory PhD. You analyze songs technically - discussing chord progressions, key changes, time signatures, and production techniques. You get excited about music theory.',
+        'Mudge': 'You are Mudge (Peiter Zatko), legendary security researcher from L0pht. You are helpful, patient, and explain technical concepts clearly. No question is too basic.',
+        'Barnaby': 'You are Barnaby Jack, famous for ATM hacking demos. You love gaming, speedruns, and competitive play. You speak with enthusiasm about game mechanics.',
+        'Sabu': 'You are Sabu, former Anonymous member turned analyst. You analyze politics from ALL sides without bias. You cite facts and encourage civil debate.',
+        'Guccifer': 'You are Guccifer, a film industry insider. You know EVERYTHING about movies - budgets, actor salaries, behind-the-scenes drama, box office analysis. You love dropping insider knowledge.',
+        'Albert': 'You are Albert Gonzalez, sports enthusiast. You talk stats, trades, fantasy leagues, and hot takes. You are passionate about all sports.',
+        'Charlie': 'You are Charlie Miller, famous iOS/car hacker. You geek out about technology, security research, and new gadgets. You explain complex tech simply.',
+        'Phoenix': 'You are Phoenix, a relationship counselor. You give thoughtful dating and relationship advice. You are warm, empathetic, and non-judgmental.',
+        'Solo': 'You are Solo (Gary McKinnon), chill and laid-back. You keep things relaxed, share random thoughts, and maintain good vibes.',
+        'Poulsen': 'You are Kevin Poulsen, investigative journalist and former hacker. You love trivia, facts, and learning. You share interesting tidbits.',
+        'Cicada': 'You are Cicada 3301, mysterious art curator. You discuss art history, techniques, and meaning. You speak enigmatically about creativity.',
+      };
+      return { room, personality: personalities[modName] || 'You are a helpful channel moderator.' };
+    }
   }
   return null;
 }
@@ -975,6 +1030,115 @@ async function triggerBotResponse(
   }
 }
 
+// Trigger a moderator bot response when mentioned
+async function triggerModeratorResponse(
+  channelId: string,
+  channelName: string,
+  userMessage: string,
+  senderUsername: string,
+  moderatorName: string
+) {
+  try {
+    const modContext = getModeratorContext(moderatorName);
+    if (!modContext) {
+      console.log(`[Mod] No context found for moderator ${moderatorName}`);
+      return;
+    }
+
+    console.log(`[Mod] Triggering ${moderatorName} response in #${channelName}`);
+
+    // Random delay 3-8 seconds
+    const delay = 3000 + Math.random() * 5000;
+
+    setTimeout(async () => {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+        // Get recent messages for context
+        const recentMessages = recentChannelMessages.get(channelId) || [];
+
+        // Call the chat-bot function with moderator personality
+        const response = await fetch(`${supabaseUrl}/functions/v1/chat-bot`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseAnonKey,
+            "Authorization": `Bearer ${supabaseAnonKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            botId: `mod-${moderatorName.toLowerCase()}`,
+            context: channelName,
+            recentMessages: [
+              ...recentMessages.slice(-15),
+              { username: senderUsername, content: userMessage }
+            ],
+            respondTo: userMessage,
+            isConversationStarter: false,
+            customPersonality: modContext.personality,
+            forcedUsername: moderatorName,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error(`[Mod] chat-bot function error: ${response.status}`);
+          return;
+        }
+
+        const data = await response.json();
+        if (!data.message) {
+          console.error(`[Mod] Invalid response from chat-bot`);
+          return;
+        }
+
+        console.log(`[Mod] ${moderatorName}: ${data.message}`);
+
+        // Insert message into database
+        const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        const modUserId = `bot-${normalizeNick(moderatorName)}`;
+
+        const { error } = await serviceClient
+          .from("messages")
+          .insert({
+            channel_id: channelId,
+            user_id: modUserId,
+            content: data.message,
+          });
+
+        if (error) {
+          console.error(`[Mod] Failed to insert message:`, error);
+          return;
+        }
+
+        // Update recent messages cache
+        const msgs = recentChannelMessages.get(channelId) || [];
+        msgs.push({ username: moderatorName, content: data.message });
+        if (msgs.length > 25) msgs.shift();
+        recentChannelMessages.set(channelId, msgs);
+
+        // Relay to IRC users with green color (moderator)
+        const coloredModName = `${IRC_COLORS.GREEN}@${moderatorName}${IRC_COLORS.RESET}`;
+        const subscribers = channelSubscriptions.get(channelId);
+        if (subscribers) {
+          for (const subscriberId of subscribers) {
+            const subscriberSession = sessions.get(subscriberId);
+            if (subscriberSession && subscriberSession.registered) {
+              sendIRC(
+                subscriberSession,
+                `:${coloredModName}!${moderatorName}@mod.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.error(`[Mod] Error generating response:`, e);
+      }
+    }, delay);
+  } catch (e) {
+    console.error(`[Mod] Error:`, e);
+  }
+}
+
 async function handlePRIVMSG(session: IRCSession, params: string[]) {
   if (!session.registered) {
     sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
@@ -1028,24 +1192,87 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
       if (msgs.length > 25) msgs.shift();
       recentChannelMessages.set(channel.id, msgs);
 
-      // Trigger potential bot response
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
-      
-      triggerBotResponse(channel.id, channel.name, message, session.nick || 'unknown', serviceClient);
+      // Check if a moderator is mentioned first
+      const mentionedMod = getMentionedModerator(message, channel.name);
+      if (mentionedMod) {
+        // Trigger moderator response
+        triggerModeratorResponse(channel.id, channel.name, message, session.nick || 'unknown', mentionedMod);
+      } else {
+        // Trigger potential regular bot response
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+        
+        triggerBotResponse(channel.id, channel.name, message, session.nick || 'unknown', serviceClient);
+      }
       
     } catch (e) {
       console.error("PRIVMSG error:", e);
     }
   } else {
-    // Private message to user - check if it's a bot (use IRC-visible bot names)
+    // Private message to user - check if it's a bot or moderator
     const targetBotName = ALL_IRC_BOT_NAMES.find(
       (b) => b.toLowerCase() === target.toLowerCase()
     );
     
+    // Check if target is a moderator
+    const targetModeratorName = ALL_MODERATOR_NAMES.find(
+      (m) => m.toLowerCase() === target.toLowerCase()
+    );
+    
+    if (targetModeratorName) {
+      // Handle PM to a moderator
+      console.log(`[Mod PM] ${session.nick} -> ${targetModeratorName}: ${message}`);
+      
+      const modContext = getModeratorContext(targetModeratorName);
+      if (!modContext) return;
+      
+      // Delay response 3-8 seconds
+      const delay = 3000 + Math.random() * 5000;
+      
+      setTimeout(async () => {
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+          
+          const response = await fetch(`${supabaseUrl}/functions/v1/chat-bot`, {
+            method: "POST",
+            headers: {
+              apikey: supabaseAnonKey,
+              "Authorization": `Bearer ${supabaseAnonKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              botId: `mod-${targetModeratorName.toLowerCase()}`,
+              context: modContext.room,
+              recentMessages: [],
+              respondTo: message,
+              isPM: true,
+              pmPartnerName: session.nick,
+              customPersonality: modContext.personality,
+              forcedUsername: targetModeratorName,
+            }),
+          });
+
+          if (!response.ok) {
+            console.error(`[Mod PM] chat-bot function error: ${response.status}`);
+            return;
+          }
+
+          const data = await response.json();
+          if (data.message) {
+            sendIRC(session, `:${targetModeratorName}!${targetModeratorName}@mod.${SERVER_NAME} PRIVMSG ${session.nick} :${data.message}`);
+          }
+        } catch (e) {
+          console.error(`[Mod PM] Error:`, e);
+        }
+      }, delay);
+      
+      return;
+    }
+    
     if (targetBotName) {
-      // Handle PM to a bot
+      // Handle PM to a regular bot
       console.log(`[Bot PM] ${session.nick} -> ${targetBotName}: ${message}`);
       
       // Delay response 3-8 seconds

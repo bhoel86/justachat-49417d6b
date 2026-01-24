@@ -75,19 +75,34 @@ serve(async (req) => {
   }
 
   try {
-    const { botId, context, recentMessages, respondTo, isConversationStarter, isPM, pmPartnerName } = await req.json();
+    const { botId, context, recentMessages, respondTo, isConversationStarter, isPM, pmPartnerName, customPersonality, forcedUsername } = await req.json();
     
-    console.log("Received botId:", botId, "isPM:", isPM);
+    console.log("Received botId:", botId, "isPM:", isPM, "customPersonality:", !!customPersonality);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const user = USER_PERSONALITIES[botId];
-    if (!user) {
-      console.error("Available keys:", Object.keys(USER_PERSONALITIES));
-      throw new Error(`Unknown user: ${botId}`);
+    // Check if this is a moderator with custom personality
+    let user: { name: string; personality: string; style: string; gender: string };
+    
+    if (customPersonality && forcedUsername) {
+      // Use custom moderator personality
+      user = {
+        name: forcedUsername,
+        personality: customPersonality,
+        style: 'Speaks with authority and expertise. Knowledgeable but approachable. Uses casual internet language but maintains credibility.',
+        gender: 'unknown',
+      };
+    } else {
+      // Use standard user personality
+      const standardUser = USER_PERSONALITIES[botId];
+      if (!standardUser) {
+        console.error("Available keys:", Object.keys(USER_PERSONALITIES));
+        throw new Error(`Unknown user: ${botId}`);
+      }
+      user = standardUser;
     }
 
     const messageContext = recentMessages
