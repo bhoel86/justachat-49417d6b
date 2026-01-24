@@ -2298,6 +2298,141 @@ function handleRADIO(session: IRCSession) {
   currentIrcRadioSongIndex = (currentIrcRadioSongIndex + 1) % genreData.songs.length;
 }
 
+// ============================================
+// K-LINE - Global IP Ban (Operator only)
+// ============================================
+async function handleKLINE(session: IRCSession, params: string[]) {
+  if (!session.registered || !session.supabase || !session.userId) {
+    sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
+    return;
+  }
+
+  // Check if user is admin or owner
+  const { data: roleData } = await session.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", session.userId)
+    .maybeSingle();
+  
+  const role = (roleData as { role: string } | null)?.role || "user";
+  const isOperator = role === "owner" || role === "admin";
+  
+  if (!isOperator) {
+    sendNumeric(session, ERR.CHANOPRIVSNEEDED, ":Permission Denied- You're not an IRC operator");
+    return;
+  }
+
+  // Use service role client for klines table access
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+
+  if (params.length === 0) {
+    // List K-lines
+    const { data: klines } = await serviceClient
+      .from("klines")
+      .select("ip_pattern, reason, created_at, expires_at")
+      .order("created_at", { ascending: false });
+    
+    const klineList = (klines || []) as Array<{ ip_pattern: string; reason: string | null; created_at: string; expires_at: string | null }>;
+    
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.BOLD}${IRC_COLORS.RED}═══════════════════════════════════════${IRC_COLORS.RESET}`);
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.BOLD}${IRC_COLORS.RED}  🚫 K-LINE LIST - Global IP Bans${IRC_COLORS.RESET}`);
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.BOLD}${IRC_COLORS.RED}═══════════════════════════════════════${IRC_COLORS.RESET}`);
+    
+    if (klineList.length === 0) {
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.GREY}No K-lines currently active.${IRC_COLORS.RESET}`);
+    } else {
+      for (const kline of klineList) {
+        const expiry = kline.expires_at 
+          ? new Date(kline.expires_at).toLocaleDateString() 
+          : "Permanent";
+        sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.RED}${kline.ip_pattern}${IRC_COLORS.RESET} - ${IRC_COLORS.GREY}${kline.reason || 'No reason'}${IRC_COLORS.RESET} (${expiry})`);
+      }
+    }
+    
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :`);
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.GREY}Usage: /KLINE <host> <reason> | /KLINE -<host> (remove)${IRC_COLORS.RESET}`);
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.BOLD}${IRC_COLORS.RED}═══════════════════════════════════════${IRC_COLORS.RESET}`);
+    return;
+  }
+
+  const target = params[0];
+  
+  // Remove K-line with -host syntax
+  if (target.startsWith("-")) {
+    const hostToRemove = target.substring(1);
+    
+    const { error } = await serviceClient
+      .from("klines")
+      .delete()
+      .eq("ip_pattern", hostToRemove);
+    
+    if (error) {
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.RED}Failed to remove K-line for ${hostToRemove}${IRC_COLORS.RESET}`);
+      return;
+    }
+    
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.GREEN}✓ K-line removed for ${hostToRemove}${IRC_COLORS.RESET}`);
+    
+    // Broadcast to other operators
+    for (const [, s] of sessions) {
+      if (s.sessionId !== session.sessionId && s.registered) {
+        sendIRC(s, `:${SERVER_NAME} NOTICE ${s.nick} :${IRC_COLORS.YELLOW}*** Notice -- ${session.nick} has removed the K-line for ${hostToRemove}${IRC_COLORS.RESET}`);
+      }
+    }
+    return;
+  }
+
+  // Add K-line
+  const reason = params.slice(1).join(" ").replace(/^:/, "") || "No reason given";
+  
+  // Validate IP pattern format (allow hostmask or IP patterns)
+  const validPattern = target.includes("@") || target.match(/^[\d\.\*]+$/) || target.includes("*");
+  if (!validPattern) {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.RED}Invalid host format. Use: *@IP.PATTERN or IP.PATTERN (wildcards: *)${IRC_COLORS.RESET}`);
+    return;
+  }
+  
+  // Extract IP pattern (handle *@host format)
+  const ipPattern = target.includes("@") ? target.split("@")[1] : target;
+  
+  const { error } = await serviceClient
+    .from("klines")
+    .insert({
+      ip_pattern: ipPattern,
+      set_by: session.userId,
+      reason: reason,
+      expires_at: null, // Permanent by default
+    });
+  
+  if (error) {
+    console.error("K-line error:", error);
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.RED}Failed to add K-line${IRC_COLORS.RESET}`);
+    return;
+  }
+  
+  sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.GREEN}✓ K-line added for ${ipPattern} :${reason}${IRC_COLORS.RESET}`);
+  
+  // Broadcast to all operators
+  for (const [, s] of sessions) {
+    if (s.sessionId !== session.sessionId && s.registered) {
+      sendIRC(s, `:${SERVER_NAME} NOTICE ${s.nick} :${IRC_COLORS.RED}*** Notice -- ${session.nick} has added a K-line for ${ipPattern} (${reason})${IRC_COLORS.RESET}`);
+    }
+  }
+}
+
+// UNKLINE - Alias for removing K-lines
+async function handleUNKLINE(session: IRCSession, params: string[]) {
+  if (params.length === 0) {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :${IRC_COLORS.RED}Usage: /UNKLINE <host>${IRC_COLORS.RESET}`);
+    return;
+  }
+  
+  // Call KLINE with - prefix
+  await handleKLINE(session, [`-${params[0]}`]);
+}
+
 function handlePING(session: IRCSession, params: string[]) {
   const token = params[0] || SERVER_NAME;
   sendIRC(session, `:${SERVER_NAME} PONG ${SERVER_NAME} :${token}`);
@@ -2447,6 +2582,13 @@ async function handleIRCCommand(session: IRCSession, line: string) {
       break;
     case "SALUTE":
       await handleACTION(session, 'salute', params[0], Array.from(session.channels)[0] || null);
+      break;
+    // ========== K-LINE COMMANDS ==========
+    case "KLINE":
+      await handleKLINE(session, params);
+      break;
+    case "UNKLINE":
+      await handleUNKLINE(session, params);
       break;
     default:
       if (session.registered) {
