@@ -161,6 +161,30 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_photos: {
+        Row: {
+          bot_id: string
+          created_at: string
+          id: string
+          photo_type: string
+          photo_url: string
+        }
+        Insert: {
+          bot_id: string
+          created_at?: string
+          id?: string
+          photo_type?: string
+          photo_url: string
+        }
+        Update: {
+          bot_id?: string
+          created_at?: string
+          id?: string
+          photo_type?: string
+          photo_url?: string
+        }
+        Relationships: []
+      }
       bot_settings: {
         Row: {
           allowed_channels: string[]

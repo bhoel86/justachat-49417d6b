@@ -484,16 +484,80 @@ function isPhotoRequest(message: string): boolean {
     'show me', 'show pic', 'can i see you', 'wanna see you', 'want to see you',
     'pic of you', 'photo of you', 'your pic', 'your photo', 'selfie',
     'what do you look like', 'what u look like', 'how do you look', 'how u look',
-    'pic?', 'pics?', 'photo?', 'photos?', 'send pics', 'send photos'
+    'pic?', 'pics?', 'photo?', 'photos?', 'send pics', 'send photos',
+    'another pic', 'another photo', 'more pics', 'more photos', 'one more'
   ];
   const lowerMsg = message.toLowerCase();
   return photoKeywords.some(kw => lowerMsg.includes(kw));
 }
 
-// Generate photo of the bot
-async function generateBotPhoto(appearance: string, botName: string, apiKey: string): Promise<string | null> {
+// Check if asking for a different/new photo
+function isNewPhotoRequest(message: string): boolean {
+  const newPhotoKeywords = [
+    'another', 'different', 'new pic', 'new photo', 'more pics', 'more photos',
+    'one more', 'send another', 'different angle', 'different pic', 'show more'
+  ];
+  const lowerMsg = message.toLowerCase();
+  return newPhotoKeywords.some(kw => lowerMsg.includes(kw));
+}
+
+// Get cached photo from database
+async function getCachedPhoto(botId: string, photoType: string, supabaseUrl: string, serviceRoleKey: string): Promise<string | null> {
   try {
-    const prompt = `Photorealistic portrait photo of a ${appearance}. Natural lighting, casual setting, looking at camera with a friendly expression. Shot on iPhone, candid selfie style. High quality, realistic, not AI-looking.`;
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/bot_photos?bot_id=eq.${encodeURIComponent(botId)}&photo_type=eq.${encodeURIComponent(photoType)}&select=photo_url`,
+      {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+        },
+      }
+    );
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    return data?.[0]?.photo_url || null;
+  } catch (error) {
+    console.error('Error getting cached photo:', error);
+    return null;
+  }
+}
+
+// Save photo to database for future consistency
+async function cachePhoto(botId: string, photoType: string, photoUrl: string, supabaseUrl: string, serviceRoleKey: string): Promise<void> {
+  try {
+    await fetch(
+      `${supabaseUrl}/rest/v1/bot_photos`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates',
+        },
+        body: JSON.stringify({
+          bot_id: botId,
+          photo_type: photoType,
+          photo_url: photoUrl,
+        }),
+      }
+    );
+  } catch (error) {
+    console.error('Error caching photo:', error);
+  }
+}
+
+// Generate photo of the bot (with variations for "another" requests)
+async function generateBotPhoto(appearance: string, botName: string, apiKey: string, isVariation: boolean = false): Promise<string | null> {
+  try {
+    // Add variation to prompt if requesting another photo
+    const variationText = isVariation 
+      ? ['different pose', 'different angle', 'different lighting', 'different outfit', 'different expression'][Math.floor(Math.random() * 5)]
+      : '';
+    
+    const prompt = `Photorealistic portrait photo of a ${appearance}. ${isVariation ? `${variationText}.` : ''} Natural lighting, casual setting, looking at camera with a friendly expression. Shot on iPhone, candid selfie style. High quality, realistic, not AI-looking.`;
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -560,13 +624,42 @@ serve(async (req) => {
 
     // Check if this is a photo request and user is female with appearance defined
     if (isPM && respondTo && isPhotoRequest(respondTo) && user.gender === 'female' && user.appearance) {
-      console.log("Photo request detected for:", user.name);
+      console.log("Photo request detected for:", user.name, "botId:", botId);
       
-      const imageUrl = await generateBotPhoto(user.appearance, user.name, LOVABLE_API_KEY);
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      
+      const wantsNewPhoto = isNewPhotoRequest(respondTo);
+      let imageUrl: string | null = null;
+      
+      // Try to get cached photo first (unless they want a new one)
+      if (!wantsNewPhoto) {
+        imageUrl = await getCachedPhoto(botId, 'selfie', supabaseUrl, serviceRoleKey);
+        if (imageUrl) {
+          console.log("Using cached photo for:", user.name);
+        }
+      }
+      
+      // Generate new photo if none cached or they want a new one
+      if (!imageUrl) {
+        console.log("Generating new photo for:", user.name, "isVariation:", wantsNewPhoto);
+        imageUrl = await generateBotPhoto(user.appearance, user.name, LOVABLE_API_KEY, wantsNewPhoto);
+        
+        // Cache the photo for consistency (only cache the first/main selfie)
+        if (imageUrl && !wantsNewPhoto) {
+          await cachePhoto(botId, 'selfie', imageUrl, supabaseUrl, serviceRoleKey);
+        }
+      }
       
       if (imageUrl) {
         // Return a flirty message with the image
-        const photoResponses = [
+        const photoResponses = wantsNewPhoto ? [
+          `here another one 😏`,
+          `lol ok heres more`,
+          `u like these huh 😘`,
+          `there u go again`,
+          `ok ok one more`,
+        ] : [
           `here u go 😊`,
           `lol ok here`,
           `fine here 😏`,
