@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { 
   LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, 
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
-  Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX
+  Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX, Menu, 
+  Download, Terminal, LifeBuoy, MessageCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -199,6 +200,86 @@ const Home = () => {
             <h1 className="text-lg sm:text-2xl font-bold brand jac-gradient-text">Justachat<sup className="text-[8px] sm:text-xs">™</sup></h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            {/* Site Navigation Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                  <Menu className="w-4 h-4" />
+                  <span className="hidden sm:inline">Menu</span>
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 bg-popover border border-border shadow-lg z-50">
+                <DropdownMenuLabel className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  Site Navigation
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                {/* Help Section */}
+                <DropdownMenuItem asChild>
+                  <Link to="/chat/help" className="flex items-center gap-2 cursor-pointer">
+                    <LifeBuoy className="w-4 h-4 text-green-500" />
+                    <div>
+                      <span>Help & Support</span>
+                      <p className="text-xs text-muted-foreground">Get help from the community</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">IRC Clients</DropdownMenuLabel>
+                
+                {/* mIRC & Proxy Section */}
+                <DropdownMenuItem asChild>
+                  <Link to="/download-proxy" className="flex items-center gap-2 cursor-pointer">
+                    <Download className="w-4 h-4 text-primary" />
+                    <div>
+                      <span>mIRC Setup Package</span>
+                      <p className="text-xs text-muted-foreground">Auto-login scripts & configs</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem asChild>
+                  <Link to="/download-proxy" className="flex items-center gap-2 cursor-pointer">
+                    <Terminal className="w-4 h-4 text-amber-500" />
+                    <div>
+                      <span>IRC Proxy Download</span>
+                      <p className="text-xs text-muted-foreground">Local & VPS deployment</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Contact</DropdownMenuLabel>
+                
+                {/* Contact Section */}
+                <DropdownMenuItem asChild>
+                  <a 
+                    href="mailto:support@justachat.com" 
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Mail className="w-4 h-4 text-blue-500" />
+                    <div>
+                      <span>Email Support</span>
+                      <p className="text-xs text-muted-foreground">support@justachat.com</p>
+                    </div>
+                  </a>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem asChild>
+                  <Link to="/chat/help" className="flex items-center gap-2 cursor-pointer">
+                    <MessageCircle className="w-4 h-4 text-teal-500" />
+                    <div>
+                      <span>Live Chat Support</span>
+                      <p className="text-xs text-muted-foreground">Ask in #help channel</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Admin Dropdown - Owner/Admin Only */}
             {(isOwner || isAdmin) && (
               <DropdownMenu>
