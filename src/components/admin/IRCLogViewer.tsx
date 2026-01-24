@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { proxyAdminRequest } from "@/lib/ircProxyAdmin";
 
 interface LogEntry {
   timestamp: string;
@@ -53,12 +54,13 @@ export const IRCLogViewer = ({ proxyUrl, adminToken, isConnected }: IRCLogViewer
     
     setIsLoading(true);
     try {
-      const res = await fetch(`${proxyUrl}/logs?type=${type}&lines=${lineCount}`, {
-        headers: { Authorization: `Bearer ${adminToken}` }
+      const relay = await proxyAdminRequest<{ logs?: LogEntry[] }>({
+        proxyUrl,
+        adminToken,
+        path: `/logs?type=${encodeURIComponent(type)}&lines=${lineCount}`,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(prev => ({ ...prev, [type]: data.logs || [] }));
+      if (relay.ok) {
+        setLogs((prev) => ({ ...prev, [type]: relay.data?.logs || [] }));
       }
     } catch (e) {
       console.error(`Failed to fetch ${type} logs:`, e);
