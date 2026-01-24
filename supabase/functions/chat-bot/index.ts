@@ -75,10 +75,9 @@ serve(async (req) => {
   }
 
   try {
-    const { odId, context, recentMessages, respondTo, isConversationStarter } = await req.json();
+    const { botId, context, recentMessages, respondTo, isConversationStarter } = await req.json();
     
-    // Support both old botId and new odId
-    const botId = odId;
+    console.log("Received botId:", botId);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -87,6 +86,7 @@ serve(async (req) => {
 
     const user = USER_PERSONALITIES[botId];
     if (!user) {
+      console.error("Available keys:", Object.keys(USER_PERSONALITIES));
       throw new Error(`Unknown user: ${botId}`);
     }
 
@@ -171,7 +171,7 @@ Jump into the conversation naturally. Keep it casual and short (1-2 sentences).`
 
     return new Response(JSON.stringify({ 
       message,
-      odId: botId,
+      botId,
       username: user.name 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
