@@ -491,16 +491,6 @@ const Home = () => {
                         </Link>
                       </DropdownMenuItem>
                       
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin/irc" className="flex items-center gap-2 cursor-pointer">
-                          <Terminal className="w-4 h-4 text-purple-500" />
-                          <div>
-                            <span>IRC Gateway</span>
-                            <p className="text-xs text-muted-foreground">Proxy & connections</p>
-                          </div>
-                        </Link>
-                      </DropdownMenuItem>
-                      
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="text-xs text-muted-foreground">Quick Actions</DropdownMenuLabel>
                       
