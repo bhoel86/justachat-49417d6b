@@ -6,7 +6,7 @@ import ChatRoom from "@/components/chat/ChatRoom";
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { channelId } = useParams<{ channelId: string }>();
+  const { channelName } = useParams<{ channelName: string }>();
 
   // Scroll to top on page load
   useEffect(() => {
@@ -33,7 +33,7 @@ const Index = () => {
     return null;
   }
 
-  return <ChatRoom initialChannelId={channelId} />;
+  return <ChatRoom initialChannelName={channelName} />;
 };
 
 export default Index;

@@ -41,10 +41,10 @@ interface Message {
 }
 
 interface ChatRoomProps {
-  initialChannelId?: string;
+  initialChannelName?: string;
 }
 
-const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
+const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const { user, isAdmin, isOwner, role } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
@@ -99,15 +99,15 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     scrollToBottom();
   }, [messages]);
 
-  // Load initial channel from URL parameter
+  // Load initial channel from URL parameter (by name)
   useEffect(() => {
-    if (!initialChannelId) return;
+    if (!initialChannelName) return;
     
     const loadInitialChannel = async () => {
       const { data } = await supabaseUntyped
         .from('channels')
         .select('*')
-        .eq('id', initialChannelId)
+        .eq('name', initialChannelName)
         .maybeSingle();
       
       if (data) {
@@ -124,7 +124,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     };
     
     loadInitialChannel();
-  }, [initialChannelId, navigate, toast]);
+  }, [initialChannelName, navigate, toast]);
 
   // Fetch user profile and language preference
   useEffect(() => {
@@ -557,7 +557,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
     
     setCurrentChannel(channel);
     setMessages([]); // Clear messages, will refetch
-    navigate(`/chat/${channel.id}`);
+    navigate(`/chat/${channel.name}`);
   };
 
   const handleSend = async (content: string) => {
@@ -1133,7 +1133,7 @@ const ChatRoom = ({ initialChannelId }: ChatRoomProps) => {
             if (data?.room_password === password) {
               setShowPasswordModal(false);
               setCurrentChannel(pendingChannel);
-              navigate(`/chat/${pendingChannel.id}`);
+              navigate(`/chat/${pendingChannel.name}`);
               setPendingChannel(null);
             } else {
               toast({ variant: "destructive", title: "Incorrect password" });
