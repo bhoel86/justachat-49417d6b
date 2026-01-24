@@ -485,7 +485,11 @@ function isPhotoRequest(message: string): boolean {
     'pic of you', 'photo of you', 'your pic', 'your photo', 'selfie',
     'what do you look like', 'what u look like', 'how do you look', 'how u look',
     'pic?', 'pics?', 'photo?', 'photos?', 'send pics', 'send photos',
-    'another pic', 'another photo', 'more pics', 'more photos', 'one more'
+    'another pic', 'another photo', 'more pics', 'more photos', 'one more',
+    'wave at me', 'wave', 'blow a kiss', 'blow kiss', 'wink', 'wink at me',
+    'gym pic', 'rave pic', 'party pic', 'beach pic', 'mirror pic',
+    'tongue out', 'stick tongue out', 'peace sign', 'duck face', 'duckface',
+    'ahegao', 'silly face', 'make a face', 'sexy pic', 'hot pic'
   ];
   const lowerMsg = message.toLowerCase();
   return photoKeywords.some(kw => lowerMsg.includes(kw));
@@ -499,6 +503,44 @@ function isNewPhotoRequest(message: string): boolean {
   ];
   const lowerMsg = message.toLowerCase();
   return newPhotoKeywords.some(kw => lowerMsg.includes(kw));
+}
+
+// Parse special photo request to get custom pose/action
+function parseSpecialPhotoRequest(message: string): string | null {
+  const lowerMsg = message.toLowerCase();
+  
+  // Map of request keywords to photo descriptions
+  const specialRequests: Record<string, string> = {
+    'wave at me': 'waving at camera playfully',
+    'wave': 'waving at camera with a cute smile',
+    'blow a kiss': 'blowing a kiss at camera',
+    'blow kiss': 'blowing a kiss seductively',
+    'wink': 'winking flirtatiously at camera',
+    'wink at me': 'winking playfully at camera',
+    'tongue out': 'tongue out playfully, drooling expression',
+    'stick tongue out': 'sticking tongue out with eyes rolled back slightly',
+    'peace sign': 'making peace sign with fingers, cute pose',
+    'duck face': 'making duck face, pouty lips',
+    'duckface': 'making duck face selfie pose',
+    'ahegao': 'eyes rolled back, tongue out, drooling expression, ecstatic face',
+    'silly face': 'making a silly goofy face',
+    'make a face': 'making a playful silly expression',
+    'gym pic': 'at the gym, workout clothes, sweaty glow, athletic pose',
+    'rave pic': 'at a rave party, neon lights, glitter makeup, dancing',
+    'party pic': 'at a party, club lighting, having fun dancing',
+    'beach pic': 'at the beach, bikini, sun-kissed skin, relaxed pose',
+    'mirror pic': 'mirror selfie, showing off outfit',
+    'sexy pic': 'sultry gaze, biting lip slightly, seductive pose',
+    'hot pic': 'flirty look, confident smirk, attractive pose',
+  };
+  
+  for (const [keyword, description] of Object.entries(specialRequests)) {
+    if (lowerMsg.includes(keyword)) {
+      return description;
+    }
+  }
+  
+  return null;
 }
 
 // Get cached photo from database
@@ -550,33 +592,52 @@ async function cachePhoto(botId: string, photoType: string, photoUrl: string, su
 }
 
 // Generate photo of the bot (with variations for "another" requests)
-async function generateBotPhoto(appearance: string, botName: string, apiKey: string, isVariation: boolean = false): Promise<string | null> {
+async function generateBotPhoto(appearance: string, botName: string, apiKey: string, isVariation: boolean = false, specialRequest: string | null = null): Promise<string | null> {
   try {
     // Photo settings for variety
     const settings = [
-      'gym selfie in athletic wear',
+      'gym selfie with workout clothes, showing off fitness, sweaty glow',
+      'mirror selfie at the gym, athletic wear, post-workout',
+      'rave party selfie, neon lights, glitter, dancing',
+      'club selfie, party lights, having fun',
+      'bedroom mirror selfie, casual outfit',
+      'living room selfie on couch, relaxed',
       'outdoor selfie at a park',
       'coffee shop selfie',
-      'living room selfie',
-      'hiking trail selfie',
-      'restaurant selfie',
       'car selfie',
-      'beach boardwalk selfie',
+      'beach selfie, sun-kissed',
+      'festival selfie, colorful lights',
+      'bathroom mirror selfie, getting ready',
     ];
     
     const expressions = [
-      'friendly smile',
-      'warm smile',
-      'happy expression',
-      'cheerful look',
-      'natural smile',
-      'relaxed expression',
+      'confident smirk',
+      'playful smile',
+      'flirty look',
+      'sultry gaze',
+      'biting lip slightly',
+      'winking',
+      'blowing a kiss',
+      'seductive smile',
+      'teasing expression',
+      'bedroom eyes',
+      'tongue out playfully',
+      'eyes rolled back slightly with pleasure',
+      'drooling expression',
+      'ecstatic ahegao face',
     ];
     
-    const setting = settings[Math.floor(Math.random() * settings.length)];
-    const expression = expressions[Math.floor(Math.random() * expressions.length)];
+    let prompt: string;
     
-    const prompt = `Photorealistic portrait photo of a ${appearance}. ${setting}. ${expression}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, not AI-looking.`;
+    if (specialRequest) {
+      // Use the special request as the main pose/action
+      prompt = `Photorealistic portrait photo of a ${appearance}. ${specialRequest}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, attractive, not AI-looking.`;
+    } else {
+      // Random setting and expression for variety
+      const setting = settings[Math.floor(Math.random() * settings.length)];
+      const expression = expressions[Math.floor(Math.random() * expressions.length)];
+      prompt = `Photorealistic portrait photo of a ${appearance}. ${setting}. ${expression}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, attractive, not AI-looking.`;
+    }
     
     console.log("Generating photo with prompt:", prompt);
     
@@ -651,44 +712,65 @@ serve(async (req) => {
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
       
       const wantsNewPhoto = isNewPhotoRequest(respondTo);
+      const specialRequest = parseSpecialPhotoRequest(respondTo);
+      const isSpecialRequest = specialRequest !== null;
+      
       let imageUrl: string | null = null;
       
-      // Try to get cached photo first (unless they want a new one)
-      if (!wantsNewPhoto) {
+      // For special requests, always generate a new photo with the requested pose
+      // For regular requests, try cache first
+      if (!wantsNewPhoto && !isSpecialRequest) {
         imageUrl = await getCachedPhoto(botId, 'selfie', supabaseUrl, serviceRoleKey);
         if (imageUrl) {
           console.log("Using cached photo for:", user.name);
         }
       }
       
-      // Generate new photo if none cached or they want a new one
+      // Generate new photo if none cached, they want a new one, or special request
       if (!imageUrl) {
-        console.log("Generating new photo for:", user.name, "isVariation:", wantsNewPhoto);
-        imageUrl = await generateBotPhoto(user.appearance, user.name, LOVABLE_API_KEY, wantsNewPhoto);
+        console.log("Generating new photo for:", user.name, "isVariation:", wantsNewPhoto, "specialRequest:", specialRequest);
+        imageUrl = await generateBotPhoto(user.appearance, user.name, LOVABLE_API_KEY, wantsNewPhoto, specialRequest);
         
-        // Cache the photo for consistency (only cache the first/main selfie)
-        if (imageUrl && !wantsNewPhoto) {
+        // Cache the photo for consistency (only cache the first/main selfie, not special requests)
+        if (imageUrl && !wantsNewPhoto && !isSpecialRequest) {
           await cachePhoto(botId, 'selfie', imageUrl, supabaseUrl, serviceRoleKey);
         }
       }
       
       if (imageUrl) {
-        // Return a flirty message with the image
-        const photoResponses = wantsNewPhoto ? [
-          `here another one 😏`,
-          `lol ok heres more`,
-          `u like these huh 😘`,
-          `there u go again`,
-          `ok ok one more`,
-        ] : [
-          `here u go 😊`,
-          `lol ok here`,
-          `fine here 😏`,
-          `just took this rn`,
-          `there u go babe`,
-          `hope u like 😘`,
-          `heres me rn`,
-        ];
+        // Return a flirty message with the image - customize based on request type
+        let photoResponses: string[];
+        
+        if (isSpecialRequest) {
+          // Responses for special requests
+          photoResponses = [
+            `hehe there u go 😏`,
+            `lol ok like this?`,
+            `just for u babe 😘`,
+            `haha u like that?`,
+            `there 😊`,
+            `hope thats what u wanted`,
+            `lol ok here`,
+          ];
+        } else if (wantsNewPhoto) {
+          photoResponses = [
+            `here another one 😏`,
+            `lol ok heres more`,
+            `u like these huh 😘`,
+            `there u go again`,
+            `ok ok one more`,
+          ];
+        } else {
+          photoResponses = [
+            `here u go 😊`,
+            `lol ok here`,
+            `fine here 😏`,
+            `just took this rn`,
+            `there u go babe`,
+            `hope u like 😘`,
+            `heres me rn`,
+          ];
+        }
         const randomResponse = photoResponses[Math.floor(Math.random() * photoResponses.length)];
         
         return new Response(JSON.stringify({ 
