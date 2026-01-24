@@ -17,6 +17,27 @@ const sessions = new Map<string, IRCSession>();
 // Channel to session mapping for realtime relay
 const channelSubscriptions = new Map<string, Set<string>>(); // channelId -> Set<sessionId>
 
+// Simulated bot names per channel (subset of the full 140 bots)
+const channelBots: Record<string, string[]> = {
+  "general": ["CryptoKing", "NightOwl88", "PixelDreamer", "JazzCat", "ThunderStrike", "MoonWalker", "StarGazer", "CodeNinja", "RetroGamer", "NeonRider"],
+  "lounge": ["ChillVibes", "MidnightDJ", "SmoothOperator", "UrbanLegend", "CoffeeAddict", "BookWorm", "MovieBuff", "TravelJunkie", "FoodieLife", "ArtLover"],
+  "dating": ["LoveSeeker", "HeartBreaker", "RomanticSoul", "SingleAndReady", "CharmingOne", "SweetTalker", "DateNight", "FlirtMaster", "CupidArrow", "MatchMaker"],
+  "technology": ["TechGeek", "CodeMaster", "ByteRunner", "DigitalNomad", "CyberPunk", "AIEnthusiast", "DevOpsGuru", "CloudArchitect", "DataScientist", "HackerNews"],
+  "sports": ["GoalScorer", "SlamDunk", "HomeRun", "TouchDown", "FastLane", "ChampionMind", "TeamPlayer", "MVPstatus", "GoldMedal", "GameChanger"],
+  "music": ["BassDropper", "MelodyMaker", "VinylCollector", "ConcertGoer", "GuitarHero", "DrumBeat", "SynthWave", "HipHopHead", "RockStar", "JazzFusion"],
+  "movies": ["FilmCritic", "PopcornTime", "CinematicMind", "BlockBuster", "IndieFan", "HorrorNight", "ActionJunkie", "RomComLover", "SciFiGeek", "ClassicFilm"],
+  "games": ["ProGamer", "QuestMaster", "LootHunter", "BossSlayer", "SpeedRunner", "RetroKing", "VRExplorer", "StreamerLife", "EsportsLegend", "CasualPlay"],
+  "politics": ["DebateMaster", "PolicyWonk", "NewsJunkie", "FactChecker", "VoterVoice", "CivicMinded", "HistoryBuff", "GlobalWatch", "LocalActivist", "BipartisanBob"],
+  "adults-21-plus": ["NightLife", "PartyStarter", "ClubHopper", "MixMaster", "VIPaccess", "AfterHours", "WeekendWarrior", "SocialButterfly", "UrbanExplorer", "NightCrawler"],
+  "trivia": ["QuizWhiz", "FactMachine", "BrainTeaser", "TriviaKing", "KnowledgeSeeker", "AnswerBot", "SmartCookie", "QuestionMaster", "LearnItAll", "CuriousMind"],
+  "help": ["HelpDesk", "SupportHero", "GuideBot", "NewbieHelper", "TechSupport", "FriendlyFace", "WelcomeWagon", "InfoCenter", "AskMeAnything", "AssistantPro"],
+};
+
+function getBotsForChannel(channelName: string): string[] {
+  const normalized = channelName.toLowerCase().replace(/-/g, "-");
+  return channelBots[normalized] || channelBots["general"] || [];
+}
+
 interface IRCSession {
   ws: WebSocket;
   nick: string | null;
@@ -359,13 +380,44 @@ async function handleJOIN(session: IRCSession, params: string[]) {
         .from("profiles")
         .select("user_id, username");
 
+      // Check for room admins and owners
+      const { data: roomAdmins } = await session.supabase!
+        .from("room_admins")
+        .select("user_id")
+        .eq("channel_id", channel.id);
+
+      // Check global roles for the current user
+      const { data: userRoles } = await session.supabase!
+        .from("user_roles")
+        .select("user_id, role");
+
       const memberList = members as { user_id: string }[] | null;
       const profileList = profiles as { user_id: string; username: string }[] | null;
+      const roomAdminList = roomAdmins as { user_id: string }[] | null;
+      const rolesList = userRoles as { user_id: string; role: string }[] | null;
+      
       const profileMap = new Map(profileList?.map((p) => [p.user_id, p.username]) || []);
-      const memberNames = memberList?.map((m) => profileMap.get(m.user_id) || "unknown").join(" ") || session.nick;
+      const roomAdminSet = new Set(roomAdminList?.map((a) => a.user_id) || []);
+      const globalAdmins = new Set(rolesList?.filter(r => r.role === 'admin' || r.role === 'owner').map(r => r.user_id) || []);
+      
+      // Build member names with prefixes (@ for ops, + for voice)
+      const memberNames = memberList?.map((m) => {
+        const username = profileMap.get(m.user_id) || "unknown";
+        const isOp = roomAdminSet.has(m.user_id) || globalAdmins.has(m.user_id);
+        return isOp ? `@${username}` : username;
+      }).join(" ") || session.nick;
 
-      sendNumeric(session, RPL.NAMREPLY, `= ${channelName} :${memberNames}`);
+      // Add simulated bots to the channel (subset of 10 per room)
+      const botNames = getBotsForChannel(dbChannelName);
+      const allNames = memberNames + (botNames.length > 0 ? " " + botNames.join(" ") : "");
+
+      sendNumeric(session, RPL.NAMREPLY, `= ${channelName} :${allNames}`);
       sendNumeric(session, RPL.ENDOFNAMES, `${channelName} :End of /NAMES list`);
+      
+      // Grant operator status to the current user if they're an admin/owner
+      if (globalAdmins.has(session.userId!) || roomAdminSet.has(session.userId!)) {
+        sendIRC(session, `:${SERVER_NAME} MODE ${channelName} +o ${session.nick}`);
+      }
 
       // Join in database - use insert with conflict handling
       await (session.supabase as any)
