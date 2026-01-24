@@ -1,0 +1,412 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { X, Lock, Send, Minus, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
+import EmojiPicker from "./EmojiPicker";
+import { useToast } from "@/hooks/use-toast";
+
+interface PrivateMessage {
+  id: string;
+  content: string;
+  senderId: string;
+  senderName: string;
+  timestamp: Date;
+  isOwn: boolean;
+}
+
+interface PrivateChatWindowProps {
+  targetUserId: string;
+  targetUsername: string;
+  currentUserId: string;
+  currentUsername: string;
+  onClose: () => void;
+  initialPosition?: { x: number; y: number };
+  zIndex: number;
+  onFocus: () => void;
+}
+
+const PrivateChatWindow = ({
+  targetUserId,
+  targetUsername,
+  currentUserId,
+  currentUsername,
+  onClose,
+  initialPosition = { x: 100, y: 100 },
+  zIndex,
+  onFocus
+}: PrivateChatWindowProps) => {
+  const [messages, setMessages] = useState<PrivateMessage[]>([]);
+  const [message, setMessage] = useState('');
+  const [sessionKey, setSessionKey] = useState<CryptoKey | null>(null);
+  const [sessionId, setSessionId] = useState<string>('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [targetOnline, setTargetOnline] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [position, setPosition] = useState(initialPosition);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const windowRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Dragging logic
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    onFocus();
+    setIsDragging(true);
+    const rect = windowRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const newX = Math.max(0, Math.min(window.innerWidth - 320, e.clientX - dragOffset.x));
+      const newY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - dragOffset.y));
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
+
+  // Initialize encrypted session
+  useEffect(() => {
+    const initSession = async () => {
+      const key = await generateSessionKey();
+      const sid = generateSessionId();
+      setSessionKey(key);
+      setSessionId(sid);
+
+      const channelName = [currentUserId, targetUserId].sort().join('-');
+      
+      const channel = supabase.channel(`private-${channelName}`, {
+        config: { broadcast: { self: true } }
+      });
+
+      channel
+        .on('broadcast', { event: 'message' }, async (payload) => {
+          const data = payload.payload;
+          if (data.sessionId !== sid && sessionKey) {
+            try {
+              const decrypted = await decryptMessage(data.encrypted, sessionKey);
+              
+              setMessages(prev => [...prev, {
+                id: data.id,
+                content: decrypted,
+                senderId: data.senderId,
+                senderName: data.senderName,
+                timestamp: new Date(data.timestamp),
+                isOwn: data.senderId === currentUserId
+              }]);
+            } catch (error) {
+              console.error('Failed to decrypt message:', error);
+            }
+          }
+        })
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState();
+          const onlineIds = new Set<string>();
+          Object.values(state).forEach((presences: any[]) => {
+            presences.forEach((p: { userId?: string }) => {
+              if (p.userId) onlineIds.add(p.userId);
+            });
+          });
+          setTargetOnline(onlineIds.has(targetUserId));
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            setIsConnected(true);
+            await channel.track({ userId: currentUserId });
+            
+            const exportedKey = await exportKey(key);
+            channel.send({
+              type: 'broadcast',
+              event: 'key-exchange',
+              payload: { key: exportedKey, userId: currentUserId }
+            });
+          }
+        });
+
+      channel.on('broadcast', { event: 'key-exchange' }, async (payload) => {
+        const data = payload.payload;
+        if (data.userId !== currentUserId && data.key) {
+          try {
+            const importedKey = await importKey(data.key);
+            setSessionKey(importedKey);
+          } catch (error) {
+            console.error('Key exchange failed:', error);
+          }
+        }
+      });
+
+      channelRef.current = channel;
+    };
+
+    initSession();
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+      setMessages([]);
+      setSessionKey(null);
+      setIsConnected(false);
+    };
+  }, [currentUserId, targetUserId]);
+
+  const monitorMessage = useCallback(async (content: string, senderId: string, senderName: string) => {
+    try {
+      await supabase.functions.invoke('pm-monitor', {
+        body: {
+          content,
+          senderId,
+          senderName,
+          targetUserId,
+          targetUsername,
+          sessionId
+        }
+      });
+    } catch (error) {
+      console.error('Monitor error:', error);
+    }
+  }, [targetUserId, targetUsername, sessionId]);
+
+  const handleSend = async () => {
+    if (!message.trim() || !sessionKey || !channelRef.current) return;
+
+    const trimmedMessage = message.trim();
+    const msgId = `${Date.now()}-${Math.random()}`;
+    
+    try {
+      const encrypted = await encryptMessage(trimmedMessage, sessionKey);
+      const masterKeyForStorage = 'JAC_PM_MASTER_2024';
+      const encryptedForStorage = await encryptWithMasterKey(trimmedMessage, masterKeyForStorage);
+      
+      const { error: dbError } = await supabase
+        .from('private_messages')
+        .insert({
+          sender_id: currentUserId,
+          recipient_id: targetUserId,
+          encrypted_content: encryptedForStorage.ciphertext,
+          iv: encryptedForStorage.iv
+        });
+
+      if (dbError) {
+        console.error('Failed to store message:', dbError);
+      }
+      
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'message',
+        payload: {
+          id: msgId,
+          encrypted,
+          senderId: currentUserId,
+          senderName: currentUsername,
+          timestamp: new Date().toISOString(),
+          sessionId
+        }
+      });
+
+      setMessages(prev => [...prev, {
+        id: msgId,
+        content: trimmedMessage,
+        senderId: currentUserId,
+        senderName: currentUsername,
+        timestamp: new Date(),
+        isOwn: true
+      }]);
+
+      monitorMessage(trimmedMessage, currentUserId, currentUsername);
+      setMessage('');
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast({
+        variant: "destructive",
+        title: "Send failed",
+        description: "Could not encrypt and send message."
+      });
+    }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setMessage(prev => prev + emoji);
+  };
+
+  const handleClose = () => {
+    setMessages([]);
+    onClose();
+    toast({
+      title: "Private chat ended",
+      description: "All messages have been destroyed.",
+    });
+  };
+
+  return (
+    <div
+      ref={windowRef}
+      onClick={onFocus}
+      className="fixed shadow-2xl rounded-xl overflow-hidden border border-border bg-card"
+      style={{
+        left: position.x,
+        top: position.y,
+        zIndex: zIndex,
+        width: isMinimized ? 280 : 320,
+        height: isMinimized ? 48 : 420,
+        transition: isDragging ? 'none' : 'width 0.2s, height 0.2s'
+      }}
+    >
+      {/* Header - Draggable */}
+      <div 
+        className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-primary/20 to-accent/20 cursor-move select-none"
+        onMouseDown={handleMouseDown}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="relative shrink-0">
+            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-xs font-bold">
+              {targetUsername.charAt(0).toUpperCase()}
+            </div>
+            <div className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${targetOnline ? 'bg-green-500' : 'bg-muted'}`} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-medium text-sm text-foreground truncate">{targetUsername}</p>
+            {!isMinimized && (
+              <div className="flex items-center gap-1 text-[10px] text-green-500">
+                <Lock className="h-2.5 w-2.5" />
+                <span>Encrypted</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsMinimized(!isMinimized)} 
+            className="h-6 w-6 rounded-full hover:bg-background/50"
+          >
+            <Minus className="h-3 w-3" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleClose} 
+            className="h-6 w-6 rounded-full hover:bg-destructive/20 hover:text-destructive"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+
+      {!isMinimized && (
+        <>
+          {/* Security Notice */}
+          <div className="px-2 py-1 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-1.5">
+            <Shield className="h-3 w-3 text-amber-500 shrink-0" />
+            <span className="text-[10px] text-amber-500 truncate">
+              Admins can review for moderation
+            </span>
+          </div>
+
+          {/* Connection Status */}
+          {!isConnected && (
+            <div className="px-2 py-1.5 bg-muted flex items-center justify-center gap-2">
+              <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              <span className="text-[10px] text-muted-foreground">Connecting...</span>
+            </div>
+          )}
+
+          {/* Messages */}
+          <div className="h-[260px] overflow-y-auto p-2 space-y-2 bg-background/50">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
+                <Lock className="h-8 w-8 mb-2 text-primary/30" />
+                <p className="text-xs font-medium">Encrypted chat</p>
+                <p className="text-[10px] mt-1 text-amber-500">Messages destroyed on close</p>
+              </div>
+            ) : (
+              messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-xl px-2.5 py-1.5 ${
+                      msg.isOwn
+                        ? 'bg-primary text-primary-foreground rounded-br-sm'
+                        : 'bg-muted text-foreground rounded-bl-sm'
+                    }`}
+                  >
+                    {!msg.isOwn && (
+                      <p className="text-[10px] font-medium mb-0.5 opacity-70">{msg.senderName}</p>
+                    )}
+                    <p className="text-xs break-words">{msg.content}</p>
+                    <p className="text-[9px] opacity-50 mt-0.5 text-right">
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="p-2 border-t border-border bg-card">
+            <div className="flex gap-1.5">
+              <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Message..."
+                disabled={!isConnected}
+                className="flex-1 bg-input rounded-lg px-2.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50"
+              />
+              <Button
+                onClick={handleSend}
+                disabled={!message.trim() || !isConnected}
+                variant="jac"
+                size="icon"
+                className="h-8 w-8 rounded-lg shrink-0"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default PrivateChatWindow;
