@@ -658,7 +658,7 @@ async function completeRegistration(session: IRCSession) {
   sendNumeric(session, RPL.MOTD, `:-     ${IRC_COLORS.YELLOW}~${IRC_COLORS.RESET} ${IRC_COLORS.GREY}Owner${IRC_COLORS.RESET}  ${IRC_COLORS.RED}&${IRC_COLORS.RESET} ${IRC_COLORS.GREY}Admin${IRC_COLORS.RESET}  ${IRC_COLORS.GREEN}@${IRC_COLORS.RESET} ${IRC_COLORS.GREY}Operator${IRC_COLORS.RESET}  ${IRC_COLORS.CYAN}+${IRC_COLORS.RESET} ${IRC_COLORS.GREY}Bot${IRC_COLORS.RESET}`);
   sendNumeric(session, RPL.MOTD, `:- `);
   sendNumeric(session, RPL.MOTD, `:-   ${IRC_COLORS.GREY}════════════════════════════════════════${IRC_COLORS.RESET}`);
-  sendNumeric(session, RPL.MOTD, `:-   ${IRC_COLORS.GREY}Online: ${IRC_COLORS.GREEN}${sessions.size}${IRC_COLORS.GREY} users${IRC_COLORS.RESET}   ${IRC_COLORS.GREY}Web: https://justachat.lovable.app${IRC_COLORS.RESET}`);
+  sendNumeric(session, RPL.MOTD, `:-   ${IRC_COLORS.GREY}Online: ${IRC_COLORS.GREEN}${sessions.size}${IRC_COLORS.GREY} users${IRC_COLORS.RESET}   ${IRC_COLORS.GREY}Web: https://justachat.net${IRC_COLORS.RESET}`);
   sendNumeric(session, RPL.MOTD, `:- `);
   sendNumeric(session, RPL.ENDOFMOTD, `:End of MOTD command`);
 
@@ -1336,7 +1336,7 @@ async function triggerModeratorResponse(
 
 // CTCP (Client-To-Client Protocol) response constants
 const CTCP_DELIM = "\x01";
-const JAC_VERSION = "Justachat™ IRC Gateway 1.0 - https://justachat.lovable.app";
+const JAC_VERSION = "Justachat™ IRC Gateway 1.0 - https://justachat.net";
 const JAC_CLIENTINFO = "VERSION PING TIME USERINFO CLIENTINFO SOURCE";
 
 function handleCTCPRequest(session: IRCSession, sender: string, ctcpCommand: string): boolean {
@@ -1373,7 +1373,7 @@ function handleCTCPRequest(session: IRCSession, sender: string, ctcpCommand: str
       
     case "SOURCE":
       // Return source URL
-      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}SOURCE https://justachat.lovable.app${CTCP_DELIM}`);
+      sendIRC(session, `:${session.nick}!${session.user}@irc.${SERVER_NAME} NOTICE ${sender} :${CTCP_DELIM}SOURCE https://justachat.net${CTCP_DELIM}`);
       return true;
       
     case "FINGER":
