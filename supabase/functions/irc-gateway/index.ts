@@ -10,6 +10,19 @@ const corsHeaders = {
 const SERVER_NAME = "jac.chat";
 const SERVER_VERSION = "JAC-IRC-1.0";
 const NETWORK_NAME = "JACNet";
+const LOCAL_HOST_NAME = "Unix";
+
+// Simple hash function for IP masking (returns 8 hex chars)
+function hashIpForDisplay(userId: string): string {
+  let hash = 0;
+  const str = userId + "jac-salt";
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(16).padStart(8, '0').substring(0, 8);
+}
 
 // Active IRC sessions
 const sessions = new Map<string, IRCSession>();
@@ -623,9 +636,12 @@ async function completeRegistration(session: IRCSession) {
 
   session.registered = true;
 
+  // Generate hashed IP display for privacy
+  const hashedIp = session.userId ? hashIpForDisplay(session.userId) : "unknown";
+  
   // Send welcome messages
   sendNumeric(session, RPL.WELCOME, `:Welcome to the ${NETWORK_NAME} IRC Network, ${session.nick}!`);
-  sendNumeric(session, RPL.YOURHOST, `:Your host is ${SERVER_NAME}, running version ${SERVER_VERSION}`);
+  sendNumeric(session, RPL.YOURHOST, `:Your host is ${LOCAL_HOST_NAME} [${hashedIp}], running version ${SERVER_VERSION}`);
   sendNumeric(session, RPL.CREATED, `:This server was created for JAC - Just A Chat`);
   sendNumeric(session, RPL.MYINFO, `${SERVER_NAME} ${SERVER_VERSION} o o`);
   sendNumeric(session, RPL.ISUPPORT, "CHANTYPES=# PREFIX=(qaov)~&@+ NETWORK=JACNet CASEMAPPING=ascii :are supported by this server");
