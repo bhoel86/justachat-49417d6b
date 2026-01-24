@@ -498,12 +498,42 @@ const BOT_PERSONALITY_IDS = [
 // Track recent messages for bot context
 const recentChannelMessages: Map<string, Array<{ username: string; content: string }>> = new Map();
 
+// Flatten all configured IRC-visible bot names (used for /msg <bot> ...)
+const ALL_IRC_BOT_NAMES = Array.from(
+  new Set(Object.values(channelBots).flat())
+);
+
+function normalizeNick(nick: string) {
+  return nick.toLowerCase().replace(/[^a-z0-9_\-\[\]\\`^{}]/g, "");
+}
+
+function pickVisibleBotNameForChannel(channelName: string, preferred?: string) {
+  if (preferred) return preferred;
+  const bots = getBotsForChannel(channelName);
+  return bots[Math.floor(Math.random() * bots.length)] || "CryptoKing";
+}
+
+function getMentionedBotName(message: string, channelName: string): string | null {
+  const content = message.toLowerCase();
+  const bots = getBotsForChannel(channelName);
+  for (const bot of bots) {
+    const n = normalizeNick(bot);
+    if (!n) continue;
+    if (content.includes(`@${n}`) || content.includes(n)) return bot;
+  }
+  return null;
+}
+
 async function triggerBotResponse(
   channelId: string,
   channelName: string,
   userMessage: string,
   senderUsername: string,
-  supabaseClient: any
+  supabaseClient: any,
+  opts?: {
+    visibleBotName?: string;
+    force?: boolean;
+  }
 ) {
   try {
     // Check if bots are enabled for this channel
@@ -519,8 +549,10 @@ async function triggerBotResponse(
       return;
     }
 
-    // 25% chance for a bot to respond
-    if (Math.random() > 0.25) {
+    const mentioned = getMentionedBotName(userMessage, channelName);
+    const force = opts?.force === true || mentioned !== null;
+    // Default: 35% chance to respond unless mentioned
+    if (!force && Math.random() > 0.35) {
       console.log(`[Bot] Skipping response (random chance)`);
       return;
     }
@@ -531,7 +563,9 @@ async function triggerBotResponse(
     // Pick a random bot personality
     const botId = BOT_PERSONALITY_IDS[Math.floor(Math.random() * BOT_PERSONALITY_IDS.length)];
 
-    console.log(`[Bot] Triggering bot ${botId} response in ${channelName}`);
+    const visibleBotName = pickVisibleBotNameForChannel(channelName, mentioned || opts?.visibleBotName);
+
+    console.log(`[Bot] Triggering bot ${visibleBotName} (${botId}) response in ${channelName}`);
 
     // Random delay 5-15 seconds to seem human
     const delay = 5000 + Math.random() * 10000;
@@ -545,6 +579,7 @@ async function triggerBotResponse(
         const response = await fetch(`${supabaseUrl}/functions/v1/chat-bot`, {
           method: "POST",
           headers: {
+            apikey: supabaseAnonKey,
             "Authorization": `Bearer ${supabaseAnonKey}`,
             "Content-Type": "application/json",
           },
@@ -571,13 +606,13 @@ async function triggerBotResponse(
           return;
         }
 
-        console.log(`[Bot] ${data.username}: ${data.message}`);
+        console.log(`[Bot] ${visibleBotName}: ${data.message}`);
 
         // Insert bot message into database using service role
         const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
         
         // We need a bot user ID - use a consistent fake ID for bots
-        const botUserId = `bot-${botId}`;
+        const botUserId = `bot-${normalizeNick(visibleBotName) || botId}`;
         
         // Insert the message (the realtime subscription will relay it to IRC clients)
         const { error } = await serviceClient
@@ -595,7 +630,7 @@ async function triggerBotResponse(
 
         // Update recent messages cache
         const msgs = recentChannelMessages.get(channelId) || [];
-        msgs.push({ username: data.username, content: data.message });
+        msgs.push({ username: visibleBotName, content: data.message });
         if (msgs.length > 25) msgs.shift();
         recentChannelMessages.set(channelId, msgs);
 
@@ -607,7 +642,7 @@ async function triggerBotResponse(
             if (subscriberSession && subscriberSession.registered) {
               sendIRC(
                 subscriberSession,
-                `:${data.username}!${data.username}@bot.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
+                `:${visibleBotName}!${visibleBotName}@bot.${SERVER_NAME} PRIVMSG #${channelName} :${data.message}`
               );
             }
           }
@@ -685,28 +720,14 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
       console.error("PRIVMSG error:", e);
     }
   } else {
-    // Private message to user - check if it's a bot
-    const botNames = Object.values(BOT_PERSONALITY_IDS).map(id => {
-      const nameMap: Record<string, string> = {
-        'user-nova': 'NovaStarr',
-        'user-max': 'MaxChillin',
-        'user-luna': 'LunaRose',
-        'user-jay': 'JayPlays',
-        'user-sage': 'SageVibes',
-        'user-marcus': 'MarcusBeats',
-        'user-pixel': 'RetroKid88',
-        'user-riley': 'RileyAdventures',
-        'user-kai': 'KaiThinks',
-        'user-zoe': 'ZoeTech',
-      };
-      return { id, name: nameMap[id] };
-    });
+    // Private message to user - check if it's a bot (use IRC-visible bot names)
+    const targetBotName = ALL_IRC_BOT_NAMES.find(
+      (b) => b.toLowerCase() === target.toLowerCase()
+    );
     
-    const targetBot = botNames.find(b => b.name.toLowerCase() === target.toLowerCase());
-    
-    if (targetBot) {
+    if (targetBotName) {
       // Handle PM to a bot
-      console.log(`[Bot PM] ${session.nick} -> ${targetBot.name}: ${message}`);
+      console.log(`[Bot PM] ${session.nick} -> ${targetBotName}: ${message}`);
       
       // Delay response 3-8 seconds
       const delay = 3000 + Math.random() * 5000;
@@ -715,15 +736,19 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
         try {
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+          // Pick a random personality for the reply text (we override the IRC-visible nick)
+          const botId = BOT_PERSONALITY_IDS[Math.floor(Math.random() * BOT_PERSONALITY_IDS.length)];
           
           const response = await fetch(`${supabaseUrl}/functions/v1/chat-bot`, {
             method: "POST",
             headers: {
+              apikey: supabaseAnonKey,
               "Authorization": `Bearer ${supabaseAnonKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              botId: targetBot.id,
+              botId,
               context: "private",
               recentMessages: [],
               respondTo: message,
@@ -739,7 +764,7 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
 
           const data = await response.json();
           if (data.message) {
-            sendIRC(session, `:${targetBot.name}!${targetBot.name}@bot.${SERVER_NAME} PRIVMSG ${session.nick} :${data.message}`);
+            sendIRC(session, `:${targetBotName}!${targetBotName}@bot.${SERVER_NAME} PRIVMSG ${session.nick} :${data.message}`);
           }
         } catch (e) {
           console.error(`[Bot PM] Error:`, e);
