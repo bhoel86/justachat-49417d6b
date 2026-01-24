@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "react-router-dom";
+
 import { format } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
@@ -61,7 +61,7 @@ const ACTION_TYPE_MAP: Record<string, keyof typeof ACTION_CATEGORIES> = {
 };
 
 const AdminPanel = () => {
-  const { user, loading, isOwner } = useAuth();
+  const { user, loading, isOwner, isAdmin } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -221,23 +221,13 @@ const AdminPanel = () => {
     return <Navigate to="/auth" replace />;
   }
 
+  // Redirect admins to users page (they can't see audit logs but can access other admin pages)
+  if (!isOwner && isAdmin) {
+    return <Navigate to="/admin/users" replace />;
+  }
+
   if (!isOwner) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Shield className="h-12 w-12 mx-auto text-destructive mb-4" />
-            <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-            <p className="text-muted-foreground mb-4">
-              Only owners can access the admin panel.
-            </p>
-            <Link to="/">
-              <Button>Return Home</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   return (
