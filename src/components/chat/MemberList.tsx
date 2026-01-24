@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe, Eye, EyeOff } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe, Eye, EyeOff, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getBotsForChannel } from "@/lib/chatBots";
@@ -40,7 +40,26 @@ interface MemberListProps {
   onlineUserIds: Set<string>;
   channelName?: string;
   onOpenPm?: (userId: string, username: string) => void;
+  onAction?: (targetUsername: string, action: string) => void;
 }
+
+// Fun IRC-style user actions
+const USER_ACTIONS = {
+  funny: [
+    { emoji: "🐟", action: "slaps", suffix: "around with a large trout" },
+    { emoji: "🍕", action: "throws", suffix: "a slice of pizza at" },
+    { emoji: "🎸", action: "serenades", suffix: "with an air guitar solo" },
+    { emoji: "💨", action: "blows", suffix: "a raspberry at" },
+    { emoji: "🤡", action: "does", suffix: "a silly dance for" },
+  ],
+  nice: [
+    { emoji: "🙌", action: "high-fives", suffix: "" },
+    { emoji: "🤗", action: "gives", suffix: "a warm hug" },
+    { emoji: "🎉", action: "celebrates", suffix: "with confetti" },
+    { emoji: "⭐", action: "awards", suffix: "a gold star" },
+    { emoji: "☕", action: "offers", suffix: "a cup of coffee" },
+  ],
+};
 
 const roleConfig = {
   owner: {
@@ -75,7 +94,7 @@ const roleConfig = {
   },
 };
 
-const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm }: MemberListProps) => {
+const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
@@ -456,6 +475,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm }: Member
                     onKick={() => handleKick(member)}
                     onMute={(duration) => handleMute(member, duration)}
                     onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
+                    onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
                     isCurrentUser={member.user_id === user?.id}
                     onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                     onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
@@ -491,6 +511,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm }: Member
                       onKick={() => handleKick(member)}
                       onMute={(duration) => handleMute(member, duration)}
                       onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
+                      onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
                       isCurrentUser={member.user_id === user?.id}
                       onAvatarClick={member.user_id === user?.id ? () => setAvatarModalOpen(true) : undefined}
                       onUsernameClick={member.user_id === user?.id ? () => setUsernameModalOpen(true) : undefined}
@@ -674,6 +695,7 @@ interface MemberItemProps {
   onKick: () => void;
   onMute: (duration?: number) => void;
   onPmClick?: () => void;
+  onAction?: (actionMessage: string) => void;
   isCurrentUser: boolean;
   onAvatarClick?: () => void;
   onUsernameClick?: () => void;
@@ -681,7 +703,7 @@ interface MemberItemProps {
   currentlyPlaying?: { title: string; artist: string } | null;
 }
 
-const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChange, onBan, onKick, onMute, onPmClick, isCurrentUser, onAvatarClick, onUsernameClick, onBioClick, currentlyPlaying }: MemberItemProps) => {
+const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChange, onBan, onKick, onMute, onPmClick, onAction, isCurrentUser, onAvatarClick, onUsernameClick, onBioClick, currentlyPlaying }: MemberItemProps) => {
   const config = roleConfig[member.role] || roleConfig.user;
   const Icon = config.icon;
 
@@ -815,15 +837,77 @@ const MemberItem = ({ member, canManage, canModerate, availableRoles, onRoleChan
         )}
       </div>
 
-      {/* PM button */}
-      {!isCurrentUser && onPmClick && (
-        <button 
-          onClick={onPmClick}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-primary/10 transition-all"
-          title="Send private message"
-        >
-          <MessageSquareLock className="h-4 w-4 text-primary" />
-        </button>
+      {/* Action & PM buttons */}
+      {!isCurrentUser && (
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Fun Actions Menu */}
+          {onAction && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  className="p-1.5 rounded-lg hover:bg-primary/10 transition-all"
+                  title="Fun actions"
+                >
+                  <Zap className="h-4 w-4 text-primary" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="end" 
+                side="left"
+                className="w-52 bg-popover border border-border shadow-xl z-[9999]"
+              >
+                <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                  🤪 Funny
+                </DropdownMenuLabel>
+                {USER_ACTIONS.funny.map((action, idx) => (
+                  <DropdownMenuItem
+                    key={`funny-${idx}`}
+                    onClick={() => {
+                      const msg = action.suffix 
+                        ? `/me ${action.emoji} ${action.action} ${member.username} ${action.suffix}`
+                        : `/me ${action.emoji} ${action.action} ${member.username}`;
+                      onAction(msg);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <span className="mr-2">{action.emoji}</span>
+                    {action.action} {action.suffix ? `...` : ''}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                  💖 Nice
+                </DropdownMenuLabel>
+                {USER_ACTIONS.nice.map((action, idx) => (
+                  <DropdownMenuItem
+                    key={`nice-${idx}`}
+                    onClick={() => {
+                      const msg = action.suffix 
+                        ? `/me ${action.emoji} ${action.action} ${member.username} ${action.suffix}`
+                        : `/me ${action.emoji} ${action.action} ${member.username}`;
+                      onAction(msg);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <span className="mr-2">{action.emoji}</span>
+                    {action.action} {action.suffix ? `...` : ''}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
+          {/* PM button */}
+          {onPmClick && (
+            <button 
+              onClick={onPmClick}
+              className="p-1.5 rounded-lg hover:bg-primary/10 transition-all"
+              title="Send private message"
+            >
+              <MessageSquareLock className="h-4 w-4 text-primary" />
+            </button>
+          )}
+        </div>
       )}
 
       {/* Moderation & Role management dropdown */}

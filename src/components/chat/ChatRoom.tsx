@@ -1120,6 +1120,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           onlineUserIds={onlineUserIds} 
           channelName={currentChannel?.name} 
           onOpenPm={(userId, targetUsername) => privateChats.openChat(userId, targetUsername)}
+          onAction={(targetUsername, actionMessage) => handleSend(actionMessage)}
         />
       </div>
 
