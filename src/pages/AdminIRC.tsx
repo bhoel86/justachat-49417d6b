@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import IRCTestClient from "@/components/admin/IRCTestClient";
+import { IRCLogViewer } from "@/components/admin/IRCLogViewer";
 import {
   Table,
   TableBody,
@@ -688,6 +689,13 @@ const AdminIRC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Log Viewer */}
+        <IRCLogViewer 
+          proxyUrl={proxyUrl} 
+          adminToken={adminToken} 
+          isConnected={isConnected} 
+        />
 
         {/* Built-in Test Client */}
         <IRCTestClient />
