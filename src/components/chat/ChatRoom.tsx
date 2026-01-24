@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTriviaGame } from "@/hooks/useTriviaGame";
 import { useArtCurator } from "@/hooks/useArtCurator";
+import { useChatBots } from "@/hooks/useChatBots";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
@@ -408,6 +409,32 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
 
   // Art room hook
   const artCurator = useArtCurator();
+
+  // Function to add bot messages
+  const addBotMessage = useCallback((content: string, botUsername: string, avatar?: string) => {
+    if (!currentChannel?.id) return;
+    const botMsg: Message = {
+      id: `bot-${Date.now()}-${Math.random()}`,
+      content,
+      user_id: `bot-${botUsername}`,
+      channel_id: currentChannel.id,
+      created_at: new Date().toISOString(),
+      profile: { 
+        username: `${avatar || '🤖'} ${botUsername}`,
+        avatar_url: null
+      }
+    };
+    setMessages(prev => [...prev, botMsg]);
+  }, [currentChannel?.id]);
+
+  // Chat bots for general channel
+  const chatBots = useChatBots({
+    channelId: currentChannel?.id || null,
+    channelName: currentChannel?.name || 'general',
+    messages,
+    addBotMessage,
+    enabled: currentChannel?.name === 'general',
+  });
 
   // Show welcome message and tip when entering a channel
   useEffect(() => {
