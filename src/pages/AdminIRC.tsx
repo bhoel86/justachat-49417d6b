@@ -124,14 +124,34 @@ const AdminIRC = () => {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${proxyUrl}/status`);
+      const res = await fetch(`${proxyUrl}/status`, {
+        signal: AbortSignal.timeout(5000)
+      });
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
         setIsConnected(true);
+        toast.success("Connected to IRC proxy");
         return true;
+      } else {
+        toast.error(`Proxy returned ${res.status}: ${res.statusText}`);
+        setIsConnected(false);
       }
     } catch (e) {
+      const error = e as Error;
+      if (error.name === 'TimeoutError') {
+        toast.error("Connection timed out", {
+          description: "Check that the proxy URL is correct and accessible"
+        });
+      } else if (error.message?.includes('Failed to fetch')) {
+        toast.error("Cannot reach proxy", {
+          description: "CORS issue or proxy is offline. Ensure the proxy allows requests from this domain."
+        });
+      } else {
+        toast.error("Connection failed", {
+          description: error.message || "Unknown error"
+        });
+      }
       setIsConnected(false);
     }
     return false;
