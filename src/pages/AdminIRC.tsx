@@ -137,7 +137,16 @@ const AdminIRC = () => {
         toast.success("Connected to IRC proxy");
         return true;
       } else {
-        toast.error(`Proxy returned ${relay.status}${relay.statusText ? `: ${relay.statusText}` : ""}`);
+        // Most common case here is the relay can't reach the VPS (firewall/bind), so show that explicitly.
+        if (relay.status === 0 && relay.error) {
+          toast.error("Cannot reach proxy admin API", {
+            description: relay.error,
+          });
+        } else {
+          toast.error(
+            `Proxy returned ${relay.status}${relay.statusText ? `: ${relay.statusText}` : ""}`,
+          );
+        }
         setIsConnected(false);
       }
     } catch (e) {

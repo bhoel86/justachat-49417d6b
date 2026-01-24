@@ -30,7 +30,18 @@ export async function proxyAdminRequest<T = unknown>(args: {
   });
 
   if (error) {
-    return { ok: false, status: 0, error: error.message };
+    const anyErr = error as unknown as {
+      message?: string;
+      status?: number;
+      context?: { status?: number; statusText?: string; body?: unknown };
+    };
+    return {
+      ok: false,
+      status: anyErr.status ?? anyErr.context?.status ?? 0,
+      statusText: anyErr.context?.statusText,
+      data: anyErr.context?.body as T | undefined,
+      error: anyErr.message ?? "Request failed",
+    };
   }
 
   return data as ProxyAdminRelayResponse<T>;
