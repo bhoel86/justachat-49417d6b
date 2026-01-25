@@ -51,6 +51,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const [attachedImage, setAttachedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionPosition, setMentionPosition] = useState({ top: 48, left: 0 });
@@ -125,11 +126,11 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit to match backend
         toast({
           variant: "destructive",
           title: "Image too large",
-          description: "Please select an image under 5MB",
+          description: "Please select an image under 10MB",
         });
         return;
       }
@@ -154,6 +155,16 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
     if (!attachedImage) return null;
     
     setIsUploading(true);
+    setUploadProgress(0);
+    
+    // Simulate progress while uploading
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 15;
+      });
+    }, 200);
+    
     try {
       const formData = new FormData();
       formData.append("file", attachedImage);
@@ -163,6 +174,9 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
       const { data, error } = await supabase.functions.invoke("upload-image", {
         body: formData
       });
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
       
       if (error) {
         console.error("Upload function error:", error);
@@ -195,6 +209,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
       
       return data?.url || null;
     } catch (error) {
+      clearInterval(progressInterval);
       console.error("Upload error:", error);
       toast({
         variant: "destructive",
@@ -204,6 +219,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
       return null;
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -757,15 +773,30 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
             <img 
               src={imagePreview} 
               alt="Preview" 
-              className="h-10 lg:h-12 w-10 lg:w-12 rounded-xl object-cover"
+              className={`h-10 lg:h-12 w-10 lg:w-12 rounded-xl object-cover ${isUploading ? 'opacity-50' : ''}`}
             />
-            <button
-              type="button"
-              onClick={clearImage}
-              className="absolute -top-1 -right-1 h-4 w-4 bg-destructive rounded-full flex items-center justify-center"
-            >
-              <X className="h-3 w-3 text-white" />
-            </button>
+            {isUploading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted rounded-b-xl overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-200 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-medium text-foreground drop-shadow-sm">
+                  {Math.round(uploadProgress)}%
+                </span>
+              </div>
+            )}
+            {!isUploading && (
+              <button
+                type="button"
+                onClick={clearImage}
+                className="absolute -top-1 -right-1 h-4 w-4 bg-destructive rounded-full flex items-center justify-center"
+              >
+                <X className="h-3 w-3 text-white" />
+              </button>
+            )}
           </div>
         )}
 
