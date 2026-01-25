@@ -471,7 +471,38 @@ export const useFriends = (currentUserId: string) => {
         fetchFriends();
       })
       .on('postgres_changes', {
-        event: '*',
+        event: 'INSERT',
+        schema: 'public',
+        table: 'friend_requests',
+      }, async (payload) => {
+        fetchPendingRequests();
+        
+        // Show toast notification for new incoming friend requests
+        const newRequest = payload.new as { sender_id: string; recipient_id: string; status: string };
+        if (newRequest.recipient_id === currentUserId && newRequest.status === 'pending') {
+          // Fetch sender's profile to get their username
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('user_id', newRequest.sender_id)
+            .maybeSingle();
+          
+          const senderName = senderProfile?.username || 'Someone';
+          toast.info(`${senderName} sent you a friend request!`, {
+            description: 'Check your Friends tab to respond',
+            duration: 5000,
+          });
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'friend_requests',
+      }, () => {
+        fetchPendingRequests();
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
         schema: 'public',
         table: 'friend_requests',
       }, () => {
