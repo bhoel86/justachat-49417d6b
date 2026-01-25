@@ -486,6 +486,7 @@ function isPhotoRequest(message: string): boolean {
     'what do you look like', 'what u look like', 'how do you look', 'how u look',
     'pic?', 'pics?', 'photo?', 'photos?', 'send pics', 'send photos',
     'another pic', 'another photo', 'more pics', 'more photos', 'one more',
+    'next pic', 'next photo', 'next one', 'next', 'go next', 'show next',
     'wave at me', 'wave', 'blow a kiss', 'blow kiss', 'wink', 'wink at me',
     'gym pic', 'rave pic', 'party pic', 'beach pic', 'mirror pic',
     'tongue out', 'stick tongue out', 'peace sign', 'duck face', 'duckface',
@@ -499,7 +500,8 @@ function isPhotoRequest(message: string): boolean {
 function isNewPhotoRequest(message: string): boolean {
   const newPhotoKeywords = [
     'another', 'different', 'new pic', 'new photo', 'more pics', 'more photos',
-    'one more', 'send another', 'different angle', 'different pic', 'show more'
+    'one more', 'send another', 'different angle', 'different pic', 'show more',
+    'next pic', 'next photo', 'next one', 'next', 'go next', 'show next'
   ];
   const lowerMsg = message.toLowerCase();
   return newPhotoKeywords.some(kw => lowerMsg.includes(kw));
