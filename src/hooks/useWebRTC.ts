@@ -50,15 +50,13 @@ export const useWebRTC = ({
   const vadIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const peersRef = useRef<Map<string, Peer>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
+  const leaveRoomRef = useRef<() => void>(() => {});
 
   // Keep refs in sync with state
   useEffect(() => {
     peersRef.current = peers;
-  }, [peers]);
-  
-  useEffect(() => {
     localStreamRef.current = localStream;
-  }, [localStream]);
+  }, [peers, localStream]);
 
   // Voice Activity Detection
   const startVAD = useCallback((stream: MediaStream) => {
@@ -426,12 +424,16 @@ export const useWebRTC = ({
     }
   }, [localStream, peers]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - use ref to avoid dependency issues
+  useEffect(() => {
+    leaveRoomRef.current = leaveRoom;
+  }, [leaveRoom]);
+  
   useEffect(() => {
     return () => {
-      leaveRoom();
+      leaveRoomRef.current();
     };
-  }, [leaveRoom]);
+  }, []);
 
   return {
     isConnected,
