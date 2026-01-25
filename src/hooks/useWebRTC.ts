@@ -48,6 +48,17 @@ export const useWebRTC = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const vadIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const peersRef = useRef<Map<string, Peer>>(new Map());
+  const localStreamRef = useRef<MediaStream | null>(null);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    peersRef.current = peers;
+  }, [peers]);
+  
+  useEffect(() => {
+    localStreamRef.current = localStream;
+  }, [localStream]);
 
   // Voice Activity Detection
   const startVAD = useCallback((stream: MediaStream) => {
@@ -303,19 +314,19 @@ export const useWebRTC = ({
     });
   }, [roomId, userId, username, initializeMedia, createPeerConnection, peers, onPeerLeft, onPeerSpeaking]);
 
-  // Leave room
+  // Leave room - use refs to avoid dependency issues
   const leaveRoom = useCallback(() => {
     stopVAD();
     
-    // Close all peer connections
-    peers.forEach(peer => {
+    // Close all peer connections using ref
+    peersRef.current.forEach(peer => {
       peer.connection.close();
     });
     setPeers(new Map());
     
-    // Stop local stream
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
+    // Stop local stream using ref
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
       setLocalStream(null);
     }
     
@@ -326,7 +337,7 @@ export const useWebRTC = ({
     }
     
     setIsConnected(false);
-  }, [peers, localStream, stopVAD]);
+  }, [stopVAD]);
 
   // Toggle mute
   const toggleMute = useCallback(() => {
