@@ -32,11 +32,28 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check for password reset token in URL
+  // Track if we're in password reset mode (takes priority over auto-redirect)
+  const [isPasswordResetFlow, setIsPasswordResetFlow] = useState(false);
+
+  // Check for password reset token in URL - MUST run before redirect logic
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    // Check both hash and query params for recovery token
+    const isRecovery = 
+      (hash && hash.includes("type=recovery")) ||
+      searchParams.get("type") === "recovery";
+    
+    if (isRecovery) {
       setMode("reset");
+      setIsPasswordResetFlow(true);
+      
+      // Sign out any existing session so user can reset password
+      // This prevents the "already signed in" redirect issue
+      supabase.auth.signOut().then(() => {
+        console.log("Signed out for password reset flow");
+      });
     }
   }, []);
 
@@ -55,11 +72,12 @@ const Auth = () => {
     setCaptchaToken(null);
   }, []);
 
+  // Redirect logged-in users ONLY if not in password reset flow
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !isPasswordResetFlow) {
       navigate("/");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, isPasswordResetFlow]);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
