@@ -77,6 +77,19 @@ const AdminBans = () => {
     if (!user) return;
     
     try {
+      // Check target user's role - admins cannot unban other admins
+      const { data: targetRoleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+      
+      const targetRole = targetRoleData?.role || 'user';
+      if (targetRole === 'admin' && !isOwner) {
+        toast.error('Only owners can manage admin bans');
+        return;
+      }
+
       const { error } = await supabase
         .from('bans')
         .delete()

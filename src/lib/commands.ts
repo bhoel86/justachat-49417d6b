@@ -490,6 +490,12 @@ const muteCommand: CommandHandler = async (args, context) => {
     return { success: false, message: `User "${args[0]}" not found.` };
   }
 
+  // Check hierarchy - admins cannot mute other admins/owners
+  const targetRole = await getUserRole(targetUser.user_id);
+  if (targetRole === 'owner' || (targetRole === 'admin' && !context.isOwner)) {
+    return { success: false, message: 'Cannot mute this user.' };
+  }
+
   const reason = args.slice(1).join(' ') || 'No reason given';
 
   const { error } = await supabaseUntyped

@@ -111,13 +111,18 @@ const AdminUsers = () => {
   };
 
   const canChangeRole = (targetRole: string) => {
+    // Owners cannot be changed by anyone
     if (targetRole === 'owner') return false;
-    if (!isOwner && targetRole === 'admin') return false;
+    // Only owners can change admin roles
+    if (targetRole === 'admin') return isOwner;
+    // Admins can change moderator/user roles, owners can change anything except owner
     return isOwner || isAdmin;
   };
 
-  const getAvailableRoles = () => {
+  const getAvailableRoles = (targetRole: string) => {
+    // Only owners can assign/remove admin role
     if (isOwner) return ['admin', 'moderator', 'user'];
+    // Admins can only assign moderator or user roles (not admin)
     if (isAdmin) return ['moderator', 'user'];
     return [];
   };
@@ -244,7 +249,7 @@ const AdminUsers = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {getAvailableRoles().map(role => (
+                                {getAvailableRoles(u.role).map(role => (
                                   <SelectItem key={role} value={role}>
                                     {roleConfig[role as keyof typeof roleConfig].label}
                                   </SelectItem>
