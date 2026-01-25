@@ -6,6 +6,7 @@ import { useVoiceBroadcast } from '@/hooks/useVoiceBroadcast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import AudioVisualizerRing from '@/components/voice/AudioVisualizerRing';
 import { 
   Mic, MicOff, ArrowLeft, Users, Volume2, Radio, 
   Crown, Shield, Star 
@@ -298,21 +299,26 @@ const VoiceChat = () => {
                   {broadcasters.map((broadcaster) => (
                     <div 
                       key={broadcaster.odious}
-                      className="relative bg-gradient-to-br from-destructive/20 to-orange-500/20 rounded-xl p-4 border border-destructive/30 animate-pulse"
+                      className="relative bg-gradient-to-br from-destructive/20 to-orange-500/20 rounded-xl p-4 border border-destructive/30"
                     >
-                      <div className="absolute -top-2 -right-2">
+                      <div className="absolute -top-2 -right-2 z-10">
                         <Badge variant="destructive" className="text-[10px]">
                           <Volume2 className="w-3 h-3 mr-1 animate-pulse" />
                           LIVE
                         </Badge>
                       </div>
                       <div className="flex flex-col items-center gap-2">
-                        <Avatar className="w-16 h-16 ring-2 ring-destructive ring-offset-2 ring-offset-background">
-                          <AvatarImage src={broadcaster.avatarUrl || undefined} />
-                          <AvatarFallback className="bg-gradient-to-br from-destructive to-orange-500 text-destructive-foreground">
-                            {broadcaster.username.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <AudioVisualizerRing 
+                          audioLevel={broadcaster.audioLevel || 0} 
+                          size={72}
+                        >
+                          <Avatar className="w-full h-full">
+                            <AvatarImage src={broadcaster.avatarUrl || undefined} />
+                            <AvatarFallback className="bg-gradient-to-br from-destructive to-orange-500 text-destructive-foreground text-lg">
+                              {broadcaster.username.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </AudioVisualizerRing>
                         <div className="text-center">
                           <p className="font-medium text-sm truncate max-w-[100px]">
                             {broadcaster.username}
