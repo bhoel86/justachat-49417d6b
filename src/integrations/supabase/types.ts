@@ -556,6 +556,30 @@ export type Database = {
         }
         Relationships: []
       }
+      donation_settings: {
+        Row: {
+          current_amount: number
+          goal_amount: number
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          current_amount?: number
+          goal_amount?: number
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          current_amount?: number
+          goal_amount?: number
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       klines: {
         Row: {
           created_at: string

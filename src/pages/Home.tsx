@@ -552,7 +552,7 @@ const Home = () => {
 
       {/* Donation Banner */}
       <div className="container mx-auto px-3 sm:px-4 pt-4">
-        <DonationBanner goal={500} paypalEmail="bhoel86@gmail.com" />
+        <DonationBanner />
       </div>
 
       {/* Main Content */}
