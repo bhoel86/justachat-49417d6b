@@ -633,11 +633,39 @@ const Home = () => {
                         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
+                    
+                    {/* Voice Chat - Special room */}
+                    <Link
+                      to="/voice"
+                      className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25 hover:-translate-y-1 active:scale-95 active:translate-y-0"
+                    >
+                      {/* Gradient background */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-600 opacity-50 group-hover:opacity-70 transition-opacity" />
+                      
+                      {/* Dark overlay for readability */}
+                      <div className="absolute inset-0 bg-black/40" />
+                      
+                      {/* Content - stacked vertically */}
+                      <div className="relative h-full flex flex-col items-center justify-center gap-1 px-2 py-2">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-md group-hover:scale-105 transition-transform">
+                          <Volume2 className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-semibold text-[10px] sm:text-xs text-white drop-shadow-md text-center leading-tight">
+                          #Voice Chat
+                        </h3>
+                        {/* Mic icon indicator */}
+                        <div className="flex items-center gap-0.5 text-white/80">
+                          <span className="text-[9px] font-medium">🎙️ Live</span>
+                        </div>
+                      </div>
+
+                      {/* Hover effect overlay */}
+                      <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
                   </div>
                   
-                  {/* Special Sections - Dating & Voice Chat */}
-                  <div className="mt-3 lg:mt-4 space-y-2">
-                    {/* Dating Section */}
+                  {/* Dating Section - Fixed at bottom */}
+                  <div className="mt-3 lg:mt-4">
                     <Link
                       to="/dating"
                       className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
@@ -669,34 +697,6 @@ const Home = () => {
 
                       {/* Hover effect overlay */}
                       <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </Link>
-                    
-                    {/* Voice Chat Section */}
-                    <Link
-                      to="/voice"
-                      className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-purple-500/60 hover:border-purple-500 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 active:scale-[0.98]"
-                    >
-                      {/* Gradient background */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 opacity-60 group-hover:opacity-80 transition-opacity" />
-                      
-                      {/* Dark overlay for readability */}
-                      <div className="absolute inset-0 bg-black/30" />
-                      
-                      {/* Content */}
-                      <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                        <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-lg group-hover:scale-110 transition-transform">
-                          <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
-                        </div>
-                        <div className="flex flex-col">
-                          <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                            <span>🎙️</span> Voice Chat
-                          </h3>
-                          <span className="text-[10px] sm:text-xs text-white/80">Voice & video rooms</span>
-                        </div>
-                      </div>
-
-                      {/* Hover effect overlay */}
-                      <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   </div>
                 </>
