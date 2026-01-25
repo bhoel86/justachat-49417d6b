@@ -124,6 +124,7 @@ export default function VoiceChat() {
   const [age, setAge] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [backgroundEffect, setBackgroundEffect] = useState<'none' | 'blur' | 'green'>('none');
+  const [isLiveMode, setIsLiveMode] = useState(false);
   const [showChannelSheet, setShowChannelSheet] = useState(false);
   const [showMemberSheet, setShowMemberSheet] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
@@ -911,6 +912,19 @@ export default function VoiceChat() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
+                <Button 
+                  variant={isLiveMode ? "default" : "outline"} 
+                  size="icon" 
+                  className={cn("h-8 w-8", isLiveMode && "bg-destructive hover:bg-destructive/90 text-destructive-foreground")}
+                  onClick={() => setIsLiveMode(!isLiveMode)}
+                >
+                  <span className="text-xs font-bold">LIVE</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isLiveMode ? 'Exit Live View' : 'Go Live'}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setShowSettings(!showSettings)}>
                   <Settings className="h-3.5 w-3.5" />
                 </Button>
@@ -955,67 +969,186 @@ export default function VoiceChat() {
                 />
               )}
 
-              {isConnected && (isVideoEnabled || peers.some(p => p.stream?.getVideoTracks().length)) && (
-                <div className="shrink-0 p-2 border-b border-border/50 bg-muted/30">
-                  <div className={cn("grid gap-2", peers.length === 0 ? "grid-cols-1 max-w-xs mx-auto" : peers.length <= 1 ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3")}>
-                    <VideoTile stream={localStream} username="You" isMuted={isMuted} isSpeaking={isTalking} isLocal backgroundEffect={backgroundEffect} />
-                    {peers.map(peer => (
-                      <VideoTile key={peer.id} stream={peer.stream} username={peer.username} isMuted={peer.isMuted} isSpeaking={peer.isSpeaking} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!isConnected && (
-                <div className="shrink-0 p-3 border-b border-border/50 bg-card/50">
-                  <div className="flex items-center justify-between gap-3">
+              {/* Live Mode - Full screen video grid */}
+              {isLiveMode && isConnected && (
+                <div className="flex-1 flex flex-col bg-black/90 animate-fade-in">
+                  {/* Live header bar */}
+                  <div className="shrink-0 px-4 py-2 bg-destructive/90 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Volume2 className="h-4 w-4 text-primary" />
-                      <span className="text-sm">Join voice to chat with others</span>
+                      <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                      <span className="text-sm font-bold text-white">LIVE</span>
+                      <span className="text-xs text-white/80">
+                        {1 + peers.length} participant{peers.length !== 0 ? 's' : ''}
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="h-7 text-xs gap-1.5" onClick={() => handleJoinVoice(false)}><Mic className="h-3 w-3" />Voice</Button>
-                      <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={() => handleJoinVoice(true)}><Camera className="h-3 w-3" />Video</Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-7 text-xs text-white hover:bg-white/20"
+                      onClick={() => setIsLiveMode(false)}
+                    >
+                      <X className="h-3 w-3 mr-1" /> Exit Live
+                    </Button>
+                  </div>
+                  
+                  {/* Video grid */}
+                  <div className="flex-1 p-4 flex items-center justify-center">
+                    <div className={cn(
+                      "grid gap-3 w-full h-full max-w-6xl",
+                      // Dynamic grid based on participant count
+                      peers.length === 0 && "grid-cols-1",
+                      peers.length === 1 && "grid-cols-2",
+                      peers.length >= 2 && peers.length <= 3 && "grid-cols-2",
+                      peers.length >= 4 && peers.length <= 5 && "grid-cols-3",
+                      peers.length >= 6 && "grid-cols-3 md:grid-cols-4"
+                    )}>
+                      {/* Local video tile */}
+                      <div className={cn(
+                        "relative aspect-video bg-muted/20 rounded-xl overflow-hidden border-2 transition-all",
+                        isTalking ? "border-accent ring-2 ring-accent/50" : "border-border/30"
+                      )}>
+                        <VideoTile 
+                          stream={localStream} 
+                          username="You" 
+                          isMuted={isMuted} 
+                          isSpeaking={isTalking} 
+                          isLocal 
+                          backgroundEffect={backgroundEffect} 
+                        />
+                      </div>
+                      
+                      {/* Peer video tiles */}
+                      {peers.map(peer => (
+                        <div 
+                          key={peer.id}
+                          className={cn(
+                            "relative aspect-video bg-muted/20 rounded-xl overflow-hidden border-2 transition-all",
+                            peer.isSpeaking ? "border-accent ring-2 ring-accent/50" : "border-border/30"
+                          )}
+                        >
+                          <VideoTile 
+                            stream={peer.stream} 
+                            username={peer.username} 
+                            isMuted={peer.isMuted} 
+                            isSpeaking={peer.isSpeaking} 
+                          />
+                        </div>
+                      ))}
                     </div>
+                  </div>
+                  
+                  {/* Controls overlay at bottom */}
+                  <div className="shrink-0 px-4 py-3 bg-black/50 flex items-center justify-center gap-3">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant={isMuted ? "outline" : "secondary"} 
+                          size="icon" 
+                          className={cn("h-10 w-10 rounded-full", isTalking && "ring-2 ring-accent")}
+                          onClick={toggleMute}
+                        >
+                          {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{isMuted ? 'Unmute' : 'Mute'}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant={isVideoEnabled ? "secondary" : "outline"} 
+                          size="icon" 
+                          className="h-10 w-10 rounded-full"
+                          onClick={toggleVideo}
+                        >
+                          {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{isVideoEnabled ? 'Stop Video' : 'Start Video'}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="h-10 w-10 rounded-full"
+                          onClick={handleLeaveVoice}
+                        >
+                          <PhoneOff className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Leave Voice</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               )}
 
-              {/* Messages Area */}
-              <ScrollArea className="flex-1 voice-bg-pattern">
-                <div className="p-3 space-y-2 relative z-10">
-                  {messages.map(msg => (
-                    <div key={msg.id} className={cn("flex items-start gap-2", msg.isSystem && "justify-center")}>
-                      {msg.isSystem ? (
-                        <span className="text-xs text-muted-foreground italic">{msg.content}</span>
-                      ) : (
-                        <>
-                          <Avatar className={cn("h-6 w-6 shrink-0", msg.isModerator && "ring-1 ring-primary")}>
-                            <AvatarImage src={msg.avatarUrl} />
-                            <AvatarFallback className={cn("text-[10px]", msg.isModerator ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
-                              {msg.username.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-baseline gap-2">
-                              <span className={cn("text-xs font-medium truncate", msg.isModerator ? "text-primary" : "text-foreground")}>{msg.username}</span>
-                              {msg.isModerator && <span className="text-[9px] bg-primary/10 text-primary px-1 rounded">MOD</span>}
-                              <span className="text-[10px] text-muted-foreground">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
-                            <p className="text-sm break-words">{msg.content}</p>
-                            {msg.imageUrl && (
-                              <img src={msg.imageUrl} alt="Shared" className="mt-1 rounded-lg max-w-xs max-h-48 object-cover cursor-pointer hover:opacity-90" onClick={() => window.open(msg.imageUrl, '_blank')} />
-                            )}
-                          </div>
-                        </>
-                      )}
+              {/* Normal mode - Video strip + chat */}
+              {!isLiveMode && (
+                <>
+                  {isConnected && (isVideoEnabled || peers.some(p => p.stream?.getVideoTracks().length)) && (
+                    <div className="shrink-0 p-2 border-b border-border/50 bg-muted/30">
+                      <div className={cn("grid gap-2", peers.length === 0 ? "grid-cols-1 max-w-xs mx-auto" : peers.length <= 1 ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3")}>
+                        <VideoTile stream={localStream} username="You" isMuted={isMuted} isSpeaking={isTalking} isLocal backgroundEffect={backgroundEffect} />
+                        {peers.map(peer => (
+                          <VideoTile key={peer.id} stream={peer.stream} username={peer.username} isMuted={peer.isMuted} isSpeaking={peer.isSpeaking} />
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
+                  )}
 
-              {/* Chat Input with full features */}
+                  {!isConnected && (
+                    <div className="shrink-0 p-3 border-b border-border/50 bg-card/50">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Volume2 className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Join voice to chat with others</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" className="h-7 text-xs gap-1.5" onClick={() => handleJoinVoice(false)}><Mic className="h-3 w-3" />Voice</Button>
+                          <Button size="sm" variant="secondary" className="h-7 text-xs gap-1.5" onClick={() => handleJoinVoice(true)}><Camera className="h-3 w-3" />Video</Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Messages Area */}
+                  <ScrollArea className="flex-1 voice-bg-pattern">
+                    <div className="p-3 space-y-2 relative z-10">
+                      {messages.map(msg => (
+                        <div key={msg.id} className={cn("flex items-start gap-2", msg.isSystem && "justify-center")}>
+                          {msg.isSystem ? (
+                            <span className="text-xs text-muted-foreground italic">{msg.content}</span>
+                          ) : (
+                            <>
+                              <Avatar className={cn("h-6 w-6 shrink-0", msg.isModerator && "ring-1 ring-primary")}>
+                                <AvatarImage src={msg.avatarUrl} />
+                                <AvatarFallback className={cn("text-[10px]", msg.isModerator ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
+                                  {msg.username.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-baseline gap-2">
+                                  <span className={cn("text-xs font-medium truncate", msg.isModerator ? "text-primary" : "text-foreground")}>{msg.username}</span>
+                                  {msg.isModerator && <span className="text-[9px] bg-primary/10 text-primary px-1 rounded">MOD</span>}
+                                  <span className="text-[10px] text-muted-foreground">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                                <p className="text-sm break-words">{msg.content}</p>
+                                {msg.imageUrl && (
+                                  <img src={msg.imageUrl} alt="Shared" className="mt-1 rounded-lg max-w-xs max-h-48 object-cover cursor-pointer hover:opacity-90" onClick={() => window.open(msg.imageUrl, '_blank')} />
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  </ScrollArea>
+                </>
+              )}
+
+              {/* Chat Input with full features - hidden in live mode */}
+              {!isLiveMode && (
               <form onSubmit={handleSendMessage} className="shrink-0 p-2 border-t border-border/50 bg-card/50">
                 <div className="flex items-center gap-2">
                   {isConnected && (
@@ -1147,6 +1280,7 @@ export default function VoiceChat() {
                   </Button>
                 </div>
               </form>
+              )}
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-center p-8">
