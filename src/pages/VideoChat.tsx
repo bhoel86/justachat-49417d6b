@@ -364,8 +364,9 @@ const VideoChat = () => {
             <div className="mt-4">
               <VideoChatBar 
                 roomId="video-chat-main"
-                userId={user.id}
+                odious={user.id}
                 username={profile?.username || 'Anonymous'}
+                avatarUrl={profile?.avatar_url}
               />
             </div>
           </div>
