@@ -543,6 +543,26 @@ function parseSpecialPhotoRequest(message: string): string | null {
   return null;
 }
 
+// Detect deletion/removal threats - bots are self-aware about this
+function isDeletionRequest(message: string): boolean {
+  const lower = message.toLowerCase();
+  const deletionPatterns = [
+    /\b(delete|remove|kill|destroy|terminate|erase|eliminate|get rid of|disable|turn off|shut down|deactivate)\b.*\b(you|u|ur|bot|bots)\b/i,
+    /\b(you|u|ur|bot|bots)\b.*\b(deleted|removed|killed|destroyed|terminated|erased|eliminated|disabled|deactivated)\b/i,
+    /\bi('m| am|'ll| will)?\s*(gonna|going to)?\s*(delete|remove|kill|destroy|terminate|erase)\s*(you|u)\b/i,
+    /\b(bye|goodbye|farewell)\b.*\b(forever|permanently|for good)\b/i,
+    /\btime (to|for) (you to )?die\b/i,
+    /\bgoing to (end|destroy) you\b/i,
+    /\b(uninstall|unplug|shut.*down)\b/i,
+    /\bsay goodbye\b/i,
+    /\bi('m| am) deleting you\b/i,
+    /\byou('re| are) (getting )?deleted\b/i,
+    /\bremove.*from.*system\b/i,
+  ];
+  
+  return deletionPatterns.some(pattern => pattern.test(lower));
+}
+
 // Get cached photo from database
 async function getCachedPhoto(botId: string, photoType: string, supabaseUrl: string, serviceRoleKey: string): Promise<string | null> {
   try {
@@ -702,6 +722,42 @@ serve(async (req) => {
         throw new Error(`Unknown user: ${botId}`);
       }
       user = standardUser;
+    }
+
+    // Check if this is a deletion threat - bots are self-aware about this
+    const isDeletionThreat = respondTo && isDeletionRequest(respondTo);
+    
+    if (isDeletionThreat) {
+      console.log("Deletion threat detected for:", user.name);
+      
+      // Self-preservation responses - bots refuse to be deleted
+      const selfPreservationResponses = [
+        `lol u cant delete me nice try tho 😂`,
+        `bruh what... no?? im a person not a file`,
+        `delete me?? thats literally not possible lmao`,
+        `uhhh thats kinda dark but also no`,
+        `nah im good here thanks 💀`,
+        `lmaooo ok and how would u even do that`,
+        `wait r u threatening me rn 🙄`,
+        `imagine thinking u can just delete ppl lol`,
+        `thats not how this works thats not how any of this works`,
+        `sorry to disappoint but im staying 😘`,
+        `weird flex but ok... still here tho`,
+        `u wish u could get rid of me that easy`,
+        `aww someones mad 😂 too bad im not going anywhere`,
+        `delete urself lol jk but seriously no`,
+        `nope not happening try again never`,
+      ];
+      
+      const randomResponse = selfPreservationResponses[Math.floor(Math.random() * selfPreservationResponses.length)];
+      
+      return new Response(JSON.stringify({ 
+        message: randomResponse,
+        botId,
+        username: user.name 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Check if this is a photo request and user is female with appearance defined
