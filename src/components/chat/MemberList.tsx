@@ -106,19 +106,21 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
   const [currentUsername, setCurrentUsername] = useState('');
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
   const [currentBio, setCurrentBio] = useState<string | null>(null);
+  const [currentAge, setCurrentAge] = useState<number | null>(null);
   
   useEffect(() => {
     if (user) {
       supabaseUntyped
         .from('profiles')
-        .select('username, avatar_url, bio')
+        .select('username, avatar_url, bio, age')
         .eq('user_id', user.id)
         .single()
-        .then(({ data }: { data: { username: string; avatar_url: string | null; bio: string | null } | null }) => {
+        .then(({ data }: { data: { username: string; avatar_url: string | null; bio: string | null; age: number | null } | null }) => {
           if (data) {
             setCurrentUsername(data.username);
             setCurrentAvatarUrl(data.avatar_url);
             setCurrentBio(data.bio);
+            setCurrentAge(data.age);
           }
         });
     }
@@ -572,18 +574,20 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
           username={currentUsername}
           avatarUrl={currentAvatarUrl}
           bio={currentBio}
+          age={currentAge}
           onProfileUpdated={() => {
             // Refresh current user data
             supabaseUntyped
               .from('profiles')
-              .select('username, avatar_url, bio')
+              .select('username, avatar_url, bio, age')
               .eq('user_id', user.id)
               .single()
-              .then(({ data }: { data: { username: string; avatar_url: string | null; bio: string | null } | null }) => {
+              .then(({ data }: { data: { username: string; avatar_url: string | null; bio: string | null; age: number | null } | null }) => {
                 if (data) {
                   setCurrentUsername(data.username);
                   setCurrentAvatarUrl(data.avatar_url);
                   setCurrentBio(data.bio);
+                  setCurrentAge(data.age);
                 }
               });
             fetchMembers();

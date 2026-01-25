@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Camera, AtSign, FileText, Lock, Loader2, Check, Eye, EyeOff } from "lucide-react";
+import { Camera, AtSign, FileText, Lock, Loader2, Check, Eye, EyeOff, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ interface ProfileEditModalProps {
   username: string;
   avatarUrl: string | null;
   bio: string | null;
+  age: number | null;
   onProfileUpdated: () => void;
 }
 
@@ -49,6 +50,7 @@ export const ProfileEditModal = ({
   username: initialUsername,
   avatarUrl: initialAvatarUrl,
   bio: initialBio,
+  age: initialAge,
   onProfileUpdated,
 }: ProfileEditModalProps) => {
   const { user } = useAuth();
@@ -64,6 +66,10 @@ export const ProfileEditModal = ({
   
   // Bio state
   const [bio, setBio] = useState(initialBio || "");
+  
+  // Age state
+  const [age, setAge] = useState<string>(initialAge?.toString() || "");
+  const [ageError, setAgeError] = useState<string | null>(null);
   
   // Password state
   const [newPassword, setNewPassword] = useState("");
@@ -170,6 +176,18 @@ export const ProfileEditModal = ({
         hasChanges = true;
       }
 
+      // Check age changes
+      const ageValue = age.trim() ? parseInt(age.trim(), 10) : null;
+      if (ageValue !== initialAge) {
+        if (ageValue !== null && (isNaN(ageValue) || ageValue < 13 || ageValue > 120)) {
+          setAgeError("Age must be between 13 and 120");
+          setSaving(false);
+          return;
+        }
+        updates.age = ageValue;
+        hasChanges = true;
+      }
+
       // Save profile updates
       if (hasChanges) {
         const { error } = await supabase
@@ -234,7 +252,7 @@ export const ProfileEditModal = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="avatar" className="text-xs">
               <Camera className="h-4 w-4" />
             </TabsTrigger>
@@ -243,6 +261,9 @@ export const ProfileEditModal = ({
             </TabsTrigger>
             <TabsTrigger value="bio" className="text-xs">
               <FileText className="h-4 w-4" />
+            </TabsTrigger>
+            <TabsTrigger value="age" className="text-xs">
+              <Calendar className="h-4 w-4" />
             </TabsTrigger>
             <TabsTrigger value="password" className="text-xs">
               <Lock className="h-4 w-4" />
@@ -352,6 +373,31 @@ export const ProfileEditModal = ({
               <div className={`text-xs text-right ${remainingChars < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                 {remainingChars} characters remaining
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="age" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="age">Your Age</Label>
+              <Input
+                id="age"
+                type="number"
+                value={age}
+                onChange={(e) => {
+                  setAge(e.target.value);
+                  setAgeError(null);
+                }}
+                placeholder="Enter your age"
+                min={13}
+                max={120}
+                className={ageError ? "border-destructive" : ""}
+              />
+              {ageError && (
+                <p className="text-sm text-destructive">{ageError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Required to access age-restricted content and image filtering
+              </p>
             </div>
           </TabsContent>
 
