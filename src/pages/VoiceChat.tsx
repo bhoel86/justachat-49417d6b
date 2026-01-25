@@ -16,6 +16,7 @@ const VoiceChat = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
   const [rolesByUserId, setRolesByUserId] = useState<Record<string, string>>({});
+  const [isLocked, setIsLocked] = useState(false);
 
   // Fetch user profile
   useEffect(() => {
@@ -241,19 +242,30 @@ const VoiceChat = () => {
             )}
             
             <Button
-              onMouseDown={startBroadcast}
-              onMouseUp={stopBroadcast}
-              onMouseLeave={stopBroadcast}
-              onTouchStart={startBroadcast}
-              onTouchEnd={stopBroadcast}
+              onMouseDown={() => { if (!isLocked) startBroadcast(); }}
+              onMouseUp={() => { if (!isLocked) stopBroadcast(); }}
+              onMouseLeave={() => { if (!isLocked) stopBroadcast(); }}
+              onTouchStart={() => { if (!isLocked) startBroadcast(); }}
+              onTouchEnd={() => { if (!isLocked) stopBroadcast(); }}
+              onDoubleClick={() => {
+                if (isLocked) {
+                  setIsLocked(false);
+                  stopBroadcast();
+                } else {
+                  setIsLocked(true);
+                  startBroadcast();
+                }
+              }}
               className={`gap-2 select-none ${
-                isBroadcasting 
-                  ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' 
-                  : 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white'
+                isLocked
+                  ? 'bg-orange-500 hover:bg-orange-600 text-white ring-2 ring-orange-300'
+                  : isBroadcasting 
+                    ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' 
+                    : 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white'
               }`}
             >
               <Mic className={`w-4 h-4 ${isBroadcasting ? 'animate-pulse' : ''}`} />
-              {isBroadcasting ? 'Broadcasting...' : 'Hold to Talk'}
+              {isLocked ? '🔒 Locked On' : isBroadcasting ? 'Broadcasting...' : 'Hold to Talk'}
             </Button>
           </div>
         </div>
@@ -361,6 +373,7 @@ const VoiceChat = () => {
           </h3>
           <ul className="text-sm text-muted-foreground space-y-1">
             <li>• <strong>Hold</strong> the <strong>Hold to Talk</strong> button to broadcast your voice</li>
+            <li>• <strong>Double-click</strong> to lock broadcast on (click again to unlock)</li>
             <li>• Or press <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border text-xs font-mono">Alt</kbd> + <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border text-xs font-mono">M</kbd> as a keyboard shortcut</li>
             <li>• <strong>Release</strong> to stop broadcasting</li>
             <li>• Everyone in the room will hear you while you hold</li>
