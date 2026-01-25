@@ -89,6 +89,9 @@ export default function VoiceChat() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [currentChannel, setCurrentChannel] = useState<{ id: string; name: string } | null>(null);
+  const [roomPresenceUsers, setRoomPresenceUsers] = useState<
+    Array<{ id: string; username: string; avatarUrl?: string | null }>
+  >([]);
   const [messages, setMessages] = useState<VoiceMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [username, setUsername] = useState('');
@@ -157,6 +160,61 @@ export default function VoiceChat() {
     };
     fetchProfile();
   }, [user]);
+
+  // Track who has the voice room open (so the member list matches regular chat “in room” behavior)
+  useEffect(() => {
+    if (!currentChannel?.id || !user?.id) {
+      setRoomPresenceUsers([]);
+      return;
+    }
+
+    const presenceChannel = supabase.channel(`voice-presence-${currentChannel.id}`, {
+      config: {
+        presence: {
+          key: user.id,
+        },
+      },
+    });
+
+    const rebuildPresence = () => {
+      const state = presenceChannel.presenceState() as Record<string, any[]>;
+      const list: Array<{ id: string; username: string; avatarUrl?: string | null }> = [];
+
+      for (const [key, presences] of Object.entries(state)) {
+        const p = presences?.[0];
+        if (!p) continue;
+        const id = (p.user_id as string | undefined) ?? key;
+        list.push({
+          id,
+          username: (p.username as string | undefined) ?? 'User',
+          avatarUrl: (p.avatar_url as string | null | undefined) ?? null,
+        });
+      }
+
+      // De-dupe
+      const uniq = new Map<string, { id: string; username: string; avatarUrl?: string | null }>();
+      for (const m of list) uniq.set(m.id, m);
+      setRoomPresenceUsers(Array.from(uniq.values()));
+    };
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, rebuildPresence)
+      .on('presence', { event: 'join' }, rebuildPresence)
+      .on('presence', { event: 'leave' }, rebuildPresence)
+      .subscribe(async (status) => {
+        if (status !== 'SUBSCRIBED') return;
+        await presenceChannel.track({
+          user_id: user.id,
+          username: username || 'Anonymous',
+          avatar_url: avatarUrl,
+          online_at: new Date().toISOString(),
+        });
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [currentChannel?.id, user?.id, username, avatarUrl]);
 
   // Scroll to bottom on new messages
   const scrollToBottom = () => {
@@ -454,38 +512,74 @@ export default function VoiceChat() {
   const currentMod = currentChannel ? ROOM_MODERATORS[currentChannel.id] : null;
 
   // Build member list
-  const members = [
-    ...(currentMod ? [{
-      id: 'mod-' + currentChannel?.id,
-      username: `${currentMod.emoji} ${currentMod.name}`,
-      isMuted: false,
-      isSpeaking: false,
-      avatarUrl: undefined as string | undefined,
-      isLocal: false,
-      isModerator: true,
-      isInVoice: false
-    }] : []),
-    ...(currentChannel && user ? [{
-      id: user.id,
-      username: username || 'You',
-      isMuted: isConnected ? isMuted : true,
-      isSpeaking: isConnected ? isTalking : false,
-      avatarUrl: avatarUrl || undefined,
-      isLocal: true,
-      isModerator: false,
-      isInVoice: isConnected
-    }] : []),
-    ...peers.map(peer => ({
-      id: peer.id,
-      username: peer.username,
-      isMuted: peer.isMuted,
-      isSpeaking: peer.isSpeaking,
-      avatarUrl: undefined as string | undefined,
-      isLocal: false,
-      isModerator: false,
-      isInVoice: true
-    }))
-  ];
+  const members = (() => {
+    const list: Array<{
+      id: string;
+      username: string;
+      isMuted: boolean;
+      isSpeaking: boolean;
+      avatarUrl?: string;
+      isLocal: boolean;
+      isModerator: boolean;
+      isInVoice: boolean;
+    }> = [];
+
+    // 1) Room moderator
+    if (currentMod) {
+      list.push({
+        id: `mod-${currentChannel?.id}`,
+        username: `${currentMod.emoji} ${currentMod.name}`,
+        isMuted: false,
+        isSpeaking: false,
+        avatarUrl: undefined,
+        isLocal: false,
+        isModerator: true,
+        isInVoice: false,
+      });
+    }
+
+    // 2) Presence users (people who opened the voice room)
+    const presenceMap = new Map(
+      roomPresenceUsers.map((m) => [m.id, { username: m.username, avatarUrl: m.avatarUrl ?? undefined }])
+    );
+    // Ensure local user is always present
+    if (user?.id) {
+      presenceMap.set(user.id, {
+        username: username || 'You',
+        avatarUrl: avatarUrl ?? undefined,
+      });
+    }
+
+    // 3) Voice peers override presence state (in-voice, speaking/mute)
+    const peerMap = new Map(peers.map((p) => [p.id, p]));
+
+    for (const [id, p] of presenceMap.entries()) {
+      const peer = peerMap.get(id);
+      const isLocal = id === user?.id;
+      const inVoice = isLocal ? isConnected : !!peer;
+
+      list.push({
+        id,
+        username: p.username,
+        avatarUrl: p.avatarUrl,
+        isLocal,
+        isModerator: false,
+        isInVoice: inVoice,
+        isMuted: isLocal ? (isConnected ? isMuted : true) : peer ? peer.isMuted : true,
+        isSpeaking: isLocal ? (isConnected ? isTalking : false) : peer ? peer.isSpeaking : false,
+      });
+    }
+
+    // 4) Sort: local first, then in-voice, then alpha
+    list.sort((a, b) => {
+      if (a.isModerator !== b.isModerator) return a.isModerator ? -1 : 1;
+      if (a.isLocal !== b.isLocal) return a.isLocal ? -1 : 1;
+      if (a.isInVoice !== b.isInVoice) return a.isInVoice ? -1 : 1;
+      return a.username.localeCompare(b.username);
+    });
+
+    return list;
+  })();
 
   if (loading) {
     return (
