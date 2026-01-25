@@ -179,21 +179,48 @@ const Ethos = () => {
               
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
-                  Back in 2001, there was a site called <strong className="text-foreground">justachat.com</strong>. 
-                  It wasn't fancy. It wasn't trying to be the next big thing. It was exactly what the name said — 
-                  just a chat. A place where people showed up, talked, and kept coming back.
+                  Back in the early 2000s, there was a site called <strong className="text-foreground">justachat.com</strong>. 
+                  Run by <strong className="text-foreground">Cloyd Enterprises</strong>, it wasn't trying to be the next big thing. 
+                  It was exactly what the name said — just a chat. A place where people showed up, talked, and kept coming back.
+                </p>
+                
+                {/* Nostalgic details box */}
+                <div className="p-5 rounded-xl bg-gradient-to-br from-indigo-950/50 to-purple-950/30 border border-indigo-500/20 space-y-4">
+                  <p className="text-sm text-indigo-300 font-medium uppercase tracking-wider">The Rooms We Knew</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                    <span className="text-foreground/80">☕ The Cafe</span>
+                    <span className="text-foreground/80">🎮 Games</span>
+                    <span className="text-foreground/80">🏰 The Palace</span>
+                    <span className="text-foreground/80">🧠 Trivia</span>
+                    <span className="text-foreground/80">🏖️ The Beach</span>
+                    <span className="text-foreground/80">🎭 Freestyle</span>
+                    <span className="text-foreground/80">⚔️ RPG Chat</span>
+                    <span className="text-foreground/80">🎵 Music</span>
+                    <span className="text-foreground/80">💬 Teen Chat</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">
+                    Teen Chat alone had nearly 700,000 visits. Trivia had 70,000 questions. 
+                    They crowned a "Top Chatter" every week. It was a whole world.
+                  </p>
+                </div>
+
+                <p>
+                  Run by people like <strong className="text-foreground">Brent</strong> and moderated by regulars 
+                  like <strong className="text-foreground">Bethany</strong> who actually gave a damn about the community. 
+                  Real staff who knew the regulars by name. Room drama that felt important because you were invested. 
+                  Late nights that turned into friendships.
                 </p>
                 
                 <p>
-                  Run by a guy named <strong className="text-foreground">Brent</strong> and moderated by people 
-                  like <strong className="text-foreground">Bethany</strong> who actually gave a damn about the community, 
-                  it represented everything good about that era. Real moderators who knew the regulars by name. 
-                  Room drama that felt important because you were invested. Late nights that turned into friendships.
+                  There was KewlChat for the bold. Frogger and VooDoo Football in the games section. 
+                  Message boards where beef carried over from chat. A newsletter. A site map with symbols 
+                  and pictures lists — things that made a community feel like a <em>place</em> you could explore.
                 </p>
                 
                 <p>
-                  That site eventually went dark, like so many others. But the spirit of what it was? 
-                  That's what I'm trying to bring back.
+                  That site eventually went dark around 2003, like so many others. But the spirit of what it was? 
+                  That rainbow gradient logo, the blue interface, the cramped sidebar full of rooms — 
+                  that's what I'm trying to bring back.
                 </p>
               </div>
             </section>
