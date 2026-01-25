@@ -7,7 +7,7 @@ import {
   LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, 
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
   Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX, Menu, 
-  Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock
+  Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -309,6 +309,17 @@ const Home = () => {
                   Site Navigation
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                
+                {/* About Section */}
+                <DropdownMenuItem asChild>
+                  <Link to="/ethos" className="flex items-center gap-2 cursor-pointer">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    <div>
+                      <span>Our Story</span>
+                      <p className="text-xs text-muted-foreground">Why Justachat exists</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
                 
                 {/* Help Section */}
                 <DropdownMenuItem asChild>

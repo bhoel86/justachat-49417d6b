@@ -22,6 +22,7 @@ import AdminKlines from "./pages/AdminKlines";
 import DownloadProxy from "./pages/DownloadProxy";
 import ClientDownload from "./pages/ClientDownload";
 import Dating from "./pages/Dating";
+import Ethos from "./pages/Ethos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/download-proxy" element={<DownloadProxy />} />
               <Route path="/downloads" element={<ClientDownload />} />
               <Route path="/dating" element={<Dating />} />
+              <Route path="/ethos" element={<Ethos />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
