@@ -7,6 +7,7 @@ interface VoiceParticipant {
   username: string;
   avatarUrl?: string | null;
   isBroadcasting: boolean;
+  audioLevel?: number;
 }
 
 interface UseVoiceBroadcastOptions {
@@ -94,6 +95,7 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
       source.connect(analyserRef.current);
       
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      let lastBroadcast = 0;
       
       const updateLevel = () => {
         if (!analyserRef.current) return;
@@ -102,6 +104,17 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
         const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
         const normalizedLevel = Math.min(100, (average / 128) * 100);
         setAudioLevel(normalizedLevel);
+        
+        // Broadcast audio level to other participants (throttled to ~10fps)
+        const now = Date.now();
+        if (channelRef.current && now - lastBroadcast > 100) {
+          lastBroadcast = now;
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'audio-level',
+            payload: { odious, level: normalizedLevel }
+          });
+        }
         
         animationFrameRef.current = requestAnimationFrame(updateLevel);
       };
@@ -234,12 +247,21 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
               odious: key,
               username: presence.username || 'Anonymous',
               avatarUrl: presence.avatarUrl,
-              isBroadcasting: presence.isBroadcasting || false
+              isBroadcasting: presence.isBroadcasting || false,
+              audioLevel: 0
             });
           }
         });
         
         setParticipants(participantList);
+      })
+      .on('broadcast', { event: 'audio-level' }, ({ payload }) => {
+        // Update participant's audio level
+        setParticipants(prev => prev.map(p => 
+          p.odious === payload.odious 
+            ? { ...p, audioLevel: payload.level }
+            : p
+        ));
       })
       .on('presence', { event: 'join' }, async ({ key }) => {
         if (key === odious) return;
