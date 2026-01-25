@@ -155,26 +155,51 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
     
     setIsUploading(true);
     try {
-      const fileExt = attachedImage.name.split('.').pop();
-      const fileName = `chat-${Date.now()}.${fileExt}`;
-      const filePath = `chat-images/${fileName}`;
+      const formData = new FormData();
+      formData.append("file", attachedImage);
+      formData.append("bucket", "avatars");
+      formData.append("path", `chat-images/${Date.now()}-${attachedImage.name}`);
       
-      const { error: uploadError } = await supabase.storage
-        .from('avatars') // Reusing avatars bucket for chat images
-        .upload(filePath, attachedImage);
+      const { data, error } = await supabase.functions.invoke("upload-image", {
+        body: formData
+      });
       
-      if (uploadError) throw uploadError;
+      if (error) {
+        console.error("Upload function error:", error);
+        throw new Error(error.message || "Upload failed");
+      }
       
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+      if (data?.error) {
+        // Handle specific error types
+        if (data.error === "Rate limit exceeded") {
+          toast({
+            variant: "destructive",
+            title: "Too many uploads",
+            description: data.message || `Please wait before uploading again.`,
+          });
+        } else if (data.error === "Content policy violation") {
+          toast({
+            variant: "destructive",
+            title: "Image blocked",
+            description: data.message || "This image cannot be uploaded.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Upload failed",
+            description: data.message || data.error,
+          });
+        }
+        return null;
+      }
       
-      return publicUrl;
+      return data?.url || null;
     } catch (error) {
+      console.error("Upload error:", error);
       toast({
         variant: "destructive",
         title: "Upload failed",
-        description: "Failed to upload image. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload image. Please try again.",
       });
       return null;
     } finally {
