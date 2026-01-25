@@ -26,6 +26,9 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resetEmailSentAt, setResetEmailSentAt] = useState<number | null>(null);
+  const [canResend, setCanResend] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(30);
   const [rateLimitInfo, setRateLimitInfo] = useState<{ locked: boolean; message?: string; remainingAttempts?: number } | null>(null);
   
   const { signIn, signUp, user, loading } = useAuth();
@@ -78,6 +81,24 @@ const Auth = () => {
       navigate("/");
     }
   }, [user, loading, navigate, isPasswordResetFlow]);
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    if (!resetEmailSentAt) return;
+    
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - resetEmailSentAt) / 1000);
+      const remaining = Math.max(0, 30 - elapsed);
+      setResendCountdown(remaining);
+      
+      if (remaining === 0) {
+        setCanResend(true);
+        clearInterval(interval);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [resetEmailSentAt]);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -213,6 +234,9 @@ const Auth = () => {
         });
       } else {
         setResetEmailSent(true);
+        setResetEmailSentAt(Date.now());
+        setCanResend(false);
+        setResendCountdown(30);
         toast({
           title: "Check your email",
           description: "We've sent you a password reset link."
@@ -430,13 +454,23 @@ const Auth = () => {
               <p className="text-muted-foreground text-sm">
                 We've sent a password reset link to <span className="font-medium">{email}</span>
               </p>
-              <button
-                type="button"
-                onClick={() => setResetEmailSent(false)}
-                className="text-sm text-primary hover:underline mt-4"
-              >
-                Didn't receive it? Try again
-              </button>
+              {canResend ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetEmailSent(false);
+                    setResetEmailSentAt(null);
+                    setCanResend(false);
+                  }}
+                  className="text-sm text-primary hover:underline mt-4 font-medium"
+                >
+                  Resend reset email
+                </button>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-4">
+                  Didn't receive it? You can resend in {resendCountdown}s
+                </p>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
