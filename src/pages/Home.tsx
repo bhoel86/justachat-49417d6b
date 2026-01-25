@@ -7,7 +7,7 @@ import {
   LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, 
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
   Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX, Menu, 
-  Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen
+  Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen, Volume2
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -328,6 +328,17 @@ const Home = () => {
                     <div>
                       <span>Game Arcade</span>
                       <p className="text-xs text-muted-foreground">Free games to play</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
+                {/* Voice Chat Section */}
+                <DropdownMenuItem asChild>
+                  <Link to="/voice" className="flex items-center gap-2 cursor-pointer">
+                    <Volume2 className="w-4 h-4 text-purple-500" />
+                    <div>
+                      <span>Voice Chat</span>
+                      <p className="text-xs text-muted-foreground">Voice & video rooms</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>

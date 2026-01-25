@@ -20,6 +20,7 @@ import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
 import RoomSettingsModal from "./RoomSettingsModal";
 import RoomPasswordModal from "./RoomPasswordModal";
 import ArtDisplay from "./ArtDisplay";
+import PrivateCallModal from "@/components/voice/PrivateCallModal";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
 import { getModerator, getWelcomeMessage, getRandomTip, isAdultChannel } from "@/lib/roomConfig";
@@ -74,6 +75,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const [showChannelSidebar, setShowChannelSidebar] = useState(false);
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
   const [showRoomSheet, setShowRoomSheet] = useState(false);
+  const [privateCall, setPrivateCall] = useState<{ targetId: string; targetUsername: string; callType: 'voice' | 'video' } | null>(null);
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -95,12 +97,24 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       radio.enableRadio();
     }
     
+    // Listen for private call events from PM windows
+    const handlePrivateCall = (e: CustomEvent<{ targetUserId: string; targetUsername: string; callType: 'voice' | 'video' }>) => {
+      setPrivateCall({
+        targetId: e.detail.targetUserId,
+        targetUsername: e.detail.targetUsername,
+        callType: e.detail.callType,
+      });
+    };
+    
+    window.addEventListener('start-private-call', handlePrivateCall as EventListener);
+    
     return () => {
       // Clear messages when leaving chat - ephemeral for user
       setMessages([]);
       if (radio?.disableRadio) {
         radio.disableRadio();
       }
+      window.removeEventListener('start-private-call', handlePrivateCall as EventListener);
     };
   }, []);
 
@@ -1247,6 +1261,17 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
               toast({ variant: "destructive", title: "Incorrect password" });
             }
           }}
+        />
+      )}
+      
+      {/* Private Call Modal */}
+      {privateCall && user && (
+        <PrivateCallModal
+          isOpen={!!privateCall}
+          onClose={() => setPrivateCall(null)}
+          recipientId={privateCall.targetId}
+          recipientUsername={privateCall.targetUsername}
+          callType={privateCall.callType}
         />
       )}
     </div>

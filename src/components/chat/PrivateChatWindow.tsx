@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Lock, Send, Minus, Shield, Check, CheckCheck } from "lucide-react";
+import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
@@ -446,6 +446,40 @@ const PrivateChatWindow = ({
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
+          {/* Voice/Video Call buttons - only for real users, not bots */}
+          {!isTargetBot && (
+            <>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  // TODO: Trigger voice call
+                  window.dispatchEvent(new CustomEvent('start-private-call', { 
+                    detail: { targetUserId, targetUsername, callType: 'voice' } 
+                  }));
+                }} 
+                className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary"
+                title="Voice call"
+              >
+                <Phone className="h-3 w-3" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => { 
+                  e.stopPropagation();
+                  window.dispatchEvent(new CustomEvent('start-private-call', { 
+                    detail: { targetUserId, targetUsername, callType: 'video' } 
+                  }));
+                }} 
+                className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary"
+                title="Video call"
+              >
+                <Video className="h-3 w-3" />
+              </Button>
+            </>
+          )}
           <Button 
             variant="ghost" 
             size="icon" 
