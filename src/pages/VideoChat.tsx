@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import VideoTile from '@/components/video/VideoTile';
 import VideoChatBar from '@/components/video/VideoChatBar';
+import VideoUserMenu from '@/components/video/VideoUserMenu';
 import PrivateChatWindow from '@/components/chat/PrivateChatWindow';
 import PMTray from '@/components/chat/PMTray';
 import { 
   Video, VideoOff, ArrowLeft, Users, Mic, MicOff,
-  Crown, Shield, Star, Camera
+  Crown, Shield, Star, Camera, MoreVertical
 } from 'lucide-react';
 
 const VideoChat = () => {
@@ -406,22 +407,31 @@ const VideoChat = () => {
                   </p>
                 ) : (
                   viewers.map((viewer) => (
-                    <button 
+                    <VideoUserMenu
                       key={viewer.odious}
-                      onClick={() => viewer.odious !== user.id && openChat(viewer.odious, viewer.username)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left"
+                      odious={viewer.odious}
+                      username={viewer.username}
+                      avatarUrl={viewer.avatarUrl}
+                      role={rolesByUserId[viewer.odious]}
+                      currentUserId={user.id}
+                      onPmClick={viewer.odious !== user.id ? () => openChat(viewer.odious, viewer.username) : undefined}
                     >
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={viewer.avatarUrl || undefined} />
-                        <AvatarFallback className="text-xs bg-primary/20">
-                          {viewer.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{viewer.username}</p>
-                        {getRoleBadge(viewer.odious)}
-                      </div>
-                    </button>
+                      <button 
+                        className="w-full flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left group"
+                      >
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={viewer.avatarUrl || undefined} />
+                          <AvatarFallback className="text-xs bg-primary/20">
+                            {viewer.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{viewer.username}</p>
+                          {getRoleBadge(viewer.odious)}
+                        </div>
+                        <MoreVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    </VideoUserMenu>
                   ))
                 )}
               </div>

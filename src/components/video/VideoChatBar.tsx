@@ -13,11 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
-import EmojiPicker from '@/components/chat/EmojiPicker';
 import FormattedText from '@/components/chat/FormattedText';
+import VideoUserMenu from '@/components/video/VideoUserMenu';
 import { 
   Send, MessageSquare, Smile, Zap, ImagePlus, X, Loader2,
-  Crown, Shield, Star, MoreVertical, MessageSquareLock
+  Crown, Shield, Star
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { compressImage } from '@/lib/imageCompression';
@@ -336,38 +336,18 @@ const VideoChatBar = ({ roomId, odious, username, avatarUrl, onPmClick }: VideoC
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className={`text-[10px] font-medium hover:underline cursor-pointer ${isOwn ? 'text-primary' : 'text-foreground'}`}>
-                            {msg.username}
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-40 bg-popover border border-border z-50">
-                          <DropdownMenuLabel className="flex items-center gap-2 py-1">
-                            <Avatar className="w-6 h-6">
-                              <AvatarImage src={msg.avatarUrl || undefined} />
-                              <AvatarFallback className="text-[9px]">{msg.username.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-xs font-medium">{msg.username}</p>
-                              {role && <p className="text-[9px] text-muted-foreground capitalize">{role}</p>}
-                            </div>
-                          </DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          {!isOwn && onPmClick && (
-                            <DropdownMenuItem onClick={() => onPmClick(msg.odious, msg.username)} className="text-xs">
-                              <MessageSquareLock className="w-3 h-3 mr-2 text-primary" />
-                              Private Message
-                            </DropdownMenuItem>
-                          )}
-                          {selectedAction && !isOwn && (
-                            <DropdownMenuItem onClick={() => handleActionWithUser(msg.username)} className="text-xs">
-                              <Zap className="w-3 h-3 mr-2 text-yellow-500" />
-                              {selectedAction.emoji} {selectedAction.action}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <VideoUserMenu
+                        odious={msg.odious}
+                        username={msg.username}
+                        avatarUrl={msg.avatarUrl}
+                        role={role}
+                        currentUserId={odious}
+                        onPmClick={!isOwn && onPmClick ? () => onPmClick(msg.odious, msg.username) : undefined}
+                      >
+                        <button className={`text-[10px] font-medium hover:underline cursor-pointer ${isOwn ? 'text-primary' : 'text-foreground'}`}>
+                          {msg.username}
+                        </button>
+                      </VideoUserMenu>
                       {getRoleBadge(role)}
                     </div>
                     <div className="text-[11px] text-foreground/90 break-words">
