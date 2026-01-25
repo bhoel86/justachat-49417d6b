@@ -166,13 +166,20 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
     }, 200);
     
     try {
-      const formData = new FormData();
-      formData.append("file", attachedImage);
-      formData.append("bucket", "avatars");
-      formData.append("path", `chat-images/${Date.now()}-${attachedImage.name}`);
-      
+      // NOTE: Some browsers/environments are flaky with multipart FormData via invoke().
+      // Send the raw binary image instead, and pass metadata via headers.
+      const safeName = attachedImage.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const suggestedPath = `chat-images/${Date.now()}-${safeName}`;
+
       const { data, error } = await supabase.functions.invoke("upload-image", {
-        body: formData
+        body: attachedImage,
+        headers: {
+          "Content-Type": attachedImage.type,
+          "x-file-name": safeName,
+          "x-file-type": attachedImage.type,
+          "x-bucket": "avatars",
+          "x-path": suggestedPath,
+        },
       });
       
       clearInterval(progressInterval);

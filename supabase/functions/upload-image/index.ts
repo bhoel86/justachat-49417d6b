@@ -172,22 +172,51 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse the request body
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const bucket = formData.get("bucket") as string || "avatars";
-    const path = formData.get("path") as string;
+    // Parse upload payload.
+    // Supports:
+    //  1) multipart/form-data with field "file" (legacy)
+    //  2) raw binary body (Blob/File) with metadata in headers (preferred)
+    const contentTypeHeader = req.headers.get("content-type") || "";
+    let uploadName = "upload";
+    let uploadType = "application/octet-stream";
+    let uploadBytes: ArrayBuffer;
+    let bucket = "avatars";
+    let requestedPath: string | undefined;
 
-    if (!file) {
-      return new Response(
-        JSON.stringify({ error: "No file provided" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (contentTypeHeader.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const file = formData.get("file") as File | null;
+      bucket = (formData.get("bucket") as string) || bucket;
+      requestedPath = (formData.get("path") as string) || undefined;
+
+      if (!file) {
+        return new Response(
+          JSON.stringify({ error: "No file provided" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      uploadName = file.name || uploadName;
+      uploadType = file.type || uploadType;
+      uploadBytes = await file.arrayBuffer();
+    } else {
+      bucket = req.headers.get("x-bucket") || bucket;
+      requestedPath = req.headers.get("x-path") || undefined;
+      uploadName = req.headers.get("x-file-name") || uploadName;
+      uploadType = req.headers.get("x-file-type") || req.headers.get("content-type") || uploadType;
+      uploadBytes = await req.arrayBuffer();
+
+      if (!uploadBytes || uploadBytes.byteLength === 0) {
+        return new Response(
+          JSON.stringify({ error: "No file provided" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Validate file type
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(uploadType)) {
       return new Response(
         JSON.stringify({ error: "Invalid file type. Allowed: JPEG, PNG, GIF, WebP" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -196,18 +225,17 @@ Deno.serve(async (req) => {
 
     // Max file size: 10MB
     const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (uploadBytes.byteLength > maxSize) {
       return new Response(
         JSON.stringify({ error: "File too large. Maximum size is 10MB" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Processing upload for user ${user.id}: ${file.name} (${file.size} bytes)`);
+    console.log(`Processing upload for user ${user.id}: ${uploadName} (${uploadBytes.byteLength} bytes)`);
 
-    // Convert file to base64 for AI analysis
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
+    // Convert bytes to base64 for AI analysis
+    const uint8Array = new Uint8Array(uploadBytes);
     let binary = "";
     const chunkSize = 8192;
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
@@ -215,7 +243,7 @@ Deno.serve(async (req) => {
       binary += String.fromCharCode(...chunk);
     }
     const base64 = btoa(binary);
-    const imageBase64 = `data:${file.type};base64,${base64}`;
+    const imageBase64 = `data:${uploadType};base64,${base64}`;
 
     // AI nudity screening
     console.log("Running AI content moderation...");
@@ -235,14 +263,23 @@ Deno.serve(async (req) => {
     console.log("Image passed content moderation");
 
     // Generate file path
-    const fileExt = file.name.split(".").pop() || "jpg";
-    const fileName = path || `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+    const fileExt = uploadName.split(".").pop() || "jpg";
+
+    // Security: force uploads into the caller's folder to avoid overwriting other users' files.
+    const cleanedRequestedPath = requestedPath
+      ? requestedPath.replace(/^\/+/, "").replace(/\.\./g, "")
+      : undefined;
+
+    let fileName = cleanedRequestedPath || `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+    if (!fileName.startsWith(`${user.id}/`)) {
+      fileName = `${user.id}/${fileName}`;
+    }
 
     // Upload to storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(fileName, arrayBuffer, {
-        contentType: file.type,
+      .upload(fileName, uploadBytes, {
+        contentType: uploadType,
         upsert: true,
       });
 
