@@ -54,10 +54,11 @@ interface VideoChatBarProps {
   odious: string;
   username: string;
   avatarUrl?: string | null;
+  currentUserRole?: 'owner' | 'admin' | 'moderator' | 'user' | null;
   onPmClick?: (odious: string, username: string) => void;
 }
 
-const VideoChatBar = ({ roomId, odious, username, avatarUrl, onPmClick }: VideoChatBarProps) => {
+const VideoChatBar = ({ roomId, odious, username, avatarUrl, currentUserRole, onPmClick }: VideoChatBarProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [rolesByUserId, setRolesByUserId] = useState<Record<string, string>>({});
@@ -342,6 +343,7 @@ const VideoChatBar = ({ roomId, odious, username, avatarUrl, onPmClick }: VideoC
                         avatarUrl={msg.avatarUrl}
                         role={role}
                         currentUserId={odious}
+                        currentUserRole={currentUserRole}
                         onPmClick={!isOwn && onPmClick ? () => onPmClick(msg.odious, msg.username) : undefined}
                       >
                         <button className={`text-[10px] font-medium hover:underline cursor-pointer ${isOwn ? 'text-primary' : 'text-foreground'}`}>
