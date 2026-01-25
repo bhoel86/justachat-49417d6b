@@ -12,6 +12,7 @@ import { useRadioOptional } from "@/contexts/RadioContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { compressImage } from "@/lib/imageCompression";
 
 // Fun IRC-style user actions
 const USER_ACTIONS = {
@@ -123,23 +124,52 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   // Emoji categories for mobile dropdown
   const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '🔥', '😮', '😢', '😡', '🎉', '💯'];
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit to match backend
+    if (!file) return;
+
+    // Initial size check (allow larger files since we'll compress)
+    if (file.size > 25 * 1024 * 1024) { // 25MB raw limit before compression
+      toast({
+        variant: "destructive",
+        title: "Image too large",
+        description: "Please select an image under 25MB",
+      });
+      return;
+    }
+
+    try {
+      // Compress and resize image (max 1920px, JPEG @ 85% quality)
+      const compressed = await compressImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.85,
+        outputType: "image/jpeg",
+      });
+
+      // After compression, check it's under the backend limit
+      if (compressed.size > 10 * 1024 * 1024) {
         toast({
           variant: "destructive",
-          title: "Image too large",
-          description: "Please select an image under 10MB",
+          title: "Image still too large",
+          description: "After compression, the image is still over 10MB. Please select a smaller image.",
         });
         return;
       }
-      setAttachedImage(file);
+
+      setAttachedImage(compressed);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressed);
+    } catch (err) {
+      console.error("Image compression error:", err);
+      toast({
+        variant: "destructive",
+        title: "Failed to process image",
+        description: err instanceof Error ? err.message : "Could not compress image",
+      });
     }
   };
 
