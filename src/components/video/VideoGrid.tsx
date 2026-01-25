@@ -25,6 +25,9 @@ interface VideoGridProps {
   getRemoteStream: (odious: string) => MediaStream | undefined;
   aiEnhanced?: boolean;
   enhanceStrength?: number;
+  beautyMode?: boolean;
+  softFocus?: number;
+  warmth?: number;
   maxSlots?: number;
 }
 
@@ -36,6 +39,9 @@ const VideoGrid = ({
   getRemoteStream,
   aiEnhanced = false,
   enhanceStrength = 50,
+  beautyMode = false,
+  softFocus = 40,
+  warmth = 30,
   maxSlots = 6,
 }: VideoGridProps) => {
   // Combine local and remote broadcasters
@@ -97,6 +103,9 @@ const VideoGrid = ({
             roleBadge={getRoleBadge(broadcaster.odious)}
             aiEnhanced={broadcaster.isLocal ? aiEnhanced : false}
             enhanceStrength={enhanceStrength}
+            beautyMode={broadcaster.isLocal ? beautyMode : false}
+            softFocus={softFocus}
+            warmth={warmth}
           />
         ))}
       </div>
