@@ -12,7 +12,7 @@ import VideoChatBar from '@/components/video/VideoChatBar';
 import VideoUserMenu from '@/components/video/VideoUserMenu';
 import PrivateChatWindow from '@/components/chat/PrivateChatWindow';
 import PMTray from '@/components/chat/PMTray';
-import { TestViewersToggle, TEST_VIEWERS, TestViewer } from '@/components/video/TestViewersToggle';
+import { TestViewersToggle, TEST_VIEWERS, TEST_BROADCASTERS, TestViewer } from '@/components/video/TestViewersToggle';
 import { 
   Video, VideoOff, ArrowLeft, Users, Mic, MicOff,
   Crown, Shield, Star, Camera, MoreVertical
@@ -171,23 +171,40 @@ const VideoChat = () => {
   if (!user) return null;
 
   const isOwner = currentUserRole === 'owner';
-  const broadcasters = participants.filter(p => p.isBroadcasting);
   
-  // Merge real viewers with test users when enabled
-  const realViewers = participants.filter(p => !p.isBroadcasting);
+  // Moderator bot for video chat (Pixel)
+  const modBot: TestViewer = {
+    odious: 'mod-pixel',
+    username: 'Pixel',
+    avatarUrl: null,
+    isBroadcasting: false,
+    role: 'moderator',
+  };
+  
+  // Test users when enabled
   const testViewers: TestViewer[] = testUsersEnabled ? TEST_VIEWERS : [];
+  const testBroadcasters: TestViewer[] = testUsersEnabled ? TEST_BROADCASTERS : [];
+  
+  // Merge real broadcasters with test broadcasters
+  const realBroadcasters = participants.filter(p => p.isBroadcasting);
+  const broadcasters = [
+    ...realBroadcasters,
+    ...testBroadcasters,
+  ];
+  
+  // Merge real viewers with test viewers + mod bot
+  const realViewers = participants.filter(p => !p.isBroadcasting);
   const viewers = [
+    modBot, // Moderator bot always at top
     ...realViewers,
-    ...testViewers.map(tv => ({
-      ...tv,
-      // Ensure test users have their role in rolesByUserId for badge rendering
-    })),
+    ...testViewers,
   ];
 
-  // Build rolesByUserId including test users
+  // Build rolesByUserId including test users and mod bot
   const combinedRoles: Record<string, string> = { ...rolesByUserId };
+  combinedRoles[modBot.odious] = 'moderator';
   if (testUsersEnabled) {
-    testViewers.forEach(tv => {
+    [...testViewers, ...testBroadcasters].forEach(tv => {
       if (tv.role) combinedRoles[tv.odious] = tv.role;
     });
   }
@@ -349,6 +366,7 @@ const VideoChat = () => {
               enabled={testUsersEnabled}
               onToggle={setTestUsersEnabled}
               testViewers={testViewers}
+              testBroadcasters={testBroadcasters}
             />
           </div>
         </div>

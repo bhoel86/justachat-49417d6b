@@ -49,11 +49,29 @@ const TEST_VIEWERS: TestViewer[] = [
   },
 ];
 
+const TEST_BROADCASTERS: TestViewer[] = [
+  {
+    odious: 'test-broadcaster-1',
+    username: 'StreamerSam',
+    avatarUrl: null,
+    isBroadcasting: true,
+    role: undefined,
+  },
+  {
+    odious: 'test-broadcaster-2',
+    username: 'ModCaster',
+    avatarUrl: null,
+    isBroadcasting: true,
+    role: 'moderator',
+  },
+];
+
 interface TestViewersToggleProps {
   isOwner: boolean;
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
   testViewers: TestViewer[];
+  testBroadcasters: TestViewer[];
 }
 
 export function TestViewersToggle({
@@ -61,8 +79,10 @@ export function TestViewersToggle({
   enabled,
   onToggle,
   testViewers,
+  testBroadcasters,
 }: TestViewersToggleProps) {
   const [open, setOpen] = useState(false);
+  const totalCount = testViewers.length + testBroadcasters.length;
 
   if (!isOwner) return null;
 
@@ -78,7 +98,7 @@ export function TestViewersToggle({
           <span className="hidden sm:inline">Test Users</span>
           {enabled && (
             <Badge variant="secondary" className="ml-1 text-[10px] px-1 py-0">
-              {testViewers.length}
+              {totalCount}
             </Badge>
           )}
         </Button>
@@ -100,22 +120,42 @@ export function TestViewersToggle({
           </div>
           
           <p className="text-xs text-muted-foreground">
-            Adds fake viewers with different roles so you can test Kick/Ban/K-Line/PM menus without real users.
+            Adds fake viewers and broadcasters with different roles so you can test moderation menus.
           </p>
 
           {enabled && (
-            <div className="space-y-2 pt-2 border-t border-border">
-              <p className="text-xs font-medium text-muted-foreground">Active Test Users:</p>
-              <ul className="space-y-1">
-                {testViewers.map((v) => (
-                  <li key={v.odious} className="flex items-center justify-between text-sm">
-                    <span>{v.username}</span>
-                    <Badge variant="outline" className="text-[10px] capitalize">
-                      {v.role || 'user'}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
+            <div className="space-y-3 pt-2 border-t border-border">
+              {testBroadcasters.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Test Broadcasters:</p>
+                  <ul className="space-y-1">
+                    {testBroadcasters.map((v) => (
+                      <li key={v.odious} className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                          {v.username}
+                        </span>
+                        <Badge variant="outline" className="text-[10px] capitalize">
+                          {v.role || 'user'}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Test Viewers:</p>
+                <ul className="space-y-1">
+                  {testViewers.map((v) => (
+                    <li key={v.odious} className="flex items-center justify-between text-sm">
+                      <span>{v.username}</span>
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {v.role || 'user'}
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           )}
         </div>
@@ -124,4 +164,4 @@ export function TestViewersToggle({
   );
 }
 
-export { TEST_VIEWERS };
+export { TEST_VIEWERS, TEST_BROADCASTERS };

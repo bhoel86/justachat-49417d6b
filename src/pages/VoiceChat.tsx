@@ -1,42 +1,70 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useVoiceBroadcast } from '@/hooks/useVoiceBroadcast';
+import { usePrivateChats } from '@/hooks/usePrivateChats';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AudioVisualizerRing from '@/components/voice/AudioVisualizerRing';
+import VideoUserMenu from '@/components/video/VideoUserMenu';
+import PrivateChatWindow from '@/components/chat/PrivateChatWindow';
+import PMTray from '@/components/chat/PMTray';
+import { TestViewersToggle, TEST_VIEWERS, TEST_BROADCASTERS, TestViewer } from '@/components/video/TestViewersToggle';
 import { 
   Mic, MicOff, ArrowLeft, Users, Volume2, Radio, 
-  Crown, Shield, Star 
+  Crown, Shield, Star, MoreVertical
 } from 'lucide-react';
 
 const VoiceChat = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, role: currentUserRole } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
   const [rolesByUserId, setRolesByUserId] = useState<Record<string, string>>({});
   const [isLocked, setIsLocked] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [testUsersEnabled, setTestUsersEnabled] = useState(false);
+
+  // Private messaging system
+  const {
+    activeChats,
+    minimizedChats,
+    openChat,
+    closeChat,
+    bringToFront,
+    minimizeChat,
+    restoreChat,
+    setUnread,
+    reorderChats
+  } = usePrivateChats(user?.id || '', profile?.username || 'Anonymous');
+
+  const refreshProfile = useCallback(async () => {
+    if (!user?.id) return;
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (data) {
+      setProfile(data);
+      setProfileLoaded(true);
+    }
+  }, [user?.id]);
 
   // Fetch user profile
   useEffect(() => {
-    if (!user?.id) return;
-    
-    const fetchProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data) {
-        setProfile(data);
-      }
-    };
-    
-    fetchProfile();
-  }, [user?.id]);
+    refreshProfile();
+  }, [refreshProfile]);
+
+  const broadcastOptions = useMemo(() => ({
+    roomId: 'voice-chat-main',
+    odious: user?.id || '',
+    username: profileLoaded ? (profile?.username || '') : '',
+    avatarUrl: profile?.avatar_url
+  }), [user?.id, profileLoaded, profile?.username, profile?.avatar_url]);
 
   const {
     isBroadcasting,
@@ -45,12 +73,7 @@ const VoiceChat = () => {
     audioLevel,
     startBroadcast,
     stopBroadcast
-  } = useVoiceBroadcast({
-    roomId: 'voice-chat-main',
-    odious: user?.id || '',
-    username: profile?.username || 'Anonymous',
-    avatarUrl: profile?.avatar_url
-  });
+  } = useVoiceBroadcast(broadcastOptions);
 
   // Fetch roles for all participants
   useEffect(() => {
@@ -61,14 +84,12 @@ const VoiceChat = () => {
       
       for (const participant of participants) {
         try {
-          // Check owner first
           const { data: isOwner } = await supabase.rpc('is_owner', { _user_id: participant.odious });
           if (isOwner) {
             roles[participant.odious] = 'owner';
             continue;
           }
           
-          // Check admin
           const { data: isAdmin } = await supabase.rpc('has_role', { 
             _user_id: participant.odious, 
             _role: 'admin' 
@@ -78,7 +99,6 @@ const VoiceChat = () => {
             continue;
           }
           
-          // Check moderator
           const { data: isMod } = await supabase.rpc('has_role', { 
             _user_id: participant.odious, 
             _role: 'moderator' 
@@ -114,7 +134,7 @@ const VoiceChat = () => {
     };
     
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'm') {
+      if (e.key.toLowerCase() === 'm' && !isLocked) {
         stopBroadcast();
       }
     };
@@ -126,7 +146,7 @@ const VoiceChat = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [startBroadcast, stopBroadcast]);
+  }, [startBroadcast, stopBroadcast, isLocked]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -144,11 +164,47 @@ const VoiceChat = () => {
 
   if (!user) return null;
 
-  const broadcasters = participants.filter(p => p.isBroadcasting);
-  const listeners = participants.filter(p => !p.isBroadcasting);
+  const isOwner = currentUserRole === 'owner';
+  
+  // Moderator bot for voice chat (Echo)
+  const modBot: TestViewer = {
+    odious: 'mod-echo',
+    username: 'Echo',
+    avatarUrl: null,
+    isBroadcasting: false,
+    role: 'moderator',
+  };
+  
+  // Test users when enabled
+  const testViewers: TestViewer[] = testUsersEnabled ? TEST_VIEWERS : [];
+  const testBroadcasters: TestViewer[] = testUsersEnabled ? TEST_BROADCASTERS : [];
+  
+  // Merge real broadcasters with test broadcasters
+  const realBroadcasters = participants.filter(p => p.isBroadcasting);
+  const broadcasters = [
+    ...realBroadcasters,
+    ...testBroadcasters,
+  ];
+  
+  // Merge real listeners with test viewers + mod bot
+  const realListeners = participants.filter(p => !p.isBroadcasting);
+  const listeners = [
+    modBot, // Moderator bot always at top
+    ...realListeners,
+    ...testViewers,
+  ];
+
+  // Build rolesByUserId including test users and mod bot
+  const combinedRoles: Record<string, string> = { ...rolesByUserId };
+  combinedRoles[modBot.odious] = 'moderator';
+  if (testUsersEnabled) {
+    [...testViewers, ...testBroadcasters].forEach(tv => {
+      if (tv.role) combinedRoles[tv.odious] = tv.role;
+    });
+  }
 
   const getRoleBadge = (odious: string) => {
-    const role = rolesByUserId[odious];
+    const role = combinedRoles[odious];
     if (!role) return null;
     
     switch (role) {
@@ -211,7 +267,7 @@ const VoiceChat = () => {
           <div className="flex items-center gap-3">
             {/* Audio Level Meter - Only show when broadcasting */}
             {isBroadcasting && (
-              <div className="flex items-center gap-2 bg-card/80 rounded-lg px-3 py-2 border border-border">
+              <div className="hidden sm:flex items-center gap-2 bg-card/80 rounded-lg px-3 py-2 border border-border">
                 <Mic className="w-4 h-4 text-destructive animate-pulse" />
                 <div className="flex items-end gap-0.5 h-6">
                   {[...Array(10)].map((_, i) => {
@@ -268,6 +324,15 @@ const VoiceChat = () => {
               <Mic className={`w-4 h-4 ${isBroadcasting ? 'animate-pulse' : ''}`} />
               {isLocked ? '🔒 Locked On' : isBroadcasting ? 'Broadcasting...' : 'Hold to Talk'}
             </Button>
+
+            {/* Test Users Toggle - Owner only */}
+            <TestViewersToggle
+              isOwner={isOwner}
+              enabled={testUsersEnabled}
+              onToggle={setTestUsersEnabled}
+              testViewers={testViewers}
+              testBroadcasters={testBroadcasters}
+            />
           </div>
         </div>
       </header>
@@ -297,36 +362,47 @@ const VoiceChat = () => {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {broadcasters.map((broadcaster) => (
-                    <div 
+                    <VideoUserMenu
                       key={broadcaster.odious}
-                      className="relative bg-gradient-to-br from-destructive/20 to-orange-500/20 rounded-xl p-4 border border-destructive/30"
+                      odious={broadcaster.odious}
+                      username={broadcaster.username}
+                      avatarUrl={broadcaster.avatarUrl}
+                      role={combinedRoles[broadcaster.odious]}
+                      currentUserId={user.id}
+                      currentUserRole={currentUserRole}
+                      onPmClick={broadcaster.odious !== user.id ? () => openChat(broadcaster.odious, broadcaster.username) : undefined}
+                      onSelfProfileUpdated={broadcaster.odious === user.id ? refreshProfile : undefined}
                     >
-                      <div className="absolute -top-2 -right-2 z-10">
-                        <Badge variant="destructive" className="text-[10px]">
-                          <Volume2 className="w-3 h-3 mr-1 animate-pulse" />
-                          LIVE
-                        </Badge>
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
-                        <AudioVisualizerRing 
-                          audioLevel={broadcaster.audioLevel || 0} 
-                          size={72}
-                        >
-                          <Avatar className="w-full h-full">
-                            <AvatarImage src={broadcaster.avatarUrl || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-destructive to-orange-500 text-destructive-foreground text-lg">
-                              {broadcaster.username.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        </AudioVisualizerRing>
-                        <div className="text-center">
-                          <p className="font-medium text-sm truncate max-w-[100px]">
-                            {broadcaster.username}
-                          </p>
-                          {getRoleBadge(broadcaster.odious)}
+                      <div 
+                        className="relative bg-gradient-to-br from-destructive/20 to-orange-500/20 rounded-xl p-4 border border-destructive/30 cursor-pointer hover:border-destructive/50 transition-colors"
+                      >
+                        <div className="absolute -top-2 -right-2 z-10">
+                          <Badge variant="destructive" className="text-[10px]">
+                            <Volume2 className="w-3 h-3 mr-1 animate-pulse" />
+                            LIVE
+                          </Badge>
+                        </div>
+                        <div className="flex flex-col items-center gap-2">
+                          <AudioVisualizerRing 
+                            audioLevel={'audioLevel' in broadcaster ? (broadcaster.audioLevel || 0) : 0} 
+                            size={72}
+                          >
+                            <Avatar className="w-full h-full">
+                              <AvatarImage src={broadcaster.avatarUrl || undefined} />
+                              <AvatarFallback className="bg-gradient-to-br from-destructive to-orange-500 text-destructive-foreground text-lg">
+                                {broadcaster.username.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </AudioVisualizerRing>
+                          <div className="text-center">
+                            <p className="font-medium text-sm truncate max-w-[100px]">
+                              {broadcaster.username}
+                            </p>
+                            {getRoleBadge(broadcaster.odious)}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </VideoUserMenu>
                   ))}
                 </div>
               )}
@@ -349,21 +425,33 @@ const VoiceChat = () => {
                   </p>
                 ) : (
                   listeners.map((listener) => (
-                    <div 
+                    <VideoUserMenu
                       key={listener.odious}
-                      className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      odious={listener.odious}
+                      username={listener.username}
+                      avatarUrl={listener.avatarUrl}
+                      role={combinedRoles[listener.odious]}
+                      currentUserId={user.id}
+                      currentUserRole={currentUserRole}
+                      onPmClick={listener.odious !== user.id ? () => openChat(listener.odious, listener.username) : undefined}
+                      onSelfProfileUpdated={listener.odious === user.id ? refreshProfile : undefined}
                     >
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={listener.avatarUrl || undefined} />
-                        <AvatarFallback className="text-xs bg-primary/20">
-                          {listener.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{listener.username}</p>
-                        {getRoleBadge(listener.odious)}
-                      </div>
-                    </div>
+                      <button 
+                        className="w-full flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left group"
+                      >
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={listener.avatarUrl || undefined} />
+                          <AvatarFallback className="text-xs bg-primary/20">
+                            {listener.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{listener.username}</p>
+                          {getRoleBadge(listener.odious)}
+                        </div>
+                        <MoreVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    </VideoUserMenu>
                   ))
                 )}
               </div>
@@ -386,6 +474,33 @@ const VoiceChat = () => {
           </ul>
         </div>
       </main>
+
+      {/* Private Chat Windows */}
+      {activeChats.map((chat) => (
+        <PrivateChatWindow
+          key={chat.id}
+          targetUserId={chat.targetUserId}
+          targetUsername={chat.targetUsername}
+          currentUserId={user.id}
+          currentUsername={profile?.username || 'Anonymous'}
+          initialPosition={chat.position}
+          zIndex={chat.zIndex}
+          onClose={() => closeChat(chat.id)}
+          onFocus={() => bringToFront(chat.id)}
+          onMinimize={() => minimizeChat(chat.id)}
+          onNewMessage={() => setUnread(chat.id)}
+        />
+      ))}
+
+      {/* PM Tray */}
+      {minimizedChats.length > 0 && (
+        <PMTray
+          minimizedChats={minimizedChats}
+          onRestore={restoreChat}
+          onClose={closeChat}
+          onReorder={reorderChats}
+        />
+      )}
     </div>
   );
 };
