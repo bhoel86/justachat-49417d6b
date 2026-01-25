@@ -7,7 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Mail, RefreshCw, Search, Copy, Check, Globe, Wifi } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter 
+} from "@/components/ui/dialog";
+import { Mail, RefreshCw, Search, Copy, Check, Globe, Wifi, Key, Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
@@ -24,12 +33,19 @@ interface UserEmail {
 }
 
 const AdminEmails = () => {
-  const { user, loading, isOwner } = useAuth();
+  const { user, loading, isOwner, session } = useAuth();
   const [users, setUsers] = useState<UserEmail[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // Password reset modal state
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserEmail | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -93,6 +109,50 @@ const AdminEmails = () => {
     setCopiedId(userId);
     toast.success('Email copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleOpenResetModal = (userToReset: UserEmail) => {
+    setSelectedUser(userToReset);
+    setNewPassword("");
+    setShowPassword(false);
+    setResetModalOpen(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUser || !newPassword) return;
+    
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setResetting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+        body: {
+          targetUserId: selectedUser.user_id,
+          newPassword: newPassword
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast.success(`Password reset for ${selectedUser.username}`);
+      setResetModalOpen(false);
+      setSelectedUser(null);
+      setNewPassword("");
+    } catch (err: any) {
+      console.error("Password reset error:", err);
+      toast.error(err.message || "Failed to reset password");
+    } finally {
+      setResetting(false);
+    }
   };
 
   const filteredUsers = users.filter(u => 
@@ -237,17 +297,28 @@ const AdminEmails = () => {
                             </div>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopyEmail(u.email, u.user_id)}
-                        >
-                          {copiedId === u.user_id ? (
-                            <Check className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenResetModal(u)}
+                            className="text-xs"
+                          >
+                            <Key className="h-3 w-3 mr-1" />
+                            Reset PW
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyEmail(u.email, u.user_id)}
+                          >
+                            {copiedId === u.user_id ? (
+                              <Check className="h-4 w-4 text-primary" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -256,6 +327,69 @@ const AdminEmails = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Password Reset Modal */}
+        <Dialog open={resetModalOpen} onOpenChange={setResetModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5 text-primary" />
+                Reset Password
+              </DialogTitle>
+              <DialogDescription>
+                Set a new password for <span className="font-semibold">{selectedUser?.username}</span>
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="new-password"
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 6 characters)"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  User ID: <span className="font-mono">{selectedUser?.user_id}</span>
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setResetModalOpen(false)}
+                disabled={resetting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleResetPassword}
+                disabled={resetting || newPassword.length < 6}
+              >
+                {resetting ? "Resetting..." : "Reset Password"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminSidebar>
   );
