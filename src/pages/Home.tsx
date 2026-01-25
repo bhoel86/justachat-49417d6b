@@ -38,6 +38,7 @@ import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 // Banner and footer graphics
 import welcomeBanner from "@/assets/welcome-banner.png";
 import footerMascots from "@/assets/footer-mascots.png";
+import DonationBanner from "@/components/home/DonationBanner";
 
 interface Channel {
   id: string;
@@ -537,6 +538,11 @@ const Home = () => {
           </div>
         </div>
       </header>
+
+      {/* Donation Banner */}
+      <div className="container mx-auto px-3 sm:px-4 pt-4">
+        <DonationBanner goal={500} paypalEmail="bhoel86@gmail.com" />
+      </div>
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
