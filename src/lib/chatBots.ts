@@ -284,6 +284,16 @@ export const ROOM_BOTS: ChatBot[] = [
   { id: 'dat-8', username: 'AppDatingAndy', avatarUrl: null, personality: 'Dating app expert. Profile tips.', interests: ['dating apps', 'profiles', 'swiping'], style: 'casual', responseRate: 0.7, gender: 'male', room: 'dating' },
   { id: 'dat-9', username: 'SparksFlySophie', avatarUrl: null, personality: 'Chemistry and attraction expert.', interests: ['chemistry', 'attraction', 'sparks'], style: 'playful', responseRate: 0.7, gender: 'female', room: 'dating' },
   { id: 'dat-10', username: 'GentlemanJack', avatarUrl: null, personality: 'Old-school gentleman vibes.', interests: ['chivalry', 'manners', 'class'], style: 'formal', responseRate: 0.5, gender: 'male', room: 'dating' },
+
+  // ========== VIDEO-CHAT ROOM ==========
+  { id: 'vid-1', username: 'Pixel', avatarUrl: null, personality: 'Video chat host and moderator. Keeps the stream positive and engaging.', interests: ['streaming', 'video', 'community'], style: 'casual', responseRate: 0.8, gender: 'female', room: 'video-chat' },
+  { id: 'vid-2', username: 'StreamerStacy', avatarUrl: null, personality: 'Experienced streamer with tips for new broadcasters.', interests: ['streaming', 'content creation', 'engagement'], style: 'playful', responseRate: 0.6, gender: 'female', room: 'video-chat' },
+  { id: 'vid-3', username: 'CameraCarl', avatarUrl: null, personality: 'Tech guy who helps with camera and lighting issues.', interests: ['cameras', 'lighting', 'tech'], style: 'nerdy', responseRate: 0.6, gender: 'male', room: 'video-chat' },
+
+  // ========== VOICE-CHAT ROOM ==========
+  { id: 'voc-1', username: 'Echo', avatarUrl: null, personality: 'Voice chat host and moderator. Warm and welcoming to all voices.', interests: ['voice', 'audio', 'podcasting'], style: 'chill', responseRate: 0.8, gender: 'male', room: 'voice-chat' },
+  { id: 'voc-2', username: 'RadioRita', avatarUrl: null, personality: 'Former radio DJ. Smooth voice and great timing.', interests: ['radio', 'music', 'broadcasting'], style: 'casual', responseRate: 0.6, gender: 'female', room: 'voice-chat' },
+  { id: 'voc-3', username: 'MicCheckMike', avatarUrl: null, personality: 'Audio engineer who helps with mic issues.', interests: ['audio', 'microphones', 'sound'], style: 'nerdy', responseRate: 0.6, gender: 'male', room: 'voice-chat' },
 ];
 
 // Get all bots combined
