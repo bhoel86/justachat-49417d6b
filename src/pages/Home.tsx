@@ -321,6 +321,17 @@ const Home = () => {
                   </Link>
                 </DropdownMenuItem>
                 
+                {/* Games Section */}
+                <DropdownMenuItem asChild>
+                  <Link to="/games" className="flex items-center gap-2 cursor-pointer">
+                    <Gamepad2 className="w-4 h-4 text-orange-500" />
+                    <div>
+                      <span>Game Arcade</span>
+                      <p className="text-xs text-muted-foreground">Free games to play</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
                 {/* Help Section */}
                 <DropdownMenuItem asChild>
                   <Link to="/chat/help" className="flex items-center gap-2 cursor-pointer">
