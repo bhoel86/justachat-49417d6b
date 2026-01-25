@@ -20,6 +20,7 @@ import BotChatModal from "./BotChatModal";
 import { getModerator, MODERATORS, type ModeratorInfo } from "@/lib/roomConfig";
 import UserAvatar from "@/components/avatar/UserAvatar";
 import ProfileEditModal from "@/components/profile/ProfileEditModal";
+import ProfileViewModal from "@/components/profile/ProfileViewModal";
 import { useRadioOptional } from "@/contexts/RadioContext";
 
 interface Member {
@@ -97,6 +98,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
   const [loading, setLoading] = useState(true);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [viewProfileTarget, setViewProfileTarget] = useState<Member | null>(null);
   const [showOffline, setShowOffline] = useState(false);
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -508,7 +510,9 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
                     onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
                     onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
                     isCurrentUser={member.user_id === user?.id}
-                    onProfileClick={member.user_id === user?.id ? () => setProfileModalOpen(true) : undefined}
+                    onProfileClick={member.user_id === user?.id 
+                      ? () => setProfileModalOpen(true) 
+                      : () => setViewProfileTarget(member)}
                     currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentSong : null}
                   />
                 ))}
@@ -544,7 +548,9 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
                       onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
                       onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
                       isCurrentUser={member.user_id === user?.id}
-                      onProfileClick={member.user_id === user?.id ? () => setProfileModalOpen(true) : undefined}
+                      onProfileClick={member.user_id === user?.id 
+                        ? () => setProfileModalOpen(true) 
+                        : () => setViewProfileTarget(member)}
                       currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentSong : null}
                     />
                   ))}
@@ -594,6 +600,19 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
           }}
         />
       )}
+
+      {/* Profile View Modal for other users */}
+      <ProfileViewModal
+        open={!!viewProfileTarget}
+        onOpenChange={(open) => !open && setViewProfileTarget(null)}
+        username={viewProfileTarget?.username || ''}
+        avatarUrl={viewProfileTarget?.avatar_url || null}
+        bio={viewProfileTarget?.bio || null}
+        role={viewProfileTarget?.role}
+        onPmClick={viewProfileTarget && onOpenPm 
+          ? () => onOpenPm(viewProfileTarget.user_id, viewProfileTarget.username) 
+          : undefined}
+      />
     </>
   );
 };
@@ -775,12 +794,15 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
             <span className="text-xs text-muted-foreground ml-1">(you)</span>
           </button>
         ) : (
-          <p className={cn(
-            "text-sm font-medium truncate",
-            member.isOnline ? "text-foreground" : "text-muted-foreground"
-          )}>
+          <button 
+            onClick={onProfileClick}
+            className={cn(
+              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block",
+              member.isOnline ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
             {member.username}
-          </p>
+          </button>
         )}
         <div className="flex items-center gap-1">
           <Icon className={cn("h-3 w-3", config.color)} />
