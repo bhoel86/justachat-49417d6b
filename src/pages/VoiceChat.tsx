@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   ArrowLeft, Headphones, Mic, MicOff, Video, VideoOff, 
   PhoneOff, Volume2, Settings, Users, Hash, Menu, 
-  MessageSquare, Send, Camera
+  Send, Camera, Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import VoiceChannelList from '@/components/voice/VoiceChannelList';
@@ -26,7 +27,36 @@ interface VoiceMessage {
   avatarUrl?: string;
   timestamp: Date;
   isSystem?: boolean;
+  isModerator?: boolean;
 }
+
+// Room moderator personalities - each room has a unique mod
+const ROOM_MODERATORS: Record<string, { name: string; emoji: string; personality: string; greeting: string }> = {
+  'voice-lounge': {
+    name: 'Echo',
+    emoji: '🎧',
+    personality: 'chill and welcoming host',
+    greeting: "hey hey welcome to the lounge! kick back and vibe with us 🎧"
+  },
+  'voice-gaming': {
+    name: 'Pixel',
+    emoji: '🎮',
+    personality: 'hyped gamer energy',
+    greeting: "yo gamer! ready to squad up? lets gooo 🎮🔥"
+  },
+  'voice-music': {
+    name: 'Vinyl',
+    emoji: '🎵',
+    personality: 'music enthusiast and DJ',
+    greeting: "welcome to the music room! what genres u vibin to today? 🎵"
+  },
+  'voice-chill': {
+    name: 'Zen',
+    emoji: '🌿',
+    personality: 'calm and peaceful vibes',
+    greeting: "hey there~ welcome to the chill zone. relax and enjoy 🌿✨"
+  },
+};
 
 export default function VoiceChat() {
   const { user, loading } = useAuth();
@@ -43,6 +73,7 @@ export default function VoiceChat() {
   const [showChannelSheet, setShowChannelSheet] = useState(false);
   const [showMemberSheet, setShowMemberSheet] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
   
   // WebRTC hook
   const {
@@ -65,6 +96,13 @@ export default function VoiceChat() {
     userId: user?.id || '',
     username: username || 'Anonymous',
   });
+
+  // Update local video preview
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream, isVideoEnabled]);
 
   // Fetch user profile
   useEffect(() => {
@@ -136,6 +174,22 @@ export default function VoiceChat() {
     };
   }, [isPushToTalk, isConnected, startTalking, stopTalking]);
 
+  // Add moderator message
+  const addModeratorMessage = useCallback((channelId: string) => {
+    const mod = ROOM_MODERATORS[channelId];
+    if (!mod) return;
+    
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        id: `mod-${Date.now()}`,
+        content: mod.greeting,
+        username: `${mod.emoji} ${mod.name}`,
+        timestamp: new Date(),
+        isModerator: true
+      }]);
+    }, 1000);
+  }, []);
+
   const handleJoinChannel = async (id: string, name: string) => {
     // Leave previous channel if connected
     if (isConnected) {
@@ -152,6 +206,9 @@ export default function VoiceChat() {
       timestamp: new Date(),
       isSystem: true
     }]);
+    
+    // Add room moderator greeting
+    addModeratorMessage(id);
   };
 
   const handleJoinVoice = async (withVideo: boolean = false) => {
@@ -205,25 +262,43 @@ export default function VoiceChat() {
     setInputMessage('');
   };
 
-  // Build member list
-  const members = isConnected ? [
-    { 
-      id: user?.id || 'local', 
-      username: username || 'You', 
-      isMuted, 
-      isSpeaking: isTalking,
-      avatarUrl,
-      isLocal: true
-    },
-    ...peers.map(peer => ({
-      id: peer.id,
-      username: peer.username,
-      isMuted: peer.isMuted,
-      isSpeaking: peer.isSpeaking,
+  // Get current room moderator
+  const currentMod = currentChannel ? ROOM_MODERATORS[currentChannel.id] : null;
+
+  // Build member list including room moderator
+  const members = [
+    // Room moderator always appears first
+    ...(currentMod ? [{
+      id: 'mod-' + currentChannel?.id,
+      username: `${currentMod.emoji} ${currentMod.name}`,
+      isMuted: false,
+      isSpeaking: false,
       avatarUrl: undefined,
-      isLocal: false
-    }))
-  ] : [];
+      isLocal: false,
+      isModerator: true
+    }] : []),
+    // Then connected users
+    ...(isConnected ? [
+      { 
+        id: user?.id || 'local', 
+        username: username || 'You', 
+        isMuted, 
+        isSpeaking: isTalking,
+        avatarUrl,
+        isLocal: true,
+        isModerator: false
+      },
+      ...peers.map(peer => ({
+        id: peer.id,
+        username: peer.username,
+        isMuted: peer.isMuted,
+        isSpeaking: peer.isSpeaking,
+        avatarUrl: undefined,
+        isLocal: false,
+        isModerator: false
+      }))
+    ] : [])
+  ];
 
   if (loading) {
     return (
@@ -268,14 +343,14 @@ export default function VoiceChat() {
       <div className="px-3 py-2 border-b border-border/50">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
           <Users className="h-3 w-3" />
-          {isConnected ? `In Voice — ${members.length}` : 'Voice Members'}
+          In Room — {members.length}
         </h3>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {members.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">
-              Join voice to see members
+              Select a room to see members
             </p>
           ) : (
             members.map(member => (
@@ -283,39 +358,51 @@ export default function VoiceChat() {
                 key={member.id}
                 className={cn(
                   "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors",
-                  member.isSpeaking && "bg-green-500/10"
+                  member.isSpeaking && "bg-accent/30",
+                  member.isModerator && "bg-primary/5"
                 )}
               >
                 <div className="relative">
-                  <Avatar className="h-7 w-7">
+                  <Avatar className={cn("h-7 w-7", member.isSpeaking && "ring-2 ring-accent ring-offset-1 ring-offset-background")}>
                     <AvatarImage src={member.avatarUrl || undefined} />
                     <AvatarFallback className={cn(
                       "text-[10px] font-bold",
-                      member.isSpeaking 
-                        ? "bg-green-500/20 text-green-500" 
-                        : "bg-primary/20 text-primary"
+                      member.isModerator 
+                        ? "bg-primary/20 text-primary"
+                        : member.isSpeaking 
+                          ? "bg-accent/30 text-accent-foreground" 
+                          : "bg-muted text-muted-foreground"
                     )}>
                       {member.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
+                  {/* Speaking pulse indicator */}
                   {member.isSpeaking && (
-                    <div className="absolute inset-0 rounded-full ring-2 ring-green-500 animate-pulse" />
+                    <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-accent animate-pulse" />
                   )}
-                  {member.isMuted && (
+                  {/* Muted indicator */}
+                  {member.isMuted && !member.isModerator && (
                     <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-background flex items-center justify-center">
                       <MicOff className="h-2 w-2 text-destructive" />
+                    </div>
+                  )}
+                  {/* Moderator badge */}
+                  {member.isModerator && (
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary flex items-center justify-center">
+                      <Shield className="h-2 w-2 text-primary-foreground" />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={cn(
                     "text-xs font-medium truncate",
-                    member.isSpeaking && "text-green-500"
+                    member.isSpeaking && "text-accent-foreground",
+                    member.isModerator && "text-primary"
                   )}>
                     {member.isLocal ? 'You' : member.username}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    {member.isSpeaking ? 'Speaking' : member.isMuted ? 'Muted' : 'Listening'}
+                    {member.isModerator ? 'Room Mod' : member.isSpeaking ? 'Speaking' : member.isMuted ? 'Muted' : 'Listening'}
                   </p>
                 </div>
               </div>
@@ -350,8 +437,8 @@ export default function VoiceChat() {
         </Button>
         
         <div className="flex items-center gap-2 flex-1">
-          <div className="p-1.5 rounded-full bg-violet-500/20">
-            <Headphones className="h-4 w-4 text-violet-400" />
+          <div className="p-1.5 rounded-full bg-primary/20">
+            <Headphones className="h-4 w-4 text-primary" />
           </div>
           <div className="min-w-0">
             {currentChannel ? (
@@ -359,7 +446,10 @@ export default function VoiceChat() {
                 <Hash className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="font-semibold text-sm truncate">{currentChannel.name}</span>
                 {isConnected && (
-                  <span className="text-[10px] text-green-500 ml-1">● Connected</span>
+                  <span className="text-[10px] text-accent ml-1">● Voice Active</span>
+                )}
+                {currentMod && (
+                  <span className="text-[10px] text-muted-foreground ml-1">• Mod: {currentMod.emoji} {currentMod.name}</span>
                 )}
               </div>
             ) : (
@@ -368,27 +458,53 @@ export default function VoiceChat() {
           </div>
         </div>
 
+        {/* PIP Video Preview when video is enabled */}
+        {isConnected && isVideoEnabled && localStream && (
+          <div className="relative h-8 w-10 rounded overflow-hidden border border-border">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              muted
+              playsInline
+              className="h-full w-full object-cover"
+            />
+            {isTalking && (
+              <div className="absolute inset-0 ring-2 ring-accent rounded" />
+            )}
+          </div>
+        )}
+
         {/* Voice Controls in header when connected */}
         {isConnected && (
           <div className="flex items-center gap-1">
             {!isPushToTalk && (
-              <Button
-                variant={isMuted ? "outline" : "default"}
-                size="icon"
-                className={cn("h-8 w-8", !isMuted && isTalking && "ring-2 ring-green-500")}
-                onClick={toggleMute}
-              >
-                {isMuted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isMuted ? "outline" : "default"}
+                    size="icon"
+                    className={cn("h-8 w-8", !isMuted && isTalking && "ring-2 ring-accent")}
+                    onClick={toggleMute}
+                  >
+                    {isMuted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isMuted ? 'Unmute' : 'Mute'}</TooltipContent>
+              </Tooltip>
             )}
-            <Button
-              variant={isVideoEnabled ? "default" : "outline"}
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleVideo}
-            >
-              {isVideoEnabled ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isVideoEnabled ? "default" : "outline"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={toggleVideo}
+                >
+                  {isVideoEnabled ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isVideoEnabled ? 'Stop Video' : 'Start Video'}</TooltipContent>
+            </Tooltip>
             <Button
               variant="ghost"
               size="icon"
@@ -537,17 +653,26 @@ export default function VoiceChat() {
                         </span>
                       ) : (
                         <>
-                          <Avatar className="h-6 w-6 shrink-0">
+                          <Avatar className={cn("h-6 w-6 shrink-0", msg.isModerator && "ring-1 ring-primary")}>
                             <AvatarImage src={msg.avatarUrl} />
-                            <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                            <AvatarFallback className={cn(
+                              "text-[10px]",
+                              msg.isModerator ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                            )}>
                               {msg.username.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-baseline gap-2">
-                              <span className="text-xs font-medium text-primary truncate">
+                              <span className={cn(
+                                "text-xs font-medium truncate",
+                                msg.isModerator ? "text-primary" : "text-foreground"
+                              )}>
                                 {msg.username}
                               </span>
+                              {msg.isModerator && (
+                                <span className="text-[9px] bg-primary/10 text-primary px-1 rounded">MOD</span>
+                              )}
                               <span className="text-[10px] text-muted-foreground">
                                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
@@ -562,9 +687,51 @@ export default function VoiceChat() {
                 </div>
               </ScrollArea>
 
-              {/* Chat Input */}
+              {/* Chat Input with Mic/Cam buttons */}
               <form onSubmit={handleSendMessage} className="shrink-0 p-2 border-t border-border/50 bg-card/50">
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  {/* Mic toggle in input bar */}
+                  {isConnected && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant={isMuted ? "ghost" : "secondary"}
+                            size="icon"
+                            className={cn("h-8 w-8 shrink-0", isTalking && "ring-2 ring-accent")}
+                            onClick={toggleMute}
+                          >
+                            {isMuted ? <MicOff className="h-4 w-4 text-muted-foreground" /> : <Mic className="h-4 w-4" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{isMuted ? 'Unmute' : 'Mute'}</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant={isVideoEnabled ? "secondary" : "ghost"}
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={toggleVideo}
+                          >
+                            {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4 text-muted-foreground" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{isVideoEnabled ? 'Stop Video' : 'Start Video'}</TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+                  
+                  {/* Speaking indicator */}
+                  {isConnected && isTalking && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-accent/20 rounded text-[10px] text-accent-foreground shrink-0">
+                      <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                      Speaking
+                    </div>
+                  )}
+                  
                   <input
                     type="text"
                     value={inputMessage}
@@ -572,7 +739,7 @@ export default function VoiceChat() {
                     placeholder="Type a message..."
                     className="flex-1 h-9 px-3 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                   />
-                  <Button type="submit" size="icon" className="h-9 w-9" disabled={!inputMessage.trim()}>
+                  <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={!inputMessage.trim()}>
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
