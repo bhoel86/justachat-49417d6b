@@ -1,9 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef } from "react";
 import { Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-
 interface EmojiPickerProps {
   onEmojiSelect: (emoji: string) => void;
 }
@@ -20,7 +19,7 @@ const EMOJI_CATEGORIES = {
   'Hacker': ['💻', '🖥️', '⌨️', '🖱️', '📟', '📡', '🔐', '🔒', '🔓', '🔑', '🗝️', '💀', '☠️', '👾', '🤖', '🎮', '🕹️', '💾', '💿', '📀', '🔌', '🔋', '⚡', '🌐', '📶', '📲', '🛡️', '⚔️', '🔫', '💣', '🧨', '🪓', '🔧', '🔨', '⚙️', '🧲', '🔬', '🔭', '📊', '📈', '📉', '🧮', '🗄️', '📁', '📂', '🗂️', '📋', '📝', '✏️', '🖊️', '🖋️', '✒️', '📎', '🔗', '📌', '📍', '🏴‍☠️', '🕵️', '🥷', '🦾', '🦿', '🧠', '👁️', '🌑', '🌚']
 };
 
-const EmojiPicker = ({ onEmojiSelect }: EmojiPickerProps) => {
+const EmojiPicker = forwardRef<HTMLDivElement, EmojiPickerProps>(({ onEmojiSelect }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('Smileys');
@@ -126,6 +125,8 @@ const EmojiPicker = ({ onEmojiSelect }: EmojiPickerProps) => {
       )}
     </div>
   );
-};
+});
+
+EmojiPicker.displayName = 'EmojiPicker';
 
 export default EmojiPicker;

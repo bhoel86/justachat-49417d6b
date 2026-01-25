@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, forwardRef } from "react";
+import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video, Camera, Image, Palette, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
 import EmojiPicker from "./EmojiPicker";
 import { useToast } from "@/hooks/use-toast";
 import { CHAT_BOTS, ROOM_BOTS } from "@/lib/chatBots";
-
+import { compressImage } from "@/lib/imageCompression";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 // Get bot ID from user ID if it's a simulated user
 const getBotIdFromUserId = (userId: string): string | null => {
   // Check if this is a simulated user ID format (e.g., "sim-user-nova", "sim-gen-1")
@@ -47,7 +48,7 @@ const MIN_HEIGHT = 300;
 const MAX_WIDTH = 500;
 const MAX_HEIGHT = 600;
 
-const PrivateChatWindow = ({
+const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   targetUserId,
   targetUsername,
   currentUserId,
@@ -58,7 +59,7 @@ const PrivateChatWindow = ({
   initialPosition = { x: 100, y: 100 },
   zIndex,
   onFocus
-}: PrivateChatWindowProps) => {
+}, ref) => {
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [message, setMessage] = useState('');
   const [sessionKey, setSessionKey] = useState<CryptoKey | null>(null);
@@ -66,20 +67,35 @@ const PrivateChatWindow = ({
   const [isConnected, setIsConnected] = useState(false);
   const [targetOnline, setTargetOnline] = useState(false);
   const [position, setPosition] = useState(initialPosition);
-  const [size, setSize] = useState({ width: 320, height: 420 });
+  const [size, setSize] = useState({ width: 360, height: 480 });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [seenMessageIds, setSeenMessageIds] = useState<Set<string>>(new Set());
+  const [textColor, setTextColor] = useState<string | null>(null);
+  const [attachedImage, setAttachedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const botResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const seenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
+  
+  const TEXT_COLORS = [
+    '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', 
+    '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#ffffff'
+  ];
 
   // Check if target user is a bot
   const targetBotId = getBotIdFromUserId(targetUserId);
@@ -333,16 +349,138 @@ const PrivateChatWindow = ({
     }, seenDelay);
   }, [isTargetBot]);
 
+  // Handle image selection
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const compressed = await compressImage(file);
+      setAttachedImage(compressed);
+      setImagePreview(URL.createObjectURL(compressed));
+    } catch (err) {
+      console.error('Image compression failed:', err);
+      toast({ variant: "destructive", title: "Failed to process image" });
+    }
+  };
+
+  // Upload image to storage
+  const uploadImage = async (): Promise<string | null> => {
+    if (!attachedImage) return null;
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('upload-image', {
+        body: attachedImage,
+        headers: { 
+          'Content-Type': attachedImage.type,
+          'x-file-name': attachedImage.name,
+          'x-bucket': 'chat-images'
+        }
+      });
+      
+      if (error) throw error;
+      return data?.url || null;
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast({ variant: "destructive", title: "Failed to upload image" });
+      return null;
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(100);
+    }
+  };
+
+  // Clear attached image
+  const clearAttachedImage = () => {
+    setAttachedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Camera functions
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraStream(stream);
+      setIsCameraOpen(true);
+      
+      // Wait for ref to be available
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Camera access denied:', err);
+      toast({ variant: "destructive", title: "Camera access denied" });
+    }
+  };
+
+  const closeCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(video, 0, 0);
+    canvas.toBlob(async (blob) => {
+      if (blob) {
+        const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        const compressed = await compressImage(file);
+        setAttachedImage(compressed);
+        setImagePreview(URL.createObjectURL(compressed));
+        closeCamera();
+      }
+    }, 'image/jpeg', 0.85);
+  };
+
   const handleSend = async () => {
-    if (!message.trim() || !sessionKey || !channelRef.current) return;
+    if ((!message.trim() && !attachedImage) || !sessionKey || !channelRef.current) return;
 
     const trimmedMessage = message.trim();
     const msgId = `${Date.now()}-${Math.random()}`;
     
     try {
-      const encrypted = await encryptMessage(trimmedMessage, sessionKey);
+      // Upload image if attached
+      let imageUrl: string | null = null;
+      if (attachedImage) {
+        imageUrl = await uploadImage();
+        if (!imageUrl && attachedImage) {
+          // Upload failed but we had an image, abort
+          return;
+        }
+      }
+      
+      // Format message with color if selected
+      let finalMessage = trimmedMessage;
+      if (textColor && trimmedMessage) {
+        finalMessage = `[COLOR:${textColor}]${trimmedMessage}[/COLOR]`;
+      }
+      
+      // Add image URL to message if present
+      if (imageUrl) {
+        finalMessage = finalMessage ? `${finalMessage} [IMG:${imageUrl}]` : `[IMG:${imageUrl}]`;
+      }
+      
+      const encrypted = await encryptMessage(finalMessage, sessionKey);
       const masterKeyForStorage = 'JAC_PM_MASTER_2024';
-      const encryptedForStorage = await encryptWithMasterKey(trimmedMessage, masterKeyForStorage);
+      const encryptedForStorage = await encryptWithMasterKey(finalMessage, masterKeyForStorage);
       
       const { error: dbError } = await supabase
         .from('private_messages')
@@ -376,11 +514,13 @@ const PrivateChatWindow = ({
         senderId: currentUserId,
         senderName: currentUsername,
         timestamp: new Date(),
-        isOwn: true
+        isOwn: true,
+        imageUrl: imageUrl || undefined
       }]);
 
-      monitorMessage(trimmedMessage, currentUserId, currentUsername);
+      monitorMessage(finalMessage, currentUserId, currentUsername);
       setMessage('');
+      clearAttachedImage();
 
       // Trigger bot "seen" and response if chatting with a simulated user
       if (isTargetBot) {
@@ -445,38 +585,39 @@ const PrivateChatWindow = ({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-0.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {/* Voice/Video Call buttons - only for real users, not bots */}
           {!isTargetBot && (
             <>
               <Button 
-                variant="ghost" 
-                size="icon" 
+                variant="outline" 
+                size="sm" 
                 onClick={(e) => { 
                   e.stopPropagation(); 
-                  // TODO: Trigger voice call
                   window.dispatchEvent(new CustomEvent('start-private-call', { 
                     detail: { targetUserId, targetUsername, callType: 'voice' } 
                   }));
                 }} 
-                className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary"
+                className="h-7 px-2 rounded-md border-green-500/50 text-green-500 hover:bg-green-500/20 hover:text-green-400 gap-1"
                 title="Voice call"
               >
-                <Phone className="h-3 w-3" />
+                <Phone className="h-3.5 w-3.5" />
+                <span className="text-[10px]">Call</span>
               </Button>
               <Button 
-                variant="ghost" 
-                size="icon" 
+                variant="outline" 
+                size="sm" 
                 onClick={(e) => { 
                   e.stopPropagation();
                   window.dispatchEvent(new CustomEvent('start-private-call', { 
                     detail: { targetUserId, targetUsername, callType: 'video' } 
                   }));
                 }} 
-                className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary"
+                className="h-7 px-2 rounded-md border-blue-500/50 text-blue-500 hover:bg-blue-500/20 hover:text-blue-400 gap-1"
                 title="Video call"
               >
-                <Video className="h-3 w-3" />
+                <Video className="h-3.5 w-3.5" />
+                <span className="text-[10px]">Video</span>
               </Button>
             </>
           )}
@@ -592,22 +733,125 @@ const PrivateChatWindow = ({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Camera Modal */}
+      {isCameraOpen && (
+        <div className="absolute inset-0 bg-background/95 z-50 flex flex-col">
+          <div className="flex items-center justify-between p-2 border-b border-border">
+            <span className="text-xs font-medium">Take Photo</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={closeCamera}>
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-2">
+            <video ref={videoRef} autoPlay playsInline muted className="max-w-full max-h-full rounded-lg" />
+          </div>
+          <div className="p-2 flex justify-center">
+            <Button onClick={capturePhoto} variant="jac" className="rounded-full h-12 w-12">
+              <Camera className="h-5 w-5" />
+            </Button>
+          </div>
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+      )}
+
+      {/* Image Preview */}
+      {imagePreview && (
+        <div className="px-2 py-1.5 border-t border-border bg-muted/50">
+          <div className="relative inline-block">
+            <img src={imagePreview} alt="Preview" className="h-16 rounded-lg object-cover" />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-1 -right-1 h-5 w-5 rounded-full"
+              onClick={clearAttachedImage}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
-      <div className="p-2 border-t border-border bg-card">
-        <div className="flex gap-1.5">
+      <div className="p-2 border-t border-border bg-card space-y-1.5">
+        {/* Action buttons row */}
+        <div className="flex items-center gap-1">
           <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+          
+          {/* Color Picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 rounded"
+                style={{ color: textColor || undefined }}
+              >
+                <Palette className="h-3.5 w-3.5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" side="top" align="start">
+              <div className="flex gap-1 flex-wrap max-w-[140px]">
+                <button
+                  onClick={() => setTextColor(null)}
+                  className="w-5 h-5 rounded border border-border bg-background hover:scale-110 transition-transform"
+                  title="Default"
+                />
+                {TEXT_COLORS.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setTextColor(color)}
+                    className={`w-5 h-5 rounded hover:scale-110 transition-transform ${textColor === color ? 'ring-2 ring-primary' : ''}`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Photo Upload */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7 rounded"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Image className="h-3.5 w-3.5" />}
+          </Button>
+          
+          {/* Camera */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7 rounded"
+            onClick={openCamera}
+          >
+            <Camera className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        
+        {/* Text input row */}
+        <div className="flex gap-1.5">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             placeholder="Message..."
-            disabled={!isConnected}
+            disabled={!isConnected || isUploading}
             className="flex-1 bg-input rounded-lg px-2.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50"
+            style={{ color: textColor || undefined }}
           />
           <Button
             onClick={handleSend}
-            disabled={!message.trim() || !isConnected}
+            disabled={(!message.trim() && !attachedImage) || !isConnected || isUploading}
             variant="jac"
             size="icon"
             className="h-8 w-8 rounded-lg shrink-0"
@@ -626,6 +870,8 @@ const PrivateChatWindow = ({
       </div>
     </div>
   );
-};
+});
+
+PrivateChatWindow.displayName = 'PrivateChatWindow';
 
 export default PrivateChatWindow;
