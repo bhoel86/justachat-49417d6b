@@ -20,10 +20,14 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   
   const localStreamRef = useRef<MediaStream | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // ICE servers for NAT traversal
   const iceServers = {
@@ -79,11 +83,56 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
     return pc;
   }, [odious]);
 
+  // Audio level monitoring
+  const startAudioMonitoring = useCallback((stream: MediaStream) => {
+    try {
+      audioContextRef.current = new AudioContext();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
+      
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      
+      const updateLevel = () => {
+        if (!analyserRef.current) return;
+        
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        const normalizedLevel = Math.min(100, (average / 128) * 100);
+        setAudioLevel(normalizedLevel);
+        
+        animationFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+      
+      updateLevel();
+    } catch (e) {
+      console.error('Failed to start audio monitoring:', e);
+    }
+  }, []);
+
+  const stopAudioMonitoring = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setAudioLevel(0);
+  }, []);
+
   // Start broadcasting
   const startBroadcast = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStreamRef.current = stream;
+      
+      // Start audio level monitoring
+      startAudioMonitoring(stream);
       
       // Add tracks to existing peer connections
       peerConnectionsRef.current.forEach((pc) => {
@@ -104,10 +153,13 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
       console.error('Failed to start broadcast:', error);
       toast.error('Could not access microphone');
     }
-  }, [odious, username, avatarUrl]);
+  }, [odious, username, avatarUrl, startAudioMonitoring]);
 
   // Stop broadcasting
   const stopBroadcast = useCallback(() => {
+    // Stop audio monitoring
+    stopAudioMonitoring();
+    
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
@@ -121,7 +173,7 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
     }
     
     toast.info('Broadcast stopped');
-  }, [odious, username, avatarUrl]);
+  }, [odious, username, avatarUrl, stopAudioMonitoring]);
 
   // Toggle broadcast
   const toggleBroadcast = useCallback(() => {
@@ -233,6 +285,7 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
     isBroadcasting,
     isConnected,
     participants,
+    audioLevel,
     toggleBroadcast,
     startBroadcast,
     stopBroadcast
