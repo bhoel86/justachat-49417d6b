@@ -161,9 +161,14 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
 
       setIsBroadcasting(true);
       
-      // Update presence to show broadcasting
+      // Update presence to show broadcasting (use refs for latest values)
       if (channelRef.current) {
-        channelRef.current.track({ odious, username, avatarUrl, isBroadcasting: true });
+        channelRef.current.track({ 
+          odious, 
+          username: usernameRef.current, 
+          avatarUrl: avatarUrlRef.current, 
+          isBroadcasting: true 
+        });
       }
       
       toast.success('📹 Video broadcasting live!');
@@ -171,7 +176,7 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
       console.error('Failed to start video broadcast:', error);
       toast.error('Could not access camera/microphone');
     }
-  }, [odious, username, avatarUrl, startAudioMonitoring]);
+  }, [odious, startAudioMonitoring]);
 
   // Stop broadcasting
   const stopBroadcast = useCallback(() => {
@@ -186,13 +191,18 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
     
     setIsBroadcasting(false);
     
-    // Update presence
+    // Update presence (use refs for latest values)
     if (channelRef.current) {
-      channelRef.current.track({ odious, username, avatarUrl, isBroadcasting: false });
+      channelRef.current.track({ 
+        odious, 
+        username: usernameRef.current, 
+        avatarUrl: avatarUrlRef.current, 
+        isBroadcasting: false 
+      });
     }
     
     toast.info('Video broadcast stopped');
-  }, [odious, username, avatarUrl, stopAudioMonitoring]);
+  }, [odious, stopAudioMonitoring]);
 
   // Toggle broadcast
   const toggleBroadcast = useCallback(() => {
@@ -231,7 +241,21 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
     }
   }, [odious, createPeerConnection]);
 
-  // Connect to the video room
+  // Store latest values in refs to avoid effect re-runs
+  const usernameRef = useRef(username);
+  const avatarUrlRef = useRef(avatarUrl);
+  const isBroadcastingRef = useRef(isBroadcasting);
+  
+  useEffect(() => {
+    usernameRef.current = username;
+    avatarUrlRef.current = avatarUrl;
+  }, [username, avatarUrl]);
+  
+  useEffect(() => {
+    isBroadcastingRef.current = isBroadcasting;
+  }, [isBroadcasting]);
+
+  // Connect to the video room - only depends on roomId and odious
   useEffect(() => {
     if (!roomId || !odious) return;
 
@@ -265,7 +289,7 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
         if (key === odious) return;
         
         // Create offer for new participant if we're broadcasting
-        if (isBroadcasting) {
+        if (isBroadcastingRef.current && localStreamRef.current) {
           const pc = createPeerConnection(key);
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
@@ -286,7 +310,12 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
-          await channel.track({ odious, username, avatarUrl, isBroadcasting: false });
+          await channel.track({ 
+            odious, 
+            username: usernameRef.current, 
+            avatarUrl: avatarUrlRef.current, 
+            isBroadcasting: false 
+          });
         }
       });
 
@@ -300,7 +329,7 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
       remoteStreamsRef.current.clear();
       supabase.removeChannel(channel);
     };
-  }, [roomId, odious, username, avatarUrl]);
+  }, [roomId, odious, createPeerConnection, cleanupPeer, handleSignaling]);
 
   return {
     isBroadcasting,

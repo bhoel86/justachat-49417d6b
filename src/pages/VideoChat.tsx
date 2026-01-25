@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import VideoTile from '@/components/video/VideoTile';
+import VideoChatBar from '@/components/video/VideoChatBar';
 import { 
   Video, VideoOff, ArrowLeft, Users, Mic,
   Crown, Shield, Star, Camera
@@ -38,6 +39,14 @@ const VideoChat = () => {
     fetchProfile();
   }, [user?.id]);
 
+  // Memoize options to prevent hook re-initialization
+  const broadcastOptions = useMemo(() => ({
+    roomId: 'video-chat-main',
+    odious: user?.id || '',
+    username: profile?.username || 'Anonymous',
+    avatarUrl: profile?.avatar_url
+  }), [user?.id, profile?.username, profile?.avatar_url]);
+
   const {
     isBroadcasting,
     isConnected,
@@ -47,12 +56,7 @@ const VideoChat = () => {
     startBroadcast,
     stopBroadcast,
     getRemoteStream
-  } = useVideoBroadcast({
-    roomId: 'video-chat-main',
-    odious: user?.id || '',
-    username: profile?.username || 'Anonymous',
-    avatarUrl: profile?.avatar_url
-  });
+  } = useVideoBroadcast(broadcastOptions);
 
   // Fetch roles for all participants
   useEffect(() => {
@@ -326,6 +330,15 @@ const VideoChat = () => {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Chat Bar under video */}
+            <div className="mt-4">
+              <VideoChatBar 
+                roomId="video-chat-main"
+                userId={user.id}
+                username={profile?.username || 'Anonymous'}
+              />
             </div>
           </div>
 
