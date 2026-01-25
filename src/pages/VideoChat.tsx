@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import VideoTile from '@/components/video/VideoTile';
 import { 
-  Video, VideoOff, ArrowLeft, Users, 
+  Video, VideoOff, ArrowLeft, Users, Mic,
   Crown, Shield, Star, Camera
 } from 'lucide-react';
 
@@ -43,6 +43,7 @@ const VideoChat = () => {
     isConnected,
     participants,
     localStream,
+    audioLevel,
     startBroadcast,
     stopBroadcast,
     getRemoteStream
@@ -205,8 +206,40 @@ const VideoChat = () => {
             </div>
           </div>
           
-          {/* Broadcast Button */}
+          {/* Broadcast Button + Audio Meter */}
           <div className="flex items-center gap-3">
+            {/* Audio Level Meter - Only show when broadcasting */}
+            {isBroadcasting && (
+              <div className="flex items-center gap-2 bg-card/80 rounded-lg px-3 py-2 border border-border">
+                <Mic className="w-4 h-4 text-green-500 animate-pulse" />
+                <div className="flex items-end gap-0.5 h-6">
+                  {[...Array(10)].map((_, i) => {
+                    const threshold = (i + 1) * 10;
+                    const isActive = audioLevel >= threshold;
+                    const barColor = i < 6 
+                      ? 'bg-green-500' 
+                      : i < 8 
+                        ? 'bg-yellow-500' 
+                        : 'bg-destructive';
+                    return (
+                      <div
+                        key={i}
+                        className={`w-1.5 rounded-sm transition-all duration-75 ${
+                          isActive ? barColor : 'bg-muted'
+                        }`}
+                        style={{ 
+                          height: `${(i + 1) * 2.4}px`,
+                          opacity: isActive ? 1 : 0.3
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                <span className="text-xs text-muted-foreground w-8 text-right">
+                  {Math.round(audioLevel)}%
+                </span>
+              </div>
+            )}
             <Button
               onMouseDown={() => { if (!isLocked) startBroadcast(); }}
               onMouseUp={() => { if (!isLocked) stopBroadcast(); }}
