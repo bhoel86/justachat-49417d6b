@@ -598,15 +598,19 @@ export default function VoiceChat() {
                 
                 {/* Action buttons for non-mods, non-local */}
                 {!member.isModerator && !member.isLocal && (
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-0.5">
                     {/* Zap fun actions */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="p-1.5 rounded-lg hover:bg-primary/10 transition-all" title="Fun actions">
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className="p-1.5 rounded-lg hover:bg-primary/10 transition-all" 
+                          title="Fun actions"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Zap className="h-3.5 w-3.5 text-primary" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" side="left" className="w-52 bg-popover border border-border shadow-xl z-[9999]">
+                      <DropdownMenuContent align="end" side="left" sideOffset={5} className="w-52 bg-popover border border-border shadow-xl z-[9999]">
                         <DropdownMenuLabel className="text-xs text-muted-foreground">🤪 Funny</DropdownMenuLabel>
                         {USER_ACTIONS.funny.map((action, idx) => (
                           <DropdownMenuItem 
@@ -642,13 +646,17 @@ export default function VoiceChat() {
                     </DropdownMenu>
                     
                     {/* 3-dot more menu */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="p-1.5 rounded-lg hover:bg-muted transition-all" title="More actions">
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className="p-1.5 rounded-lg hover:bg-muted transition-all" 
+                          title="More actions"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" side="left" className="w-48 bg-popover border border-border shadow-xl z-[9999]">
+                      <DropdownMenuContent align="end" side="left" sideOffset={5} className="w-48 bg-popover border border-border shadow-xl z-[9999]">
                         <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
