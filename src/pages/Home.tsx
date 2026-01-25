@@ -321,15 +321,26 @@ const Home = () => {
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground">IRC Clients</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Desktop Clients</DropdownMenuLabel>
+                
+                {/* JAC Chat Client Download */}
+                <DropdownMenuItem asChild>
+                  <Link to="/downloads" className="flex items-center gap-2 cursor-pointer">
+                    <Terminal className="w-4 h-4 text-primary" />
+                    <div>
+                      <span>JAC Chat Client</span>
+                      <p className="text-xs text-muted-foreground">Desktop app for Windows, Mac, Linux</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
                 
                 {/* mIRC & Proxy Section */}
                 <DropdownMenuItem asChild>
                   <Link to="/download-proxy" className="flex items-center gap-2 cursor-pointer">
-                    <Download className="w-4 h-4 text-primary" />
+                    <Download className="w-4 h-4 text-purple-500" />
                     <div>
-                      <span>mIRC Setup Package</span>
-                      <p className="text-xs text-muted-foreground">Auto-login scripts & configs</p>
+                      <span>mIRC Theme Package</span>
+                      <p className="text-xs text-muted-foreground">For existing mIRC users</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
