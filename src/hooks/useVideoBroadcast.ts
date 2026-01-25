@@ -19,6 +19,7 @@ interface UseVideoBroadcastOptions {
 
 export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVideoBroadcastOptions) => {
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [participants, setParticipants] = useState<VideoParticipant[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -31,6 +32,23 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  
+  // Stable refs for values that change but shouldn't cause effect re-runs
+  const usernameRef = useRef(username);
+  const avatarUrlRef = useRef(avatarUrl);
+  const isBroadcastingRef = useRef(isBroadcasting);
+  const odiousRef = useRef(odious);
+
+  // Keep refs updated
+  useEffect(() => {
+    usernameRef.current = username;
+    avatarUrlRef.current = avatarUrl;
+    odiousRef.current = odious;
+  }, [username, avatarUrl, odious]);
+  
+  useEffect(() => {
+    isBroadcastingRef.current = isBroadcasting;
+  }, [isBroadcasting]);
 
   // ICE servers for NAT traversal
   const iceServers = {
@@ -39,63 +57,6 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
       { urls: 'stun:stun1.l.google.com:19302' },
     ]
   };
-
-  // Clean up peer connection
-  const cleanupPeer = useCallback((odPeerId: string) => {
-    const pc = peerConnectionsRef.current.get(odPeerId);
-    if (pc) {
-      pc.close();
-      peerConnectionsRef.current.delete(odPeerId);
-    }
-    remoteStreamsRef.current.delete(odPeerId);
-  }, []);
-
-  // Get remote stream for a participant
-  const getRemoteStream = useCallback((odPeerId: string): MediaStream | undefined => {
-    return remoteStreamsRef.current.get(odPeerId);
-  }, []);
-
-  // Create peer connection for a participant
-  const createPeerConnection = useCallback((remoteUserId: string): RTCPeerConnection => {
-    const pc = new RTCPeerConnection(iceServers);
-    
-    pc.onicecandidate = (event) => {
-      if (event.candidate && channelRef.current) {
-        channelRef.current.send({
-          type: 'broadcast',
-          event: 'video-ice-candidate',
-          payload: {
-            from: odious,
-            to: remoteUserId,
-            candidate: event.candidate.toJSON()
-          }
-        });
-      }
-    };
-
-    pc.ontrack = (event) => {
-      // Store incoming video stream
-      const remoteStream = event.streams[0];
-      remoteStreamsRef.current.set(remoteUserId, remoteStream);
-      
-      // Update participants to trigger re-render
-      setParticipants(prev => prev.map(p => 
-        p.odious === remoteUserId 
-          ? { ...p, stream: remoteStream }
-          : p
-      ));
-    };
-
-    // Add local stream if broadcasting
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        pc.addTrack(track, localStreamRef.current!);
-      });
-    }
-
-    peerConnectionsRef.current.set(remoteUserId, pc);
-    return pc;
-  }, [odious]);
 
   // Audio level monitoring
   const startAudioMonitoring = useCallback((stream: MediaStream) => {
@@ -139,8 +100,23 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
     setAudioLevel(0);
   }, []);
 
+  // Toggle audio mute
+  const toggleAudioMute = useCallback(() => {
+    if (localStreamRef.current) {
+      const audioTracks = localStreamRef.current.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsAudioMuted(prev => !prev);
+      toast.info(audioTracks[0]?.enabled ? '🎤 Microphone unmuted' : '🔇 Microphone muted');
+    }
+  }, []);
+
   // Start broadcasting
   const startBroadcast = useCallback(async () => {
+    // Don't start if already broadcasting
+    if (localStreamRef.current) return;
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: 640, height: 480, facingMode: 'user' },
@@ -148,6 +124,7 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
       });
       localStreamRef.current = stream;
       setLocalStream(stream);
+      setIsAudioMuted(false);
       
       // Start audio level monitoring
       startAudioMonitoring(stream);
@@ -161,10 +138,10 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
 
       setIsBroadcasting(true);
       
-      // Update presence to show broadcasting (use refs for latest values)
+      // Update presence to show broadcasting
       if (channelRef.current) {
         channelRef.current.track({ 
-          odious, 
+          odious: odiousRef.current, 
           username: usernameRef.current, 
           avatarUrl: avatarUrlRef.current, 
           isBroadcasting: true 
@@ -176,25 +153,27 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
       console.error('Failed to start video broadcast:', error);
       toast.error('Could not access camera/microphone');
     }
-  }, [odious, startAudioMonitoring]);
+  }, [startAudioMonitoring]);
 
   // Stop broadcasting
   const stopBroadcast = useCallback(() => {
+    // Don't stop if not broadcasting
+    if (!localStreamRef.current) return;
+    
     // Stop audio monitoring
     stopAudioMonitoring();
     
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-      localStreamRef.current = null;
-      setLocalStream(null);
-    }
+    localStreamRef.current.getTracks().forEach(track => track.stop());
+    localStreamRef.current = null;
+    setLocalStream(null);
+    setIsAudioMuted(false);
     
     setIsBroadcasting(false);
     
-    // Update presence (use refs for latest values)
+    // Update presence
     if (channelRef.current) {
       channelRef.current.track({ 
-        odious, 
+        odious: odiousRef.current, 
         username: usernameRef.current, 
         avatarUrl: avatarUrlRef.current, 
         isBroadcasting: false 
@@ -202,7 +181,7 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
     }
     
     toast.info('Video broadcast stopped');
-  }, [odious, stopAudioMonitoring]);
+  }, [stopAudioMonitoring]);
 
   // Toggle broadcast
   const toggleBroadcast = useCallback(() => {
@@ -213,51 +192,96 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
     }
   }, [isBroadcasting, startBroadcast, stopBroadcast]);
 
-  // Handle signaling messages
-  const handleSignaling = useCallback(async (payload: any) => {
-    const { type, from, to, offer, answer, candidate } = payload;
-    
-    if (to !== odious) return;
-    
-    let pc = peerConnectionsRef.current.get(from);
-    
-    if (type === 'offer') {
-      if (!pc) {
-        pc = createPeerConnection(from);
-      }
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answerDesc = await pc.createAnswer();
-      await pc.setLocalDescription(answerDesc);
-      
-      channelRef.current?.send({
-        type: 'broadcast',
-        event: 'video-answer',
-        payload: { from: odious, to: from, answer: answerDesc }
-      });
-    } else if (type === 'answer' && pc) {
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-    } else if (type === 'ice-candidate' && pc) {
-      await pc.addIceCandidate(new RTCIceCandidate(candidate));
-    }
-  }, [odious, createPeerConnection]);
+  // Get remote stream for a participant
+  const getRemoteStream = useCallback((odPeerId: string): MediaStream | undefined => {
+    return remoteStreamsRef.current.get(odPeerId);
+  }, []);
 
-  // Store latest values in refs to avoid effect re-runs
-  const usernameRef = useRef(username);
-  const avatarUrlRef = useRef(avatarUrl);
-  const isBroadcastingRef = useRef(isBroadcasting);
-  
-  useEffect(() => {
-    usernameRef.current = username;
-    avatarUrlRef.current = avatarUrl;
-  }, [username, avatarUrl]);
-  
-  useEffect(() => {
-    isBroadcastingRef.current = isBroadcasting;
-  }, [isBroadcasting]);
-
-  // Connect to the video room - only depends on roomId and odious
+  // Connect to the video room - ONLY depends on roomId and odious
   useEffect(() => {
     if (!roomId || !odious) return;
+
+    // Clean up peer connection helper
+    const cleanupPeer = (odPeerId: string) => {
+      const pc = peerConnectionsRef.current.get(odPeerId);
+      if (pc) {
+        pc.close();
+        peerConnectionsRef.current.delete(odPeerId);
+      }
+      remoteStreamsRef.current.delete(odPeerId);
+    };
+
+    // Create peer connection for a participant
+    const createPeerConnection = (remoteUserId: string): RTCPeerConnection => {
+      const pc = new RTCPeerConnection(iceServers);
+      
+      pc.onicecandidate = (event) => {
+        if (event.candidate && channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'video-ice-candidate',
+            payload: {
+              from: odiousRef.current,
+              to: remoteUserId,
+              candidate: event.candidate.toJSON()
+            }
+          });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        const remoteStream = event.streams[0];
+        remoteStreamsRef.current.set(remoteUserId, remoteStream);
+        
+        setParticipants(prev => prev.map(p => 
+          p.odious === remoteUserId 
+            ? { ...p, stream: remoteStream }
+            : p
+        ));
+      };
+
+      // Add local stream if broadcasting
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => {
+          pc.addTrack(track, localStreamRef.current!);
+        });
+      }
+
+      peerConnectionsRef.current.set(remoteUserId, pc);
+      return pc;
+    };
+
+    // Handle signaling messages
+    const handleSignaling = async (payload: any) => {
+      const { type, from, to, offer, answer, candidate } = payload;
+      
+      if (to !== odiousRef.current) return;
+      
+      let pc = peerConnectionsRef.current.get(from);
+      
+      try {
+        if (type === 'offer') {
+          if (!pc) {
+            pc = createPeerConnection(from);
+          }
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          const answerDesc = await pc.createAnswer();
+          await pc.setLocalDescription(answerDesc);
+          
+          channelRef.current?.send({
+            type: 'broadcast',
+            event: 'video-answer',
+            payload: { from: odiousRef.current, to: from, answer: answerDesc }
+          });
+        } else if (type === 'answer' && pc) {
+          await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        } else if (type === 'ice-candidate' && pc) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+      } catch (e) {
+        console.error('Signaling error:', e);
+      }
+    };
 
     const channel = supabase.channel(`video:${roomId}`, {
       config: { presence: { key: odious } }
@@ -286,7 +310,7 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
         setParticipants(participantList);
       })
       .on('presence', { event: 'join' }, async ({ key }) => {
-        if (key === odious) return;
+        if (key === odiousRef.current) return;
         
         // Create offer for new participant if we're broadcasting
         if (isBroadcastingRef.current && localStreamRef.current) {
@@ -297,7 +321,7 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
           channel.send({
             type: 'broadcast',
             event: 'video-offer',
-            payload: { from: odious, to: key, offer }
+            payload: { from: odiousRef.current, to: key, offer }
           });
         }
       })
@@ -320,24 +344,28 @@ export const useVideoBroadcast = ({ roomId, odious, username, avatarUrl }: UseVi
       });
 
     return () => {
-      // Cleanup
+      // Cleanup on unmount only
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
       }
       peerConnectionsRef.current.forEach((pc) => pc.close());
       peerConnectionsRef.current.clear();
       remoteStreamsRef.current.clear();
+      channelRef.current = null;
       supabase.removeChannel(channel);
     };
-  }, [roomId, odious, createPeerConnection, cleanupPeer, handleSignaling]);
+  }, [roomId, odious]); // Only roomId and odious - no callback dependencies
 
   return {
     isBroadcasting,
+    isAudioMuted,
     isConnected,
     participants,
     localStream,
     audioLevel,
     toggleBroadcast,
+    toggleAudioMute,
     startBroadcast,
     stopBroadcast,
     getRemoteStream

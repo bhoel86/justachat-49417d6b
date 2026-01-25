@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import VideoTile from '@/components/video/VideoTile';
 import VideoChatBar from '@/components/video/VideoChatBar';
 import { 
-  Video, VideoOff, ArrowLeft, Users, Mic,
+  Video, VideoOff, ArrowLeft, Users, Mic, MicOff,
   Crown, Shield, Star, Camera
 } from 'lucide-react';
 
@@ -49,12 +49,14 @@ const VideoChat = () => {
 
   const {
     isBroadcasting,
+    isAudioMuted,
     isConnected,
     participants,
     localStream,
     audioLevel,
     startBroadcast,
     stopBroadcast,
+    toggleAudioMute,
     getRemoteStream
   } = useVideoBroadcast(broadcastOptions);
 
@@ -210,11 +212,28 @@ const VideoChat = () => {
             </div>
           </div>
           
-          {/* Broadcast Button + Audio Meter */}
-          <div className="flex items-center gap-3">
-            {/* Audio Level Meter - Only show when broadcasting */}
+          {/* Broadcast Button + Audio Mute + Audio Meter */}
+          <div className="flex items-center gap-2">
+            {/* Audio Mute Button - Only show when broadcasting */}
             {isBroadcasting && (
-              <div className="flex items-center gap-2 bg-card/80 rounded-lg px-3 py-2 border border-border">
+              <Button
+                variant={isAudioMuted ? "destructive" : "secondary"}
+                size="icon"
+                onClick={toggleAudioMute}
+                className="shrink-0"
+                title={isAudioMuted ? "Unmute microphone" : "Mute microphone"}
+              >
+                {isAudioMuted ? (
+                  <MicOff className="w-4 h-4" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
+              </Button>
+            )}
+            
+            {/* Audio Level Meter - Only show when broadcasting and not muted */}
+            {isBroadcasting && !isAudioMuted && (
+              <div className="hidden sm:flex items-center gap-2 bg-card/80 rounded-lg px-3 py-2 border border-border">
                 <Mic className="w-4 h-4 text-green-500 animate-pulse" />
                 <div className="flex items-end gap-0.5 h-6">
                   {[...Array(10)].map((_, i) => {
@@ -244,6 +263,15 @@ const VideoChat = () => {
                 </span>
               </div>
             )}
+            
+            {/* Muted indicator */}
+            {isBroadcasting && isAudioMuted && (
+              <Badge variant="destructive" className="hidden sm:flex gap-1">
+                <MicOff className="w-3 h-3" />
+                Muted
+              </Badge>
+            )}
+            
             <Button
               onMouseDown={() => { if (!isLocked) startBroadcast(); }}
               onMouseUp={() => { if (!isLocked) stopBroadcast(); }}
