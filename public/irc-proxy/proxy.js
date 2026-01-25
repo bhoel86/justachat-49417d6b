@@ -37,7 +37,7 @@
  */
 
 // Version - update this when making changes
-const PROXY_VERSION = '2.4.0';
+const PROXY_VERSION = '2.5.0';
 
 const net = require('net');
 const tls = require('tls');
@@ -1019,6 +1019,35 @@ const handleAdminRequest = (req, res) => {
         lastCloseReason: reconnectStats.lastCloseReason,
         activeReconnectingConnections: Array.from(activeConnections.values()).filter(c => c.isReconnecting).length
       }
+    }));
+    return;
+  }
+  
+  // Debug endpoint (public - helps identify which process is running)
+  if (reqPath === '/debug' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      version: PROXY_VERSION,
+      pid: process.pid,
+      scriptPath: __filename,
+      cwd: process.cwd(),
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      uptime: Math.floor((Date.now() - startTime) / 1000),
+      memory: {
+        rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + ' MB',
+        heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+        heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+      },
+      env: {
+        HOST: config.host,
+        PORT: config.port,
+        SSL_PORT: config.sslPort,
+        ADMIN_PORT: config.adminPort,
+        WS_URL: config.wsUrl.substring(0, 50) + '...'
+      },
+      startedAt: new Date(startTime).toISOString()
     }));
     return;
   }
