@@ -1,16 +1,14 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Gamepad2, Spade, Type, Users, X, Maximize2 } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Spade, Type, Users, ExternalLink } from 'lucide-react';
 
 interface Game {
   id: string;
   name: string;
   description: string;
-  embedUrl: string;
+  url: string;
   thumbnail: string;
   category: 'card' | 'word' | 'arcade' | 'multiplayer';
 }
@@ -21,7 +19,7 @@ const GAMES: Game[] = [
     id: 'solitaire',
     name: 'Solitaire',
     description: 'Classic Klondike Solitaire',
-    embedUrl: 'https://www.solitr.com/',
+    url: 'https://www.solitr.com/',
     thumbnail: '🃏',
     category: 'card',
   },
@@ -29,7 +27,7 @@ const GAMES: Game[] = [
     id: 'blackjack',
     name: 'Blackjack',
     description: 'Beat the dealer to 21',
-    embedUrl: 'https://www.247blackjack.com/',
+    url: 'https://www.247blackjack.com/',
     thumbnail: '🎰',
     category: 'card',
   },
@@ -37,7 +35,7 @@ const GAMES: Game[] = [
     id: 'freecell',
     name: 'FreeCell',
     description: 'Strategic card puzzle',
-    embedUrl: 'https://www.free-freecell-solitaire.com/',
+    url: 'https://www.free-freecell-solitaire.com/',
     thumbnail: '♠️',
     category: 'card',
   },
@@ -45,7 +43,7 @@ const GAMES: Game[] = [
     id: 'spider',
     name: 'Spider Solitaire',
     description: 'Build stacks of cards',
-    embedUrl: 'https://www.spidersolitaire.org/',
+    url: 'https://www.spidersolitaire.org/',
     thumbnail: '🕷️',
     category: 'card',
   },
@@ -54,7 +52,7 @@ const GAMES: Game[] = [
     id: 'wordle',
     name: 'Wordle',
     description: 'Guess the 5-letter word',
-    embedUrl: 'https://wordly.org/',
+    url: 'https://wordly.org/',
     thumbnail: '📝',
     category: 'word',
   },
@@ -62,7 +60,7 @@ const GAMES: Game[] = [
     id: 'crossword',
     name: 'Daily Crossword',
     description: 'Classic crossword puzzles',
-    embedUrl: 'https://www.boatloadpuzzles.com/playcrossword',
+    url: 'https://www.boatloadpuzzles.com/playcrossword',
     thumbnail: '✏️',
     category: 'word',
   },
@@ -70,7 +68,7 @@ const GAMES: Game[] = [
     id: 'wordsearch',
     name: 'Word Search',
     description: 'Find hidden words',
-    embedUrl: 'https://thewordsearch.com/',
+    url: 'https://thewordsearch.com/',
     thumbnail: '🔍',
     category: 'word',
   },
@@ -78,7 +76,7 @@ const GAMES: Game[] = [
     id: 'hangman',
     name: 'Hangman',
     description: 'Guess letters to save the man',
-    embedUrl: 'https://hangmanwordgame.com/',
+    url: 'https://hangmanwordgame.com/',
     thumbnail: '🪢',
     category: 'word',
   },
@@ -87,7 +85,7 @@ const GAMES: Game[] = [
     id: '2048',
     name: '2048',
     description: 'Slide tiles to reach 2048',
-    embedUrl: 'https://play2048.co/',
+    url: 'https://play2048.co/',
     thumbnail: '🔢',
     category: 'arcade',
   },
@@ -95,7 +93,7 @@ const GAMES: Game[] = [
     id: 'tetris',
     name: 'Tetris',
     description: 'Classic block stacking',
-    embedUrl: 'https://tetris.com/play-tetris',
+    url: 'https://tetris.com/play-tetris',
     thumbnail: '🧱',
     category: 'arcade',
   },
@@ -103,7 +101,7 @@ const GAMES: Game[] = [
     id: 'snake',
     name: 'Snake',
     description: 'Eat food and grow',
-    embedUrl: 'https://playsnake.org/',
+    url: 'https://playsnake.org/',
     thumbnail: '🐍',
     category: 'arcade',
   },
@@ -111,7 +109,7 @@ const GAMES: Game[] = [
     id: 'pacman',
     name: 'Pac-Man',
     description: 'Eat dots, avoid ghosts',
-    embedUrl: 'https://freepacman.org/',
+    url: 'https://freepacman.org/',
     thumbnail: '👾',
     category: 'arcade',
   },
@@ -120,7 +118,7 @@ const GAMES: Game[] = [
     id: 'chess',
     name: 'Chess',
     description: 'Play chess online',
-    embedUrl: 'https://www.chess.com/play/online',
+    url: 'https://www.chess.com/play/online',
     thumbnail: '♟️',
     category: 'multiplayer',
   },
@@ -128,7 +126,7 @@ const GAMES: Game[] = [
     id: 'checkers',
     name: 'Checkers',
     description: 'Classic board game',
-    embedUrl: 'https://www.247checkers.com/',
+    url: 'https://www.247checkers.com/',
     thumbnail: '⚫',
     category: 'multiplayer',
   },
@@ -136,7 +134,7 @@ const GAMES: Game[] = [
     id: 'pool',
     name: '8 Ball Pool',
     description: 'Online billiards',
-    embedUrl: 'https://www.miniclip.com/games/8-ball-pool-multiplayer/en/',
+    url: 'https://www.miniclip.com/games/8-ball-pool-multiplayer/en/',
     thumbnail: '🎱',
     category: 'multiplayer',
   },
@@ -144,7 +142,7 @@ const GAMES: Game[] = [
     id: 'tic-tac-toe',
     name: 'Tic Tac Toe',
     description: 'Classic X and O game',
-    embedUrl: 'https://playtictactoe.org/',
+    url: 'https://playtictactoe.org/',
     thumbnail: '⭕',
     category: 'multiplayer',
   },
@@ -158,30 +156,37 @@ const CATEGORY_INFO = {
 };
 
 export default function Games() {
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
   const getGamesByCategory = (category: Game['category']) => 
     GAMES.filter(game => game.category === category);
 
   const GameCard = ({ game }: { game: Game }) => (
-    <Card 
-      className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl bg-card/80 backdrop-blur-sm border-border/50"
-      onClick={() => setSelectedGame(game)}
+    <a 
+      href={game.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block"
     >
-      <CardHeader className="pb-2">
-        <div className="text-5xl mb-2 group-hover:scale-110 transition-transform">
-          {game.thumbnail}
-        </div>
-        <CardTitle className="text-lg">{game.name}</CardTitle>
-        <CardDescription className="text-sm">{game.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button variant="jac" size="sm" className="w-full">
-          Play Now
-        </Button>
-      </CardContent>
-    </Card>
+      <Card 
+        className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl bg-card/80 backdrop-blur-sm border-border/50 h-full"
+      >
+        <CardHeader className="pb-2">
+          <div className="text-5xl mb-2 group-hover:scale-110 transition-transform">
+            {game.thumbnail}
+          </div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            {game.name}
+            <ExternalLink className="h-3 w-3 opacity-50" />
+          </CardTitle>
+          <CardDescription className="text-sm">{game.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="jac" size="sm" className="w-full gap-2">
+            Play Now
+            <ExternalLink className="h-3 w-3" />
+          </Button>
+        </CardContent>
+      </Card>
+    </a>
   );
 
   return (
@@ -210,7 +215,7 @@ export default function Games() {
       <main className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-2">Free Games</h2>
-          <p className="text-muted-foreground">Play classic games right in your browser - no downloads required!</p>
+          <p className="text-muted-foreground">Click any game to play in a new tab - no downloads required!</p>
         </div>
 
         <Tabs defaultValue="all" className="w-full">
@@ -259,48 +264,6 @@ export default function Games() {
           ))}
         </Tabs>
       </main>
-
-      {/* Game Modal */}
-      <Dialog open={!!selectedGame} onOpenChange={(open) => !open && setSelectedGame(null)}>
-        <DialogContent className={`${isFullscreen ? 'max-w-[100vw] h-[100vh] m-0 rounded-none' : 'max-w-5xl h-[80vh]'} p-0 overflow-hidden`}>
-          <DialogHeader className="p-4 pb-2 flex flex-row items-center justify-between bg-background/95 backdrop-blur">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{selectedGame?.thumbnail}</span>
-              <div>
-                <DialogTitle>{selectedGame?.name}</DialogTitle>
-                <p className="text-sm text-muted-foreground">{selectedGame?.description}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-              >
-                <Maximize2 className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setSelectedGame(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogHeader>
-          <div className="flex-1 h-full">
-            {selectedGame && (
-              <iframe
-                src={selectedGame.embedUrl}
-                className="w-full h-full border-0"
-                title={selectedGame.name}
-                allow="fullscreen"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Footer */}
       <footer className="border-t border-border/50 py-6 mt-12">
