@@ -88,48 +88,6 @@
   .jac-gradient-bg {
     background: var(--jac-gradient);
   }
-
-  /* Subtle chat background pattern */
-  .chat-bg-pattern {
-    background-color: hsl(var(--background));
-    background-image: 
-      radial-gradient(circle at 25% 25%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, hsl(var(--accent) / 0.02) 0%, transparent 50%),
-      linear-gradient(180deg, hsl(var(--card) / 0.3) 0%, transparent 100%);
-    background-size: 100% 100%;
-    position: relative;
-  }
-
-  .chat-bg-pattern::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: 
-      repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 50px,
-        hsl(var(--border) / 0.03) 50px,
-        hsl(var(--border) / 0.03) 51px
-      ),
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 50px,
-        hsl(var(--border) / 0.03) 50px,
-        hsl(var(--border) / 0.03) 51px
-      );
-    pointer-events: none;
-  }
-
-  /* Voice chat specific background */
-  .voice-bg-pattern {
-    background-color: hsl(var(--background));
-    background-image: 
-      radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.05) 0%, transparent 60%),
-      radial-gradient(circle at 10% 90%, hsl(var(--accent) / 0.03) 0%, transparent 40%),
-      radial-gradient(circle at 90% 50%, hsl(var(--primary) / 0.02) 0%, transparent 40%);
-  }
 }
 
 @layer utilities {

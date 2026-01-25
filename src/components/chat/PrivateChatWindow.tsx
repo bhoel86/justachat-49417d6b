@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback, forwardRef } from "react";
-import { createPortal } from "react-dom";
 import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video, Camera, Image, Palette, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,26 +48,6 @@ const MIN_HEIGHT = 300;
 const MAX_WIDTH = 500;
 const MAX_HEIGHT = 600;
 
-type VisualViewportState = {
-  offsetLeft: number;
-  offsetTop: number;
-  width: number;
-  height: number;
-};
-
-const getVisualViewportState = (): VisualViewportState => {
-  const vv = window.visualViewport;
-  if (vv) {
-    return {
-      offsetLeft: vv.offsetLeft || 0,
-      offsetTop: vv.offsetTop || 0,
-      width: vv.width || window.innerWidth,
-      height: vv.height || window.innerHeight,
-    };
-  }
-  return { offsetLeft: 0, offsetTop: 0, width: window.innerWidth, height: window.innerHeight };
-};
-
 const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   targetUserId,
   targetUsername,
@@ -87,40 +66,8 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   const [sessionId, setSessionId] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const [targetOnline, setTargetOnline] = useState(false);
-  const viewportRef = useRef<VisualViewportState | null>(null);
-  const [viewport, setViewport] = useState<VisualViewportState>(() => {
-    const v = getVisualViewportState();
-    viewportRef.current = v;
-    return v;
-  });
-
+  const [position, setPosition] = useState(initialPosition);
   const [size, setSize] = useState({ width: 360, height: 480 });
-
-  const clampPosition = useCallback((pos: { x: number; y: number }, winSize: { width: number; height: number }) => {
-    const v = viewportRef.current || getVisualViewportState();
-    // Keep the header always reachable even when browser chrome/keyboard changes.
-    const minX = 10;
-    const minY = 60;
-    const maxX = Math.max(minX, v.width - winSize.width - 10);
-    const maxY = Math.max(minY, v.height - 100);
-    return {
-      x: Math.max(minX, Math.min(maxX, pos.x)),
-      y: Math.max(minY, Math.min(maxY, pos.y)),
-    };
-  }, []);
-
-  const [position, setPosition] = useState(() => {
-    const v = viewportRef.current || getVisualViewportState();
-    // Clamp initial position to the current visible viewport (mobile-safe).
-    const minX = 10;
-    const minY = 60;
-    const maxX = Math.max(minX, v.width - 380);
-    const maxY = Math.max(minY, v.height - 500);
-    return {
-      x: Math.max(minX, Math.min(maxX, initialPosition.x)),
-      y: Math.max(minY, Math.min(maxY, initialPosition.y)),
-    };
-  });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -144,34 +91,6 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
-
-  // Track the true visual viewport so fixed windows don't drift out of view on mobile
-  // (address bar/keyboard changes).
-  useEffect(() => {
-    const vv = window.visualViewport;
-    let raf = 0;
-
-    const update = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const next = getVisualViewportState();
-        viewportRef.current = next;
-        setViewport(next);
-      });
-    };
-
-    update();
-    vv?.addEventListener('resize', update);
-    vv?.addEventListener('scroll', update);
-    window.addEventListener('resize', update);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      vv?.removeEventListener('resize', update);
-      vv?.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, []);
   
   const TEXT_COLORS = [
     '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', 
@@ -219,11 +138,9 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
-        const clamped = clampPosition({
-          x: e.clientX - dragOffset.x,
-          y: e.clientY - dragOffset.y,
-        }, size);
-        setPosition(clamped);
+        const newX = Math.max(0, Math.min(window.innerWidth - size.width, e.clientX - dragOffset.x));
+        const newY = Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffset.y));
+        setPosition({ x: newX, y: newY });
       }
       if (isResizing) {
         const deltaX = e.clientX - resizeStart.x;
@@ -250,12 +167,7 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
       document.removeEventListener('mouseup', handleMouseUp);
       document.body.style.userSelect = '';
     };
-  }, [isDragging, isResizing, dragOffset, resizeStart, size.width, clampPosition]);
-
-  // When the viewport changes (mobile address bar / keyboard), ensure the window stays reachable.
-  useEffect(() => {
-    setPosition(prev => clampPosition(prev, size));
-  }, [viewport, clampPosition, size]);
+  }, [isDragging, isResizing, dragOffset, resizeStart, size.width]);
 
   // Initialize encrypted session
   useEffect(() => {
@@ -629,38 +541,18 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
     setMessage(prev => prev + emoji);
   };
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     setMessages([]);
     onClose();
     toast({
       title: "Private chat ended",
       description: "All messages have been destroyed.",
     });
-  }, [onClose, toast]);
-
-  // Always provide a close escape hatch.
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
-    };
-    window.addEventListener('keydown', onKeyDown, true);
-    return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [handleClose]);
+  };
 
   const messageAreaHeight = size.height - 140; // Header + input + notices
 
-  // Bring window to front without breaking button clicks (mousedown triggers re-render;
-  // if we do that on buttons it can cancel the click).
-  const handleWindowMouseDownCapture = (e: React.MouseEvent) => {
-    const el = e.target as HTMLElement | null;
-    if (!el) return;
-
-    // Don't steal events from interactive elements.
-    if (el.closest('button,[role="button"],a,input,textarea,select,label')) return;
-    onFocus();
-  };
-
-  const windowNode = (
+  return (
     <div
       ref={(node) => {
         // Forward ref to parent and keep local ref
@@ -671,17 +563,16 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
           ref.current = node;
         }
       }}
-      onMouseDownCapture={handleWindowMouseDownCapture}
+      onMouseDown={onFocus}
       className="fixed shadow-2xl rounded-xl overflow-hidden border-2 border-primary/30 bg-card animate-scale-in"
       style={{
-        left: position.x + viewport.offsetLeft,
-        top: position.y + viewport.offsetTop,
+        left: position.x,
+        top: position.y,
         zIndex: zIndex,
         width: size.width,
         height: size.height,
       }}
     >
-
       {/* Header - Draggable */}
       <div 
         className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-primary/30 to-accent/30 cursor-move select-none border-b border-border"
@@ -737,16 +628,16 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onMinimize(); }} 
-            className="h-6 w-6 rounded hover:bg-background/50 relative z-10"
+            onClick={(e) => { e.stopPropagation(); onMinimize(); }} 
+            className="h-6 w-6 rounded hover:bg-background/50"
           >
             <Minus className="h-3 w-3" />
           </Button>
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleClose(); }} 
-            className="h-6 w-6 rounded hover:bg-destructive/20 hover:text-destructive relative z-10"
+            onClick={(e) => { e.stopPropagation(); handleClose(); }} 
+            className="h-6 w-6 rounded hover:bg-destructive/20 hover:text-destructive"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -771,7 +662,7 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
 
       {/* Messages */}
       <div 
-        className="overflow-y-auto p-2 space-y-2 chat-bg-pattern"
+        className="overflow-y-auto p-2 space-y-2 bg-background/50"
         style={{ height: messageAreaHeight }}
       >
         {messages.length === 0 ? (
@@ -983,11 +874,6 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
       </div>
     </div>
   );
-
-  // Render into <body> so the PM window can't be clipped by any transformed/scroll containers
-  // in the chat layout.
-  if (typeof document === 'undefined') return null;
-  return createPortal(windowNode, document.body);
 });
 
 PrivateChatWindow.displayName = 'PrivateChatWindow';

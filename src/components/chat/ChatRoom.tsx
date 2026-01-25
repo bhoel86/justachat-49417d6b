@@ -1073,7 +1073,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           />
         </div>
         
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 chat-bg-pattern">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="h-8 w-8 rounded-xl jac-gradient-bg animate-pulse" />

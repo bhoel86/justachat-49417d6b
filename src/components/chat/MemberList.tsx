@@ -32,7 +32,6 @@ interface Member {
   avatar?: string;
   avatar_url?: string | null;
   bio?: string | null;
-  age?: number | null;
   ip_address?: string | null;
 }
 
@@ -130,10 +129,10 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
   }, [user]);
 
   const fetchMembers = async () => {
-    // Fetch all profiles with their roles, avatars, bios, age, and ghost mode
+    // Fetch all profiles with their roles, avatars, bios, and ghost mode
     const { data: profiles } = await supabaseUntyped
       .from('profiles')
-      .select('user_id, username, avatar_url, bio, age, ghost_mode');
+      .select('user_id, username, avatar_url, bio, ghost_mode');
 
     const { data: roles } = await supabaseUntyped
       .from('user_roles')
@@ -163,7 +162,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
           // Hide ghost mode users from regular users
           return !p.ghost_mode;
         })
-        .map((p: { user_id: string; username: string; avatar_url: string | null; bio: string | null; age: number | null; ghost_mode?: boolean }) => {
+        .map((p: { user_id: string; username: string; avatar_url: string | null; bio: string | null; ghost_mode?: boolean }) => {
           const memberRole = (roleMap.get(p.user_id) || 'user') as Member['role'];
           // Only include IP for non-admin/owner users
           const showIp = (isAdmin || isOwner) && memberRole !== 'admin' && memberRole !== 'owner';
@@ -177,7 +176,6 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
               : onlineUserIds.has(p.user_id),
             avatar_url: p.avatar_url,
             bio: p.bio,
-            age: p.age,
             ip_address: showIp ? locationMap.get(p.user_id) || null : null,
           };
         });
@@ -610,7 +608,6 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
         username={viewProfileTarget?.username || ''}
         avatarUrl={viewProfileTarget?.avatar_url || null}
         bio={viewProfileTarget?.bio || null}
-        age={viewProfileTarget?.age}
         role={viewProfileTarget?.role}
         onPmClick={viewProfileTarget && onOpenPm 
           ? () => onOpenPm(viewProfileTarget.user_id, viewProfileTarget.username) 
