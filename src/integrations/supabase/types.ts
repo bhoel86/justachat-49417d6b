@@ -556,6 +556,27 @@ export type Database = {
         }
         Relationships: []
       }
+      donation_clicks: {
+        Row: {
+          clicked_at: string
+          id: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       donation_settings: {
         Row: {
           current_amount: number

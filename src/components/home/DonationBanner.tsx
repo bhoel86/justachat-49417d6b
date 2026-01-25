@@ -51,17 +51,41 @@ const DonationBanner = () => {
     setTimeout(() => setIsAnimating(false), 600);
     setShowQrModal(true);
     
-    // Send SMS notification to owner (fire and forget)
+    // Only send SMS for logged-in users who haven't clicked before
+    if (!user) return;
+    
     try {
-      const { data: profile } = user ? await supabase
+      // Check if user has already clicked donate before
+      const { data: existingClick } = await supabase
+        .from('donation_clicks')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      // If already clicked, don't send another SMS
+      if (existingClick) {
+        console.log('User already clicked donate before, skipping SMS');
+        return;
+      }
+      
+      // Get username for notification
+      const { data: profile } = await supabase
         .from('profiles')
         .select('username')
         .eq('user_id', user.id)
-        .maybeSingle() : { data: null };
+        .maybeSingle();
       
+      // Record this click to prevent future SMS
+      await supabase
+        .from('donation_clicks')
+        .insert({ user_id: user.id, username: profile?.username || 'Unknown' });
+      
+      // Send SMS notification
       await supabase.functions.invoke('donation-notify', {
-        body: { username: profile?.username || 'A visitor' }
+        body: { username: profile?.username || 'A user' }
       });
+      
+      console.log('Donation notification sent for:', profile?.username);
     } catch (error) {
       // Silent fail - don't disrupt user experience
       console.error('Failed to send donation notification:', error);
