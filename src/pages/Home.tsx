@@ -63,6 +63,7 @@ const roomIcons: Record<string, React.ReactNode> = {
   "dating": <Heart className="w-8 h-8" />,
   "lounge": <Coffee className="w-8 h-8" />,
   "trivia": <MessageSquare className="w-8 h-8" />,
+  "voice": <Volume2 className="w-8 h-8" />,
 };
 
 const roomColors: Record<string, string> = {
@@ -78,6 +79,7 @@ const roomColors: Record<string, string> = {
   "dating": "from-pink-500 to-rose-500",
   "lounge": "from-amber-500 to-orange-500",
   "trivia": "from-teal-500 to-cyan-500",
+  "voice": "from-purple-500 to-violet-500",
 };
 
 const roomBackgrounds: Record<string, string> = {
@@ -332,16 +334,6 @@ const Home = () => {
                   </Link>
                 </DropdownMenuItem>
                 
-                {/* Voice Chat Section */}
-                <DropdownMenuItem asChild>
-                  <Link to="/voice" className="flex items-center gap-2 cursor-pointer">
-                    <Volume2 className="w-4 h-4 text-purple-500" />
-                    <div>
-                      <span>Voice Chat</span>
-                      <p className="text-xs text-muted-foreground">Voice & video rooms</p>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
                 
                 {/* Help Section */}
                 <DropdownMenuItem asChild>
@@ -643,6 +635,36 @@ const Home = () => {
                         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
+                    
+                    {/* Voice Chat Bubble */}
+                    <button
+                      onClick={() => navigate('/voice')}
+                      className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-1 active:scale-95 active:translate-y-0"
+                    >
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-violet-500 opacity-20 group-hover:opacity-30 transition-opacity" />
+                      
+                      {/* Dark overlay for readability */}
+                      <div className="absolute inset-0 bg-black/40" />
+                      
+                      {/* Content - stacked vertically */}
+                      <div className="relative h-full flex flex-col items-center justify-center gap-1 px-2 py-2">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-violet-500 text-white shadow-md group-hover:scale-105 transition-transform">
+                          <Volume2 className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-semibold text-[10px] sm:text-xs text-white drop-shadow-md text-center leading-tight">
+                          🎙️ Voice Chat
+                        </h3>
+                        {/* User count badge */}
+                        <div className="flex items-center gap-0.5 text-white/80">
+                          <Users className="w-2.5 h-2.5" />
+                          <span className="text-[9px] font-medium">Live</span>
+                        </div>
+                      </div>
+
+                      {/* Hover effect overlay */}
+                      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
                   </div>
                   
                   {/* Dating Section - Fixed at bottom */}
