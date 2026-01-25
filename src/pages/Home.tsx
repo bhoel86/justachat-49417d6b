@@ -7,7 +7,8 @@ import {
   LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, 
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
   Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX, Menu, 
-  Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen
+  Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen,
+  Radio
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -633,6 +634,36 @@ const Home = () => {
                         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
+                  </div>
+                  
+                  {/* Voice Chat Section */}
+                  <div className="mt-3 lg:mt-4">
+                    <Link
+                      to="/voice-chat"
+                      className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-violet-500/60 hover:border-violet-500 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/30 active:scale-[0.98]"
+                    >
+                      {/* Gradient background */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 opacity-40 group-hover:opacity-60 transition-opacity" />
+                      
+                      {/* Dark overlay for readability */}
+                      <div className="absolute inset-0 bg-black/30" />
+                      
+                      {/* Content */}
+                      <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
+                        <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg group-hover:scale-110 transition-transform">
+                          <Radio className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </div>
+                        <div className="flex flex-col">
+                          <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
+                            <span className="animate-pulse">🎙️</span> Voice Chat
+                          </h3>
+                          <span className="text-[10px] sm:text-xs text-white/80">Broadcast live to listeners</span>
+                        </div>
+                      </div>
+
+                      {/* Hover effect overlay */}
+                      <div className="absolute inset-0 bg-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
                   </div>
                   
                   {/* Dating Section - Fixed at bottom */}
