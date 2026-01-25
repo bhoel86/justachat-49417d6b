@@ -12,6 +12,7 @@ import VideoChatBar from '@/components/video/VideoChatBar';
 import VideoUserMenu from '@/components/video/VideoUserMenu';
 import PrivateChatWindow from '@/components/chat/PrivateChatWindow';
 import PMTray from '@/components/chat/PMTray';
+import { TestViewersToggle, TEST_VIEWERS, TestViewer } from '@/components/video/TestViewersToggle';
 import { 
   Video, VideoOff, ArrowLeft, Users, Mic, MicOff,
   Crown, Shield, Star, Camera, MoreVertical
@@ -24,6 +25,7 @@ const VideoChat = () => {
   const [rolesByUserId, setRolesByUserId] = useState<Record<string, string>>({});
   const [isLocked, setIsLocked] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [testUsersEnabled, setTestUsersEnabled] = useState(false);
 
   // Private messaging system
   const {
@@ -168,11 +170,30 @@ const VideoChat = () => {
 
   if (!user) return null;
 
+  const isOwner = currentUserRole === 'owner';
   const broadcasters = participants.filter(p => p.isBroadcasting);
-  const viewers = participants.filter(p => !p.isBroadcasting);
+  
+  // Merge real viewers with test users when enabled
+  const realViewers = participants.filter(p => !p.isBroadcasting);
+  const testViewers: TestViewer[] = testUsersEnabled ? TEST_VIEWERS : [];
+  const viewers = [
+    ...realViewers,
+    ...testViewers.map(tv => ({
+      ...tv,
+      // Ensure test users have their role in rolesByUserId for badge rendering
+    })),
+  ];
+
+  // Build rolesByUserId including test users
+  const combinedRoles: Record<string, string> = { ...rolesByUserId };
+  if (testUsersEnabled) {
+    testViewers.forEach(tv => {
+      if (tv.role) combinedRoles[tv.odious] = tv.role;
+    });
+  }
 
   const getRoleBadge = (odious: string) => {
-    const role = rolesByUserId[odious];
+    const role = combinedRoles[odious];
     if (!role) return null;
     
     switch (role) {
@@ -321,6 +342,14 @@ const VideoChat = () => {
               )}
               {isLocked ? '🔒 Locked On' : isBroadcasting ? 'Broadcasting...' : 'Hold to Stream'}
             </Button>
+            
+            {/* Test Users Toggle - Owner only */}
+            <TestViewersToggle
+              isOwner={isOwner}
+              enabled={testUsersEnabled}
+              onToggle={setTestUsersEnabled}
+              testViewers={testViewers}
+            />
           </div>
         </div>
       </header>
@@ -415,7 +444,7 @@ const VideoChat = () => {
                       odious={viewer.odious}
                       username={viewer.username}
                       avatarUrl={viewer.avatarUrl}
-                      role={rolesByUserId[viewer.odious]}
+                      role={combinedRoles[viewer.odious]}
                       currentUserId={user.id}
                       currentUserRole={currentUserRole}
                       onPmClick={viewer.odious !== user.id ? () => openChat(viewer.odious, viewer.username) : undefined}
