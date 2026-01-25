@@ -40,6 +40,7 @@ const VoiceChat = () => {
     isBroadcasting,
     isConnected,
     participants,
+    audioLevel,
     toggleBroadcast
   } = useVoiceBroadcast({
     roomId: 'voice-chat-main',
@@ -179,27 +180,62 @@ const VoiceChat = () => {
             </div>
           </div>
           
-          {/* Broadcast Button */}
-          <Button
-            onClick={toggleBroadcast}
-            className={`gap-2 ${
-              isBroadcasting 
-                ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground animate-pulse' 
-                : 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white'
-            }`}
-          >
-            {isBroadcasting ? (
-              <>
-                <MicOff className="w-4 h-4" />
-                Stop Broadcasting
-              </>
-            ) : (
-              <>
-                <Mic className="w-4 h-4" />
-                Start Broadcasting
-              </>
+          {/* Broadcast Button + Audio Meter */}
+          <div className="flex items-center gap-3">
+            {/* Audio Level Meter - Only show when broadcasting */}
+            {isBroadcasting && (
+              <div className="flex items-center gap-2 bg-card/80 rounded-lg px-3 py-2 border border-border">
+                <Mic className="w-4 h-4 text-destructive animate-pulse" />
+                <div className="flex items-end gap-0.5 h-6">
+                  {[...Array(10)].map((_, i) => {
+                    const threshold = (i + 1) * 10;
+                    const isActive = audioLevel >= threshold;
+                    const barColor = i < 6 
+                      ? 'bg-green-500' 
+                      : i < 8 
+                        ? 'bg-yellow-500' 
+                        : 'bg-destructive';
+                    return (
+                      <div
+                        key={i}
+                        className={`w-1.5 rounded-sm transition-all duration-75 ${
+                          isActive ? barColor : 'bg-muted'
+                        }`}
+                        style={{ 
+                          height: `${(i + 1) * 2.4}px`,
+                          opacity: isActive ? 1 : 0.3
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                <span className="text-xs text-muted-foreground w-8 text-right">
+                  {Math.round(audioLevel)}%
+                </span>
+              </div>
             )}
-          </Button>
+            
+            <Button
+              onClick={toggleBroadcast}
+              className={`gap-2 ${
+                isBroadcasting 
+                  ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground animate-pulse' 
+                  : 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white'
+              }`}
+            >
+              {isBroadcasting ? (
+                <>
+                  <MicOff className="w-4 h-4" />
+                  Stop Broadcasting
+                </>
+              ) : (
+                <>
+                  <Mic className="w-4 h-4" />
+                  Start Broadcasting
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </header>
 
