@@ -12,6 +12,9 @@ interface VideoTileProps {
   roleBadge?: React.ReactNode;
   aiEnhanced?: boolean;
   enhanceStrength?: number; // 0-100
+  beautyMode?: boolean;
+  softFocus?: number; // 0-100
+  warmth?: number; // 0-100
 }
 
 const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({ 
@@ -22,7 +25,10 @@ const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({
   isBroadcasting = false,
   roleBadge,
   aiEnhanced = false,
-  enhanceStrength = 50
+  enhanceStrength = 50,
+  beautyMode = false,
+  softFocus = 40,
+  warmth = 30,
 }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -32,24 +38,52 @@ const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({
     }
   }, [stream]);
 
-  // Calculate CSS filter values based on strength (0-100)
-  const getEnhancementFilter = (): string => {
-    if (!aiEnhanced) return 'none';
+  // Calculate CSS filter values based on all settings
+  const getVideoFilter = (): string => {
+    const filters: string[] = [];
     
-    // Scale strength: 0 = subtle, 50 = medium, 100 = aggressive
-    const s = enhanceStrength / 100;
+    // Enhancement filters
+    if (aiEnhanced) {
+      const s = enhanceStrength / 100;
+      const contrast = 1 + (s * 0.2);
+      const saturate = 1 + (s * 0.3);
+      const brightness = 1 + (s * 0.08);
+      
+      filters.push(`contrast(${contrast.toFixed(2)})`);
+      filters.push(`saturate(${saturate.toFixed(2)})`);
+      filters.push(`brightness(${brightness.toFixed(2)})`);
+    }
     
-    // Contrast: 1.0 (off) to 1.2 (max)
-    const contrast = 1 + (s * 0.2);
-    // Saturation: 1.0 (off) to 1.3 (max)  
-    const saturate = 1 + (s * 0.3);
-    // Brightness: 1.0 (off) to 1.08 (max)
-    const brightness = 1 + (s * 0.08);
-    // Sharpness via subtle unsharp mask effect (using drop-shadow trick)
-    // We'll use a tiny bit of contrast boost for perceived sharpness
+    // Beauty mode filters
+    if (beautyMode) {
+      // Soft focus - uses blur for skin smoothing effect
+      // Very subtle blur (0.2-1.5px) creates soft focus without losing detail
+      const blurAmount = (softFocus / 100) * 1.2;
+      if (blurAmount > 0.1) {
+        filters.push(`blur(${blurAmount.toFixed(1)}px)`);
+      }
+      
+      // Warmth - adjusts hue and sepia to warm shadows (reduces dark circles)
+      // sepia adds warmth, hue-rotate fine-tunes
+      const sepiaAmount = (warmth / 100) * 0.15;
+      const hueRotate = (warmth / 100) * -5; // Slight shift toward warm
+      
+      if (sepiaAmount > 0.01) {
+        filters.push(`sepia(${sepiaAmount.toFixed(2)})`);
+      }
+      if (Math.abs(hueRotate) > 0.5) {
+        filters.push(`hue-rotate(${hueRotate.toFixed(1)}deg)`);
+      }
+      
+      // Add slight brightness boost to lift shadows
+      const shadowLift = 1 + (warmth / 100) * 0.05;
+      filters.push(`brightness(${shadowLift.toFixed(2)})`);
+    }
     
-    return `contrast(${contrast.toFixed(2)}) saturate(${saturate.toFixed(2)}) brightness(${brightness.toFixed(2)})`;
+    return filters.length > 0 ? filters.join(' ') : 'none';
   };
+
+  const hasActiveFilters = aiEnhanced || beautyMode;
 
   return (
     <div 
@@ -63,10 +97,10 @@ const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({
       {/* Live Badge */}
       {isBroadcasting && (
         <div className="absolute top-2 right-2 z-10 flex gap-1">
-          {aiEnhanced && (
+          {hasActiveFilters && (
             <Badge variant="secondary" className="text-[10px] bg-primary/80 text-primary-foreground">
               <Sparkles className="w-3 h-3 mr-1" />
-              AI {enhanceStrength}%
+              {beautyMode ? '✨' : 'AI'}
             </Badge>
           )}
           <Badge variant="destructive" className="text-[10px] animate-pulse">
@@ -93,7 +127,7 @@ const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({
           playsInline
           muted={isLocal}
           className="w-full h-full object-cover"
-          style={{ filter: getEnhancementFilter() }}
+          style={{ filter: getVideoFilter() }}
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/50">

@@ -30,6 +30,9 @@ const VideoChat = () => {
   const [testUsersEnabled, setTestUsersEnabled] = useState(false);
   const [aiEnhanceEnabled, setAiEnhanceEnabled] = useState(false);
   const [aiEnhanceStrength, setAiEnhanceStrength] = useState(50);
+  const [beautyMode, setBeautyMode] = useState(false);
+  const [softFocus, setSoftFocus] = useState(40);
+  const [warmth, setWarmth] = useState(30);
 
   // Private messaging system
   const {
@@ -343,8 +346,14 @@ const VideoChat = () => {
               <AIEnhanceToggle
                 isEnabled={aiEnhanceEnabled}
                 strength={aiEnhanceStrength}
+                beautyMode={beautyMode}
+                softFocus={softFocus}
+                warmth={warmth}
                 onToggle={() => setAiEnhanceEnabled(!aiEnhanceEnabled)}
                 onStrengthChange={setAiEnhanceStrength}
+                onBeautyModeToggle={() => setBeautyMode(!beautyMode)}
+                onSoftFocusChange={setSoftFocus}
+                onWarmthChange={setWarmth}
               />
             )}
           </div>
@@ -383,6 +392,9 @@ const VideoChat = () => {
                   getRemoteStream={getRemoteStream}
                   aiEnhanced={aiEnhanceEnabled}
                   enhanceStrength={aiEnhanceStrength}
+                  beautyMode={beautyMode}
+                  softFocus={softFocus}
+                  warmth={warmth}
                   maxSlots={6}
                 />
               </div>
