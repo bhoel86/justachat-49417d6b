@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Lock, Send, Minus, Shield, Check, CheckCheck } from "lucide-react";
+import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
 import EmojiPicker from "./EmojiPicker";
 import { useToast } from "@/hooks/use-toast";
 import { CHAT_BOTS, ROOM_BOTS } from "@/lib/chatBots";
+import { usePrivateCall } from "@/hooks/usePrivateCall";
+import PrivateCallUI from "./PrivateCallUI";
+import IncomingCallModal from "./IncomingCallModal";
 
 // Get bot ID from user ID if it's a simulated user
 const getBotIdFromUserId = (userId: string): string | null => {
@@ -84,6 +87,14 @@ const PrivateChatWindow = ({
   // Check if target user is a bot
   const targetBotId = getBotIdFromUserId(targetUserId);
   const isTargetBot = !!targetBotId;
+
+  // Private call hook
+  const privateCall = usePrivateCall({
+    currentUserId,
+    currentUsername,
+    targetUserId,
+    targetUsername,
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -446,6 +457,29 @@ const PrivateChatWindow = ({
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
+          {/* Call buttons - only show for real users, not bots */}
+          {!isTargetBot && privateCall.callState === 'idle' && (
+            <>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => { e.stopPropagation(); privateCall.startCall('voice'); }} 
+                className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary"
+                title="Voice call"
+              >
+                <Phone className="h-3 w-3" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={(e) => { e.stopPropagation(); privateCall.startCall('video'); }} 
+                className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary"
+                title="Video call"
+              >
+                <Video className="h-3 w-3" />
+              </Button>
+            </>
+          )}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -590,6 +624,33 @@ const PrivateChatWindow = ({
       >
         <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/40 group-hover:border-primary transition-colors" />
       </div>
+
+      {/* Incoming Call Modal */}
+      {privateCall.callState === 'ringing' && privateCall.incomingCallType && (
+        <IncomingCallModal
+          callerUsername={targetUsername}
+          callType={privateCall.incomingCallType}
+          onAnswer={privateCall.answerCall}
+          onReject={privateCall.rejectCall}
+        />
+      )}
+
+      {/* In-Call UI */}
+      {(privateCall.callState === 'calling' || privateCall.callState === 'connected') && (
+        <PrivateCallUI
+          callState={privateCall.callState}
+          callType={privateCall.callType}
+          localStream={privateCall.localStream}
+          remoteStream={privateCall.remoteStream}
+          isAudioMuted={privateCall.isAudioMuted}
+          isVideoMuted={privateCall.isVideoMuted}
+          formattedDuration={privateCall.formattedDuration}
+          targetUsername={targetUsername}
+          onEndCall={privateCall.endCall}
+          onToggleAudio={privateCall.toggleAudioMute}
+          onToggleVideo={privateCall.toggleVideoMute}
+        />
+      )}
     </div>
   );
 };
