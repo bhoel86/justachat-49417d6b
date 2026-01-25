@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,25 +38,25 @@ const VideoChat = () => {
     reorderChats
   } = usePrivateChats(user?.id || '', profile?.username || 'Anonymous');
 
+  const refreshProfile = useCallback(async () => {
+    if (!user?.id) return;
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (data) {
+      setProfile(data);
+      setProfileLoaded(true);
+    }
+  }, [user?.id]);
+
   // Fetch user profile
   useEffect(() => {
-    if (!user?.id) return;
-    
-    const fetchProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data) {
-        setProfile(data);
-        setProfileLoaded(true);
-      }
-    };
-    
-    fetchProfile();
-  }, [user?.id]);
+    refreshProfile();
+  }, [refreshProfile]);
 
   // Don't initialize broadcast until profile is ready (to avoid Anonymous)
   const broadcastOptions = useMemo(() => ({
@@ -419,6 +419,7 @@ const VideoChat = () => {
                       currentUserId={user.id}
                       currentUserRole={currentUserRole}
                       onPmClick={viewer.odious !== user.id ? () => openChat(viewer.odious, viewer.username) : undefined}
+                      onSelfProfileUpdated={viewer.odious === user.id ? refreshProfile : undefined}
                     >
                       <button 
                         className="w-full flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left group"

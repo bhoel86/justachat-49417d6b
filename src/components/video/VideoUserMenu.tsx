@@ -1,4 +1,4 @@
-import { useState, forwardRef } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -14,12 +14,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { 
-  Crown, Shield, Star, MessageSquareLock, Ban, VolumeX, 
-  LogOut, User, ShieldCheck, Eye
+  Crown,
+  Shield,
+  MessageSquareLock,
+  Ban,
+  VolumeX,
+  LogOut,
+  User,
+  ShieldCheck,
+  Eye,
+  Pencil,
+  ServerCrash,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logModerationAction } from '@/lib/moderationAudit';
 import ProfileViewModal from '@/components/profile/ProfileViewModal';
+import ProfileEditModal from '@/components/profile/ProfileEditModal';
 
 type AppRole = 'owner' | 'admin' | 'moderator' | 'user';
 
@@ -31,6 +41,7 @@ interface VideoUserMenuProps {
   currentUserId: string;
   currentUserRole?: AppRole | null;
   onPmClick?: () => void;
+  onSelfProfileUpdated?: () => void;
   children: React.ReactNode;
 }
 
@@ -42,12 +53,20 @@ const VideoUserMenu = ({
   currentUserId,
   currentUserRole,
   onPmClick,
+  onSelfProfileUpdated,
   children 
 }: VideoUserMenuProps) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [bio, setBio] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editProfile, setEditProfile] = useState<{
+    username: string;
+    avatarUrl: string | null;
+    bio: string | null;
+    age: number | null;
+  } | null>(null);
 
   const isCurrentUser = odious === currentUserId;
   const targetIsOwner = role === 'owner';
@@ -77,6 +96,14 @@ const VideoUserMenu = ({
     return true;
   };
 
+  const canKline = (): boolean => {
+    if (!currentUserId || isCurrentUser) return false;
+    if (!viewerIsAdmin) return false;
+    if (targetIsOwner) return false;
+    if (!viewerIsOwner && targetIsAdmin) return false;
+    return true;
+  };
+
   const handleViewProfile = async () => {
     try {
       const { data } = await supabase
@@ -88,6 +115,31 @@ const VideoUserMenu = ({
       setProfileModalOpen(true);
     } catch {
       setProfileModalOpen(true);
+    }
+  };
+
+  const handleEditProfile = async () => {
+    if (!isCurrentUser) return;
+
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('username, avatar_url, bio, age')
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+
+      setEditProfile({
+        username: data?.username || username,
+        avatarUrl: data?.avatar_url ?? avatarUrl ?? null,
+        bio: data?.bio ?? null,
+        age: data?.age ?? null,
+      });
+      setEditModalOpen(true);
+      setIsOpen(false);
+    } catch {
+      setEditProfile({ username, avatarUrl: avatarUrl ?? null, bio: null, age: null });
+      setEditModalOpen(true);
+      setIsOpen(false);
     }
   };
 
@@ -186,6 +238,57 @@ const VideoUserMenu = ({
     }
   };
 
+  const handleKline = async () => {
+    if (!currentUserId) return;
+
+    try {
+      const { data: location } = await supabase
+        .from('user_locations')
+        .select('ip_address')
+        .eq('user_id', odious)
+        .order('last_seen', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const ip = location?.ip_address || null;
+      if (!ip) {
+        toast({
+          variant: 'destructive',
+          title: 'Cannot K-Line',
+          description: 'No IP address is available for this user yet.',
+        });
+        return;
+      }
+
+      const reason = 'K-Lined from video chat';
+      const { error } = await supabase
+        .from('klines')
+        .insert({ ip_pattern: ip, set_by: currentUserId, reason });
+
+      if (error) throw error;
+
+      await logModerationAction({
+        action: 'add_kline',
+        moderatorId: currentUserId,
+        targetUserId: odious,
+        targetUsername: username,
+        reason,
+        details: { ip_pattern: ip, context: 'video-chat' },
+      });
+
+      toast({
+        title: 'K-Line added',
+        description: `${username} has been K-Lined.`,
+      });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to add K-Line',
+        description: "You don't have permission to K-Line this user.",
+      });
+    }
+  };
+
   const handleRoleChange = async (newRole: string) => {
     if (!currentUserId) return;
     try {
@@ -279,6 +382,14 @@ const VideoUserMenu = ({
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
 
+          {/* Edit Profile (self) */}
+          {isCurrentUser && (
+            <DropdownMenuItem onClick={handleEditProfile} className="cursor-pointer">
+              <Pencil className="w-4 h-4 mr-2 text-muted-foreground" />
+              Edit Profile
+            </DropdownMenuItem>
+          )}
+
           {/* View Profile */}
           <DropdownMenuItem onClick={handleViewProfile} className="cursor-pointer">
             <Eye className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -321,6 +432,14 @@ const VideoUserMenu = ({
                 <Ban className="w-4 h-4 mr-2" />
                 Ban
               </DropdownMenuItem>
+
+              {/* K-Line (Network ban) */}
+              {canKline() && (
+                <DropdownMenuItem onClick={handleKline} className="cursor-pointer text-destructive">
+                  <ServerCrash className="w-4 h-4 mr-2" />
+                  K-Line
+                </DropdownMenuItem>
+              )}
             </>
           )}
 
@@ -362,6 +481,20 @@ const VideoUserMenu = ({
         role={role}
         onPmClick={!isCurrentUser && onPmClick ? () => { setProfileModalOpen(false); onPmClick(); } : undefined}
       />
+
+      {editProfile && (
+        <ProfileEditModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          username={editProfile.username}
+          avatarUrl={editProfile.avatarUrl}
+          bio={editProfile.bio}
+          age={editProfile.age}
+          onProfileUpdated={() => {
+            onSelfProfileUpdated?.();
+          }}
+        />
+      )}
     </>
   );
 };
