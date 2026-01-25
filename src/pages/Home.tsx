@@ -7,7 +7,7 @@ import {
   LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, 
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
   Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX, Menu, 
-  Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen, Volume2
+  Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -633,35 +633,6 @@ const Home = () => {
                         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
-                    
-                    {/* Voice Chat - Special room */}
-                    <Link
-                      to="/voice"
-                      className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25 hover:-translate-y-1 active:scale-95 active:translate-y-0"
-                    >
-                      {/* Gradient background */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-600 opacity-50 group-hover:opacity-70 transition-opacity" />
-                      
-                      {/* Dark overlay for readability */}
-                      <div className="absolute inset-0 bg-black/40" />
-                      
-                      {/* Content - stacked vertically */}
-                      <div className="relative h-full flex flex-col items-center justify-center gap-1 px-2 py-2">
-                        <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-md group-hover:scale-105 transition-transform">
-                          <Volume2 className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-semibold text-[10px] sm:text-xs text-white drop-shadow-md text-center leading-tight">
-                          #Voice Chat
-                        </h3>
-                        {/* Mic icon indicator */}
-                        <div className="flex items-center gap-0.5 text-white/80">
-                          <span className="text-[9px] font-medium">🎙️ Live</span>
-                        </div>
-                      </div>
-
-                      {/* Hover effect overlay */}
-                      <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </Link>
                   </div>
                   
                   {/* Dating Section - Fixed at bottom */}
