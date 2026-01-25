@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, forwardRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Video, VideoOff } from 'lucide-react';
@@ -12,14 +12,14 @@ interface VideoTileProps {
   roleBadge?: React.ReactNode;
 }
 
-const VideoTile = ({ 
+const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({ 
   stream, 
   username, 
   avatarUrl, 
   isLocal = false,
   isBroadcasting = false,
   roleBadge 
-}: VideoTileProps) => {
+}, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -29,11 +29,14 @@ const VideoTile = ({
   }, [stream]);
 
   return (
-    <div className={`relative bg-gradient-to-br ${
-      isBroadcasting 
-        ? 'from-green-500/20 to-emerald-500/20 border-green-500/50' 
-        : 'from-muted/50 to-muted/30 border-border'
-    } rounded-xl border overflow-hidden aspect-video`}>
+    <div 
+      ref={ref}
+      className={`relative bg-gradient-to-br ${
+        isBroadcasting 
+          ? 'from-green-500/20 to-emerald-500/20 border-green-500/50' 
+          : 'from-muted/50 to-muted/30 border-border'
+      } rounded-xl border overflow-hidden aspect-video`}
+    >
       {/* Live Badge */}
       {isBroadcasting && (
         <div className="absolute top-2 right-2 z-10">
@@ -83,6 +86,8 @@ const VideoTile = ({
       </div>
     </div>
   );
-};
+});
+
+VideoTile.displayName = 'VideoTile';
 
 export default VideoTile;

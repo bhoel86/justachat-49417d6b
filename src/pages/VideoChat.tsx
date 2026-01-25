@@ -441,19 +441,101 @@ const VideoChat = () => {
             )}
           </div>
 
-          {/* Viewers Section */}
+          {/* Members Section - Includes both broadcasters and viewers for moderation */}
           <div className="lg:col-span-1">
             <div className="bg-card rounded-xl border border-border p-4 h-full">
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold">Viewers</h2>
-                <Badge variant="secondary">{viewers.length}</Badge>
+                <h2 className="text-lg font-semibold">Members</h2>
+                <Badge variant="secondary">{viewers.length + broadcasters.length + (isBroadcasting ? 1 : 0)}</Badge>
               </div>
               
-              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                {viewers.length === 0 ? (
+              {/* Active Broadcasters in member list */}
+              {(broadcasters.length > 0 || isBroadcasting) && (
+                <div className="mb-3">
+                  <p className="text-xs text-green-500 font-medium mb-2 flex items-center gap-1">
+                    <Video className="w-3 h-3" /> Broadcasting
+                  </p>
+                  <div className="space-y-1">
+                    {/* Self if broadcasting */}
+                    {isBroadcasting && (
+                      <VideoUserMenu
+                        key={user.id}
+                        odious={user.id}
+                        username={profile?.username || 'You'}
+                        avatarUrl={profile?.avatar_url}
+                        role={combinedRoles[user.id]}
+                        currentUserId={user.id}
+                        currentUserRole={currentUserRole}
+                        onSelfProfileUpdated={refreshProfile}
+                      >
+                        <button className="w-full flex items-center gap-3 p-2 rounded-lg bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 transition-colors text-left group">
+                          <Avatar className="w-8 h-8 ring-2 ring-green-500">
+                            <AvatarImage src={profile?.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs bg-green-500/20">
+                              {(profile?.username || 'Y').charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-medium truncate">{profile?.username || 'You'}</span>
+                              {getRoleBadge(user.id)}
+                              <Badge variant="secondary" className="text-[9px] px-1 py-0">You</Badge>
+                            </div>
+                          </div>
+                          <Video className="w-4 h-4 text-green-500 animate-pulse" />
+                          <MoreVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      </VideoUserMenu>
+                    )}
+                    {/* Other broadcasters */}
+                    {broadcasters
+                      .filter(b => b.odious !== user.id)
+                      .map((broadcaster) => (
+                      <VideoUserMenu
+                        key={broadcaster.odious}
+                        odious={broadcaster.odious}
+                        username={broadcaster.username}
+                        avatarUrl={broadcaster.avatarUrl}
+                        role={combinedRoles[broadcaster.odious]}
+                        currentUserId={user.id}
+                        currentUserRole={currentUserRole}
+                        onPmClick={() => openChat(broadcaster.odious, broadcaster.username)}
+                      >
+                        <button className="w-full flex items-center gap-3 p-2 rounded-lg bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 transition-colors text-left group">
+                          <Avatar className="w-8 h-8 ring-2 ring-green-500">
+                            <AvatarImage src={broadcaster.avatarUrl || undefined} />
+                            <AvatarFallback className="text-xs bg-green-500/20">
+                              {broadcaster.username.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-medium truncate">{broadcaster.username}</span>
+                              {getRoleBadge(broadcaster.odious)}
+                            </div>
+                          </div>
+                          <Video className="w-4 h-4 text-green-500 animate-pulse" />
+                          <MoreVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      </VideoUserMenu>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Viewers section header */}
+              {viewers.length > 0 && (broadcasters.length > 0 || isBroadcasting) && (
+                <p className="text-xs text-muted-foreground font-medium mb-2 flex items-center gap-1">
+                  <Users className="w-3 h-3" /> Viewing
+                </p>
+              )}
+              
+              {/* Viewers list */}
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {viewers.length === 0 && !isBroadcasting && broadcasters.length === 0 ? (
                   <p className="text-center text-muted-foreground text-sm py-4">
-                    No viewers yet
+                    No members yet
                   </p>
                 ) : (
                   viewers.map((viewer) => (
@@ -478,8 +560,13 @@ const VideoChat = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{viewer.username}</p>
-                          {getRoleBadge(viewer.odious)}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium truncate">{viewer.username}</span>
+                            {getRoleBadge(viewer.odious)}
+                            {viewer.odious === user.id && (
+                              <Badge variant="secondary" className="text-[9px] px-1 py-0">You</Badge>
+                            )}
+                          </div>
                         </div>
                         <MoreVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
@@ -503,7 +590,7 @@ const VideoChat = () => {
             <li>• Or press <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border text-xs font-mono">Alt</kbd> + <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border text-xs font-mono">V</kbd> as a keyboard shortcut</li>
             <li>• <strong>Release</strong> to stop streaming</li>
             <li>• Everyone in the room will see your video while you hold</li>
-            <li>• <strong>Click</strong> any username to send a private message</li>
+            <li>• <strong>Click</strong> any member to send a private message or moderate</li>
           </ul>
         </div>
       </main>
