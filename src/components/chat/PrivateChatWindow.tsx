@@ -49,6 +49,26 @@ const MIN_HEIGHT = 300;
 const MAX_WIDTH = 500;
 const MAX_HEIGHT = 600;
 
+type VisualViewportState = {
+  offsetLeft: number;
+  offsetTop: number;
+  width: number;
+  height: number;
+};
+
+const getVisualViewportState = (): VisualViewportState => {
+  const vv = window.visualViewport;
+  if (vv) {
+    return {
+      offsetLeft: vv.offsetLeft || 0,
+      offsetTop: vv.offsetTop || 0,
+      width: vv.width || window.innerWidth,
+      height: vv.height || window.innerHeight,
+    };
+  }
+  return { offsetLeft: 0, offsetTop: 0, width: window.innerWidth, height: window.innerHeight };
+};
+
 const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   targetUserId,
   targetUsername,
@@ -67,13 +87,40 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   const [sessionId, setSessionId] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const [targetOnline, setTargetOnline] = useState(false);
-  // Clamp initial position to ensure window is visible
-  const clampedInitialPosition = {
-    x: Math.max(10, Math.min(window.innerWidth - 380, initialPosition.x)),
-    y: Math.max(60, Math.min(window.innerHeight - 500, initialPosition.y))
-  };
-  const [position, setPosition] = useState(clampedInitialPosition);
+  const viewportRef = useRef<VisualViewportState | null>(null);
+  const [viewport, setViewport] = useState<VisualViewportState>(() => {
+    const v = getVisualViewportState();
+    viewportRef.current = v;
+    return v;
+  });
+
   const [size, setSize] = useState({ width: 360, height: 480 });
+
+  const clampPosition = useCallback((pos: { x: number; y: number }, winSize: { width: number; height: number }) => {
+    const v = viewportRef.current || getVisualViewportState();
+    // Keep the header always reachable even when browser chrome/keyboard changes.
+    const minX = 10;
+    const minY = 60;
+    const maxX = Math.max(minX, v.width - winSize.width - 10);
+    const maxY = Math.max(minY, v.height - 100);
+    return {
+      x: Math.max(minX, Math.min(maxX, pos.x)),
+      y: Math.max(minY, Math.min(maxY, pos.y)),
+    };
+  }, []);
+
+  const [position, setPosition] = useState(() => {
+    const v = viewportRef.current || getVisualViewportState();
+    // Clamp initial position to the current visible viewport (mobile-safe).
+    const minX = 10;
+    const minY = 60;
+    const maxX = Math.max(minX, v.width - 380);
+    const maxY = Math.max(minY, v.height - 500);
+    return {
+      x: Math.max(minX, Math.min(maxX, initialPosition.x)),
+      y: Math.max(minY, Math.min(maxY, initialPosition.y)),
+    };
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -97,6 +144,34 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
+
+  // Track the true visual viewport so fixed windows don't drift out of view on mobile
+  // (address bar/keyboard changes).
+  useEffect(() => {
+    const vv = window.visualViewport;
+    let raf = 0;
+
+    const update = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const next = getVisualViewportState();
+        viewportRef.current = next;
+        setViewport(next);
+      });
+    };
+
+    update();
+    vv?.addEventListener('resize', update);
+    vv?.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      vv?.removeEventListener('resize', update);
+      vv?.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
   
   const TEXT_COLORS = [
     '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', 
@@ -144,9 +219,11 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
-        const newX = Math.max(10, Math.min(window.innerWidth - size.width - 10, e.clientX - dragOffset.x));
-        const newY = Math.max(60, Math.min(window.innerHeight - 100, e.clientY - dragOffset.y));
-        setPosition({ x: newX, y: newY });
+        const clamped = clampPosition({
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y,
+        }, size);
+        setPosition(clamped);
       }
       if (isResizing) {
         const deltaX = e.clientX - resizeStart.x;
@@ -173,7 +250,12 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
       document.removeEventListener('mouseup', handleMouseUp);
       document.body.style.userSelect = '';
     };
-  }, [isDragging, isResizing, dragOffset, resizeStart, size.width]);
+  }, [isDragging, isResizing, dragOffset, resizeStart, size.width, clampPosition]);
+
+  // When the viewport changes (mobile address bar / keyboard), ensure the window stays reachable.
+  useEffect(() => {
+    setPosition(prev => clampPosition(prev, size));
+  }, [viewport, clampPosition, size]);
 
   // Initialize encrypted session
   useEffect(() => {
@@ -547,14 +629,23 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
     setMessage(prev => prev + emoji);
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setMessages([]);
     onClose();
     toast({
       title: "Private chat ended",
       description: "All messages have been destroyed.",
     });
-  };
+  }, [onClose, toast]);
+
+  // Always provide a close escape hatch.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [handleClose]);
 
   const messageAreaHeight = size.height - 140; // Header + input + notices
 
@@ -583,8 +674,8 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
       onMouseDownCapture={handleWindowMouseDownCapture}
       className="fixed shadow-2xl rounded-xl overflow-hidden border-2 border-primary/30 bg-card animate-scale-in"
       style={{
-        left: position.x,
-        top: position.y,
+        left: position.x + viewport.offsetLeft,
+        top: position.y + viewport.offsetTop,
         zIndex: zIndex,
         width: size.width,
         height: size.height,
