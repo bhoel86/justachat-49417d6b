@@ -376,16 +376,18 @@ const VideoChat = () => {
               )}
             </div>
 
-            {/* Chat Bar under video */}
-            <div className="mt-4">
-              <VideoChatBar 
-                roomId="video-chat-main"
-                odious={user.id}
-                username={profile?.username || 'Anonymous'}
-                avatarUrl={profile?.avatar_url}
-                onPmClick={openChat}
-              />
-            </div>
+            {/* Chat Bar under video - only render when profile is loaded */}
+            {profile && (
+              <div className="mt-4">
+                <VideoChatBar 
+                  roomId="video-chat-main"
+                  odious={user.id}
+                  username={profile.username}
+                  avatarUrl={profile.avatar_url}
+                  onPmClick={openChat}
+                />
+              </div>
+            )}
           </div>
 
           {/* Viewers Section */}
