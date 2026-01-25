@@ -614,37 +614,61 @@ async function cachePhoto(botId: string, photoType: string, photoUrl: string, su
 // Generate photo of the bot (with variations for "another" requests)
 async function generateBotPhoto(appearance: string, botName: string, apiKey: string, isVariation: boolean = false, specialRequest: string | null = null): Promise<string | null> {
   try {
-    // Photo settings for variety
+    // 15 unique photo settings for maximum variety
     const settings = [
       'gym selfie with workout clothes, showing off fitness, sweaty glow',
       'mirror selfie at the gym, athletic wear, post-workout',
       'rave party selfie, neon lights, glitter, dancing',
-      'club selfie, party lights, having fun',
-      'bedroom mirror selfie, casual outfit',
-      'living room selfie on couch, relaxed',
-      'outdoor selfie at a park',
-      'coffee shop selfie',
-      'car selfie',
-      'beach selfie, sun-kissed',
-      'festival selfie, colorful lights',
-      'bathroom mirror selfie, getting ready',
+      'club selfie, party lights, having fun with drinks',
+      'bedroom mirror selfie, casual loungewear',
+      'living room selfie on couch, relaxed and cozy',
+      'outdoor selfie at a park, natural lighting',
+      'coffee shop selfie, warm aesthetic',
+      'car selfie, golden hour lighting',
+      'beach selfie, bikini, sun-kissed skin',
+      'festival selfie, colorful lights and body glitter',
+      'bathroom mirror selfie, getting ready, towel wrap',
+      'pool selfie, wet hair, swimming',
+      'rooftop selfie, city skyline background, evening',
+      'hiking selfie, sporty outfit, nature background',
     ];
     
+    // 15 unique expressions for variety
     const expressions = [
       'confident smirk',
       'playful smile',
-      'flirty look',
+      'flirty wink',
       'sultry gaze',
-      'biting lip slightly',
-      'winking',
+      'biting lip seductively',
       'blowing a kiss',
       'seductive smile',
-      'teasing expression',
+      'teasing tongue out',
       'bedroom eyes',
-      'tongue out playfully',
-      'eyes rolled back slightly with pleasure',
-      'drooling expression',
-      'ecstatic ahegao face',
+      'pouty lips',
+      'laughing genuinely',
+      'mysterious half-smile',
+      'coy look over shoulder',
+      'innocent doe eyes',
+      'mischievous grin',
+    ];
+    
+    // 15 unique outfits for variety
+    const outfits = [
+      'crop top and shorts',
+      'sundress',
+      'sports bra and leggings',
+      'oversized hoodie',
+      'tank top and jeans',
+      'bikini top',
+      'off-shoulder top',
+      'bodycon dress',
+      'casual t-shirt tied at waist',
+      'workout gear',
+      'cute pajamas',
+      'summer romper',
+      'tube top',
+      'flannel shirt unbuttoned',
+      'tight sweater',
     ];
     
     let prompt: string;
@@ -653,10 +677,11 @@ async function generateBotPhoto(appearance: string, botName: string, apiKey: str
       // Use the special request as the main pose/action
       prompt = `Photorealistic portrait photo of a ${appearance}. ${specialRequest}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, attractive, not AI-looking.`;
     } else {
-      // Random setting and expression for variety
+      // Random combination for maximum variety (15 x 15 x 15 = 3375 possible combinations)
       const setting = settings[Math.floor(Math.random() * settings.length)];
       const expression = expressions[Math.floor(Math.random() * expressions.length)];
-      prompt = `Photorealistic portrait photo of a ${appearance}. ${setting}. ${expression}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, attractive, not AI-looking.`;
+      const outfit = outfits[Math.floor(Math.random() * outfits.length)];
+      prompt = `Photorealistic portrait photo of a ${appearance}, wearing ${outfit}. ${setting}. ${expression}. Looking at camera. Shot on iPhone, candid selfie style. High quality, realistic, attractive, not AI-looking.`;
     }
     
     console.log("Generating photo with prompt:", prompt);
