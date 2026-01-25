@@ -554,7 +554,15 @@ const PrivateChatWindow = forwardRef<HTMLDivElement, PrivateChatWindowProps>(({
 
   return (
     <div
-      ref={windowRef}
+      ref={(node) => {
+        // Forward ref to parent and keep local ref
+        windowRef.current = node;
+        if (typeof ref === 'function') {
+          ref(node);
+        } else if (ref) {
+          ref.current = node;
+        }
+      }}
       onMouseDown={onFocus}
       className="fixed shadow-2xl rounded-xl overflow-hidden border-2 border-primary/30 bg-card animate-scale-in"
       style={{
