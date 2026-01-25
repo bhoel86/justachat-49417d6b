@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle } from "lucide-react";
-import justachatLogoGoogleAds from "@/assets/justachat-logo-google-ads.png";
+
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -387,16 +387,6 @@ const Auth = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-md animate-slide-up">
-        {/* Google Ads Logo Preview */}
-        <div className="flex flex-col items-center mb-6">
-          <img 
-            src={justachatLogoGoogleAds} 
-            alt="Justachat™ Logo for Google Ads" 
-            className="w-48 h-48 rounded-2xl shadow-xl mb-4"
-          />
-          <p className="text-xs text-muted-foreground">Google Ads Logo Preview (1024×1024)</p>
-        </div>
-
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="h-16 w-16 rounded-2xl jac-gradient-bg flex items-center justify-center mb-4 animate-pulse-glow">
