@@ -128,8 +128,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     // Get auth header and verify user
     const authHeader = req.headers.get("Authorization");
@@ -140,10 +139,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Use the caller JWT for storage operations so storage policies apply as expected.
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    const userId = claimsData?.claims?.sub;
+
+    if (claimsError || !userId) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -151,7 +156,7 @@ Deno.serve(async (req) => {
     }
 
     // Check rate limit
-    const rateLimit = checkRateLimit(user.id);
+    const rateLimit = checkRateLimit(userId);
     if (!rateLimit.allowed) {
       const resetSeconds = Math.ceil(rateLimit.resetIn / 1000);
       return new Response(
@@ -232,7 +237,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Processing upload for user ${user.id}: ${uploadName} (${uploadBytes.byteLength} bytes)`);
+    console.log(`Processing upload for user ${userId}: ${uploadName} (${uploadBytes.byteLength} bytes)`);
 
     // Convert bytes to base64 for AI analysis
     const uint8Array = new Uint8Array(uploadBytes);
@@ -270,9 +275,9 @@ Deno.serve(async (req) => {
       ? requestedPath.replace(/^\/+/, "").replace(/\.\./g, "")
       : undefined;
 
-    let fileName = cleanedRequestedPath || `${user.id}/${crypto.randomUUID()}.${fileExt}`;
-    if (!fileName.startsWith(`${user.id}/`)) {
-      fileName = `${user.id}/${fileName}`;
+    let fileName = cleanedRequestedPath || `${userId}/${crypto.randomUUID()}.${fileExt}`;
+    if (!fileName.startsWith(`${userId}/`)) {
+      fileName = `${userId}/${fileName}`;
     }
 
     // Upload to storage
@@ -285,8 +290,25 @@ Deno.serve(async (req) => {
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
+
+      const msg = (uploadError as any)?.message || "Upload failed";
+      if (
+        msg.includes("row-level security") ||
+        msg.includes("violates row-level security") ||
+        msg.includes("new row violates row-level security")
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: "Upload failed",
+            message: "Storage permissions blocked this upload (RLS).",
+            details: msg,
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: "Upload failed", details: uploadError.message }),
+        JSON.stringify({ error: "Upload failed", details: msg }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

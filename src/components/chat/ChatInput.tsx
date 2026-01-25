@@ -186,8 +186,19 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
       setUploadProgress(100);
       
       if (error) {
-        console.error("Upload function error:", error);
-        throw new Error(error.message || "Upload failed");
+        const anyErr: any = error;
+        const status = anyErr?.context?.status;
+        const body = anyErr?.context?.body;
+        const detail = body
+          ? (typeof body === "string" ? body : JSON.stringify(body))
+          : anyErr?.message;
+
+        console.error("Upload function error:", { status, detail, error });
+        throw new Error(
+          status
+            ? `Upload failed (HTTP ${status}): ${detail || "Unknown error"}`
+            : (detail || "Upload failed")
+        );
       }
       
       if (data?.error) {
