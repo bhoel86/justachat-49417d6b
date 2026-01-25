@@ -28,6 +28,7 @@ const VideoChat = () => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [testUsersEnabled, setTestUsersEnabled] = useState(false);
   const [aiEnhanceEnabled, setAiEnhanceEnabled] = useState(false);
+  const [aiEnhanceStrength, setAiEnhanceStrength] = useState(50);
 
   // Private messaging system
   const {
@@ -340,7 +341,9 @@ const VideoChat = () => {
             {isBroadcasting && (
               <AIEnhanceToggle
                 isEnabled={aiEnhanceEnabled}
+                strength={aiEnhanceStrength}
                 onToggle={() => setAiEnhanceEnabled(!aiEnhanceEnabled)}
+                onStrengthChange={setAiEnhanceStrength}
               />
             )}
           </div>
@@ -383,6 +386,7 @@ const VideoChat = () => {
                         isBroadcasting={true}
                         roleBadge={getRoleBadge(user.id)}
                         aiEnhanced={aiEnhanceEnabled}
+                        enhanceStrength={aiEnhanceStrength}
                       />
                     )}
                     {/* Remote videos */}

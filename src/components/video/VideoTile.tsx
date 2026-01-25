@@ -1,4 +1,4 @@
-import { useEffect, useRef, forwardRef, useState, useCallback } from 'react';
+import { useEffect, useRef, forwardRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Video, VideoOff, Sparkles } from 'lucide-react';
@@ -11,6 +11,7 @@ interface VideoTileProps {
   isBroadcasting?: boolean;
   roleBadge?: React.ReactNode;
   aiEnhanced?: boolean;
+  enhanceStrength?: number; // 0-100
 }
 
 const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({ 
@@ -20,67 +21,10 @@ const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({
   isLocal = false,
   isBroadcasting = false,
   roleBadge,
-  aiEnhanced = false
+  aiEnhanced = false,
+  enhanceStrength = 50
 }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const [useCanvas, setUseCanvas] = useState(false);
-
-  // Apply CSS-based enhancement (much safer and faster)
-  const getEnhancementStyle = useCallback((): React.CSSProperties => {
-    if (!aiEnhanced) return {};
-    return {
-      filter: 'contrast(1.05) saturate(1.1) brightness(1.02)',
-    };
-  }, [aiEnhanced]);
-
-  // Canvas-based sharpening with safe pixel access
-  const applyEnhancement = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current || !aiEnhanced) return;
-    
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    
-    if (!ctx || video.paused || video.ended || video.readyState < 2) {
-      animationFrameRef.current = requestAnimationFrame(applyEnhancement);
-      return;
-    }
-
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-    
-    // Ensure valid dimensions
-    if (vw < 10 || vh < 10) {
-      animationFrameRef.current = requestAnimationFrame(applyEnhancement);
-      return;
-    }
-
-    // Match canvas size to video
-    if (canvas.width !== vw || canvas.height !== vh) {
-      canvas.width = vw;
-      canvas.height = vh;
-    }
-
-    try {
-      // Draw video frame
-      ctx.drawImage(video, 0, 0, vw, vh);
-
-      // Apply CSS-like filters via canvas (safer than pixel manipulation)
-      ctx.filter = 'contrast(1.08) saturate(1.12) brightness(1.02)';
-      ctx.drawImage(canvas, 0, 0);
-      ctx.filter = 'none';
-      
-    } catch (e) {
-      console.error('Enhancement error:', e);
-      // Fallback: just draw video without enhancement
-      ctx.filter = 'none';
-      ctx.drawImage(video, 0, 0, vw, vh);
-    }
-
-    animationFrameRef.current = requestAnimationFrame(applyEnhancement);
-  }, [aiEnhanced]);
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -88,29 +32,24 @@ const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({
     }
   }, [stream]);
 
-  // Start/stop enhancement loop
-  useEffect(() => {
-    if (aiEnhanced && stream) {
-      setUseCanvas(true);
-      // Wait for video to be ready
-      const timer = setTimeout(() => {
-        applyEnhancement();
-      }, 200);
-      return () => {
-        clearTimeout(timer);
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-          animationFrameRef.current = null;
-        }
-      };
-    } else {
-      setUseCanvas(false);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-    }
-  }, [aiEnhanced, stream, applyEnhancement]);
+  // Calculate CSS filter values based on strength (0-100)
+  const getEnhancementFilter = (): string => {
+    if (!aiEnhanced) return 'none';
+    
+    // Scale strength: 0 = subtle, 50 = medium, 100 = aggressive
+    const s = enhanceStrength / 100;
+    
+    // Contrast: 1.0 (off) to 1.2 (max)
+    const contrast = 1 + (s * 0.2);
+    // Saturation: 1.0 (off) to 1.3 (max)  
+    const saturate = 1 + (s * 0.3);
+    // Brightness: 1.0 (off) to 1.08 (max)
+    const brightness = 1 + (s * 0.08);
+    // Sharpness via subtle unsharp mask effect (using drop-shadow trick)
+    // We'll use a tiny bit of contrast boost for perceived sharpness
+    
+    return `contrast(${contrast.toFixed(2)}) saturate(${saturate.toFixed(2)}) brightness(${brightness.toFixed(2)})`;
+  };
 
   return (
     <div 
@@ -127,7 +66,7 @@ const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({
           {aiEnhanced && (
             <Badge variant="secondary" className="text-[10px] bg-primary/80 text-primary-foreground">
               <Sparkles className="w-3 h-3 mr-1" />
-              AI
+              AI {enhanceStrength}%
             </Badge>
           )}
           <Badge variant="destructive" className="text-[10px] animate-pulse">
@@ -148,22 +87,14 @@ const VideoTile = forwardRef<HTMLDivElement, VideoTileProps>(({
 
       {/* Video or Placeholder */}
       {stream ? (
-        <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted={isLocal}
-            className={`w-full h-full object-cover ${useCanvas ? 'hidden' : ''}`}
-            style={!useCanvas ? getEnhancementStyle() : undefined}
-          />
-          {useCanvas && (
-            <canvas
-              ref={canvasRef}
-              className="w-full h-full object-cover"
-            />
-          )}
-        </>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={isLocal}
+          className="w-full h-full object-cover"
+          style={{ filter: getEnhancementFilter() }}
+        />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/50">
           <Avatar className="w-16 h-16">
