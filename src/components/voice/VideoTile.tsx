@@ -24,22 +24,56 @@ export default function VideoTile({
   const [hasVideo, setHasVideo] = useState(false);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      
-      const videoTracks = stream.getVideoTracks();
-      setHasVideo(videoTracks.length > 0 && videoTracks[0].enabled);
-      
-      stream.addEventListener('addtrack', () => {
-        const tracks = stream.getVideoTracks();
-        setHasVideo(tracks.length > 0 && tracks[0].enabled);
+    const video = videoRef.current;
+    if (!video || !stream) return;
+
+    video.srcObject = stream;
+
+    const updateHasVideo = () => {
+      const tracks = stream.getVideoTracks();
+      const active = tracks.some((t) => t.enabled && t.readyState === 'live');
+      setHasVideo(active);
+    };
+
+    const tryPlay = () => {
+      // Some browsers need an explicit play() after srcObject is set
+      video.play().catch(() => {
+        // ignore autoplay errors; user gesture (join button) usually resolves it
       });
-      
-      stream.addEventListener('removetrack', () => {
-        const tracks = stream.getVideoTracks();
-        setHasVideo(tracks.length > 0 && tracks[0].enabled);
+    };
+
+    updateHasVideo();
+    tryPlay();
+
+    const handleLoaded = () => tryPlay();
+    video.addEventListener('loadedmetadata', handleLoaded);
+
+    const handleAddTrack = () => {
+      updateHasVideo();
+      tryPlay();
+    };
+    const handleRemoveTrack = () => updateHasVideo();
+    stream.addEventListener('addtrack', handleAddTrack);
+    stream.addEventListener('removetrack', handleRemoveTrack);
+
+    // Track-level changes (ended/mute) can affect whether we should show video
+    const tracks = stream.getVideoTracks();
+    tracks.forEach((t) => {
+      t.addEventListener('ended', updateHasVideo);
+      t.addEventListener('mute', updateHasVideo);
+      t.addEventListener('unmute', updateHasVideo);
+    });
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoaded);
+      stream.removeEventListener('addtrack', handleAddTrack);
+      stream.removeEventListener('removetrack', handleRemoveTrack);
+      tracks.forEach((t) => {
+        t.removeEventListener('ended', updateHasVideo);
+        t.removeEventListener('mute', updateHasVideo);
+        t.removeEventListener('unmute', updateHasVideo);
       });
-    }
+    };
   }, [stream]);
 
   // Apply video effects
@@ -114,7 +148,8 @@ export default function VideoTile({
         className={cn(
           "w-full h-full object-cover",
           !hasVideo && "hidden",
-          backgroundEffect !== 'none' && "hidden"
+          // Don't use `display: none` when effects are enabled; the canvas needs video frames.
+          backgroundEffect !== 'none' && "opacity-0 absolute inset-0 pointer-events-none"
         )}
       />
 

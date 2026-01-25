@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebRTC } from '@/hooks/useWebRTC';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -23,6 +24,7 @@ export default function VoiceRoom({ roomId, roomName, onLeave }: VoiceRoomProps)
   const { user } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [backgroundEffect, setBackgroundEffect] = useState<'none' | 'blur' | 'green'>('none');
+  const [rolesByUserId, setRolesByUserId] = useState<Record<string, 'owner' | 'admin' | 'moderator' | null>>({});
   
   const {
     isConnected,
@@ -44,6 +46,47 @@ export default function VoiceRoom({ roomId, roomName, onLeave }: VoiceRoomProps)
     userId: user?.id || '',
     username: user?.user_metadata?.username || 'Anonymous',
   });
+
+  const isUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+  // Fetch roles for participants (Owner/Admin/Mod badges)
+  useEffect(() => {
+    const localId = user?.id;
+    const peerIds = peers.map((p) => p.id);
+    const ids = [localId, ...peerIds].filter((v): v is string => !!v && isUuid(v));
+    if (ids.length === 0) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          const [{ data: isOwner }, { data: isAdmin }, { data: isMod }] = await Promise.all([
+            supabase.rpc('is_owner', { _user_id: id }),
+            supabase.rpc('has_role', { _user_id: id, _role: 'admin' }),
+            supabase.rpc('has_role', { _user_id: id, _role: 'moderator' }),
+          ]);
+
+          const role: 'owner' | 'admin' | 'moderator' | null =
+            isOwner ? 'owner' : isAdmin ? 'admin' : isMod ? 'moderator' : null;
+          return [id, role] as const;
+        })
+      );
+
+      if (cancelled) return;
+      setRolesByUserId((prev) => {
+        const next = { ...prev };
+        for (const [id, role] of results) next[id] = role;
+        return next;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, peers.map((p) => p.id).join('|')]);
 
   // Handle keyboard for push-to-talk
   useEffect(() => {
@@ -114,8 +157,9 @@ export default function VoiceRoom({ roomId, roomName, onLeave }: VoiceRoomProps)
   }
 
   // Build participants list for member sidebar
+  const localId = user?.id || 'local';
   const allParticipants = [
-    { id: 'local', username: user?.user_metadata?.username || 'You', isMuted, isSpeaking: isTalking, isLocal: true },
+    { id: localId, username: user?.user_metadata?.username || 'You', isMuted, isSpeaking: isTalking, isLocal: true },
     ...peers.map(p => ({ id: p.id, username: p.username, isMuted: p.isMuted, isSpeaking: p.isSpeaking, isLocal: false }))
   ];
 
@@ -157,7 +201,7 @@ export default function VoiceRoom({ roomId, roomName, onLeave }: VoiceRoomProps)
         <div className="flex-1 p-4 overflow-auto flex flex-col">
           {(() => {
             const videoParticipants = [
-              { id: 'local', stream: localStream, username: 'You', isMuted, isSpeaking: isTalking, isLocal: true },
+              { id: localId, stream: localStream, username: 'You', isMuted, isSpeaking: isTalking, isLocal: true },
               ...peers.map(p => ({ id: p.id, stream: p.stream, username: p.username, isMuted: p.isMuted, isSpeaking: p.isSpeaking, isLocal: false }))
             ];
             const visible = videoParticipants.slice(0, 6);
@@ -303,6 +347,24 @@ export default function VoiceRoom({ roomId, roomName, onLeave }: VoiceRoomProps)
                 <p className="truncate font-medium text-xs">
                   {p.isLocal ? 'You' : p.username}
                 </p>
+                {rolesByUserId[p.id] && (
+                  <span
+                    className={cn(
+                      'mt-0.5 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold',
+                      rolesByUserId[p.id] === 'owner'
+                        ? 'jac-gradient-bg text-primary-foreground'
+                        : rolesByUserId[p.id] === 'admin'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary text-secondary-foreground'
+                    )}
+                  >
+                    {rolesByUserId[p.id] === 'owner'
+                      ? 'Owner'
+                      : rolesByUserId[p.id] === 'admin'
+                        ? 'Admin'
+                        : 'Mod'}
+                  </span>
+                )}
               </div>
               <div className={cn(
                 "p-0.5 rounded",
