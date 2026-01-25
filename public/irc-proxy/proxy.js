@@ -37,7 +37,7 @@
  */
 
 // Version - update this when making changes
-const PROXY_VERSION = '2.3.0';
+const PROXY_VERSION = '2.4.0';
 
 const net = require('net');
 const tls = require('tls');
@@ -517,6 +517,17 @@ let connectionCount = 0;
 const activeConnections = new Map();
 const startTime = Date.now();
 
+// Reconnect telemetry
+const reconnectStats = {
+  totalReconnects: 0,
+  successfulReconnects: 0,
+  failedReconnects: 0,
+  lastReconnectTime: null,
+  lastCloseCode: null,
+  lastCloseReason: null,
+  reconnectsByConnection: new Map() // Track per-connection reconnect counts
+};
+
 const bannedIPsData = storage.loadBans();
 const bannedIPs = new Map(Object.entries(bannedIPsData));
 
@@ -740,6 +751,15 @@ async function handleConnection(socket, isSecure = false) {
         const wasReconnect = reconnectAttempts > 0;
         log('info', `[${connId}] Gateway connected${wasReconnect ? ` (reconnect #${reconnectAttempts})` : ''}`);
         fileLogger.connection('GATEWAY_OPEN', connId, clientIP, { reconnect: reconnectAttempts });
+        
+        // Track successful reconnects
+        if (wasReconnect) {
+          reconnectStats.successfulReconnects++;
+          reconnectStats.lastReconnectTime = new Date().toISOString();
+          const connReconnects = reconnectStats.reconnectsByConnection.get(connId) || 0;
+          reconnectStats.reconnectsByConnection.set(connId, connReconnects + 1);
+        }
+        
         reconnectAttempts = 0;
         isReconnecting = false;
         
@@ -794,12 +814,19 @@ async function handleConnection(socket, isSecure = false) {
       });
       
       ws.on('close', (code, reason) => {
+        const reasonStr = reason?.toString() || 'unknown';
+        
+        // Track close stats
+        reconnectStats.totalReconnects++;
+        reconnectStats.lastCloseCode = code;
+        reconnectStats.lastCloseReason = reasonStr;
+        
         if (intentionalClose) {
           log('info', `[${connId}] Gateway closed (intentional)`);
           return;
         }
         
-        log('warn', `[${connId}] Gateway closed unexpectedly (code: ${code})`);
+        log('warn', `[${connId}] Gateway closed unexpectedly (code: ${code}, reason: ${reasonStr})`);
         stopPingIntervals();
         
         // Attempt reconnection immediately for edge function timeouts
@@ -810,7 +837,7 @@ async function handleConnection(socket, isSecure = false) {
           // Use shorter delays for better UX
           const delay = reconnectAttempts === 1 ? 100 : Math.min(RECONNECT_DELAY_BASE * Math.pow(1.3, reconnectAttempts - 1), 10000);
           log('info', `[${connId}] Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-          fileLogger.connection('RECONNECT_ATTEMPT', connId, clientIP, { attempt: reconnectAttempts, delay });
+          fileLogger.connection('RECONNECT_ATTEMPT', connId, clientIP, { attempt: reconnectAttempts, delay, closeCode: code });
           
           // Only notify client on first reconnect attempt
           if (reconnectAttempts === 1) {
@@ -821,6 +848,7 @@ async function handleConnection(socket, isSecure = false) {
             if (!intentionalClose) connectToGateway();
           }, delay);
         } else {
+          reconnectStats.failedReconnects++;
           log('error', `[${connId}] Max reconnect attempts reached, closing connection`);
           fileLogger.connection('RECONNECT_FAILED', connId, clientIP, { attempts: reconnectAttempts });
           socket.write(`:proxy.jac.chat NOTICE * :*** Unable to reconnect to gateway after ${MAX_RECONNECT_ATTEMPTS} attempts\r\n`);
@@ -981,7 +1009,16 @@ const handleAdminRequest = (req, res) => {
       ssl: config.sslEnabled,
       rateLimit: rateLimiter.getStats(),
       geoip: geoip.getStats(),
-      logs: fileLogger.getStats()
+      logs: fileLogger.getStats(),
+      gateway: {
+        totalReconnects: reconnectStats.totalReconnects,
+        successfulReconnects: reconnectStats.successfulReconnects,
+        failedReconnects: reconnectStats.failedReconnects,
+        lastReconnectTime: reconnectStats.lastReconnectTime,
+        lastCloseCode: reconnectStats.lastCloseCode,
+        lastCloseReason: reconnectStats.lastCloseReason,
+        activeReconnectingConnections: Array.from(activeConnections.values()).filter(c => c.isReconnecting).length
+      }
     }));
     return;
   }
