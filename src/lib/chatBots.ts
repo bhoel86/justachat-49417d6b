@@ -114,6 +114,17 @@ export const CHAT_BOTS: ChatBot[] = [
     responseRate: 0.7,
     gender: 'female',
   },
+  // New moderator bot with strong personality
+  {
+    id: 'user-cipher',
+    username: 'CipherX',
+    avatarUrl: null,
+    personality: 'Mysterious hacker vibe with dry wit. Speaks in tech metaphors, drops cryptic one-liners. Secretly cares about the community but hides it behind sarcasm. Knows obscure internet history and cybersecurity lore.',
+    interests: ['cybersecurity', 'hacking culture', 'cryptography', 'internet history', 'privacy', 'underground tech'],
+    style: 'nerdy',
+    responseRate: 0.65,
+    gender: 'male',
+  },
 ];
 
 // Room-specific bots - 10 per room

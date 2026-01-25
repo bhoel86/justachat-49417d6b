@@ -40,7 +40,7 @@ const VideoUserMenu = ({
   onPmClick,
   children 
 }: VideoUserMenuProps) => {
-  const { user, isOwner, isAdmin, role: currentUserRole } = useAuth();
+  const { user, isOwner, isAdmin, role: currentUserRole, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -49,9 +49,9 @@ const VideoUserMenu = ({
   const targetIsAdmin = role === 'admin';
   const targetIsMod = role === 'moderator';
 
-  // Permission checks
+  // Permission checks - only evaluate when auth is loaded
   const canModerate = (): boolean => {
-    if (!user || isCurrentUser) return false;
+    if (authLoading || !user || isCurrentUser) return false;
     if (targetIsOwner) return false;
     if (!isOwner && !isAdmin && currentUserRole !== 'moderator') return false;
     if (currentUserRole === 'moderator' && (targetIsAdmin || targetIsMod)) return false;
@@ -60,6 +60,7 @@ const VideoUserMenu = ({
   };
 
   const canManageRole = (): boolean => {
+    if (authLoading || !user) return false;
     if (!isAdmin && !isOwner) return false;
     if (isCurrentUser) return false;
     if (targetIsOwner) return false;
