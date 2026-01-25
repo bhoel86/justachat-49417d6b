@@ -13,7 +13,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { 
   ArrowLeft, Headphones, Mic, MicOff, Video, VideoOff, 
   PhoneOff, Volume2, Settings, Users, Hash, Menu, 
-  Send, Camera, Shield, Smile, Zap, ImagePlus, X, Loader2, MoreHorizontal, Sparkles, Palette
+  Send, Camera, Shield, Smile, Zap, ImagePlus, X, Loader2, MoreVertical, Sparkles, Palette,
+  MessageSquareLock, Ban, Flag, Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import VoiceChannelList from '@/components/voice/VoiceChannelList';
@@ -535,16 +536,20 @@ export default function VoiceChat() {
             <p className="text-xs text-muted-foreground text-center py-4">Select a room to see members</p>
           ) : (
             members.map(member => (
-              <button
+              <div
                 key={member.id}
-                onClick={() => !member.isModerator && handleMemberClick(member.id, member.username, member.isLocal, member.avatarUrl)}
                 className={cn(
-                  "w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-left",
+                  "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors group",
                   member.isSpeaking && "bg-accent/30",
-                  member.isModerator ? "bg-primary/5 cursor-default" : "hover:bg-muted/50 cursor-pointer"
+                  member.isModerator ? "bg-primary/5" : "hover:bg-muted/50"
                 )}
               >
-                <div className="relative">
+                {/* Clickable Avatar */}
+                <button
+                  onClick={() => !member.isModerator && handleMemberClick(member.id, member.username, member.isLocal, member.avatarUrl)}
+                  disabled={member.isModerator}
+                  className="relative cursor-pointer group/avatar"
+                >
                   <Avatar className={cn("h-7 w-7", member.isSpeaking && "ring-2 ring-accent ring-offset-1 ring-offset-background")}>
                     <AvatarImage src={member.avatarUrl} />
                     <AvatarFallback className={cn(
@@ -565,40 +570,123 @@ export default function VoiceChat() {
                       <Shield className="h-2 w-2 text-primary-foreground" />
                     </div>
                   )}
-                </div>
+                  {!member.isModerator && (
+                    <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                      <Camera className="h-3 w-3 text-white" />
+                    </div>
+                  )}
+                </button>
+                
+                {/* Clickable Name */}
                 <div className="flex-1 min-w-0">
-                  <p className={cn("text-xs font-medium truncate", member.isSpeaking && "text-accent-foreground", member.isModerator && "text-primary")}>
+                  <button
+                    onClick={() => !member.isModerator && handleMemberClick(member.id, member.username, member.isLocal, member.avatarUrl)}
+                    disabled={member.isModerator}
+                    className={cn(
+                      "text-xs font-medium truncate text-left block",
+                      member.isSpeaking && "text-accent-foreground",
+                      member.isModerator && "text-primary cursor-default",
+                      !member.isModerator && "hover:text-primary cursor-pointer"
+                    )}
+                  >
                     {member.isLocal ? 'You' : member.username}
-                  </p>
+                  </button>
                   <p className="text-[10px] text-muted-foreground">
                     {member.isModerator ? 'Room Mod' : !member.isInVoice && member.isLocal ? 'In Room' : member.isSpeaking ? 'Speaking' : member.isMuted ? 'Muted' : 'Listening'}
                   </p>
                 </div>
-                {/* Zap action button for non-mods */}
+                
+                {/* Action buttons for non-mods, non-local */}
                 {!member.isModerator && !member.isLocal && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
-                        <Zap className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 bg-popover border border-border z-50">
-                      <DropdownMenuLabel className="text-xs">Actions for {member.username}</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {USER_ACTIONS.funny.slice(0, 3).map((action, idx) => (
-                        <DropdownMenuItem key={`f-${idx}`} onClick={() => handleActionWithUser(member.username)} className="text-xs cursor-pointer">
-                          <span className="mr-2">{action.emoji}</span> {action.action}
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Zap fun actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <button className="p-1.5 rounded-lg hover:bg-primary/10 transition-all" title="Fun actions">
+                          <Zap className="h-3.5 w-3.5 text-primary" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" side="left" className="w-52 bg-popover border border-border shadow-xl z-[9999]">
+                        <DropdownMenuLabel className="text-xs text-muted-foreground">🤪 Funny</DropdownMenuLabel>
+                        {USER_ACTIONS.funny.map((action, idx) => (
+                          <DropdownMenuItem 
+                            key={`f-${idx}`} 
+                            onClick={() => {
+                              const msg = action.suffix 
+                                ? `/me ${action.emoji} ${action.action} ${member.username} ${action.suffix}`
+                                : `/me ${action.emoji} ${action.action} ${member.username}`;
+                              broadcastMessage(msg);
+                            }} 
+                            className="text-xs cursor-pointer"
+                          >
+                            <span className="mr-2">{action.emoji}</span> {action.action} {action.suffix ? '...' : ''}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-xs text-muted-foreground">💖 Nice</DropdownMenuLabel>
+                        {USER_ACTIONS.nice.map((action, idx) => (
+                          <DropdownMenuItem 
+                            key={`n-${idx}`} 
+                            onClick={() => {
+                              const msg = action.suffix 
+                                ? `/me ${action.emoji} ${action.action} ${member.username} ${action.suffix}`
+                                : `/me ${action.emoji} ${action.action} ${member.username}`;
+                              broadcastMessage(msg);
+                            }} 
+                            className="text-xs cursor-pointer"
+                          >
+                            <span className="mr-2">{action.emoji}</span> {action.action} {action.suffix ? '...' : ''}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
+                    {/* 3-dot more menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <button className="p-1.5 rounded-lg hover:bg-muted transition-all" title="More actions">
+                          <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" side="left" className="w-48 bg-popover border border-border shadow-xl z-[9999]">
+                        <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => handleMemberClick(member.id, member.username, false, member.avatarUrl)}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                          <span>View Profile</span>
                         </DropdownMenuItem>
-                      ))}
-                      {USER_ACTIONS.nice.slice(0, 3).map((action, idx) => (
-                        <DropdownMenuItem key={`n-${idx}`} onClick={() => handleActionWithUser(member.username)} className="text-xs cursor-pointer">
-                          <span className="mr-2">{action.emoji}</span> {action.action}
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            toast({ title: "Coming soon", description: "PM in voice chat coming soon!" });
+                          }}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <MessageSquareLock className="h-4 w-4 text-primary" />
+                          <span>Send PM</span>
                         </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="flex items-center gap-2 cursor-pointer text-muted-foreground"
+                          disabled
+                        >
+                          <Ban className="h-4 w-4" />
+                          <span>Block</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="flex items-center gap-2 cursor-pointer text-muted-foreground"
+                          disabled
+                        >
+                          <Flag className="h-4 w-4" />
+                          <span>Report</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 )}
-              </button>
+              </div>
             ))
           )}
         </div>
@@ -879,7 +967,7 @@ export default function VoiceChat() {
                   {isMobile && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0"><MoreVertical className="h-4 w-4" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" side="top" className="w-64 bg-popover border border-border z-50">
                         <DropdownMenuLabel className="text-xs text-muted-foreground"><Smile className="h-3 w-3 inline mr-1" />Emojis</DropdownMenuLabel>
