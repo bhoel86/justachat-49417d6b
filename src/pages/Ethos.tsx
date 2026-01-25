@@ -3,6 +3,11 @@ import { Link } from "react-router-dom";
 import { MessageSquare, ArrowLeft, Heart, Users, Zap, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Background images
+import chatSilhouettes1 from "@/assets/ethos/chat-silhouettes-1.jpg";
+import chatSilhouettes2 from "@/assets/ethos/chat-silhouettes-2.jpg";
+import chatMonitors from "@/assets/ethos/chat-monitors.jpg";
+
 const Ethos = () => {
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -30,9 +35,14 @@ const Ethos = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section - with monitor glow background */}
       <section className="relative py-16 sm:py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+        {/* Background image - faded */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-[0.08]"
+          style={{ backgroundImage: `url(${chatMonitors})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background" />
         <div className="container mx-auto px-4 relative">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl sm:text-5xl font-bold mb-6">
@@ -46,8 +56,20 @@ const Ethos = () => {
       </section>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 pb-16">
-        <article className="max-w-3xl mx-auto">
+      <main className="relative">
+        {/* Background silhouettes - people at computers */}
+        <div 
+          className="fixed top-1/4 left-0 w-1/2 h-96 bg-contain bg-no-repeat bg-left opacity-[0.04] pointer-events-none"
+          style={{ backgroundImage: `url(${chatSilhouettes1})` }}
+        />
+        {/* Background silhouettes - friends talking */}
+        <div 
+          className="fixed top-1/2 right-0 w-1/2 h-96 bg-contain bg-no-repeat bg-right opacity-[0.05] pointer-events-none"
+          style={{ backgroundImage: `url(${chatSilhouettes2})` }}
+        />
+        
+        <div className="container mx-auto px-4 pb-16">
+        <article className="max-w-3xl mx-auto relative z-10">
           
           {/* The Story */}
           <div className="prose prose-lg prose-invert max-w-none">
@@ -236,6 +258,7 @@ const Ethos = () => {
 
           </div>
         </article>
+        </div>
       </main>
 
       {/* Footer */}
