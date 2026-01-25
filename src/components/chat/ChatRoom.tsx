@@ -12,6 +12,7 @@ import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
 import MemberList from "./MemberList";
+import ChatSidebar from "./ChatSidebar";
 import ChannelList, { Channel } from "./ChannelList";
 import PrivateChatWindow from "./PrivateChatWindow";
 import PMTray from "./PMTray";
@@ -1011,13 +1012,18 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         "fixed lg:relative inset-y-0 left-0 z-40 transition-transform duration-300 lg:transition-none",
         showChannelSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        <ChannelList 
+        <ChatSidebar
           currentChannelId={currentChannel?.id} 
           onChannelSelect={(channel) => {
             handleChannelSelect(channel);
             setShowChannelSidebar(false);
           }}
           autoSelectFirst={false}
+          currentUserId={user?.id || ''}
+          onOpenPm={(userId, targetUsername) => {
+            privateChats.openChat(userId, targetUsername);
+            setShowChannelSidebar(false);
+          }}
         />
       </div>
 

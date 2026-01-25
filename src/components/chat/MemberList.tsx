@@ -609,6 +609,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
         avatarUrl={viewProfileTarget?.avatar_url || null}
         bio={viewProfileTarget?.bio || null}
         role={viewProfileTarget?.role}
+        targetUserId={viewProfileTarget?.user_id}
         onPmClick={viewProfileTarget && onOpenPm 
           ? () => onOpenPm(viewProfileTarget.user_id, viewProfileTarget.username) 
           : undefined}
