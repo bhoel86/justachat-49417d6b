@@ -265,7 +265,7 @@ export default function VoiceChat() {
   // Get current room moderator
   const currentMod = currentChannel ? ROOM_MODERATORS[currentChannel.id] : null;
 
-  // Build member list including room moderator
+  // Build member list including room moderator - always show current user when in a channel
   const members = [
     // Room moderator always appears first
     ...(currentMod ? [{
@@ -275,29 +275,33 @@ export default function VoiceChat() {
       isSpeaking: false,
       avatarUrl: undefined,
       isLocal: false,
-      isModerator: true
+      isModerator: true,
+      isInVoice: false
     }] : []),
-    // Then connected users
-    ...(isConnected ? [
+    // Always show current user when in a channel (even if not in voice yet)
+    ...(currentChannel && user ? [
       { 
-        id: user?.id || 'local', 
+        id: user.id, 
         username: username || 'You', 
-        isMuted, 
-        isSpeaking: isTalking,
+        isMuted: isConnected ? isMuted : true, 
+        isSpeaking: isConnected ? isTalking : false,
         avatarUrl,
         isLocal: true,
-        isModerator: false
-      },
-      ...peers.map(peer => ({
-        id: peer.id,
-        username: peer.username,
-        isMuted: peer.isMuted,
-        isSpeaking: peer.isSpeaking,
-        avatarUrl: undefined,
-        isLocal: false,
-        isModerator: false
-      }))
-    ] : [])
+        isModerator: false,
+        isInVoice: isConnected
+      }
+    ] : []),
+    // Then other connected peers
+    ...peers.map(peer => ({
+      id: peer.id,
+      username: peer.username,
+      isMuted: peer.isMuted,
+      isSpeaking: peer.isSpeaking,
+      avatarUrl: undefined,
+      isLocal: false,
+      isModerator: false,
+      isInVoice: true
+    }))
   ];
 
   if (loading) {
@@ -402,7 +406,15 @@ export default function VoiceChat() {
                     {member.isLocal ? 'You' : member.username}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    {member.isModerator ? 'Room Mod' : member.isSpeaking ? 'Speaking' : member.isMuted ? 'Muted' : 'Listening'}
+                    {member.isModerator 
+                      ? 'Room Mod' 
+                      : !member.isInVoice && member.isLocal 
+                        ? 'In Room' 
+                        : member.isSpeaking 
+                          ? 'Speaking' 
+                          : member.isMuted 
+                            ? 'Muted' 
+                            : 'Listening'}
                   </p>
                 </div>
               </div>
