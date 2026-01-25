@@ -102,6 +102,30 @@ const VoiceChat = () => {
     });
   }, []);
 
+  // Alt+T keyboard shortcut for push-to-talk
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 't' && !e.repeat) {
+        e.preventDefault();
+        startBroadcast();
+      }
+    };
+    
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 't') {
+        stopBroadcast();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [startBroadcast, stopBroadcast]);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -337,9 +361,9 @@ const VoiceChat = () => {
           </h3>
           <ul className="text-sm text-muted-foreground space-y-1">
             <li>• <strong>Hold</strong> the <strong>Hold to Talk</strong> button to broadcast your voice</li>
-            <li>• <strong>Release</strong> the button to stop broadcasting</li>
-            <li>• Everyone in the room will hear you while you hold the button</li>
-            <li>• Listeners can hear all active broadcasters</li>
+            <li>• Or press <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border text-xs font-mono">Alt</kbd> + <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border text-xs font-mono">T</kbd> as a keyboard shortcut</li>
+            <li>• <strong>Release</strong> to stop broadcasting</li>
+            <li>• Everyone in the room will hear you while you hold</li>
           </ul>
         </div>
       </main>
