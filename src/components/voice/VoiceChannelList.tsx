@@ -21,6 +21,11 @@ const DEFAULT_VOICE_CHANNELS: VoiceChannel[] = [
   { id: 'voice-gaming', name: 'Gaming Chat', userCount: 0 },
   { id: 'voice-music', name: 'Music Room', userCount: 0 },
   { id: 'voice-chill', name: 'Chill Zone', userCount: 0 },
+  { id: 'voice-adults', name: 'Adults Only (21+)', userCount: 0 },
+  { id: 'voice-dating', name: 'Dating & Singles', userCount: 0 },
+  { id: 'voice-sports', name: 'Sports Talk', userCount: 0 },
+  { id: 'voice-tech', name: 'Tech Talk', userCount: 0 },
+  { id: 'voice-movies', name: 'Movies & TV', userCount: 0 },
 ];
 
 export default function VoiceChannelList({ onJoinChannel, currentChannelId }: VoiceChannelListProps) {
