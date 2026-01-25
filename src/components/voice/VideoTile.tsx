@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { Mic, MicOff, User } from 'lucide-react';
+import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VideoTileProps {
@@ -126,14 +126,20 @@ export default function VideoTile({
         />
       )}
 
-      {/* Avatar placeholder when no video */}
+      {/* JustAChat logo placeholder when no video */}
       {!hasVideo && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-muted/80 to-muted/40">
           <div className={cn(
-            "w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center transition-all duration-200",
-            isSpeaking && "scale-110 from-green-500/30 to-green-500/10"
+            "flex flex-col items-center gap-2 transition-all duration-200",
+            isSpeaking && "scale-105"
           )}>
-            <User className="w-10 h-10 text-primary/70" />
+            <div className={cn(
+              "w-16 h-16 rounded-xl jac-gradient-bg flex items-center justify-center shadow-lg",
+              isSpeaking && "ring-2 ring-green-500 ring-offset-2 ring-offset-background"
+            )}>
+              <Volume2 className="w-8 h-8 text-primary-foreground" />
+            </div>
+            <span className="text-xs font-bold jac-gradient-text">Justachat™</span>
           </div>
         </div>
       )}

@@ -113,156 +113,206 @@ export default function VoiceRoom({ roomId, roomName, onLeave }: VoiceRoomProps)
     );
   }
 
+  // Build participants list for member sidebar
+  const allParticipants = [
+    { id: 'local', username: user?.user_metadata?.username || 'You', isMuted, isSpeaking: isTalking, isLocal: true },
+    ...peers.map(p => ({ id: p.id, username: p.username, isMuted: p.isMuted, isSpeaking: p.isSpeaking, isLocal: false }))
+  ];
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-full bg-green-500/20">
-            <Volume2 className="h-5 w-5 text-green-500" />
+    <div className="flex h-full">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-full bg-green-500/20">
+              <Volume2 className="h-5 w-5 text-green-500" />
+            </div>
+            <div>
+              <h2 className="font-semibold">{roomName}</h2>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {allParticipants.length} in room
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold">{roomName}</h2>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {peers.length + 1} in room
-            </p>
-          </div>
+          <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)}>
+            <Settings className="h-4 w-4" />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)}>
-          <Settings className="h-4 w-4" />
-        </Button>
-      </div>
 
-      {/* Settings Panel */}
-      {showSettings && (
-        <VoiceSettings
-          isPushToTalk={isPushToTalk}
-          setIsPushToTalk={setIsPushToTalk}
-          backgroundEffect={backgroundEffect}
-          setBackgroundEffect={setBackgroundEffect}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
+        {/* Settings Panel */}
+        {showSettings && (
+          <VoiceSettings
+            isPushToTalk={isPushToTalk}
+            setIsPushToTalk={setIsPushToTalk}
+            backgroundEffect={backgroundEffect}
+            setBackgroundEffect={setBackgroundEffect}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
 
-      {/* Video Grid */}
-      <div className="flex-1 p-4 overflow-auto flex flex-col">
-        {(() => {
-          const allParticipants = [
-            { id: 'local', stream: localStream, username: 'You', isMuted, isSpeaking: isTalking, isLocal: true },
-            ...peers.map(p => ({ id: p.id, stream: p.stream, username: p.username, isMuted: p.isMuted, isSpeaking: p.isSpeaking, isLocal: false }))
-          ];
-          const visible = allParticipants.slice(0, 6);
-          const waiting = allParticipants.slice(6);
-          const count = visible.length;
-          
-          return (
-            <>
-              {/* Centered grid - max 6 */}
-              <div className="flex-1 flex items-center justify-center">
-                <div className={cn(
-                  "grid gap-3 w-full max-w-4xl",
-                  count <= 1 ? "grid-cols-1 max-w-md" :
-                  count === 2 ? "grid-cols-2 max-w-2xl" :
-                  count <= 4 ? "grid-cols-2" :
-                  "grid-cols-3"
-                )}>
-                  {visible.map(participant => (
-                    <VideoTile
-                      key={participant.id}
-                      stream={participant.stream}
-                      username={participant.username}
-                      isMuted={participant.isMuted}
-                      isSpeaking={participant.isSpeaking}
-                      isLocal={participant.isLocal}
-                      backgroundEffect={participant.isLocal ? backgroundEffect : 'none'}
-                    />
-                  ))}
-                </div>
-              </div>
-              
-              {/* Waiting list */}
-              {waiting.length > 0 && (
-                <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-border/50">
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Waiting ({waiting.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {waiting.map(p => (
-                      <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/50 text-xs">
-                        <div className={cn(
-                          "w-2 h-2 rounded-full",
-                          p.isSpeaking ? "bg-green-500" : "bg-muted-foreground/50"
-                        )} />
-                        <span>{p.username}</span>
-                      </div>
+        {/* Video Grid */}
+        <div className="flex-1 p-4 overflow-auto flex flex-col">
+          {(() => {
+            const videoParticipants = [
+              { id: 'local', stream: localStream, username: 'You', isMuted, isSpeaking: isTalking, isLocal: true },
+              ...peers.map(p => ({ id: p.id, stream: p.stream, username: p.username, isMuted: p.isMuted, isSpeaking: p.isSpeaking, isLocal: false }))
+            ];
+            const visible = videoParticipants.slice(0, 6);
+            const waiting = videoParticipants.slice(6);
+            const count = visible.length;
+            
+            return (
+              <>
+                {/* Centered grid - max 6 */}
+                <div className="flex-1 flex items-center justify-center">
+                  <div className={cn(
+                    "grid gap-3 w-full max-w-4xl",
+                    count <= 1 ? "grid-cols-1 max-w-md" :
+                    count === 2 ? "grid-cols-2 max-w-2xl" :
+                    count <= 4 ? "grid-cols-2" :
+                    "grid-cols-3"
+                  )}>
+                    {visible.map(participant => (
+                      <VideoTile
+                        key={participant.id}
+                        stream={participant.stream}
+                        username={participant.username}
+                        isMuted={participant.isMuted}
+                        isSpeaking={participant.isSpeaking}
+                        isLocal={participant.isLocal}
+                        backgroundEffect={participant.isLocal ? backgroundEffect : 'none'}
+                      />
                     ))}
                   </div>
                 </div>
-              )}
-            </>
-          );
-        })()}
+                
+                {/* Waiting list */}
+                {waiting.length > 0 && (
+                  <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Waiting ({waiting.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {waiting.map(p => (
+                        <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/50 text-xs">
+                          <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            p.isSpeaking ? "bg-green-500" : "bg-muted-foreground/50"
+                          )} />
+                          <span>{p.username}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+
+        {/* Controls */}
+        <div className="p-4 border-t border-border bg-card/50">
+          <div className="flex items-center justify-center gap-3">
+            {/* Push to Talk indicator */}
+            {isPushToTalk && (
+              <Button
+                variant={isTalking ? "default" : "outline"}
+                className={cn(
+                  "gap-2 min-w-[140px]",
+                  isTalking && "bg-green-600 hover:bg-green-700"
+                )}
+                onMouseDown={startTalking}
+                onMouseUp={stopTalking}
+                onMouseLeave={stopTalking}
+                onTouchStart={startTalking}
+                onTouchEnd={stopTalking}
+              >
+                <Mic className="h-4 w-4" />
+                {isTalking ? 'Talking...' : 'Hold to Talk'}
+              </Button>
+            )}
+            
+            {/* Regular mute toggle for VAD mode */}
+            {!isPushToTalk && (
+              <Button
+                variant={isMuted ? "outline" : "default"}
+                size="icon"
+                onClick={toggleMute}
+                className={cn(
+                  !isMuted && isTalking && "ring-2 ring-green-500 ring-offset-2 ring-offset-background"
+                )}
+              >
+                {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            )}
+            
+            <Button
+              variant={isVideoEnabled ? "default" : "outline"}
+              size="icon"
+              onClick={toggleVideo}
+            >
+              {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+            </Button>
+            
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={handleLeave}
+            >
+              <PhoneOff className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {isPushToTalk && (
+            <p className="text-xs text-center text-muted-foreground mt-2">
+              Hold <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Space</kbd> to talk
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Controls */}
-      <div className="p-4 border-t border-border bg-card/50">
-        <div className="flex items-center justify-center gap-3">
-          {/* Push to Talk indicator */}
-          {isPushToTalk && (
-            <Button
-              variant={isTalking ? "default" : "outline"}
-              className={cn(
-                "gap-2 min-w-[140px]",
-                isTalking && "bg-green-600 hover:bg-green-700"
-              )}
-              onMouseDown={startTalking}
-              onMouseUp={stopTalking}
-              onMouseLeave={stopTalking}
-              onTouchStart={startTalking}
-              onTouchEnd={stopTalking}
-            >
-              <Mic className="h-4 w-4" />
-              {isTalking ? 'Talking...' : 'Hold to Talk'}
-            </Button>
-          )}
-          
-          {/* Regular mute toggle for VAD mode */}
-          {!isPushToTalk && (
-            <Button
-              variant={isMuted ? "outline" : "default"}
-              size="icon"
-              onClick={toggleMute}
-              className={cn(
-                !isMuted && isTalking && "ring-2 ring-green-500 ring-offset-2 ring-offset-background"
-              )}
-            >
-              {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </Button>
-          )}
-          
-          <Button
-            variant={isVideoEnabled ? "default" : "outline"}
-            size="icon"
-            onClick={toggleVideo}
-          >
-            {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
-          </Button>
-          
-          <Button
-            variant="destructive"
-            size="icon"
-            onClick={handleLeave}
-          >
-            <PhoneOff className="h-4 w-4" />
-          </Button>
+      {/* Members Sidebar */}
+      <div className="w-48 border-l border-border bg-card/30 flex flex-col">
+        <div className="p-3 border-b border-border/50">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            In Room ({allParticipants.length})
+          </h3>
         </div>
-        
-        {isPushToTalk && (
-          <p className="text-xs text-center text-muted-foreground mt-2">
-            Hold <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Space</kbd> to talk
-          </p>
-        )}
+        <div className="flex-1 overflow-auto p-2 space-y-1">
+          {allParticipants.map(p => (
+            <div
+              key={p.id}
+              className={cn(
+                "flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors",
+                p.isSpeaking && "bg-green-500/10"
+              )}
+            >
+              <div className="relative">
+                <div className="w-7 h-7 rounded-md jac-gradient-bg flex items-center justify-center">
+                  <Volume2 className="w-3.5 h-3.5 text-primary-foreground" />
+                </div>
+                {p.isSpeaking && (
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-background" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="truncate font-medium text-xs">
+                  {p.isLocal ? 'You' : p.username}
+                </p>
+              </div>
+              <div className={cn(
+                "p-0.5 rounded",
+                p.isMuted ? "text-destructive" : "text-green-500"
+              )}>
+                {p.isMuted ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
