@@ -1134,11 +1134,20 @@ const PrivateChatWindow = ({
             className="flex-1 bg-input rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50 min-w-0"
           />
           <Button
-            onClick={handleSend}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSend();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSend();
+            }}
             disabled={(!message.trim() && !attachedImage) || !isConnected || isUploading}
             variant="jac"
             size="icon"
-            className="h-8 w-8 rounded-lg shrink-0"
+            className="h-8 w-8 rounded-lg shrink-0 touch-manipulation"
           >
             <Send className="h-3.5 w-3.5" />
           </Button>
