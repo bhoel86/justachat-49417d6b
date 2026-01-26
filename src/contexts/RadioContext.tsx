@@ -68,6 +68,7 @@ const STORAGE_KEYS = {
   enabled: 'jac-radio-enabled',
   genre: 'jac-radio-genre',
   volume: 'jac-radio-volume',
+  songIndex: 'jac-radio-song-index',
 };
 
 export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
@@ -81,14 +82,27 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }
   });
   const [currentGenre, setCurrentGenre] = useState(() => {
-    // Restore genre from localStorage
+    // Restore genre from localStorage - default to last played, not 'All'
     try {
-      return localStorage.getItem(STORAGE_KEYS.genre) || 'All';
+      const stored = localStorage.getItem(STORAGE_KEYS.genre);
+      // Validate stored genre exists in library
+      if (stored && (stored === 'All' || MUSIC_LIBRARY.some(g => g.name === stored))) {
+        return stored;
+      }
+      return 'All';
     } catch {
       return 'All';
     }
   });
-  const [currentSongIndex, setCurrentSongIndex] = useState(0);
+  const [currentSongIndex, setCurrentSongIndex] = useState(() => {
+    // Restore song index from localStorage
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.songIndex);
+      return stored ? parseInt(stored, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -139,6 +153,15 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       // Ignore storage errors
     }
   }, [volume]);
+
+  // Persist song index to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.songIndex, String(currentSongIndex));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [currentSongIndex]);
   
   const genres = ['All', ...MUSIC_LIBRARY.map(g => g.name)];
   
