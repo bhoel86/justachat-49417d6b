@@ -205,17 +205,20 @@ const FormattedText = ({ text, className = '' }: FormattedTextProps) => {
     // Check for IRC color codes first (colored block art)
     if (hasIrcColors(textContent)) {
       return (
-        <pre 
-          className={`font-mono whitespace-pre overflow-x-auto ${className}`}
-          style={{ 
-            fontSize: '6px', 
-            lineHeight: '6px',
-            letterSpacing: '0px',
-            fontFamily: 'monospace',
-          }}
-        >
-          {parseIrcColors(textContent)}
-        </pre>
+        <div className="flex justify-center w-full">
+          <pre 
+            className={`font-mono whitespace-pre overflow-x-auto inline-block ${className}`}
+            style={{ 
+              fontSize: '6px', 
+              lineHeight: '6px',
+              letterSpacing: '0px',
+              fontFamily: 'monospace',
+              textAlign: 'left',
+            }}
+          >
+            {parseIrcColors(textContent)}
+          </pre>
+        </div>
       );
     }
     
