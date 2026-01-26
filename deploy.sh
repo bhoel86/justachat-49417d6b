@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Config
-REPO_URL="${REPO_URL:-https://github.com/YOUR_USERNAME/justachat.git}"
+REPO_URL="${REPO_URL:-https://github.com/bhoel86/justachatfinal.git}"
 APP_DIR="/var/www/justachat"
 SUPABASE_URL="http://127.0.0.1:8000"
 SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzA0MDY3MjAwLCJleHAiOjE4NjE5MjAwMDB9.ApWkSEYJ7yzNQ_H7yfVE2zyUp--eWrR-h9pj-rUSQEU"
