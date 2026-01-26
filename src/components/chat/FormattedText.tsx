@@ -34,7 +34,7 @@ const ImagePreview = ({ url }: { url: string }) => {
         <img
           src={url}
           alt="Chat image"
-          className="max-w-xs max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-cover mt-1"
+          className="max-w-[200px] max-h-32 rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-contain mt-1"
           onClick={() => setIsOpen(true)}
         />
       </DialogTrigger>

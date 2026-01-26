@@ -1091,64 +1091,66 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           />
         </div>
         
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-col">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center flex-1">
               <div className="h-8 w-8 rounded-xl jac-gradient-bg animate-pulse" />
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
               <p>No messages in #{currentChannel?.name || 'general'} yet.</p>
               <p className="text-sm mt-2">Be the first to say hello! Type /help for commands.</p>
             </div>
           ) : (
-            messages.map((msg) => {
-              // Check if this is an art display message
-              if (msg.content.startsWith('ART_DISPLAY:')) {
-                try {
-                  const artData = JSON.parse(msg.content.replace('ART_DISPLAY:', ''));
-                  return (
-                    <div key={msg.id} className="flex justify-start animate-message-in">
-                      <ArtDisplay
-                        imageUrl={artData.imageUrl}
-                        title={artData.title}
-                        artist={artData.artist}
-                        year={artData.year}
-                        period={artData.period}
-                        medium={artData.medium}
-                        commentary={artData.commentary}
-                      />
-                    </div>
-                  );
-                } catch {
-                  // If parsing fails, render as normal message
+            <div className="mt-auto space-y-2 sm:space-y-3">
+              {messages.map((msg) => {
+                // Check if this is an art display message
+                if (msg.content.startsWith('ART_DISPLAY:')) {
+                  try {
+                    const artData = JSON.parse(msg.content.replace('ART_DISPLAY:', ''));
+                    return (
+                      <div key={msg.id} className="flex justify-start animate-message-in">
+                        <ArtDisplay
+                          imageUrl={artData.imageUrl}
+                          title={artData.title}
+                          artist={artData.artist}
+                          year={artData.year}
+                          period={artData.period}
+                          medium={artData.medium}
+                          commentary={artData.commentary}
+                        />
+                      </div>
+                    );
+                  } catch {
+                    // If parsing fails, render as normal message
+                  }
                 }
-              }
-              
-              return (
-                <MessageBubble
-                  key={msg.id}
-                  id={msg.id}
-                  message={msg.content}
-                  sender={msg.profile?.username || 'Unknown'}
-                  senderId={msg.user_id}
-                  senderAvatarUrl={msg.profile?.avatar_url}
-                  timestamp={new Date(msg.created_at)}
-                  isOwn={msg.user_id === user?.id}
-                  isSystem={msg.isSystem || msg.user_id === 'system'}
-                  isModerator={msg.isModerator || msg.user_id === 'moderator'}
-                  canDelete={(msg.user_id === user?.id || isAdmin) && !msg.isModerator && msg.user_id !== 'moderator'}
-                  onDelete={handleDelete}
-                  onPmClick={handlePmClick}
-                  onBlockClick={handleBlockClick}
-                  onReportClick={handleReportClick}
-                  onInfoClick={handleInfoClick}
-                  translatedMessage={translations[msg.id]?.text}
-                  detectedLanguage={translations[msg.id]?.lang}
-                  isTranslating={isTranslating(msg.id)}
-                />
-              );
-            })
+                
+                return (
+                  <MessageBubble
+                    key={msg.id}
+                    id={msg.id}
+                    message={msg.content}
+                    sender={msg.profile?.username || 'Unknown'}
+                    senderId={msg.user_id}
+                    senderAvatarUrl={msg.profile?.avatar_url}
+                    timestamp={new Date(msg.created_at)}
+                    isOwn={msg.user_id === user?.id}
+                    isSystem={msg.isSystem || msg.user_id === 'system'}
+                    isModerator={msg.isModerator || msg.user_id === 'moderator'}
+                    canDelete={(msg.user_id === user?.id || isAdmin) && !msg.isModerator && msg.user_id !== 'moderator'}
+                    onDelete={handleDelete}
+                    onPmClick={handlePmClick}
+                    onBlockClick={handleBlockClick}
+                    onReportClick={handleReportClick}
+                    onInfoClick={handleInfoClick}
+                    translatedMessage={translations[msg.id]?.text}
+                    detectedLanguage={translations[msg.id]?.lang}
+                    isTranslating={isTranslating(msg.id)}
+                  />
+                );
+              })}
+            </div>
           )}
           <div ref={messagesEndRef} />
         </div>
