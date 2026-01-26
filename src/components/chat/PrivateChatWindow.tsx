@@ -105,12 +105,6 @@ const PrivateChatWindow = ({
    }
   };
 
-  useEffect(() => {
-   // Small delay to ensure DOM is ready
-   const timer = setTimeout(scrollToBottom, 100);
-    return () => clearTimeout(timer);
-  }, [messages]);
-
   // Dragging logic
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
@@ -528,6 +522,9 @@ const PrivateChatWindow = ({
 
       monitorMessage(trimmedMessage, currentUserId, currentUsername);
       setMessage('');
+     
+     // Scroll to bottom when sending a message
+     setTimeout(scrollToBottom, 50);
 
       // Trigger bot "seen" and response if chatting with a simulated user
       if (isTargetBot) {
