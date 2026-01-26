@@ -840,7 +840,7 @@ const Home = () => {
                   <img 
                     src={mascotLeft} 
                     alt="Mascot" 
-                    className="h-14 sm:h-16 w-auto opacity-80 object-contain"
+                    className="h-14 sm:h-16 w-auto object-contain mix-blend-lighten"
                   />
                   
                   {/* Social Media Links */}
@@ -895,7 +895,7 @@ const Home = () => {
                   <img 
                     src={mascotRight} 
                     alt="Mascot" 
-                    className="h-14 sm:h-16 w-auto opacity-80 object-contain"
+                    className="h-14 sm:h-16 w-auto object-contain mix-blend-lighten"
                   />
                 </div>
                 
