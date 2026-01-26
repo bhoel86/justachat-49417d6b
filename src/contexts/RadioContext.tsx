@@ -82,14 +82,7 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 
 export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(() => {
-    // Restore enabled state from localStorage
-    try {
-      return localStorage.getItem(STORAGE_KEYS.enabled) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isEnabled, setIsEnabled] = useState(false);
   const [currentGenre, setCurrentGenre] = useState(() => {
     // Restore genre from localStorage - default to last played, not 'All'
     try {
@@ -103,7 +96,6 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       return 'All';
     }
   });
-  // Always start from random position (shuffle on load)
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [shuffledPlaylist, setShuffledPlaylist] = useState<Song[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -120,24 +112,14 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   });
   const progressInterval = useRef<number | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
-  const isMountedRef = useRef(true);
   
   // Track mounted state to prevent state updates after unmount
   useEffect(() => {
-    isMountedRef.current = true;
+    const isMountedRef = { current: true };
     return () => {
       isMountedRef.current = false;
     };
   }, []);
-
-  // Persist enabled state to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.enabled, String(isEnabled));
-    } catch {
-      // Ignore storage errors
-    }
-  }, [isEnabled]);
 
   // Persist genre to localStorage
   useEffect(() => {
@@ -195,7 +177,6 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   const albumArt = currentSong ? getAlbumArt(currentSong.videoId) : null;
   
   const ytWindow = window as YTWindow;
-  const hasAutoStarted = useRef(false);
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -207,39 +188,31 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Start playback only when enabled (inside chat room)
+  // Initialize player when enabled
   useEffect(() => {
-    if (!isEnabled) {
-      // Reset autostart flag when disabled so it can start again when re-enabled
-      hasAutoStarted.current = false;
-      return;
-    }
-    
-    if (hasAutoStarted.current) return;
-    
-    const startPlayback = () => {
-      if (ytWindow.YT?.Player && currentSong && !isInitialized) {
-        hasAutoStarted.current = true;
-        initPlayer();
-      }
-    };
+    if (!isEnabled || !currentSong) return;
 
-    // If YT is already loaded, start immediately
     if (ytWindow.YT?.Player) {
-      startPlayback();
+      // API ready, init immediately
+      initPlayer();
     } else {
-      // Otherwise, set up callback for when it's ready
-      const existingCallback = ytWindow.onYouTubeIframeAPIReady;
+      // Set up callback for when API loads
       ytWindow.onYouTubeIframeAPIReady = () => {
-        existingCallback?.();
-        startPlayback();
+        if (isEnabled && currentSong) {
+          initPlayer();
+        }
       };
     }
-  }, [isEnabled, currentSong, isInitialized]);
+  }, [isEnabled, currentSong]);
 
   const initPlayer = useCallback(() => {
+    // Cleanup existing player
     if (playerRef.current) {
-      playerRef.current.destroy();
+      try {
+        playerRef.current.destroy();
+      } catch (e) {
+        console.log('Error destroying player:', e);
+      }
     }
 
     if (!ytWindow.YT?.Player || !currentSong) return;
@@ -266,61 +239,43 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       },
       events: {
         onReady: (event: { target: YTPlayer }) => {
-          if (!isMountedRef.current) return;
-          event.target.setVolume(50);
+          event.target.setVolume(volume);
           event.target.playVideo();
           setIsPlaying(true);
+          setIsInitialized(true);
           // Start tracking progress
           if (progressInterval.current) {
             clearInterval(progressInterval.current);
           }
           progressInterval.current = window.setInterval(() => {
-            if (playerRef.current && isMountedRef.current) {
+            if (playerRef.current) {
               setCurrentTime(playerRef.current.getCurrentTime() || 0);
               setDuration(playerRef.current.getDuration() || 0);
             }
           }, 500);
         },
         onStateChange: (event: { data: number }) => {
-          if (!isMountedRef.current) return;
           if (ytWindow.YT?.PlayerState) {
             if (event.data === ytWindow.YT.PlayerState.PLAYING) {
               setIsPlaying(true);
-              // Resume progress tracking
-              if (!progressInterval.current) {
-                progressInterval.current = window.setInterval(() => {
-                  if (playerRef.current && isMountedRef.current) {
-                    setCurrentTime(playerRef.current.getCurrentTime() || 0);
-                    setDuration(playerRef.current.getDuration() || 0);
-                  }
-                }, 500);
-              }
             } else if (event.data === ytWindow.YT.PlayerState.PAUSED) {
               setIsPlaying(false);
             } else if (event.data === ytWindow.YT.PlayerState.ENDED) {
-              // Auto-skip to next song when current one ends
               skip();
             }
           }
         },
       },
     });
-    if (isMountedRef.current) {
-      setIsInitialized(true);
-    }
-  }, [currentSong?.videoId]);
+  }, [currentSong, volume]);
 
   const play = useCallback(() => {
-    if (!isInitialized) {
-      if (ytWindow.YT?.Player) {
-        initPlayer();
-      } else {
-        ytWindow.onYouTubeIframeAPIReady = initPlayer;
-      }
-    } else if (playerRef.current) {
+    if (playerRef.current) {
       playerRef.current.playVideo();
+    } else if (isEnabled && ytWindow.YT?.Player) {
+      initPlayer();
     }
-  }, [isInitialized, initPlayer]);
+  }, [isEnabled, initPlayer]);
 
   const pause = useCallback(() => {
     if (playerRef.current) {
@@ -358,9 +313,8 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   }, [currentGenre, genres]);
 
   const shuffle = useCallback(() => {
-    // Reshuffle the entire playlist and start from the beginning
     const currentBase = getBasePlaylist(currentGenre);
-    const newShuffled = shuffleArray(shuffledPlaylist.length > 0 ? shuffledPlaylist : currentBase);
+    const newShuffled = shuffleArray(currentBase);
     setShuffledPlaylist(newShuffled);
     setCurrentSongIndex(0);
     
@@ -368,7 +322,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       playerRef.current.loadVideoById(newShuffled[0].videoId);
       playerRef.current.playVideo();
     }
-  }, [shuffledPlaylist, currentGenre, getBasePlaylist, isInitialized]);
+  }, [currentGenre, getBasePlaylist, isInitialized]);
 
   const toggle = useCallback(() => {
     if (isPlaying) {
@@ -379,7 +333,6 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   }, [isPlaying, play, pause]);
 
   const handleSetGenre = useCallback((genre: string) => {
-    // Setting genre will trigger the useEffect to shuffle
     setCurrentGenre(genre);
   }, []);
 
@@ -388,8 +341,8 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   }, []);
 
   const disableRadio = useCallback(() => {
+    // Stop playback and cleanup
     setIsEnabled(false);
-    setIsInitialized(false); // Reset initialization so it can autoplay again when re-enabled
     if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
       try {
         playerRef.current.pauseVideo();
@@ -402,6 +355,17 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       progressInterval.current = null;
     }
     setIsPlaying(false);
+    setIsInitialized(false);
+    
+    // Destroy player
+    if (playerRef.current) {
+      try {
+        playerRef.current.destroy();
+        playerRef.current = null;
+      } catch (e) {
+        console.log('Error cleaning up player:', e);
+      }
+    }
   }, []);
 
   const seekTo = useCallback((seconds: number) => {
@@ -420,42 +384,9 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   }, []);
 
   const resetRadio = useCallback(() => {
-    // Clean up existing player
-    if (playerRef.current) {
-      try {
-        playerRef.current.destroy();
-      } catch (e) {
-        console.log('Player destroy error:', e);
-      }
-      playerRef.current = null;
-    }
-    
-    // Clear progress tracking
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-      progressInterval.current = null;
-    }
-    
-    // Reset state
-    setIsPlaying(false);
-    setIsInitialized(false);
-    setCurrentTime(0);
-    setDuration(0);
-    hasAutoStarted.current = false;
-    
-    // Remove old player container
-    const oldContainer = document.getElementById('youtube-radio-player');
-    if (oldContainer) {
-      oldContainer.remove();
-    }
-    
-    // Reinitialize after short delay
-    setTimeout(() => {
-      if (isEnabled && ytWindow.YT?.Player) {
-        initPlayer();
-      }
-    }, 500);
-  }, [isEnabled, initPlayer]);
+    disableRadio();
+    setTimeout(() => enableRadio(), 100);
+  }, [disableRadio, enableRadio]);
 
   // Cleanup interval and player on unmount
   useEffect(() => {
