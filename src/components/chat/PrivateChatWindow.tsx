@@ -686,8 +686,7 @@ const PrivateChatWindow = ({
         senderId: currentUserId,
         senderName: currentUsername,
         timestamp: new Date(),
-        isOwn: true,
-        imageUrl: gifUrl
+        isOwn: true
       }]);
       
       // Broadcast
