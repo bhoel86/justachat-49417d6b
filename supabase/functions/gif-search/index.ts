@@ -18,11 +18,12 @@ serve(async (req) => {
 
     const { query, trending, limit = 20 } = await req.json();
 
+    // Klipy API format: https://api.klipy.com/api/v1/{API_KEY}/gifs/{endpoint}
     let url: string;
     if (trending) {
-      url = `https://partner.klipy.com/v1/trending?key=${KLIPY_API_KEY}&limit=${limit}&mediaFilter=gif`;
+      url = `https://api.klipy.com/api/v1/${KLIPY_API_KEY}/gifs/trending?limit=${limit}`;
     } else {
-      url = `https://partner.klipy.com/v1/search?key=${KLIPY_API_KEY}&q=${encodeURIComponent(query || '')}&limit=${limit}&mediaFilter=gif`;
+      url = `https://api.klipy.com/api/v1/${KLIPY_API_KEY}/gifs/search?q=${encodeURIComponent(query || '')}&limit=${limit}`;
     }
 
     console.log(`Fetching GIFs: ${trending ? 'trending' : `search: ${query}`}`);
@@ -38,11 +39,13 @@ serve(async (req) => {
     const data = await response.json();
     
     // Map Klipy response to our format
-    const results = (data.results || []).map((item: any) => ({
-      id: item.id || crypto.randomUUID(),
-      title: item.title || '',
-      preview: item.media_formats?.tinygif?.url || item.media_formats?.gif?.url || '',
-      url: item.media_formats?.gif?.url || item.media_formats?.tinygif?.url || '',
+    // Klipy returns data.gifs array with each gif having urls object
+    const gifs = data.gifs || data.results || [];
+    const results = gifs.map((item: any) => ({
+      id: item.id || item.slug || crypto.randomUUID(),
+      title: item.title || item.alt || '',
+      preview: item.urls?.thumbnail || item.urls?.fixed_width || item.urls?.original || '',
+      url: item.urls?.original || item.urls?.fixed_width || item.urls?.thumbnail || '',
     }));
 
     console.log(`Found ${results.length} GIFs`);
