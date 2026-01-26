@@ -159,13 +159,16 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
 
   const genres = ['All', ...MUSIC_LIBRARY.map(g => g.name)];
   
-  // Get base playlist for current genre
-  const basePlaylist = currentGenre === 'All' 
-    ? getAllSongs() 
-    : MUSIC_LIBRARY.find(g => g.name === currentGenre)?.songs || getAllSongs();
+  // Get base playlist for current genre (memoized to avoid recreating on every render)
+  const getBasePlaylist = useCallback((genre: string) => {
+    return genre === 'All' 
+      ? getAllSongs() 
+      : MUSIC_LIBRARY.find(g => g.name === genre)?.songs || getAllSongs();
+  }, []);
   
   // Shuffle playlist on mount and when genre changes
   useEffect(() => {
+    const basePlaylist = getBasePlaylist(currentGenre);
     const shuffled = shuffleArray(basePlaylist);
     setShuffledPlaylist(shuffled);
     setCurrentSongIndex(0);
@@ -175,9 +178,10 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       playerRef.current.loadVideoById(shuffled[0].videoId);
       playerRef.current.playVideo();
     }
-  }, [currentGenre]);
+  }, [currentGenre, getBasePlaylist, isInitialized]);
   
   // Use shuffled playlist, fall back to base if not yet shuffled
+  const basePlaylist = getBasePlaylist(currentGenre);
   const currentPlaylist = shuffledPlaylist.length > 0 ? shuffledPlaylist : basePlaylist;
   const currentSong = currentPlaylist[currentSongIndex] || currentPlaylist[0];
   const albumArt = currentSong ? getAlbumArt(currentSong.videoId) : null;
@@ -341,7 +345,8 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
 
   const shuffle = useCallback(() => {
     // Reshuffle the entire playlist and start from the beginning
-    const newShuffled = shuffleArray(shuffledPlaylist.length > 0 ? shuffledPlaylist : basePlaylist);
+    const currentBase = getBasePlaylist(currentGenre);
+    const newShuffled = shuffleArray(shuffledPlaylist.length > 0 ? shuffledPlaylist : currentBase);
     setShuffledPlaylist(newShuffled);
     setCurrentSongIndex(0);
     
@@ -349,7 +354,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       playerRef.current.loadVideoById(newShuffled[0].videoId);
       playerRef.current.playVideo();
     }
-  }, [shuffledPlaylist, basePlaylist, isInitialized]);
+  }, [shuffledPlaylist, currentGenre, getBasePlaylist, isInitialized]);
 
   const toggle = useCallback(() => {
     if (isPlaying) {
