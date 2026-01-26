@@ -29,7 +29,7 @@ import { moderateContent, shouldBlockMessage } from "@/lib/contentModeration";
 import { useChannelModerationSettings } from "@/hooks/useChannelModerationSettings";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Users, X, Hash } from "lucide-react";
+import { Menu, Users, X, Hash, BellOff, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -1069,6 +1069,22 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">#{currentChannel?.name || 'general'}</p>
           </div>
+          {/* DND Toggle for Mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={privateChats.toggleDoNotDisturb}
+            className={cn(
+              "h-9 w-9",
+              privateChats.doNotDisturb && "bg-amber-500/20 text-amber-500"
+            )}
+          >
+            {privateChats.doNotDisturb ? (
+              <BellOff className="h-5 w-5" />
+            ) : (
+              <Bell className="h-5 w-5 text-muted-foreground" />
+            )}
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -1210,6 +1226,26 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         />
       </div>
 
+      {/* DND Toggle - Desktop only (right of member list) */}
+      <div className="hidden lg:flex flex-col items-center justify-start pt-4 px-2 border-l border-border bg-card/50">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={privateChats.toggleDoNotDisturb}
+          className={cn(
+            "h-9 w-9 rounded-lg",
+            privateChats.doNotDisturb && "bg-amber-500/20 text-amber-500"
+          )}
+          title={privateChats.doNotDisturb ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF'}
+        >
+          {privateChats.doNotDisturb ? (
+            <BellOff className="h-5 w-5" />
+          ) : (
+            <Bell className="h-5 w-5 text-muted-foreground" />
+          )}
+        </Button>
+      </div>
+
       {/* Private Chat Windows - Only active (non-minimized) */}
       {privateChats.activeChats.map(chat => (
         <PrivateChatWindow
@@ -1227,14 +1263,12 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         />
       ))}
 
-      {/* PM Minimize Tray */}
+      {/* PM Minimize Tray - DND toggle moved to header/sidebar */}
       <PMTray
         minimizedChats={privateChats.minimizedChats}
         onRestore={(chatId) => privateChats.restoreChat(chatId)}
         onClose={(chatId) => privateChats.closeChat(chatId)}
         onReorder={(fromIndex, toIndex) => privateChats.reorderChats(fromIndex, toIndex)}
-        doNotDisturb={privateChats.doNotDisturb}
-        onToggleDND={privateChats.toggleDoNotDisturb}
       />
 
       {/* Room Invite Popup */}
