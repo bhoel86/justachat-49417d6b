@@ -1275,7 +1275,13 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           </Sheet>
         )}
         
-        <ChatInput onSend={handleSend} isMuted={isMuted || isRoomMuted} canControlRadio={isAdmin || isOwner} onlineUsers={onlineUsers} />
+        <ChatInput 
+          onSend={handleSend} 
+          isMuted={isMuted || isRoomMuted} 
+          canControlRadio={isAdmin || isOwner} 
+          onlineUsers={onlineUsers}
+          radioListenerCount={listeningUsers.size}
+        />
       </div>
 
       {/* Member Sidebar - Hidden on mobile unless toggled */}

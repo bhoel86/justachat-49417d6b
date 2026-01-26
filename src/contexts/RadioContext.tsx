@@ -389,6 +389,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
 
   const disableRadio = useCallback(() => {
     setIsEnabled(false);
+    setIsInitialized(false); // Reset initialization so it can autoplay again when re-enabled
     if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
       try {
         playerRef.current.pauseVideo();

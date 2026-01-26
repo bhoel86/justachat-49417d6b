@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power, Smile, MoreHorizontal, Palette, Sparkles, ImagePlus, X, Loader2, ImageIcon } from "lucide-react";
+import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power, Smile, MoreHorizontal, Palette, Sparkles, ImagePlus, X, Loader2, ImageIcon, Speaker } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -45,9 +45,10 @@ interface ChatInputProps {
   isMuted?: boolean;
   canControlRadio?: boolean;
   onlineUsers?: { username: string; avatarUrl?: string | null }[];
+  radioListenerCount?: number;
 }
 
-const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUsers = [] }: ChatInputProps) => {
+const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUsers = [], radioListenerCount = 0 }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const [selectedAction, setSelectedAction] = useState<{ emoji: string; action: string; suffix: string } | null>(null);
   const [textFormat, setTextFormat] = useState<TextFormat>({ textStyle: 'none' });
@@ -542,9 +543,15 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`h-7 px-2 text-xs gap-1 ${!canControlRadio ? 'opacity-60 cursor-not-allowed' : ''}`}
+                className={`h-7 px-2 text-xs gap-1.5 ${!canControlRadio ? 'opacity-60 cursor-not-allowed' : ''}`}
                 disabled={!canControlRadio}
               >
+                {radioListenerCount > 0 && (
+                  <div className="flex items-center gap-0.5">
+                    <Speaker className="h-3 w-3 text-primary" />
+                    <span className="text-[10px] text-primary font-medium">{radioListenerCount}</span>
+                  </div>
+                )}
                 {radio.currentGenre}
                 <ChevronDown className="h-3 w-3" />
               </Button>
