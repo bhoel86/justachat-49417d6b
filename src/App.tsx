@@ -40,6 +40,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/chat" element={<Index />} />
               <Route path="/chat/:channelName" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/map" element={<MapView />} />
