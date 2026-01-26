@@ -52,7 +52,7 @@ interface ChatRoomProps {
 }
 
 const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
-  const { user, isAdmin, isOwner, role } = useAuth();
+  const { user, isAdmin, isOwner, role, refreshRole } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<{ username: string; avatarUrl?: string | null }[]>([]);
@@ -859,6 +859,11 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           }
         }
         return;
+      }
+
+      // Handle role refresh after oper command
+      if (result.refreshRole) {
+        await refreshRole();
       }
 
       if (result.isSystemMessage && !result.broadcast) {

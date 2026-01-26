@@ -21,6 +21,7 @@ export interface CommandResult {
   message: string;
   isSystemMessage?: boolean;
   broadcast?: boolean;
+  refreshRole?: boolean; // Signal to refresh user's role after command
 }
 
 export interface CommandContext {
@@ -306,6 +307,7 @@ const operCommand: CommandHandler = async (args, context) => {
       message: data?.message || `*** ${context.username} is now an IRC Operator`,
       isSystemMessage: true,
       broadcast: true,
+      refreshRole: true, // Trigger role refresh in UI
     };
   } catch (err) {
     console.error('Oper command error:', err);
