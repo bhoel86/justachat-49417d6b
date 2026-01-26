@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.donation-notify]
 verify_jwt = false
+
+[functions.image-to-irc]
+verify_jwt = false
