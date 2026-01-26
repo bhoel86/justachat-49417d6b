@@ -586,11 +586,12 @@ const PrivateChatWindow = ({
         console.error('Failed to store message:', dbError);
       }
       
+    // CRITICAL: Mark as sent BEFORE adding to state to prevent race conditions
+    sentMessageIdsRef.current.add(msgId);
+      
     // Add message locally FIRST (before broadcast to prevent race conditions)
     setMessages(prev => {
       if (prev.some(m => m.id === msgId)) return prev;
-      sentMessageIdsRef.current.add(msgId); // Track as sent
-      console.log('[PM-SEND] Adding GIF locally, msgId:', msgId, 'total sent IDs:', sentMessageIdsRef.current.size);
       return [...prev, {
         id: msgId,
         content: finalMessage,
@@ -667,10 +668,12 @@ const PrivateChatWindow = ({
         console.error('Failed to store GIF message:', dbError);
       }
       
+    // CRITICAL: Mark as sent BEFORE adding to state to prevent race conditions
+    sentMessageIdsRef.current.add(msgId);
+      
     // Add message locally FIRST (before broadcast to prevent race conditions)
     setMessages(prev => {
       if (prev.some(m => m.id === msgId)) return prev;
-      sentMessageIdsRef.current.add(msgId); // Track as sent
       return [...prev, {
         id: msgId,
         content: finalMessage,
