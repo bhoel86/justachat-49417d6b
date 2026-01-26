@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video, ImagePlus, Zap, Loader2 } from "lucide-react";
+import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video, ImagePlus, Zap, Loader2, Camera, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
@@ -121,6 +121,7 @@ const PrivateChatWindow = ({
   const lastMessageCountRef = useRef(0);
   const hasLoadedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const sentMessageIdsRef = useRef<Set<string>>(new Set());
   const isSendingRef = useRef(false);
   const sendButtonRef = useRef<HTMLButtonElement>(null);
@@ -837,6 +838,7 @@ const PrivateChatWindow = ({
 
     // Reset file input immediately so user can re-select same file
     if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
 
     if (file.size > 25 * 1024 * 1024) {
       toast({ variant: "destructive", title: "Image too large", description: "Please select an image under 25MB" });
@@ -1001,6 +1003,7 @@ const PrivateChatWindow = ({
     setAttachedImage(null);
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   // uploadImage function removed - now handled inline in handleImageSelect for auto-send
@@ -1238,23 +1241,46 @@ const PrivateChatWindow = ({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* Image Upload - specific types to force gallery picker on mobile */}
+          {/* Image Upload - Gallery Picker */}
           <input 
             ref={fileInputRef} 
             type="file" 
-            accept=".jpg,.jpeg,.png,.gif,.webp,.heic" 
+            accept="image/*" 
             onChange={handleImageSelect} 
             className="hidden" 
           />
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 shrink-0" 
-            onClick={() => fileInputRef.current?.click()} 
-            disabled={isUploading}
-          >
-            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-          </Button>
+          {/* Camera Input */}
+          <input 
+            ref={cameraInputRef} 
+            type="file" 
+            accept="image/*" 
+            capture="environment"
+            onChange={handleImageSelect} 
+            className="hidden" 
+          />
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 shrink-0" 
+                disabled={isUploading}
+              >
+                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-32 bg-popover border border-border z-[9999]">
+              <DropdownMenuItem onClick={() => cameraInputRef.current?.click()} className="text-xs flex items-center gap-2">
+                <Camera className="w-3.5 h-3.5" />
+                <span>Take Photo</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="text-xs flex items-center gap-2">
+                <Image className="w-3.5 h-3.5" />
+                <span>Choose Photo</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <input
             type="text"
