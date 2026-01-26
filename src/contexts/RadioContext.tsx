@@ -68,7 +68,16 @@ const STORAGE_KEYS = {
   enabled: 'jac-radio-enabled',
   genre: 'jac-radio-genre',
   volume: 'jac-radio-volume',
-  songIndex: 'jac-radio-song-index',
+};
+
+// Shuffle array using Fisher-Yates algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 };
 
 export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
@@ -94,15 +103,9 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       return 'All';
     }
   });
-  const [currentSongIndex, setCurrentSongIndex] = useState(() => {
-    // Restore song index from localStorage
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.songIndex);
-      return stored ? parseInt(stored, 10) : 0;
-    } catch {
-      return 0;
-    }
-  });
+  // Always start from random position (shuffle on load)
+  const [currentSongIndex, setCurrentSongIndex] = useState(0);
+  const [shuffledPlaylist, setShuffledPlaylist] = useState<Song[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -154,21 +157,28 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }
   }, [volume]);
 
-  // Persist song index to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.songIndex, String(currentSongIndex));
-    } catch {
-      // Ignore storage errors
-    }
-  }, [currentSongIndex]);
-  
   const genres = ['All', ...MUSIC_LIBRARY.map(g => g.name)];
   
-  const currentPlaylist = currentGenre === 'All' 
+  // Get base playlist for current genre
+  const basePlaylist = currentGenre === 'All' 
     ? getAllSongs() 
     : MUSIC_LIBRARY.find(g => g.name === currentGenre)?.songs || getAllSongs();
   
+  // Shuffle playlist on mount and when genre changes
+  useEffect(() => {
+    const shuffled = shuffleArray(basePlaylist);
+    setShuffledPlaylist(shuffled);
+    setCurrentSongIndex(0);
+    
+    // If player is already initialized, load the first shuffled song
+    if (playerRef.current && isInitialized && shuffled.length > 0) {
+      playerRef.current.loadVideoById(shuffled[0].videoId);
+      playerRef.current.playVideo();
+    }
+  }, [currentGenre]);
+  
+  // Use shuffled playlist, fall back to base if not yet shuffled
+  const currentPlaylist = shuffledPlaylist.length > 0 ? shuffledPlaylist : basePlaylist;
   const currentSong = currentPlaylist[currentSongIndex] || currentPlaylist[0];
   const albumArt = currentSong ? getAlbumArt(currentSong.videoId) : null;
   
@@ -325,28 +335,21 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     const nextGenreIndex = (currentGenreIndex + 1) % genres.length;
     const nextGenre = genres[nextGenreIndex];
     
+    // Setting genre will trigger the useEffect to shuffle
     setCurrentGenre(nextGenre);
-    setCurrentSongIndex(0);
-    
-    const newPlaylist = nextGenre === 'All' 
-      ? getAllSongs() 
-      : MUSIC_LIBRARY.find(g => g.name === nextGenre)?.songs || getAllSongs();
-    
-    if (playerRef.current && isInitialized && newPlaylist.length > 0) {
-      playerRef.current.loadVideoById(newPlaylist[0].videoId);
-      playerRef.current.playVideo();
-    }
-  }, [currentGenre, genres, isInitialized]);
+  }, [currentGenre, genres]);
 
   const shuffle = useCallback(() => {
-    const randomIndex = Math.floor(Math.random() * currentPlaylist.length);
-    setCurrentSongIndex(randomIndex);
+    // Reshuffle the entire playlist and start from the beginning
+    const newShuffled = shuffleArray(shuffledPlaylist.length > 0 ? shuffledPlaylist : basePlaylist);
+    setShuffledPlaylist(newShuffled);
+    setCurrentSongIndex(0);
     
-    if (playerRef.current && isInitialized) {
-      playerRef.current.loadVideoById(currentPlaylist[randomIndex].videoId);
+    if (playerRef.current && isInitialized && newShuffled.length > 0) {
+      playerRef.current.loadVideoById(newShuffled[0].videoId);
       playerRef.current.playVideo();
     }
-  }, [currentPlaylist, isInitialized]);
+  }, [shuffledPlaylist, basePlaylist, isInitialized]);
 
   const toggle = useCallback(() => {
     if (isPlaying) {
@@ -357,18 +360,9 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   }, [isPlaying, play, pause]);
 
   const handleSetGenre = useCallback((genre: string) => {
+    // Setting genre will trigger the useEffect to shuffle
     setCurrentGenre(genre);
-    setCurrentSongIndex(0);
-    
-    const newPlaylist = genre === 'All' 
-      ? getAllSongs() 
-      : MUSIC_LIBRARY.find(g => g.name === genre)?.songs || getAllSongs();
-    
-    if (playerRef.current && isInitialized && newPlaylist.length > 0) {
-      playerRef.current.loadVideoById(newPlaylist[0].videoId);
-      playerRef.current.playVideo();
-    }
-  }, [isInitialized]);
+  }, []);
 
   const enableRadio = useCallback(() => {
     setIsEnabled(true);
