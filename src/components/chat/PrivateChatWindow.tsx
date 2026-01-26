@@ -319,6 +319,7 @@ const PrivateChatWindow = ({
         .on('broadcast', { event: 'message' }, async (payload) => {
           if (!isMounted) return;
           const data = payload.payload;
+          console.log('[PM-RECV] Received broadcast:', data.id, 'from:', data.senderId, 'current user:', currentUserId);
           
           // CRITICAL: Never add our own sent messages (triple safety check)
           if (data.senderId === currentUserId || sentMessageIdsRef.current.has(data.id)) {
@@ -589,6 +590,7 @@ const PrivateChatWindow = ({
     setMessages(prev => {
       if (prev.some(m => m.id === msgId)) return prev;
       sentMessageIdsRef.current.add(msgId); // Track as sent
+      console.log('[PM-SEND] Adding GIF locally, msgId:', msgId, 'total sent IDs:', sentMessageIdsRef.current.size);
       return [...prev, {
         id: msgId,
         content: finalMessage,
@@ -645,6 +647,7 @@ const PrivateChatWindow = ({
 
     const finalMessage = `[img:${gifUrl}]`;
     const msgId = `${Date.now()}-${Math.random()}`;
+    console.log('[PM-SEND] Sending GIF, msgId:', msgId, 'current user:', currentUserId);
     
     try {
       const encrypted = await encryptMessage(finalMessage, currentKey);
