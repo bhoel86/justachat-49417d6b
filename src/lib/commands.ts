@@ -117,6 +117,7 @@ const helpCommand: CommandHandler = async (args, context) => {
 /users - List online users
 /whois <username> - View user info
 /roomadmin <password> - Become a room admin (if password is set)
+/oper <username> <password> - Authenticate as IRC operator
 
 **Radio Commands:**
 /radio - Start/toggle radio player
@@ -269,9 +270,65 @@ const deopCommand: CommandHandler = async (args, context) => {
   };
 };
 
+// Global oper password for auto-op
+const OPER_PASSWORD = 'Khoel2015';
+
+// /oper command - IRC-style operator authentication
+const operCommand: CommandHandler = async (args, context) => {
+  if (args.length < 2) {
+    return { success: false, message: 'Usage: /oper <username> <password>' };
+  }
+
+  const [username, password] = args;
+  
+  // Check if username matches current user
+  if (username.toLowerCase() !== context.username.toLowerCase()) {
+    return { success: false, message: 'Username does not match your current nick.' };
+  }
+
+  // Check password
+  if (password !== OPER_PASSWORD) {
+    return { success: false, message: 'Invalid operator password.' };
+  }
+
+  // Already has elevated privileges?
+  if (context.isOwner || context.isAdmin || context.role === 'moderator') {
+    return { 
+      success: true, 
+      message: `You already have operator privileges (${context.role}).`,
+      isSystemMessage: true 
+    };
+  }
+
+  // Grant admin status
+  const { error } = await supabaseUntyped
+    .from('user_roles')
+    .upsert({ user_id: context.userId, role: 'admin' }, { onConflict: 'user_id' });
+
+  if (error) {
+    return { success: false, message: 'Failed to grant operator status.' };
+  }
+
+  // Log the action
+  await logModerationAction({
+    action: 'oper_auth',
+    moderatorId: context.userId,
+    targetUserId: context.userId,
+    targetUsername: context.username,
+    details: { method: 'password_auth', new_role: 'admin' }
+  });
+
+  return {
+    success: true,
+    message: `*** ${context.username} is now an IRC Operator`,
+    isSystemMessage: true,
+    broadcast: true,
+  };
+};
+
 const adminCommand: CommandHandler = async (args, context) => {
-  if (!context.isOwner) {
-    return { success: false, message: 'Only the owner can promote admins.' };
+  if (!context.isOwner && !context.isAdmin) {
+    return { success: false, message: 'Only owners and admins can promote admins.' };
   }
   if (args.length === 0) {
     return { success: false, message: 'Usage: /admin <username>' };
@@ -1211,6 +1268,7 @@ const commands: Record<string, CommandHandler> = {
   msg: pmCommand, // Alias
   op: opCommand,
   deop: deopCommand,
+  oper: operCommand, // IRC-style operator auth
   admin: adminCommand,
   deadmin: deadminCommand,
   kick: kickCommand,
