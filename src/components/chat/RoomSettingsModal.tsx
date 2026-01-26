@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { Lock, Key, Users, Shield, Save } from "lucide-react";
+import { Lock, Key, Users, Shield, Save, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseUntyped } from "@/hooks/useAuth";
 import { Channel } from "./ChannelList";
+import { useChannelModerationSettings } from "@/hooks/useChannelModerationSettings";
 
 interface RoomSettingsModalProps {
   open: boolean;
@@ -48,7 +50,14 @@ const RoomSettingsModal = ({ open, onOpenChange, channel, userId }: RoomSettings
   const [roomMutes, setRoomMutes] = useState<RoomMute[]>([]);
   const [roomAdmins, setRoomAdmins] = useState<RoomAdmin[]>([]);
   const [loading, setLoading] = useState(false);
+  const [savingModeration, setSavingModeration] = useState(false);
   const { toast } = useToast();
+  
+  const { 
+    settings: moderationSettings, 
+    updateSettings: updateModerationSettings,
+    loading: moderationLoading 
+  } = useChannelModerationSettings(channel?.id || null);
 
   useEffect(() => {
     if (open && channel) {
@@ -196,10 +205,14 @@ const RoomSettingsModal = ({ open, onOpenChange, channel, userId }: RoomSettings
         </DialogHeader>
 
         <Tabs defaultValue="passwords" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="passwords" className="text-xs">
               <Key className="h-3 w-3 mr-1" />
               Passwords
+            </TabsTrigger>
+            <TabsTrigger value="moderation" className="text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              Filters
             </TabsTrigger>
             <TabsTrigger value="bans" className="text-xs">
               <Lock className="h-3 w-3 mr-1" />
@@ -238,6 +251,94 @@ const RoomSettingsModal = ({ open, onOpenChange, channel, userId }: RoomSettings
               <Save className="h-4 w-4 mr-2" />
               Save Passwords
             </Button>
+          </TabsContent>
+
+          <TabsContent value="moderation" className="mt-4 space-y-4">
+            {moderationLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Loading settings...</p>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 p-3 bg-secondary/50 rounded-lg">
+                    <Checkbox
+                      id="url-filter"
+                      checked={moderationSettings.url_filter_enabled}
+                      onCheckedChange={async (checked) => {
+                        setSavingModeration(true);
+                        const success = await updateModerationSettings({ url_filter_enabled: !!checked });
+                        setSavingModeration(false);
+                        if (success) {
+                          toast({ title: "URL filter updated" });
+                        } else {
+                          toast({ variant: "destructive", title: "Failed to update" });
+                        }
+                      }}
+                      disabled={savingModeration}
+                    />
+                    <div>
+                      <Label htmlFor="url-filter" className="text-sm font-medium cursor-pointer">
+                        URL Filter
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Block links and URLs in messages</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-3 bg-secondary/50 rounded-lg">
+                    <Checkbox
+                      id="profanity-filter"
+                      checked={moderationSettings.profanity_filter_enabled}
+                      onCheckedChange={async (checked) => {
+                        setSavingModeration(true);
+                        const success = await updateModerationSettings({ profanity_filter_enabled: !!checked });
+                        setSavingModeration(false);
+                        if (success) {
+                          toast({ title: "Profanity filter updated" });
+                        } else {
+                          toast({ variant: "destructive", title: "Failed to update" });
+                        }
+                      }}
+                      disabled={savingModeration}
+                    />
+                    <div>
+                      <Label htmlFor="profanity-filter" className="text-sm font-medium cursor-pointer">
+                        Profanity Filter
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Replace bad words with asterisks</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-3 bg-secondary/50 rounded-lg">
+                    <Checkbox
+                      id="link-preview"
+                      checked={moderationSettings.link_preview_enabled}
+                      onCheckedChange={async (checked) => {
+                        setSavingModeration(true);
+                        const success = await updateModerationSettings({ link_preview_enabled: !!checked });
+                        setSavingModeration(false);
+                        if (success) {
+                          toast({ title: "Link preview setting updated" });
+                        } else {
+                          toast({ variant: "destructive", title: "Failed to update" });
+                        }
+                      }}
+                      disabled={savingModeration}
+                    />
+                    <div>
+                      <Label htmlFor="link-preview" className="text-sm font-medium cursor-pointer">
+                        Link Previews
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Show URL previews (requires URL filter off)</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    💡 <strong>Note:</strong> These settings only apply to this room. Adult channels (21+) bypass all filters automatically.
+                  </p>
+                </div>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="bans" className="mt-4">

@@ -297,6 +297,44 @@ export type Database = {
           },
         ]
       }
+      channel_moderation_settings: {
+        Row: {
+          channel_id: string
+          created_at: string
+          id: string
+          link_preview_enabled: boolean
+          profanity_filter_enabled: boolean
+          updated_at: string
+          url_filter_enabled: boolean
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          id?: string
+          link_preview_enabled?: boolean
+          profanity_filter_enabled?: boolean
+          updated_at?: string
+          url_filter_enabled?: boolean
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          id?: string
+          link_preview_enabled?: boolean
+          profanity_filter_enabled?: boolean
+          updated_at?: string
+          url_filter_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_moderation_settings_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: true
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channel_registrations: {
         Row: {
           channel_id: string

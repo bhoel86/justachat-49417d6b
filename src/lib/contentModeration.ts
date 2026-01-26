@@ -29,6 +29,20 @@ const FALSE_POSITIVE_PATTERNS = [
 // Must have protocol OR www. OR be a valid domain with path/query
 const URL_PATTERN = /(?:https?:\/\/)[^\s<>"{}|\\^`\[\]]+|(?:www\.)[^\s<>"{}|\\^`\[\]]+|(?<![.\w])[a-zA-Z0-9][-a-zA-Z0-9]*\.(?:com|org|net|edu|gov|io|co|dev|app|xyz|info|biz|me|tv|cc|gg|fm|ly|to|be|uk|de|fr|jp|cn|ru|br|au|in|ca|nl|es|it|pl|se|no|fi|dk|ch|at|nz|za|mx|ar|kr|tw|hk|sg|my|ph|id|th|vn|ae|sa|il|tr|eg|ng|ke|gh|pk|bd|lk|np|mm|kh|la|vn)(?:\/[^\s<>"{}|\\^`\[\]]*)?(?![.\w])/gi;
 
+// Channel moderation settings interface
+export interface ChannelModerationSettings {
+  url_filter_enabled: boolean;
+  profanity_filter_enabled: boolean;
+  link_preview_enabled: boolean;
+}
+
+// Default moderation settings
+export const DEFAULT_MODERATION_SETTINGS: ChannelModerationSettings = {
+  url_filter_enabled: true,
+  profanity_filter_enabled: true,
+  link_preview_enabled: false
+};
+
 // Check if channel is 18+ / adults-only
 export const isAdultChannel = (channelName: string): boolean => {
   const adultChannels = ['adults-21-plus', 'adult', 'adults', 'nsfw'];
@@ -104,24 +118,28 @@ export interface ModerationResult {
 export const moderateContent = (
   message: string, 
   channelName: string,
-  _isRegistered18Plus: boolean = false // Kept for API compatibility but no longer used
+  _isRegistered18Plus: boolean = false, // Kept for API compatibility but no longer used
+  channelSettings?: ChannelModerationSettings | null
 ): ModerationResult => {
   const warnings: string[] = [];
   let filteredMessage = message;
   
-  // Skip moderation for adult channels only
+  // Skip moderation for adult channels
   if (isAdultChannel(channelName)) {
     return { allowed: true, filteredMessage: message, warnings: [] };
   }
   
-  // Check and filter URLs
-  if (containsUrl(message)) {
+  // Use channel-specific settings or defaults
+  const settings = channelSettings || DEFAULT_MODERATION_SETTINGS;
+  
+  // Check and filter URLs if enabled
+  if (settings.url_filter_enabled && containsUrl(message)) {
     filteredMessage = filterUrls(filteredMessage);
     warnings.push('URLs are filtered in this channel');
   }
   
-  // Check and filter profanity
-  if (containsProfanity(message)) {
+  // Check and filter profanity if enabled
+  if (settings.profanity_filter_enabled && containsProfanity(message)) {
     filteredMessage = filterProfanity(filteredMessage);
     warnings.push('Profanity has been filtered');
   }

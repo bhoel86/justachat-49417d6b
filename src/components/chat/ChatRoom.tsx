@@ -25,6 +25,7 @@ import { useRadioOptional } from "@/contexts/RadioContext";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
 import { getModerator, getWelcomeMessage, getRandomTip, isAdultChannel } from "@/lib/roomConfig";
 import { moderateContent, shouldBlockMessage } from "@/lib/contentModeration";
+import { useChannelModerationSettings } from "@/hooks/useChannelModerationSettings";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Users, X, Hash } from "lucide-react";
@@ -88,6 +89,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   
   // Private chats system
   const privateChats = usePrivateChats(user?.id || '', username);
+  
+  // Channel moderation settings
+  const { settings: moderationSettings } = useChannelModerationSettings(currentChannel?.id || null);
 
   // Enable radio when entering chat room, disable when leaving
   // Also clear messages on unmount (user closes/leaves chat)
@@ -873,8 +877,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         return;
       }
       
-      // Moderate content (filter URLs and profanity)
-      const modResult = moderateContent(content, channelName, false);
+      // Moderate content (filter URLs and profanity) with channel-specific settings
+      const modResult = moderateContent(content, channelName, false, moderationSettings);
       finalContent = modResult.filteredMessage;
       
       // Show warning if content was filtered
