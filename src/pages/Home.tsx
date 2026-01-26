@@ -807,7 +807,7 @@ const Home = () => {
                 </div>
 
                 {/* Chat Preview - Fills remaining height to align with left column */}
-                <div className="bg-card rounded-xl sm:rounded-2xl border border-border flex-1 flex flex-col overflow-hidden max-h-[360px] lg:max-h-[500px]">
+                <div className="bg-card rounded-xl sm:rounded-2xl border border-border flex-1 flex flex-col overflow-hidden max-h-[310px] lg:max-h-[450px]">
                   {/* Topic bar */}
                   <div className="px-3 sm:px-4 py-1.5 sm:py-2 border-b border-border bg-primary/5">
                     <p className="text-xs sm:text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
