@@ -457,110 +457,116 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
             </div>
           </div>
 
-          {/* Advanced controls - Only visible to admins/owners */}
-          {canControlRadio && (
-            <>
-              {/* Genre Selector */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
-                    {radio.currentGenre}
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
-                  {radio.genres.map((genre) => (
-                    <DropdownMenuItem 
-                      key={genre} 
-                      onClick={() => radio.setGenre(genre)}
-                      className={radio.currentGenre === genre ? 'bg-primary/10' : ''}
-                    >
-                      {genre}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+          {/* Advanced controls - Visible to all, but only functional for admins/owners */}
+          {/* Genre Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild disabled={!canControlRadio}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-7 px-2 text-xs gap-1 ${!canControlRadio ? 'opacity-60 cursor-not-allowed' : ''}`}
+                disabled={!canControlRadio}
+              >
+                {radio.currentGenre}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
+              {radio.genres.map((genre) => (
+                <DropdownMenuItem 
+                  key={genre} 
+                  onClick={() => radio.setGenre(genre)}
+                  className={radio.currentGenre === genre ? 'bg-primary/10' : ''}
+                >
+                  {genre}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-              {/* Controls */}
-              <div className="flex items-center gap-0.5">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={radio.shuffle}
-                      className="h-7 w-7"
-                    >
-                      <Shuffle className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Shuffle</TooltipContent>
-                </Tooltip>
+          {/* Controls */}
+          <div className="flex items-center gap-0.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={canControlRadio ? radio.shuffle : undefined}
+                  className={`h-7 w-7 ${!canControlRadio ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  disabled={!canControlRadio}
+                >
+                  <Shuffle className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{canControlRadio ? 'Shuffle' : 'Shuffle (Admin only)'}</TooltipContent>
+            </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={radio.previous}
-                      className="h-7 w-7"
-                    >
-                      <SkipBack className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Previous Song</TooltipContent>
-                </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={canControlRadio ? radio.previous : undefined}
+                  className={`h-7 w-7 ${!canControlRadio ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  disabled={!canControlRadio}
+                >
+                  <SkipBack className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{canControlRadio ? 'Previous Song' : 'Previous (Admin only)'}</TooltipContent>
+            </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={radio.skip}
-                      className="h-7 w-7"
-                    >
-                      <SkipForward className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Next Song</TooltipContent>
-                </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={canControlRadio ? radio.skip : undefined}
+                  className={`h-7 w-7 ${!canControlRadio ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  disabled={!canControlRadio}
+                >
+                  <SkipForward className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{canControlRadio ? 'Next Song' : 'Next (Admin only)'}</TooltipContent>
+            </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={radio.skipGenre}
-                      className="h-7 w-7"
-                    >
-                      <Radio className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Next Genre</TooltipContent>
-                </Tooltip>
-              </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={canControlRadio ? radio.skipGenre : undefined}
+                  className={`h-7 w-7 ${!canControlRadio ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  disabled={!canControlRadio}
+                >
+                  <Radio className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{canControlRadio ? 'Next Genre' : 'Next Genre (Admin only)'}</TooltipContent>
+            </Tooltip>
+          </div>
 
-              {/* Power/Reset Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={radio.resetRadio}
-                    className="h-7 w-7 hover:text-destructive"
-                  >
-                    <Power className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Reset Radio</TooltipContent>
-              </Tooltip>
-            </>
-          )}
+          {/* Power/Reset Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={canControlRadio ? radio.resetRadio : undefined}
+                className={`h-7 w-7 ${canControlRadio ? 'hover:text-destructive' : 'opacity-60 cursor-not-allowed'}`}
+                disabled={!canControlRadio}
+              >
+                <Power className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{canControlRadio ? 'Reset Radio' : 'Reset (Admin only)'}</TooltipContent>
+          </Tooltip>
         </div>
       )}
 
