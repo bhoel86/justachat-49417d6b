@@ -578,7 +578,22 @@ const PrivateChatWindow = ({
         console.error('Failed to store message:', dbError);
       }
       
-      channelRef.current.send({
+    // Add message locally FIRST (before broadcast to prevent race conditions)
+    setMessages(prev => {
+      if (prev.some(m => m.id === msgId)) return prev;
+      return [...prev, {
+        id: msgId,
+        content: finalMessage,
+        senderId: currentUserId,
+        senderName: currentUsername,
+        timestamp: new Date(),
+        isOwn: true,
+        imageUrl: imageUrl || undefined
+      }];
+    });
+    
+    // Then broadcast to other party
+    channelRef.current.send({
         type: 'broadcast',
         event: 'message',
         payload: {
@@ -591,21 +606,6 @@ const PrivateChatWindow = ({
           imageUrl
         }
       });
-
-    // Add message locally with duplicate check
-    setMessages(prev => {
-      if (prev.some(m => m.id === msgId)) return prev;
-      console.log('[PM] Adding sent GIF locally:', msgId);
-      return [...prev, {
-        id: msgId,
-        content: finalMessage,
-        senderId: currentUserId,
-        senderName: currentUsername,
-        timestamp: new Date(),
-        isOwn: true,
-        imageUrl: imageUrl || undefined
-      }];
-    });
 
       monitorMessage(finalMessage, currentUserId, currentUsername);
       setMessage('');
@@ -656,7 +656,22 @@ const PrivateChatWindow = ({
         console.error('Failed to store GIF message:', dbError);
       }
       
-      channelRef.current.send({
+    // Add message locally FIRST (before broadcast to prevent race conditions)
+    setMessages(prev => {
+      if (prev.some(m => m.id === msgId)) return prev;
+      return [...prev, {
+        id: msgId,
+        content: finalMessage,
+        senderId: currentUserId,
+        senderName: currentUsername,
+        timestamp: new Date(),
+        isOwn: true,
+        imageUrl: gifUrl
+      }];
+    });
+    
+    // Then broadcast to other party
+    channelRef.current.send({
         type: 'broadcast',
         event: 'message',
         payload: {
@@ -669,21 +684,6 @@ const PrivateChatWindow = ({
           imageUrl: gifUrl
         }
       });
-
-    // Add message locally with duplicate check
-    setMessages(prev => {
-      if (prev.some(m => m.id === msgId)) return prev;
-      console.log('[PM] Adding sent message locally:', msgId);
-      return [...prev, {
-        id: msgId,
-        content: finalMessage,
-        senderId: currentUserId,
-        senderName: currentUsername,
-        timestamp: new Date(),
-        isOwn: true,
-        imageUrl: gifUrl
-      }];
-    });
 
       monitorMessage(finalMessage, currentUserId, currentUsername);
       
