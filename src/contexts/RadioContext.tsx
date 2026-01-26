@@ -209,7 +209,13 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
 
   // Start playback only when enabled (inside chat room)
   useEffect(() => {
-    if (!isEnabled || hasAutoStarted.current) return;
+    if (!isEnabled) {
+      // Reset autostart flag when disabled so it can start again when re-enabled
+      hasAutoStarted.current = false;
+      return;
+    }
+    
+    if (hasAutoStarted.current) return;
     
     const startPlayback = () => {
       if (ytWindow.YT?.Player && currentSong && !isInitialized) {
