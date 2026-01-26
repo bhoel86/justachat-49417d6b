@@ -82,6 +82,7 @@ const PrivateChatWindow = ({
   const windowRef = useRef<HTMLDivElement>(null);
   const botResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const seenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionKeyRef = useRef<CryptoKey | null>(null);
   const { toast } = useToast();
 
   // Check if target user is a bot
@@ -167,23 +168,33 @@ const PrivateChatWindow = ({
   // Initialize encrypted session
   useEffect(() => {
     const initSession = async () => {
-      const key = await generateSessionKey();
       const sid = generateSessionId();
-      setSessionKey(key);
       setSessionId(sid);
 
+      // Determine who is the "leader" for key generation (lower ID generates)
+      const isKeyLeader = currentUserId < targetUserId;
+      
       const channelName = [currentUserId, targetUserId].sort().join('-');
       
       const channel = supabase.channel(`private-${channelName}`, {
-        config: { broadcast: { self: true } }
+        config: { broadcast: { self: false } } // Don't receive own broadcasts
       });
+
+      // Generate key only if leader, otherwise wait for key from other user
+      let localKey: CryptoKey | null = null;
+      if (isKeyLeader) {
+        localKey = await generateSessionKey();
+        setSessionKey(localKey);
+      }
 
       channel
         .on('broadcast', { event: 'message' }, async (payload) => {
           const data = payload.payload;
-          if (data.sessionId !== sid && sessionKey) {
+          // Use sessionKeyRef instead of sessionKey to get current value
+          const currentKey = sessionKeyRef.current;
+          if (currentKey) {
             try {
-              const decrypted = await decryptMessage(data.encrypted, sessionKey);
+              const decrypted = await decryptMessage(data.encrypted, currentKey);
               
               setMessages(prev => [...prev, {
                 id: data.id,
@@ -191,12 +202,39 @@ const PrivateChatWindow = ({
                 senderId: data.senderId,
                 senderName: data.senderName,
                 timestamp: new Date(data.timestamp),
-                isOwn: data.senderId === currentUserId
+                isOwn: false, // Messages from broadcast are always from the other user
+                imageUrl: data.imageUrl
               }]);
+              onNewMessage?.();
             } catch (error) {
               console.error('Failed to decrypt message:', error);
             }
           }
+        })
+        .on('broadcast', { event: 'key-exchange' }, async (payload) => {
+          const data = payload.payload;
+          if (data.userId !== currentUserId && data.key) {
+            try {
+              const importedKey = await importKey(data.key);
+              setSessionKey(importedKey);
+              sessionKeyRef.current = importedKey;
+              
+              // If we're not the leader and just received the key, acknowledge it
+              if (!isKeyLeader) {
+                channel.send({
+                  type: 'broadcast',
+                  event: 'key-ack',
+                  payload: { userId: currentUserId }
+                });
+              }
+            } catch (error) {
+              console.error('Key exchange failed:', error);
+            }
+          }
+        })
+        .on('broadcast', { event: 'key-ack' }, async () => {
+          // Key was acknowledged by the other user, connection is ready
+          console.log('Key exchange acknowledged');
         })
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
@@ -207,34 +245,52 @@ const PrivateChatWindow = ({
             });
           });
           setTargetOnline(onlineIds.has(targetUserId));
+          
+          // If target just came online and we're the leader, send our key
+          if (onlineIds.has(targetUserId) && isKeyLeader && localKey) {
+            (async () => {
+              const exportedKey = await exportKey(localKey);
+              channel.send({
+                type: 'broadcast',
+                event: 'key-exchange',
+                payload: { key: exportedKey, userId: currentUserId }
+              });
+            })();
+          }
         })
-        .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            setIsConnected(true);
-            await channel.track({ userId: currentUserId });
-            
-            const exportedKey = await exportKey(key);
+        .on('presence', { event: 'join' }, async ({ newPresences }) => {
+          // When the other user joins, send our key if we're the leader
+          const otherUserJoined = newPresences.some((p: any) => p.userId === targetUserId);
+          if (otherUserJoined && isKeyLeader && localKey) {
+            const exportedKey = await exportKey(localKey);
             channel.send({
               type: 'broadcast',
               event: 'key-exchange',
               payload: { key: exportedKey, userId: currentUserId }
             });
           }
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            setIsConnected(true);
+            await channel.track({ userId: currentUserId });
+            
+            // If we're the leader, broadcast the key immediately
+            if (isKeyLeader && localKey) {
+              const exportedKey = await exportKey(localKey);
+              channel.send({
+                type: 'broadcast',
+                event: 'key-exchange',
+                payload: { key: exportedKey, userId: currentUserId }
+              });
+            }
+          }
         });
 
-      channel.on('broadcast', { event: 'key-exchange' }, async (payload) => {
-        const data = payload.payload;
-        if (data.userId !== currentUserId && data.key) {
-          try {
-            const importedKey = await importKey(data.key);
-            setSessionKey(importedKey);
-          } catch (error) {
-            console.error('Key exchange failed:', error);
-          }
-        }
-      });
-
       channelRef.current = channel;
+      if (localKey) {
+        sessionKeyRef.current = localKey;
+      }
     };
 
     initSession();
@@ -245,9 +301,10 @@ const PrivateChatWindow = ({
       }
       setMessages([]);
       setSessionKey(null);
+      sessionKeyRef.current = null;
       setIsConnected(false);
     };
-  }, [currentUserId, targetUserId]);
+  }, [currentUserId, targetUserId, onNewMessage]);
 
   const monitorMessage = useCallback(async (content: string, senderId: string, senderName: string) => {
     try {
@@ -345,13 +402,14 @@ const PrivateChatWindow = ({
   }, [isTargetBot]);
 
   const handleSend = async () => {
-    if (!message.trim() || !sessionKey || !channelRef.current) return;
+    const currentKey = sessionKeyRef.current || sessionKey;
+    if (!message.trim() || !currentKey || !channelRef.current) return;
 
     const trimmedMessage = message.trim();
     const msgId = `${Date.now()}-${Math.random()}`;
     
     try {
-      const encrypted = await encryptMessage(trimmedMessage, sessionKey);
+      const encrypted = await encryptMessage(trimmedMessage, currentKey);
       const masterKeyForStorage = 'JAC_PM_MASTER_2024';
       const encryptedForStorage = await encryptWithMasterKey(trimmedMessage, masterKeyForStorage);
       
