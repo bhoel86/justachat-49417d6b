@@ -84,6 +84,7 @@ const PrivateChatWindow = ({
   const botResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const seenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sessionKeyRef = useRef<CryptoKey | null>(null);
+ const lastMessageCountRef = useRef(0);
   const { toast } = useToast();
 
   // Check if target user is a bot
@@ -99,11 +100,26 @@ const PrivateChatWindow = ({
   });
 
   const scrollToBottom = () => {
-   // Scroll the container itself, not using scrollIntoView which scrolls the page
    if (messagesContainerRef.current) {
      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
    }
   };
+
+ // Only scroll when new messages are added by current user
+ useEffect(() => {
+   if (messages.length > lastMessageCountRef.current) {
+     const lastMessage = messages[messages.length - 1];
+     // Only auto-scroll if the last message is from current user
+     if (lastMessage?.isOwn) {
+       requestAnimationFrame(() => {
+         if (messagesContainerRef.current) {
+           messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+         }
+       });
+     }
+   }
+   lastMessageCountRef.current = messages.length;
+ }, [messages]);
 
   // Dragging logic
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -522,9 +538,6 @@ const PrivateChatWindow = ({
 
       monitorMessage(trimmedMessage, currentUserId, currentUsername);
       setMessage('');
-     
-     // Scroll to bottom when sending a message
-     setTimeout(scrollToBottom, 50);
 
       // Trigger bot "seen" and response if chatting with a simulated user
       if (isTargetBot) {
@@ -653,6 +666,7 @@ const PrivateChatWindow = ({
        ref={messagesContainerRef}
         className="overflow-y-auto p-2 space-y-2 bg-background/50"
         style={{ height: messageAreaHeight }}
+       onMouseDown={(e) => e.stopPropagation()}
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
