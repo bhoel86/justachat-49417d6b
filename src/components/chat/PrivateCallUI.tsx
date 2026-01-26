@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, X } from 'lucide-react';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CallState, CallType } from '@/hooks/usePrivateCall';
 
@@ -32,6 +32,7 @@ const PrivateCallUI = ({
 }: PrivateCallUIProps) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -45,13 +46,29 @@ const PrivateCallUI = ({
   }, [localStream]);
 
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      console.log('[PrivateCallUI] Setting remote video srcObject with', remoteStream.getTracks().length, 'tracks');
-      remoteVideoRef.current.srcObject = remoteStream;
-      // Force play for mobile browsers
-      remoteVideoRef.current.play().catch(err => {
-        console.warn('[PrivateCallUI] Remote video autoplay failed:', err);
+    if (remoteStream) {
+      console.log('[PrivateCallUI] Setting remote stream with', remoteStream.getTracks().length, 'tracks');
+      remoteStream.getTracks().forEach(t => {
+        console.log('[PrivateCallUI] Remote track:', t.kind, t.label, 'enabled:', t.enabled, 'readyState:', t.readyState);
       });
+      
+      // Set video element for video calls
+      if (remoteVideoRef.current) {
+        console.log('[PrivateCallUI] Attaching remote stream to video element');
+        remoteVideoRef.current.srcObject = remoteStream;
+        remoteVideoRef.current.play().catch(err => {
+          console.warn('[PrivateCallUI] Remote video autoplay failed:', err);
+        });
+      }
+      
+      // Also set audio element as fallback for voice calls
+      if (remoteAudioRef.current) {
+        console.log('[PrivateCallUI] Attaching remote stream to audio element');
+        remoteAudioRef.current.srcObject = remoteStream;
+        remoteAudioRef.current.play().catch(err => {
+          console.warn('[PrivateCallUI] Remote audio autoplay failed:', err);
+        });
+      }
     }
   }, [remoteStream]);
 
@@ -63,10 +80,13 @@ const PrivateCallUI = ({
 
   return (
     <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col rounded-xl overflow-hidden">
+      {/* Hidden audio element to ensure audio always plays (especially for voice calls) */}
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
+      
       {/* Video display area */}
       {isVideo ? (
         <div className="flex-1 relative bg-black">
-          {/* Remote video (large) */}
+          {/* Remote video (large) - NOT muted so we can hear them */}
           <video
             ref={remoteVideoRef}
             autoPlay
