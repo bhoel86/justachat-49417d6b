@@ -666,7 +666,14 @@ const PrivateChatWindow = ({
       
     // Add message locally FIRST (before broadcast to prevent race conditions)
     setMessages(prev => {
-      if (prev.some(m => m.id === msgId)) return prev;
+      // Content-based dedup to prevent flicker with DB listener
+      const isDuplicate = prev.some(m => 
+        m.content === finalMessage && 
+        m.senderId === currentUserId && 
+        Math.abs(new Date(m.timestamp).getTime() - Date.now()) < 5000
+      );
+      if (isDuplicate || prev.some(m => m.id === msgId)) return prev;
+      
       return [...prev, {
         id: msgId,
         content: finalMessage,
@@ -766,15 +773,24 @@ const PrivateChatWindow = ({
         console.error('Failed to store GIF message:', dbError);
       }
       
-      // Add to local state
-      setMessages(prev => [...prev, {
-        id: msgId,
-        content: finalMessage,
-        senderId: currentUserId,
-        senderName: currentUsername,
-        timestamp: new Date(),
-        isOwn: true
-      }]);
+      // Add to local state with content-based dedup
+      setMessages(prev => {
+        const isDuplicate = prev.some(m => 
+          m.content === finalMessage && 
+          m.senderId === currentUserId && 
+          Math.abs(new Date(m.timestamp).getTime() - Date.now()) < 5000
+        );
+        if (isDuplicate) return prev;
+        
+        return [...prev, {
+          id: msgId,
+          content: finalMessage,
+          senderId: currentUserId,
+          senderName: currentUsername,
+          timestamp: new Date(),
+          isOwn: true
+        }];
+      });
       
       // Broadcast
       channelRef.current.send({
@@ -922,16 +938,26 @@ const PrivateChatWindow = ({
         console.error('Failed to store image message:', dbError);
       }
       
-      // Add to local state
-      setMessages(prev => [...prev, {
-        id: msgId,
-        content: finalMessage,
-        senderId: currentUserId,
-        senderName: currentUsername,
-        timestamp: new Date(),
-        isOwn: true,
-        imageUrl
-      }]);
+      // Add to local state - use content-based deduplication as well
+      setMessages(prev => {
+        // Check if this exact message content already exists (for dedup with DB listener)
+        const isDuplicate = prev.some(m => 
+          m.content === finalMessage && 
+          m.senderId === currentUserId && 
+          Math.abs(new Date(m.timestamp).getTime() - Date.now()) < 5000
+        );
+        if (isDuplicate) return prev;
+        
+        return [...prev, {
+          id: msgId,
+          content: finalMessage,
+          senderId: currentUserId,
+          senderName: currentUsername,
+          timestamp: new Date(),
+          isOwn: true,
+          imageUrl
+        }];
+      });
       
       // Broadcast
       channelRef.current.send({
@@ -1212,8 +1238,8 @@ const PrivateChatWindow = ({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* Image Upload */}
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+          {/* Image Upload - capture for mobile camera access */}
+          <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageSelect} className="hidden" />
           <Button 
             variant="ghost" 
             size="icon" 
