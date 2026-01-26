@@ -78,6 +78,7 @@ const PrivateChatWindow = ({
   const [seenMessageIds, setSeenMessageIds] = useState<Set<string>>(new Set());
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+ const messagesContainerRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const botResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -98,13 +99,15 @@ const PrivateChatWindow = ({
   });
 
   const scrollToBottom = () => {
-    // Use scrollIntoView with block: 'nearest' to avoid scrolling parent page
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" });
+   // Scroll the container itself, not using scrollIntoView which scrolls the page
+   if (messagesContainerRef.current) {
+     messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+   }
   };
 
   useEffect(() => {
-    // Small delay to ensure the container is ready
-    const timer = setTimeout(scrollToBottom, 50);
+   // Small delay to ensure DOM is ready
+   const timer = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(timer);
   }, [messages]);
 
@@ -650,6 +653,7 @@ const PrivateChatWindow = ({
 
       {/* Messages */}
       <div 
+       ref={messagesContainerRef}
         className="overflow-y-auto p-2 space-y-2 bg-background/50"
         style={{ height: messageAreaHeight }}
       >
