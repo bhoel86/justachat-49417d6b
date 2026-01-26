@@ -122,6 +122,7 @@ const PrivateChatWindow = ({
   const hasLoadedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sentMessageIdsRef = useRef<Set<string>>(new Set());
+  const isSendingRef = useRef(false);
   const { toast } = useToast();
 
   // Check if target user is a bot
@@ -643,12 +644,22 @@ const PrivateChatWindow = ({
 
   // Handle GIF selection - sends immediately as a message
   const handleSendGif = async (gifUrl: string) => {
+    // Prevent duplicate sends
+    if (isSendingRef.current) {
+      console.log('[PM-SEND] Already sending, blocking duplicate');
+      return;
+    }
+    
     const currentKey = sessionKeyRef.current || sessionKey;
     if (!currentKey || !channelRef.current) return;
+    
+    isSendingRef.current = true;
 
     const finalMessage = `[img:${gifUrl}]`;
     const msgId = `${Date.now()}-${Math.random()}`;
-    console.log('[PM-SEND] Sending GIF, msgId:', msgId, 'current user:', currentUserId);
+    
+    // Mark as sent immediately
+    sentMessageIdsRef.current.add(msgId);
     
     try {
       const encrypted = await encryptMessage(finalMessage, currentKey);
@@ -668,13 +679,8 @@ const PrivateChatWindow = ({
         console.error('Failed to store GIF message:', dbError);
       }
       
-    // CRITICAL: Mark as sent BEFORE adding to state to prevent race conditions
-    sentMessageIdsRef.current.add(msgId);
-      
-    // Add message locally FIRST (before broadcast to prevent race conditions)
-    setMessages(prev => {
-      if (prev.some(m => m.id === msgId)) return prev;
-      return [...prev, {
+      // Add to local state
+      setMessages(prev => [...prev, {
         id: msgId,
         content: finalMessage,
         senderId: currentUserId,
@@ -682,11 +688,10 @@ const PrivateChatWindow = ({
         timestamp: new Date(),
         isOwn: true,
         imageUrl: gifUrl
-      }];
-    });
-    
-    // Then broadcast to other party
-    channelRef.current.send({
+      }]);
+      
+      // Broadcast
+      channelRef.current.send({
         type: 'broadcast',
         event: 'message',
         payload: {
@@ -708,11 +713,18 @@ const PrivateChatWindow = ({
       }
     } catch (error) {
       console.error('Failed to send GIF:', error);
+      // Remove from sent tracking on error
+      sentMessageIdsRef.current.delete(msgId);
       toast({
         variant: "destructive",
         title: "Send failed",
         description: "Could not send GIF."
       });
+    } finally {
+      // Allow next send after a short delay
+      setTimeout(() => {
+        isSendingRef.current = false;
+      }, 300);
     }
   };
 
