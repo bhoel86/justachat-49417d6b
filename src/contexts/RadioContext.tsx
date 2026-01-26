@@ -63,15 +63,44 @@ interface RadioProviderProps {
   children: React.ReactNode;
 }
 
+// localStorage keys for persistence
+const STORAGE_KEYS = {
+  enabled: 'jac-radio-enabled',
+  genre: 'jac-radio-genre',
+  volume: 'jac-radio-volume',
+};
+
 export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [currentGenre, setCurrentGenre] = useState('All');
+  const [isEnabled, setIsEnabled] = useState(() => {
+    // Restore enabled state from localStorage
+    try {
+      return localStorage.getItem(STORAGE_KEYS.enabled) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [currentGenre, setCurrentGenre] = useState(() => {
+    // Restore genre from localStorage
+    try {
+      return localStorage.getItem(STORAGE_KEYS.genre) || 'All';
+    } catch {
+      return 'All';
+    }
+  });
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolumeState] = useState(50);
+  const [volume, setVolumeState] = useState(() => {
+    // Restore volume from localStorage
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.volume);
+      return stored ? parseInt(stored, 10) : 50;
+    } catch {
+      return 50;
+    }
+  });
   const progressInterval = useRef<number | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const isMountedRef = useRef(true);
@@ -83,6 +112,33 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       isMountedRef.current = false;
     };
   }, []);
+
+  // Persist enabled state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.enabled, String(isEnabled));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [isEnabled]);
+
+  // Persist genre to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.genre, currentGenre);
+    } catch {
+      // Ignore storage errors
+    }
+  }, [currentGenre]);
+
+  // Persist volume to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.volume, String(volume));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [volume]);
   
   const genres = ['All', ...MUSIC_LIBRARY.map(g => g.name)];
   
