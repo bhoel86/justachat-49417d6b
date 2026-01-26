@@ -215,6 +215,48 @@ const PrivateChatWindow = ({
     };
   }, [isDragging, isResizing, dragOffset, resizeStart, size.width]);
 
+  // Helper function to decrypt a message from DB
+  const decryptDbMessage = async (msg: any): Promise<PrivateMessage | null> => {
+    try {
+      const masterKey = 'JAC_PM_MASTER_2024';
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(masterKey);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
+      
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        hashBuffer,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+      
+      const ciphertextBytes = Uint8Array.from(atob(msg.encrypted_content), c => c.charCodeAt(0));
+      const ivBytes = Uint8Array.from(atob(msg.iv), c => c.charCodeAt(0));
+      
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: ivBytes },
+        cryptoKey,
+        ciphertextBytes
+      );
+      
+      const decoder = new TextDecoder();
+      const content = decoder.decode(decrypted);
+      
+      return {
+        id: msg.id,
+        content,
+        senderId: msg.sender_id,
+        senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
+        timestamp: new Date(msg.created_at),
+        isOwn: msg.sender_id === currentUserId
+      };
+    } catch (decryptError) {
+      console.error('Failed to decrypt message:', decryptError);
+      return null;
+    }
+  };
+
   // Initialize encrypted session
   useEffect(() => {
     let isMounted = true;
@@ -238,45 +280,12 @@ const PrivateChatWindow = ({
         }
 
         if (data && data.length > 0) {
-          const masterKey = 'JAC_PM_MASTER_2024';
           const decryptedMessages: PrivateMessage[] = [];
           
           for (const msg of data) {
-            try {
-              const encoder = new TextEncoder();
-              const keyData = encoder.encode(masterKey);
-              const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
-              
-              const cryptoKey = await crypto.subtle.importKey(
-                'raw',
-                hashBuffer,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['decrypt']
-              );
-              
-              const ciphertextBytes = Uint8Array.from(atob(msg.encrypted_content), c => c.charCodeAt(0));
-              const ivBytes = Uint8Array.from(atob(msg.iv), c => c.charCodeAt(0));
-              
-              const decrypted = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: ivBytes },
-                cryptoKey,
-                ciphertextBytes
-              );
-              
-              const decoder = new TextDecoder();
-              const content = decoder.decode(decrypted);
-              
-              decryptedMessages.push({
-                id: msg.id,
-                content,
-                senderId: msg.sender_id,
-                senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
-                timestamp: new Date(msg.created_at),
-                isOwn: msg.sender_id === currentUserId
-              });
-            } catch (decryptError) {
-              console.error('Failed to decrypt message:', decryptError);
+            const decrypted = await decryptDbMessage(msg);
+            if (decrypted) {
+              decryptedMessages.push(decrypted);
             }
           }
           
@@ -448,6 +457,50 @@ const PrivateChatWindow = ({
       setIsConnected(false);
     };
   }, [currentUserId, targetUserId, isTargetBot]);
+
+  // Subscribe to database changes for reliable message sync
+  useEffect(() => {
+    if (isTargetBot) return;
+    
+    const dbChannel = supabase.channel(`pm-db-${currentUserId}-${targetUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'private_messages',
+          filter: `recipient_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          const newMsg = payload.new as any;
+          
+          // Only process messages from this specific conversation
+          if (newMsg.sender_id !== targetUserId) return;
+          
+          console.log('[PM-DB] New message from DB:', newMsg.id);
+          
+          // Decrypt and add if not already present
+          const decrypted = await decryptDbMessage(newMsg);
+          if (decrypted) {
+            setMessages(prev => {
+              // Check if message already exists by DB id
+              if (prev.some(m => m.id === newMsg.id)) {
+                console.log('[PM-DB] Skipping duplicate:', newMsg.id);
+                return prev;
+              }
+              console.log('[PM-DB] Adding message from DB:', newMsg.id);
+              onNewMessage?.();
+              return [...prev, decrypted];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(dbChannel);
+    };
+  }, [currentUserId, targetUserId, isTargetBot, targetUsername, onNewMessage]);
 
   const monitorMessage = useCallback(async (content: string, senderId: string, senderName: string) => {
     try {
