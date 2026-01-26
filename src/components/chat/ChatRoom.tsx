@@ -319,6 +319,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
   }, [currentChannel]);
 
+  // Track which users are listening to radio
+  const [listeningUsers, setListeningUsers] = useState<Map<string, { title: string; artist: string }>>(new Map());
+
   // Track presence
   useEffect(() => {
     // Don't track presence until user is loaded
@@ -332,12 +335,20 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       .on('presence', { event: 'sync' }, async () => {
         const state = presenceChannel.presenceState();
         const onlineIds = new Set<string>();
+        const listening = new Map<string, { title: string; artist: string }>();
+        
         Object.values(state).forEach((presences: any[]) => {
-          presences.forEach((presence: { user_id?: string }) => {
-            if (presence.user_id) onlineIds.add(presence.user_id);
+          presences.forEach((presence: { user_id?: string; nowPlaying?: { title: string; artist: string } }) => {
+            if (presence.user_id) {
+              onlineIds.add(presence.user_id);
+              if (presence.nowPlaying) {
+                listening.set(presence.user_id, presence.nowPlaying);
+              }
+            }
           });
         });
         setOnlineUserIds(onlineIds);
+        setListeningUsers(listening);
         
         // Fetch usernames for online users
         if (onlineIds.size > 0) {
@@ -354,7 +365,10 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED' && user?.id) {
-          await presenceChannel.track({ user_id: user.id });
+          const nowPlaying = radio?.isPlaying && radio?.currentSong 
+            ? { title: radio.currentSong.title, artist: radio.currentSong.artist }
+            : undefined;
+          await presenceChannel.track({ user_id: user.id, nowPlaying });
         }
       });
 
@@ -362,6 +376,21 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       supabase.removeChannel(presenceChannel);
     };
   }, [user?.id]);
+
+  // Update presence when radio state changes
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const updatePresence = async () => {
+      const presenceChannel = supabase.channel('online-users');
+      const nowPlaying = radio?.isPlaying && radio?.currentSong 
+        ? { title: radio.currentSong.title, artist: radio.currentSong.artist }
+        : undefined;
+      await presenceChannel.track({ user_id: user.id, nowPlaying });
+    };
+    
+    updatePresence();
+  }, [user?.id, radio?.isPlaying, radio?.currentSong?.videoId]);
 
   const addSystemMessage = useCallback((content: string, channelId?: string) => {
     const targetChannelId = channelId || currentChannel?.id;
@@ -1265,6 +1294,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         </Button>
         <MemberList 
           onlineUserIds={onlineUserIds} 
+          listeningUsers={listeningUsers}
           channelName={currentChannel?.name} 
           onOpenPm={(userId, targetUsername) => privateChats.openChat(userId, targetUsername)}
           onAction={(targetUsername, actionMessage) => handleSend(actionMessage)}

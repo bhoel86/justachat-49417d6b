@@ -37,6 +37,7 @@ interface Member {
 
 interface MemberListProps {
   onlineUserIds: Set<string>;
+  listeningUsers?: Map<string, { title: string; artist: string }>;
   channelName?: string;
   onOpenPm?: (userId: string, username: string) => void;
   onAction?: (targetUsername: string, action: string) => void;
@@ -93,7 +94,7 @@ const roleConfig = {
   },
 };
 
-const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction }: MemberListProps) => {
+const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', onOpenPm, onAction }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
@@ -513,7 +514,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
                     onProfileClick={member.user_id === user?.id 
                       ? () => setProfileModalOpen(true) 
                       : () => setViewProfileTarget(member)}
-                    currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentSong : null}
+                    currentlyPlaying={listeningUsers?.get(member.user_id) || null}
                   />
                 ))}
               </div>
@@ -551,7 +552,7 @@ const MemberList = ({ onlineUserIds, channelName = 'general', onOpenPm, onAction
                       onProfileClick={member.user_id === user?.id 
                         ? () => setProfileModalOpen(true) 
                         : () => setViewProfileTarget(member)}
-                      currentlyPlaying={member.user_id === user?.id && radio?.isPlaying ? radio.currentSong : null}
+                      currentlyPlaying={listeningUsers?.get(member.user_id) || null}
                     />
                   ))}
                 </div>
@@ -818,8 +819,8 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
             </span>
           </div>
         )}
-        {/* Show currently playing music for current user */}
-        {isCurrentUser && currentlyPlaying && (
+        {/* Show currently playing music for any user listening */}
+        {currentlyPlaying && (
           <div className="flex items-center gap-1 mt-0.5">
             <Music className="h-2.5 w-2.5 text-primary animate-pulse" />
             <span className="text-[10px] text-primary truncate max-w-[120px]">
