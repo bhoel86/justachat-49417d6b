@@ -73,6 +73,13 @@ const USER_PERSONALITIES: Record<string, { name: string; personality: string; st
     gender: 'female',
     appearance: 'mid 20s, short pixie cut dyed purple, glasses, fair skin, edgy alt style with band shirts, cute nerdy look',
   },
+  'user-cipher': {
+    name: 'CipherX',
+    personality: 'Mysterious hacker vibe with dry wit. Speaks in tech metaphors, drops cryptic one-liners. Secretly cares about the community but hides it behind sarcasm. Knows obscure internet history and cybersecurity lore.',
+    style: 'Uses hacker slang naturally. Cryptic but helpful. References exploits and security culture. Never breaks character.',
+    gender: 'male',
+    appearance: 'late 20s, dark hoodie, never shows face clearly, keyboard warrior aesthetic, terminal green glow vibe',
+  },
 
   // ========== GENERAL ROOM ==========
   'gen-1': {
