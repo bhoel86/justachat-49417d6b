@@ -165,11 +165,83 @@ const PrivateChatWindow = ({
     };
   }, [isDragging, isResizing, dragOffset, resizeStart, size.width]);
 
+  // Load previous messages from database
+  const loadPreviousMessages = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('private_messages')
+        .select('*')
+        .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      if (error) {
+        console.error('Failed to load messages:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Decrypt messages using the master key
+        const masterKey = 'JAC_PM_MASTER_2024';
+        const decryptedMessages: PrivateMessage[] = [];
+        
+        for (const msg of data) {
+          try {
+            // Derive the key and decrypt
+            const encoder = new TextEncoder();
+            const keyData = encoder.encode(masterKey);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
+            
+            const cryptoKey = await crypto.subtle.importKey(
+              'raw',
+              hashBuffer,
+              { name: 'AES-GCM', length: 256 },
+              false,
+              ['decrypt']
+            );
+            
+            const ciphertextBytes = Uint8Array.from(atob(msg.encrypted_content), c => c.charCodeAt(0));
+            const ivBytes = Uint8Array.from(atob(msg.iv), c => c.charCodeAt(0));
+            
+            const decrypted = await crypto.subtle.decrypt(
+              { name: 'AES-GCM', iv: ivBytes },
+              cryptoKey,
+              ciphertextBytes
+            );
+            
+            const decoder = new TextDecoder();
+            const content = decoder.decode(decrypted);
+            
+            decryptedMessages.push({
+              id: msg.id,
+              content,
+              senderId: msg.sender_id,
+              senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
+              timestamp: new Date(msg.created_at),
+              isOwn: msg.sender_id === currentUserId
+            });
+          } catch (decryptError) {
+            console.error('Failed to decrypt message:', decryptError);
+          }
+        }
+        
+        setMessages(decryptedMessages);
+      }
+    } catch (err) {
+      console.error('Error loading messages:', err);
+    }
+  }, [currentUserId, targetUserId, currentUsername, targetUsername]);
+
   // Initialize encrypted session
   useEffect(() => {
     const initSession = async () => {
       const sid = generateSessionId();
       setSessionId(sid);
+
+      // Load previous messages first (only for real users, not bots)
+      if (!isTargetBot) {
+        await loadPreviousMessages();
+      }
 
       // Determine who is the "leader" for key generation (lower ID generates)
       const isKeyLeader = currentUserId < targetUserId;
@@ -304,7 +376,7 @@ const PrivateChatWindow = ({
       sessionKeyRef.current = null;
       setIsConnected(false);
     };
-  }, [currentUserId, targetUserId, onNewMessage]);
+  }, [currentUserId, targetUserId, onNewMessage, isTargetBot, loadPreviousMessages]);
 
   const monitorMessage = useCallback(async (content: string, senderId: string, senderName: string) => {
     try {
@@ -582,7 +654,7 @@ const PrivateChatWindow = ({
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
             <Lock className="h-8 w-8 mb-2 text-primary/30" />
             <p className="text-xs font-medium">Encrypted chat</p>
-            <p className="text-[10px] mt-1 text-amber-500">Messages destroyed on close</p>
+            <p className="text-[10px] mt-1 opacity-70">Start a conversation</p>
           </div>
         ) : (
           messages.map((msg) => (
