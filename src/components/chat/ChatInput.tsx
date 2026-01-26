@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power, Smile, MoreHorizontal, Palette, Sparkles, ImagePlus, X, Loader2, ImageIcon, Disc } from "lucide-react";
-import SpotifyEmbed from "./SpotifyEmbed";
+import { Send, AlertCircle, Play, Pause, SkipForward, SkipBack, Shuffle, Music, ChevronDown, Radio, Zap, Volume2, VolumeX, Power, Smile, MoreHorizontal, Palette, Sparkles, ImagePlus, X, Loader2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -56,7 +55,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [showSpotify, setShowSpotify] = useState(false);
+  
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionPosition, setMentionPosition] = useState({ top: 48, left: 0 });
@@ -419,13 +418,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
     <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-4 bg-card border-t border-border">
       {/* Radio Player GUI */}
       {radio && (
-        <div className="flex flex-col gap-2">
-          {/* Spotify Embed (when enabled) */}
-          {showSpotify && (
-            <SpotifyEmbed className="mb-2" />
-          )}
-          
-          <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-lg">
+        <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-lg">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Album Art */}
             <div className={`relative w-12 h-12 rounded-lg overflow-hidden bg-primary/20 flex-shrink-0 ${radio.isPlaying ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}`}>
@@ -653,22 +646,6 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
             <TooltipContent>{canControlRadio ? 'Reset Radio' : 'Reset (Admin only)'}</TooltipContent>
           </Tooltip>
 
-          {/* Spotify Toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant={showSpotify ? "default" : "ghost"}
-                size="icon"
-                onClick={() => setShowSpotify(!showSpotify)}
-                className="h-7 w-7"
-              >
-                <Disc className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{showSpotify ? 'Hide Spotify' : 'Show Spotify Playlist'}</TooltipContent>
-          </Tooltip>
-          </div>
         </div>
       )}
 
