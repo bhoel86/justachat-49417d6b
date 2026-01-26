@@ -149,6 +149,7 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
           {onGifSelect && (
             <div className="flex border-b border-border">
               <button
+                type="button"
                 onClick={() => setActiveTab('emoji')}
                 className={`flex-1 py-2 text-xs font-medium transition-colors ${
                   activeTab === 'emoji' ? 'bg-primary/10 text-primary border-b-2 border-primary' : 'text-muted-foreground hover:bg-muted'
@@ -157,6 +158,7 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
                 😀 Emoji
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('gif')}
                 className={`flex-1 py-2 text-xs font-medium transition-colors ${
                   activeTab === 'gif' ? 'bg-primary/10 text-primary border-b-2 border-primary' : 'text-muted-foreground hover:bg-muted'
@@ -184,6 +186,7 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
                 <div className="flex overflow-x-auto border-b border-border p-1 gap-1 scrollbar-none">
                   {Object.keys(EMOJI_CATEGORIES).map((category) => (
                     <button
+                      type="button"
                       key={category}
                       onClick={() => setActiveCategory(category)}
                       className={`px-2 py-1 text-xs rounded-md whitespace-nowrap transition-colors ${
@@ -203,6 +206,7 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
                 <div className="grid grid-cols-8 gap-1 p-2">
                   {filteredEmojis.map((emoji, index) => (
                     <button
+                      type="button"
                       key={`${emoji}-${index}`}
                       onClick={() => handleEmojiClick(emoji)}
                       className="h-8 w-8 flex items-center justify-center rounded hover:bg-muted text-lg transition-colors"
@@ -218,6 +222,7 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
                 <div className="flex gap-1">
                   {['👍', '❤️', '😂', '😮', '😢', '😡', '🔥', '💯'].map((emoji) => (
                     <button
+                      type="button"
                       key={emoji}
                       onClick={() => handleEmojiClick(emoji)}
                       className="h-8 w-8 flex items-center justify-center rounded hover:bg-muted text-lg transition-colors"
@@ -257,6 +262,7 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
                   <div className="grid grid-cols-2 gap-1 p-2">
                     {gifs.map((gif) => (
                       <button
+                        type="button"
                         key={gif.id}
                         onClick={() => handleGifClick(gif.url)}
                         className="relative overflow-hidden rounded hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary"
