@@ -166,19 +166,27 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       : MUSIC_LIBRARY.find(g => g.name === genre)?.songs || getAllSongs();
   }, []);
   
-  // Shuffle playlist on mount and when genre changes
+  // Shuffle playlist on mount and when genre changes (only re-shuffle when genre changes, not isInitialized)
   useEffect(() => {
     const basePlaylist = getBasePlaylist(currentGenre);
     const shuffled = shuffleArray(basePlaylist);
     setShuffledPlaylist(shuffled);
     setCurrentSongIndex(0);
-    
-    // If player is already initialized, load the first shuffled song
-    if (playerRef.current && isInitialized && shuffled.length > 0) {
-      playerRef.current.loadVideoById(shuffled[0].videoId);
-      playerRef.current.playVideo();
+  }, [currentGenre, getBasePlaylist]);
+  
+  // When shuffled playlist changes and player is ready, load the first song
+  useEffect(() => {
+    if (playerRef.current && isInitialized && shuffledPlaylist.length > 0 && typeof playerRef.current.loadVideoById === 'function') {
+      try {
+        playerRef.current.loadVideoById(shuffledPlaylist[0].videoId);
+        if (typeof playerRef.current.playVideo === 'function') {
+          playerRef.current.playVideo();
+        }
+      } catch (e) {
+        console.log('Error loading video:', e);
+      }
     }
-  }, [currentGenre, getBasePlaylist, isInitialized]);
+  }, [shuffledPlaylist, isInitialized]);
   
   // Use shuffled playlist, fall back to base if not yet shuffled
   const basePlaylist = getBasePlaylist(currentGenre);
