@@ -10,6 +10,7 @@ import EmojiPicker from "./EmojiPicker";
 import TextFormatMenu, { TextFormat, encodeFormat } from "./TextFormatMenu";
 import MentionAutocomplete from "./MentionAutocomplete";
 import CommandAutocomplete, { CommandDefinition } from "./CommandAutocomplete";
+import AsciiArtPicker from "./AsciiArtPicker";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useInputHistory } from "@/hooks/useInputHistory";
@@ -698,6 +699,18 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
           <>
             <TextFormatMenu currentFormat={textFormat} onFormatChange={setTextFormat} />
             <EmojiPicker onEmojiSelect={handleEmojiSelect} onGifSelect={(gifUrl) => onSend(`[img:${gifUrl}]`)} />
+            <AsciiArtPicker 
+              onArtSelect={(art) => setMessage(prev => prev + art)} 
+              onImageUpload={(file) => {
+                // Set the file for upload
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                if (fileInputRef.current) {
+                  fileInputRef.current.files = dataTransfer.files;
+                  fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+              }}
+            />
             
             {/* User Actions Dropdown */}
             <DropdownMenu>
@@ -864,6 +877,57 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
                   className="h-6 w-6 rounded bg-purple-500"
                   title="Purple"
                 />
+              </div>
+              
+              <DropdownMenuSeparator />
+              
+              {/* ASCII Art Quick Picks */}
+              <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                <Palette className="h-3 w-3" /> ASCII Art
+              </DropdownMenuLabel>
+              <div className="flex flex-wrap gap-1 px-2 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setMessage(prev => prev + '¯\\_(ツ)_/¯')}
+                  className="h-7 px-2 text-xs flex items-center justify-center rounded hover:bg-muted"
+                >
+                  Shrug
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMessage(prev => prev + '( ͡° ͜ʖ ͡°)')}
+                  className="h-7 px-2 text-xs flex items-center justify-center rounded hover:bg-muted"
+                >
+                  Lenny
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMessage(prev => prev + 'ʕ•ᴥ•ʔ')}
+                  className="h-7 px-2 text-xs flex items-center justify-center rounded hover:bg-muted"
+                >
+                  Bear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMessage(prev => prev + '(╯°□°)╯︵ ┻━┻')}
+                  className="h-7 px-2 text-xs flex items-center justify-center rounded hover:bg-muted"
+                >
+                  Flip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMessage(prev => prev + '♪♫•*¨*•.¸¸♪♫')}
+                  className="h-7 px-2 text-xs flex items-center justify-center rounded hover:bg-muted"
+                >
+                  Music
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMessage(prev => prev + '@}-,-\'---')}
+                  className="h-7 px-2 text-xs flex items-center justify-center rounded hover:bg-muted"
+                >
+                  Rose
+                </button>
               </div>
               
               <DropdownMenuSeparator />
