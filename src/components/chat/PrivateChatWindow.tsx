@@ -318,6 +318,12 @@ const PrivateChatWindow = ({
         .on('broadcast', { event: 'message' }, async (payload) => {
           if (!isMounted) return;
           const data = payload.payload;
+          
+          // CRITICAL: Never add our own broadcast messages (double safety check)
+          if (data.senderId === currentUserId) {
+            console.log('[PM] Ignoring own broadcast echo:', data.id);
+            return;
+          }
 
           const currentKey = sessionKeyRef.current;
           if (currentKey) {
