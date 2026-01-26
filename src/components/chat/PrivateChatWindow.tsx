@@ -318,20 +318,19 @@ const PrivateChatWindow = ({
         .on('broadcast', { event: 'message' }, async (payload) => {
           if (!isMounted) return;
           const data = payload.payload;
-          
-          // Skip if this is our own message - we already added it locally when sending
-          if (data.senderId === currentUserId) return;
-          
+
           const currentKey = sessionKeyRef.current;
           if (currentKey) {
             try {
               const decrypted = await decryptMessage(data.encrypted, currentKey);
-              
+
               // Prevent duplicates - check if message ID already exists
               setMessages(prev => {
                 if (prev.some(m => m.id === data.id)) {
+                  console.log('[PM] Skipping duplicate message:', data.id);
                   return prev; // Message already exists, skip it
                 }
+                console.log('[PM] Adding incoming message:', data.id, 'from:', data.senderId);
                 return [...prev, {
                 id: data.id,
                 content: decrypted,
@@ -596,6 +595,7 @@ const PrivateChatWindow = ({
     // Add message locally with duplicate check
     setMessages(prev => {
       if (prev.some(m => m.id === msgId)) return prev;
+      console.log('[PM] Adding sent GIF locally:', msgId);
       return [...prev, {
         id: msgId,
         content: finalMessage,
@@ -673,6 +673,7 @@ const PrivateChatWindow = ({
     // Add message locally with duplicate check
     setMessages(prev => {
       if (prev.some(m => m.id === msgId)) return prev;
+      console.log('[PM] Adding sent message locally:', msgId);
       return [...prev, {
         id: msgId,
         content: finalMessage,
