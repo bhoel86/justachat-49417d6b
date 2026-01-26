@@ -131,7 +131,7 @@ export const usePrivateCall = ({
   }, []);
 
   // Get media stream with mobile-friendly fallbacks
-  const getMediaStream = useCallback(async (type: CallType) => {
+  const getMediaStream = useCallback(async (type: CallType, allowEmpty: boolean = false): Promise<MediaStream | null> => {
     try {
       // Try with ideal constraints first, then fall back to basic constraints
       const idealConstraints: MediaStreamConstraints = {
@@ -160,8 +160,28 @@ export const usePrivateCall = ({
           audio: true,
           video: type === 'video' ? { facingMode: 'user' } : false,
         };
-        stream = await navigator.mediaDevices.getUserMedia(basicConstraints);
-        console.log('[usePrivateCall] Got media stream with basic constraints');
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(basicConstraints);
+          console.log('[usePrivateCall] Got media stream with basic constraints');
+        } catch (basicError) {
+          console.warn('[usePrivateCall] Basic constraints failed, trying audio only:', basicError);
+          // Try audio only as last resort
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            console.log('[usePrivateCall] Got audio-only stream');
+            toast.info('Camera unavailable - using audio only');
+          } catch (audioOnlyError) {
+            console.warn('[usePrivateCall] Audio-only also failed:', audioOnlyError);
+            // If allowEmpty is true, create an empty stream so call can proceed
+            if (allowEmpty) {
+              console.log('[usePrivateCall] Creating empty stream for receive-only mode');
+              stream = new MediaStream();
+              toast.info('No microphone available - you can still listen');
+            } else {
+              throw audioOnlyError;
+            }
+          }
+        }
       }
 
       if (stream) {
@@ -177,7 +197,9 @@ export const usePrivateCall = ({
       return stream;
     } catch (error) {
       console.error('[usePrivateCall] Failed to get media stream:', error);
-      toast.error('Could not access camera/microphone. Please check permissions.');
+      if (!allowEmpty) {
+        toast.error('Could not access camera/microphone. Please check permissions.');
+      }
       return null;
     }
   }, []);
@@ -233,18 +255,21 @@ export const usePrivateCall = ({
 
     console.log('[usePrivateCall] Answering call, type:', incomingCallType);
 
-    const stream = await getMediaStream(incomingCallType);
-    if (!stream) {
-      rejectCall();
-      return;
-    }
-
+    // Allow empty stream so user can answer even without mic/camera
+    const stream = await getMediaStream(incomingCallType, true);
+    
+    // Stream can be empty but should never be null with allowEmpty=true
     const pc = createPeerConnection();
-    console.log('[usePrivateCall] Adding', stream.getTracks().length, 'tracks to peer connection for answer');
-    stream.getTracks().forEach(track => {
-      console.log('[usePrivateCall] Adding track:', track.kind, track.label);
-      pc.addTrack(track, stream);
-    });
+    
+    if (stream && stream.getTracks().length > 0) {
+      console.log('[usePrivateCall] Adding', stream.getTracks().length, 'tracks to peer connection for answer');
+      stream.getTracks().forEach(track => {
+        console.log('[usePrivateCall] Adding track:', track.kind, track.label);
+        pc.addTrack(track, stream);
+      });
+    } else {
+      console.log('[usePrivateCall] No local tracks to add - receive-only mode');
+    }
 
     setCallType(incomingCallType);
     setCallState('connected');
