@@ -1142,7 +1142,7 @@ const PrivateChatWindow = ({
       {/* Messages */}
       <div 
         ref={messagesContainerRef}
-        className="overflow-y-auto p-2 bg-background/50 relative flex flex-col"
+        className="overflow-y-auto p-2 bg-background/50 relative flex flex-col-reverse"
         style={{ height: messageAreaHeight }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -1154,14 +1154,14 @@ const PrivateChatWindow = ({
           </div>
         )}
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground text-center">
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
             <Lock className="h-8 w-8 mb-2 text-primary/30" />
             <p className="text-xs font-medium">Encrypted chat</p>
             <p className="text-[10px] mt-1 opacity-70">Start a conversation</p>
           </div>
         ) : (
-          <div className="mt-auto space-y-2">
-            {messages.map((msg) => (
+          <div className="space-y-2 flex flex-col-reverse">
+            {[...messages].reverse().map((msg) => (
               <div
                 key={msg.id}
                 className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
