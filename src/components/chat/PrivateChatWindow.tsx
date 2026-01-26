@@ -1115,7 +1115,7 @@ const PrivateChatWindow = ({
       {/* Messages */}
       <div 
         ref={messagesContainerRef}
-        className="overflow-y-auto p-2 space-y-2 bg-background/50 relative"
+        className="overflow-y-auto p-2 bg-background/50 relative flex flex-col"
         style={{ height: messageAreaHeight }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -1127,58 +1127,60 @@ const PrivateChatWindow = ({
           </div>
         )}
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
+          <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground text-center">
             <Lock className="h-8 w-8 mb-2 text-primary/30" />
             <p className="text-xs font-medium">Encrypted chat</p>
             <p className="text-[10px] mt-1 opacity-70">Start a conversation</p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
-            >
+          <div className="mt-auto space-y-2">
+            {messages.map((msg) => (
               <div
-                className={`max-w-[85%] rounded-xl px-2.5 py-1.5 ${
-                  msg.isOwn
-                    ? 'bg-primary text-primary-foreground rounded-br-sm'
-                    : 'bg-muted text-foreground rounded-bl-sm'
-                }`}
+                key={msg.id}
+                className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
               >
-                {!msg.isOwn && (
-                  <p className="text-[10px] font-medium mb-0.5 opacity-70">{msg.senderName}</p>
-                )}
-                <div className="text-xs break-words"><FormattedText text={msg.content} /></div>
-                {msg.imageUrl && (
-                  <div className="mt-1.5">
-                    <img 
-                      src={msg.imageUrl} 
-                      alt="Shared photo" 
-                      className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => window.open(msg.imageUrl, '_blank')}
-                    />
-                  </div>
-                )}
-                <div className="flex items-center justify-end gap-1 mt-0.5">
-                  <span className="text-[9px] opacity-50">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  {msg.isOwn && isTargetBot && (
-                    <span className="flex items-center">
-                      {seenMessageIds.has(msg.id) ? (
-                        <CheckCheck className="h-3 w-3 text-primary-foreground/70" />
-                      ) : (
-                        <Check className="h-3 w-3 text-primary-foreground/50" />
-                      )}
-                    </span>
+                <div
+                  className={`max-w-[85%] rounded-xl px-2.5 py-1.5 ${
+                    msg.isOwn
+                      ? 'bg-primary text-primary-foreground rounded-br-sm'
+                      : 'bg-muted text-foreground rounded-bl-sm'
+                  }`}
+                >
+                  {!msg.isOwn && (
+                    <p className="text-[10px] font-medium mb-0.5 opacity-70">{msg.senderName}</p>
                   )}
+                  <div className="text-xs break-words"><FormattedText text={msg.content} /></div>
+                  {msg.imageUrl && (
+                    <div className="mt-1.5">
+                      <img 
+                        src={msg.imageUrl} 
+                        alt="Shared photo" 
+                        className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(msg.imageUrl, '_blank')}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center justify-end gap-1 mt-0.5">
+                    <span className="text-[9px] opacity-50">
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {msg.isOwn && isTargetBot && (
+                      <span className="flex items-center">
+                        {seenMessageIds.has(msg.id) ? (
+                          <CheckCheck className="h-3 w-3 text-primary-foreground/70" />
+                        ) : (
+                          <Check className="h-3 w-3 text-primary-foreground/50" />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
         {isBotTyping && (
-          <div className="flex justify-start">
+          <div className="flex justify-start mt-2">
             <div className="bg-muted text-foreground rounded-xl rounded-bl-sm px-3 py-2">
               <div className="flex items-center gap-1">
                 <span className="text-[10px] font-medium opacity-70">{targetUsername}</span>
