@@ -72,7 +72,7 @@ const parseMentions = (content: string): (string | { type: 'mention'; username: 
 };
 
 const MentionSpan = ({ username }: { username: string }) => (
-  <span className="text-primary font-medium bg-primary/10 px-1 rounded cursor-pointer hover:bg-primary/20 transition-colors">
+  <span className="text-red-500 font-semibold bg-red-500/10 px-1 rounded cursor-pointer hover:bg-red-500/20 transition-colors">
     @{username}
   </span>
 );
