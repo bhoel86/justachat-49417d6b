@@ -834,13 +834,16 @@ const Home = () => {
                 </div>
                 
                 {/* Center section with mascots and social links */}
-                <div className="flex items-center gap-2 sm:gap-4">
-                  {/* Left mascot */}
+                <div className="flex items-center">
+                  {/* Left mascot - positioned to end at Facebook */}
                   <img 
                     src={footerMascots} 
                     alt="" 
-                    className="h-10 sm:h-12 w-auto opacity-60 object-contain object-left"
-                    style={{ clipPath: 'inset(0 50% 0 0)' }}
+                    className="h-16 sm:h-20 w-auto opacity-70 object-contain -mr-1"
+                    style={{ 
+                      clipPath: 'inset(0 60% 0 0)',
+                      filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.8))'
+                    }}
                   />
                   
                   {/* Social Media Links */}
@@ -895,8 +898,11 @@ const Home = () => {
                   <img 
                     src={footerMascots} 
                     alt="" 
-                    className="h-10 sm:h-12 w-auto opacity-60 object-contain object-right"
-                    style={{ clipPath: 'inset(0 0 0 50%)', transform: 'scaleX(-1)' }}
+                    className="h-16 sm:h-20 w-auto opacity-70 object-contain -ml-1"
+                    style={{ 
+                      clipPath: 'inset(0 0 0 60%)',
+                      filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.8))'
+                    }}
                   />
                 </div>
                 
