@@ -34,8 +34,9 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
   const [activeTab, setActiveTab] = useState<'emoji' | 'gif'>('emoji');
   const [gifs, setGifs] = useState<GifResult[]>([]);
   const [gifLoading, setGifLoading] = useState(false);
-  const [trendingLoaded, setTrendingLoaded] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+ const trendingLoadedRef = useRef(false);
+ const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -48,7 +49,7 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const searchGifs = useCallback(async (query: string) => {
+ const searchGifs = async (query: string) => {
     if (!onGifSelect) return;
     setGifLoading(true);
     try {
@@ -63,10 +64,10 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
     } finally {
       setGifLoading(false);
     }
-  }, [onGifSelect]);
+ };
 
-  const loadTrending = useCallback(async () => {
-    if (!onGifSelect || trendingLoaded) return;
+ const loadTrending = async () => {
+   if (!onGifSelect || trendingLoadedRef.current) return;
     setGifLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('gif-search', {
@@ -74,28 +75,41 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
       });
       if (error) throw error;
       setGifs(data?.results || []);
-      setTrendingLoaded(true);
+     trendingLoadedRef.current = true;
     } catch (err) {
       console.error('Trending GIFs error:', err);
       setGifs([]);
     } finally {
       setGifLoading(false);
     }
-  }, [onGifSelect, trendingLoaded]);
+ };
 
   useEffect(() => {
-   if (isOpen && activeTab === 'gif' && !searchQuery) {
+   if (isOpen && activeTab === 'gif' && !searchQuery && !trendingLoadedRef.current) {
       loadTrending();
     }
  }, [isOpen, activeTab, searchQuery]);
 
   useEffect(() => {
+   // Clear any pending search
+   if (searchTimeoutRef.current) {
+     clearTimeout(searchTimeoutRef.current);
+     searchTimeoutRef.current = null;
+   }
+   
     if (activeTab !== 'gif' || !searchQuery) return;
-    const timeout = setTimeout(() => {
+   
+   searchTimeoutRef.current = setTimeout(() => {
       searchGifs(searchQuery);
     }, 300);
-    return () => clearTimeout(timeout);
-  }, [searchQuery, activeTab, searchGifs]);
+   
+   return () => {
+     if (searchTimeoutRef.current) {
+       clearTimeout(searchTimeoutRef.current);
+       searchTimeoutRef.current = null;
+     }
+   };
+ }, [searchQuery, activeTab, onGifSelect]);
 
   const handleEmojiClick = (emoji: string) => {
     onEmojiSelect(emoji);
@@ -105,6 +119,7 @@ const EmojiPicker = ({ onEmojiSelect, onGifSelect }: EmojiPickerProps) => {
     onGifSelect?.(gifUrl);
     setIsOpen(false);
     setSearchQuery('');
+   trendingLoadedRef.current = false; // Reset for next open
   };
 
   const filteredEmojis = searchQuery
