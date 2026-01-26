@@ -32,10 +32,13 @@ EXPOSE 6667
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD pgrep -x node || exit 1
 
+# Create data and log directories
+RUN mkdir -p /data /logs
+
 # Run as non-root user for security
 RUN addgroup -g 1001 -S irc && \
     adduser -S -D -H -u 1001 -h /app -s /sbin/nologin -G irc irc && \
-    chown -R irc:irc /app
+    chown -R irc:irc /app /data /logs
 
 USER irc
 
