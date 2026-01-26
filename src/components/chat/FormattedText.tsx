@@ -12,24 +12,37 @@ const rainbowColors = [
   '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7'
 ];
 
-// IRC color palette (16 standard colors)
-const IRC_COLORS: { [key: string]: string } = {
-  '00': '#FFFFFF', // white
-  '01': '#000000', // black
-  '02': '#00007F', // navy
-  '03': '#009300', // green
-  '04': '#FF0000', // red
-  '05': '#7F0000', // brown
-  '06': '#9C009C', // purple
-  '07': '#FC7F00', // orange
-  '08': '#FFFF00', // yellow
-  '09': '#00FC00', // lime
-  '10': '#009393', // teal
-  '11': '#00FFFF', // cyan
-  '12': '#0000FC', // blue
-  '13': '#FF00FF', // pink
-  '14': '#7F7F7F', // grey
-  '15': '#D2D2D2', // light grey
+// Extended IRC 99-color palette
+const getIrcColor = (code: string): string => {
+  const num = parseInt(code, 10);
+  
+  // Standard 16 colors
+  const standard: { [key: number]: string } = {
+    0: '#FFFFFF', 1: '#000000', 2: '#00007F', 3: '#009300',
+    4: '#FF0000', 5: '#7F0000', 6: '#9C009C', 7: '#FC7F00',
+    8: '#FFFF00', 9: '#00FC00', 10: '#009393', 11: '#00FFFF',
+    12: '#0000FC', 13: '#FF00FF', 14: '#7F7F7F', 15: '#D2D2D2',
+  };
+  
+  if (num <= 15) return standard[num] || '#FFFFFF';
+  
+  // Extended palette: 6x6x6 color cube (16-87)
+  if (num >= 16 && num <= 87) {
+    const idx = num - 16;
+    const levels = [0, 51, 102, 153, 204, 255];
+    const r = levels[Math.floor(idx / 36)];
+    const g = levels[Math.floor((idx % 36) / 6)];
+    const b = levels[idx % 6];
+    return `rgb(${r},${g},${b})`;
+  }
+  
+  // Grayscale (88-98)
+  if (num >= 88 && num <= 98) {
+    const v = Math.round((num - 88) * 25.5);
+    return `rgb(${v},${v},${v})`;
+  }
+  
+  return '#FFFFFF';
 };
 
 // Parse IRC color codes (\x03FG or \x03FG,BG)
@@ -62,10 +75,10 @@ const parseIrcColors = (text: string): React.ReactNode[] => {
     
     const colorMatch = segment.match(/^\x03(\d{1,2})(?:,(\d{1,2}))?$/);
     if (colorMatch) {
-      const fg = colorMatch[1].padStart(2, '0');
-      const bg = colorMatch[2]?.padStart(2, '0');
-      currentFg = IRC_COLORS[fg] || null;
-      currentBg = bg ? IRC_COLORS[bg] : null;
+      const fg = colorMatch[1];
+      const bg = colorMatch[2];
+      currentFg = getIrcColor(fg);
+      currentBg = bg ? getIrcColor(bg) : null;
       return;
     }
     

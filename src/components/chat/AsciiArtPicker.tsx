@@ -12,57 +12,59 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AtSign, ImagePlus, Heart, Star, Skull, Cat, Dog, Fish, Coffee, Music, Sparkles, Flame, Moon, Sun, Zap, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Block characters for colored art (from full to empty)
-const BLOCK_CHARS = ['█', '▓', '▒', '░', ' '];
-
-// IRC color palette (16 colors) - we'll map to closest
-const IRC_COLORS = [
-  { r: 255, g: 255, b: 255, code: '00' }, // white
-  { r: 0, g: 0, b: 0, code: '01' },       // black
-  { r: 0, g: 0, b: 127, code: '02' },     // navy
-  { r: 0, g: 147, b: 0, code: '03' },     // green
-  { r: 255, g: 0, b: 0, code: '04' },     // red
-  { r: 127, g: 0, b: 0, code: '05' },     // brown
-  { r: 156, g: 0, b: 156, code: '06' },   // purple
-  { r: 252, g: 127, b: 0, code: '07' },   // orange
-  { r: 255, g: 255, b: 0, code: '08' },   // yellow
-  { r: 0, g: 252, b: 0, code: '09' },     // lime
-  { r: 0, g: 147, b: 147, code: '10' },   // teal
-  { r: 0, g: 255, b: 255, code: '11' },   // cyan
-  { r: 0, g: 0, b: 252, code: '12' },     // blue
-  { r: 255, g: 0, b: 255, code: '13' },   // pink
-  { r: 127, g: 127, b: 127, code: '14' }, // grey
-  { r: 210, g: 210, b: 210, code: '15' }, // light grey
+// Extended IRC 99-color palette for mIRC compatibility
+const IRC_PALETTE: [number, number, number, string][] = [
+  [255, 255, 255, '00'], [0, 0, 0, '01'], [0, 0, 127, '02'], [0, 147, 0, '03'],
+  [255, 0, 0, '04'], [127, 0, 0, '05'], [156, 0, 156, '06'], [252, 127, 0, '07'],
+  [255, 255, 0, '08'], [0, 252, 0, '09'], [0, 147, 147, '10'], [0, 255, 255, '11'],
+  [0, 0, 252, '12'], [255, 0, 255, '13'], [127, 127, 127, '14'], [210, 210, 210, '15'],
 ];
 
-// Find closest IRC color
-const findClosestColor = (r: number, g: number, b: number): typeof IRC_COLORS[0] => {
+// Generate extended 6x6x6 color cube (16-87) + grayscale (88-98)
+const levels = [0, 51, 102, 153, 204, 255];
+for (let r = 0; r < 6; r++) {
+  for (let g = 0; g < 6; g++) {
+    for (let b = 0; b < 6; b++) {
+      const idx = 16 + (r * 36) + (g * 6) + b;
+      IRC_PALETTE.push([levels[r], levels[g], levels[b], idx.toString()]);
+    }
+  }
+}
+// Grayscale (88-98)
+for (let i = 0; i <= 10; i++) {
+  const v = Math.round(i * 25.5);
+  IRC_PALETTE.push([v, v, v, (88 + i).toString()]);
+}
+
+// Find closest color using weighted RGB distance
+const findClosestColor = (r: number, g: number, b: number): string => {
   let minDist = Infinity;
-  let closest = IRC_COLORS[0];
+  let closest = '01';
   
-  for (const color of IRC_COLORS) {
-    const dist = Math.sqrt(
-      Math.pow(r - color.r, 2) + 
-      Math.pow(g - color.g, 2) + 
-      Math.pow(b - color.b, 2)
-    );
+  for (const [pr, pg, pb, code] of IRC_PALETTE) {
+    const dr = r - pr;
+    const dg = g - pg;
+    const db = b - pb;
+    // Weighted for human perception
+    const dist = (dr * dr * 0.299) + (dg * dg * 0.587) + (db * db * 0.114);
+    
     if (dist < minDist) {
       minDist = dist;
-      closest = color;
+      closest = code;
     }
   }
   return closest;
 };
 
-// Convert image to colored block art (plain text with color codes for IRC)
-const imageToColoredBlocks = (img: HTMLImageElement, maxWidth: number = 60, maxHeight: number = 30): string => {
+// Convert image to IRC colored block art with 99-color palette
+const imageToColoredBlocks = (img: HTMLImageElement, maxWidth: number = 80, maxHeight: number = 40): string => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
 
-  // Calculate dimensions
+  // Calculate dimensions with character aspect ratio
   const aspectRatio = img.width / img.height;
-  const charAspect = 0.5; // Characters are about 2x taller than wide
+  const charAspect = 0.5;
   
   let width = maxWidth;
   let height = Math.floor(width / aspectRatio * charAspect);
@@ -83,7 +85,7 @@ const imageToColoredBlocks = (img: HTMLImageElement, maxWidth: number = 60, maxH
   const pixels = imageData.data;
 
   let result = '';
-  let lastColorCode = '';
+  let lastColor = '';
   
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -94,29 +96,20 @@ const imageToColoredBlocks = (img: HTMLImageElement, maxWidth: number = 60, maxH
       const a = pixels[idx + 3];
       
       if (a < 128) {
-        // Transparent - use space
         result += ' ';
-        lastColorCode = '';
+        lastColor = '';
       } else {
-        // Find closest IRC color
-        const color = findClosestColor(r, g, b);
-        
-        // Calculate brightness to select block character
-        const brightness = (r + g + b) / 3 / 255;
-        const blockIndex = Math.floor(brightness * (BLOCK_CHARS.length - 1));
-        const block = BLOCK_CHARS[Math.min(blockIndex, BLOCK_CHARS.length - 1)];
-        
-        // Add IRC color code if changed (format: \x03FG,BG)
-        const colorCode = `\x03${color.code},${color.code}`;
-        if (colorCode !== lastColorCode) {
-          result += colorCode;
-          lastColorCode = colorCode;
+        const colorCode = findClosestColor(r, g, b);
+        // Only add color code if it changed
+        if (colorCode !== lastColor) {
+          result += `\x03${colorCode},${colorCode}`;
+          lastColor = colorCode;
         }
-        result += '█'; // Always use full block, color does the work
+        result += '█';
       }
     }
-    result += '\x03\n'; // Reset color at end of line
-    lastColorCode = '';
+    result += '\x03\n'; // Reset at end of line
+    lastColor = '';
   }
 
   return result.trim();
@@ -348,7 +341,7 @@ const AsciiArtPicker = ({ onArtSelect }: AsciiArtPickerProps) => {
 
       reader.onload = (event) => {
         img.onload = () => {
-          const coloredArt = imageToColoredBlocks(img, 60, 30);
+          const coloredArt = imageToColoredBlocks(img, 80, 40);
           if (coloredArt) {
             onArtSelect(coloredArt);
             toast({
