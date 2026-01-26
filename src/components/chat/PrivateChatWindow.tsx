@@ -12,7 +12,6 @@ import IncomingCallModal from "./IncomingCallModal";
 
 // Get bot ID from user ID if it's a simulated user
 const getBotIdFromUserId = (userId: string): string | null => {
-  // Check if this is a simulated user ID format (e.g., "sim-user-nova", "sim-gen-1")
   if (!userId.startsWith('sim-')) return null;
   
   const botId = userId.replace('sim-', '');
@@ -78,13 +77,14 @@ const PrivateChatWindow = ({
   const [seenMessageIds, setSeenMessageIds] = useState<Set<string>>(new Set());
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
- const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const botResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const seenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sessionKeyRef = useRef<CryptoKey | null>(null);
- const lastMessageCountRef = useRef(0);
+  const lastMessageCountRef = useRef(0);
+  const hasLoadedRef = useRef(false);
   const { toast } = useToast();
 
   // Check if target user is a bot
@@ -100,26 +100,25 @@ const PrivateChatWindow = ({
   });
 
   const scrollToBottom = () => {
-   if (messagesContainerRef.current) {
-     messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-   }
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
- // Only scroll when new messages are added by current user
- useEffect(() => {
-   if (messages.length > lastMessageCountRef.current) {
-     const lastMessage = messages[messages.length - 1];
-     // Only auto-scroll if the last message is from current user
-     if (lastMessage?.isOwn) {
-       requestAnimationFrame(() => {
-         if (messagesContainerRef.current) {
-           messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-         }
-       });
-     }
-   }
-   lastMessageCountRef.current = messages.length;
- }, [messages]);
+  // Only scroll when new messages are added by current user
+  useEffect(() => {
+    if (messages.length > lastMessageCountRef.current) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage?.isOwn) {
+        requestAnimationFrame(() => {
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+          }
+        });
+      }
+    }
+    lastMessageCountRef.current = messages.length;
+  }, [messages]);
 
   // Dragging logic
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -181,104 +180,105 @@ const PrivateChatWindow = ({
     };
   }, [isDragging, isResizing, dragOffset, resizeStart, size.width]);
 
-  // Load previous messages from database
-  const loadPreviousMessages = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('private_messages')
-        .select('*')
-        .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
-        .order('created_at', { ascending: true })
-        .limit(100);
-
-      if (error) {
-        console.error('Failed to load messages:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        // Decrypt messages using the master key
-        const masterKey = 'JAC_PM_MASTER_2024';
-        const decryptedMessages: PrivateMessage[] = [];
-        
-        for (const msg of data) {
-          try {
-            // Derive the key and decrypt
-            const encoder = new TextEncoder();
-            const keyData = encoder.encode(masterKey);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
-            
-            const cryptoKey = await crypto.subtle.importKey(
-              'raw',
-              hashBuffer,
-              { name: 'AES-GCM', length: 256 },
-              false,
-              ['decrypt']
-            );
-            
-            const ciphertextBytes = Uint8Array.from(atob(msg.encrypted_content), c => c.charCodeAt(0));
-            const ivBytes = Uint8Array.from(atob(msg.iv), c => c.charCodeAt(0));
-            
-            const decrypted = await crypto.subtle.decrypt(
-              { name: 'AES-GCM', iv: ivBytes },
-              cryptoKey,
-              ciphertextBytes
-            );
-            
-            const decoder = new TextDecoder();
-            const content = decoder.decode(decrypted);
-            
-            decryptedMessages.push({
-              id: msg.id,
-              content,
-              senderId: msg.sender_id,
-              senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
-              timestamp: new Date(msg.created_at),
-              isOwn: msg.sender_id === currentUserId
-            });
-          } catch (decryptError) {
-            console.error('Failed to decrypt message:', decryptError);
-          }
-        }
-        
-        setMessages(decryptedMessages);
-      }
-    } catch (err) {
-      console.error('Error loading messages:', err);
-    }
-  }, [currentUserId, targetUserId, currentUsername, targetUsername]);
-
   // Initialize encrypted session
   useEffect(() => {
+    let isMounted = true;
+    hasLoadedRef.current = false;
+
+    const loadPreviousMessages = async () => {
+      if (hasLoadedRef.current || isTargetBot) return;
+      hasLoadedRef.current = true;
+      
+      try {
+        const { data, error } = await supabase
+          .from('private_messages')
+          .select('*')
+          .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
+          .order('created_at', { ascending: true })
+          .limit(100);
+
+        if (error || !isMounted) {
+          console.error('Failed to load messages:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const masterKey = 'JAC_PM_MASTER_2024';
+          const decryptedMessages: PrivateMessage[] = [];
+          
+          for (const msg of data) {
+            try {
+              const encoder = new TextEncoder();
+              const keyData = encoder.encode(masterKey);
+              const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
+              
+              const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                hashBuffer,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+              );
+              
+              const ciphertextBytes = Uint8Array.from(atob(msg.encrypted_content), c => c.charCodeAt(0));
+              const ivBytes = Uint8Array.from(atob(msg.iv), c => c.charCodeAt(0));
+              
+              const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: ivBytes },
+                cryptoKey,
+                ciphertextBytes
+              );
+              
+              const decoder = new TextDecoder();
+              const content = decoder.decode(decrypted);
+              
+              decryptedMessages.push({
+                id: msg.id,
+                content,
+                senderId: msg.sender_id,
+                senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
+                timestamp: new Date(msg.created_at),
+                isOwn: msg.sender_id === currentUserId
+              });
+            } catch (decryptError) {
+              console.error('Failed to decrypt message:', decryptError);
+            }
+          }
+          
+          if (isMounted) {
+            setMessages(decryptedMessages);
+            lastMessageCountRef.current = decryptedMessages.length;
+          }
+        }
+      } catch (err) {
+        console.error('Error loading messages:', err);
+      }
+    };
+
     const initSession = async () => {
       const sid = generateSessionId();
-      setSessionId(sid);
+      if (isMounted) setSessionId(sid);
 
-      // Load previous messages first (only for real users, not bots)
-      if (!isTargetBot) {
-        await loadPreviousMessages();
-      }
+      // Load previous messages first
+      await loadPreviousMessages();
 
-      // Determine who is the "leader" for key generation (lower ID generates)
       const isKeyLeader = currentUserId < targetUserId;
-      
       const channelName = [currentUserId, targetUserId].sort().join('-');
       
       const channel = supabase.channel(`private-${channelName}`, {
-        config: { broadcast: { self: false } } // Don't receive own broadcasts
+        config: { broadcast: { self: false } }
       });
 
-      // Generate key only if leader, otherwise wait for key from other user
       let localKey: CryptoKey | null = null;
       if (isKeyLeader) {
         localKey = await generateSessionKey();
-        setSessionKey(localKey);
+        if (isMounted) setSessionKey(localKey);
       }
 
       channel
         .on('broadcast', { event: 'message' }, async (payload) => {
+          if (!isMounted) return;
           const data = payload.payload;
-          // Use sessionKeyRef instead of sessionKey to get current value
           const currentKey = sessionKeyRef.current;
           if (currentKey) {
             try {
@@ -290,7 +290,7 @@ const PrivateChatWindow = ({
                 senderId: data.senderId,
                 senderName: data.senderName,
                 timestamp: new Date(data.timestamp),
-                isOwn: false, // Messages from broadcast are always from the other user
+                isOwn: false,
                 imageUrl: data.imageUrl
               }]);
               onNewMessage?.();
@@ -300,6 +300,7 @@ const PrivateChatWindow = ({
           }
         })
         .on('broadcast', { event: 'key-exchange' }, async (payload) => {
+          if (!isMounted) return;
           const data = payload.payload;
           if (data.userId !== currentUserId && data.key) {
             try {
@@ -307,7 +308,6 @@ const PrivateChatWindow = ({
               setSessionKey(importedKey);
               sessionKeyRef.current = importedKey;
               
-              // If we're not the leader and just received the key, acknowledge it
               if (!isKeyLeader) {
                 channel.send({
                   type: 'broadcast',
@@ -321,10 +321,10 @@ const PrivateChatWindow = ({
           }
         })
         .on('broadcast', { event: 'key-ack' }, async () => {
-          // Key was acknowledged by the other user, connection is ready
           console.log('Key exchange acknowledged');
         })
         .on('presence', { event: 'sync' }, () => {
+          if (!isMounted) return;
           const state = channel.presenceState();
           const onlineIds = new Set<string>();
           Object.values(state).forEach((presences: any[]) => {
@@ -334,7 +334,6 @@ const PrivateChatWindow = ({
           });
           setTargetOnline(onlineIds.has(targetUserId));
           
-          // If target just came online and we're the leader, send our key
           if (onlineIds.has(targetUserId) && isKeyLeader && localKey) {
             (async () => {
               const exportedKey = await exportKey(localKey);
@@ -347,7 +346,6 @@ const PrivateChatWindow = ({
           }
         })
         .on('presence', { event: 'join' }, async ({ newPresences }) => {
-          // When the other user joins, send our key if we're the leader
           const otherUserJoined = newPresences.some((p: any) => p.userId === targetUserId);
           if (otherUserJoined && isKeyLeader && localKey) {
             const exportedKey = await exportKey(localKey);
@@ -359,11 +357,10 @@ const PrivateChatWindow = ({
           }
         })
         .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
+          if (status === 'SUBSCRIBED' && isMounted) {
             setIsConnected(true);
             await channel.track({ userId: currentUserId });
             
-            // If we're the leader, broadcast the key immediately
             if (isKeyLeader && localKey) {
               const exportedKey = await exportKey(localKey);
               channel.send({
@@ -384,6 +381,7 @@ const PrivateChatWindow = ({
     initSession();
 
     return () => {
+      isMounted = false;
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
@@ -392,7 +390,7 @@ const PrivateChatWindow = ({
       sessionKeyRef.current = null;
       setIsConnected(false);
     };
-  }, [currentUserId, targetUserId, onNewMessage, isTargetBot, loadPreviousMessages]);
+  }, [currentUserId, targetUserId, isTargetBot]);
 
   const monitorMessage = useCallback(async (content: string, senderId: string, senderName: string) => {
     try {
@@ -415,7 +413,6 @@ const PrivateChatWindow = ({
   const generateBotResponse = useCallback(async (userMessage: string) => {
     if (!targetBotId) return;
 
-    // Random delay between 3-12 seconds for realistic typing
     const delay = 3000 + Math.random() * 9000;
     
     setIsBotTyping(true);
@@ -481,7 +478,6 @@ const PrivateChatWindow = ({
   const markMessageAsSeen = useCallback((msgId: string) => {
     if (!isTargetBot) return;
     
-    // Random delay between 1-3 seconds before marking as "seen"
     const seenDelay = 1000 + Math.random() * 2000;
     
     seenTimeoutRef.current = setTimeout(() => {
@@ -563,11 +559,11 @@ const PrivateChatWindow = ({
     onClose();
     toast({
       title: "Private chat ended",
-      description: "All messages have been destroyed.",
+      description: "Chat window closed.",
     });
   };
 
-  const messageAreaHeight = size.height - 140; // Header + input + notices
+  const messageAreaHeight = size.height - 140;
 
   return (
     <div
@@ -655,18 +651,18 @@ const PrivateChatWindow = ({
 
       {/* Messages */}
       <div 
-       ref={messagesContainerRef}
-       className="overflow-y-auto p-2 space-y-2 bg-background/50 relative"
+        ref={messagesContainerRef}
+        className="overflow-y-auto p-2 space-y-2 bg-background/50 relative"
         style={{ height: messageAreaHeight }}
-       onMouseDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
-       {/* Connection Status - Overlay */}
-       {!isConnected && (
-         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center gap-2 z-10">
-           <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-           <span className="text-xs text-muted-foreground">Connecting...</span>
-         </div>
-       )}
+        {/* Connection Status - Overlay */}
+        {!isConnected && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center gap-2 z-10">
+            <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <span className="text-xs text-muted-foreground">Connecting...</span>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center">
             <Lock className="h-8 w-8 mb-2 text-primary/30" />
@@ -690,7 +686,6 @@ const PrivateChatWindow = ({
                   <p className="text-[10px] font-medium mb-0.5 opacity-70">{msg.senderName}</p>
                 )}
                 <p className="text-xs break-words">{msg.content}</p>
-                {/* Display image if present */}
                 {msg.imageUrl && (
                   <div className="mt-1.5">
                     <img 
@@ -705,7 +700,6 @@ const PrivateChatWindow = ({
                   <span className="text-[9px] opacity-50">
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  {/* Read receipts for own messages to bots */}
                   {msg.isOwn && isTargetBot && (
                     <span className="flex items-center">
                       {seenMessageIds.has(msg.id) ? (
@@ -720,7 +714,6 @@ const PrivateChatWindow = ({
             </div>
           ))
         )}
-        {/* Typing indicator for bot */}
         {isBotTyping && (
           <div className="flex justify-start">
             <div className="bg-muted text-foreground rounded-xl rounded-bl-sm px-3 py-2">
