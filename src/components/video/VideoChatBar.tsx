@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import FormattedText from '@/components/chat/FormattedText';
 import VideoUserMenu from '@/components/video/VideoUserMenu';
+import GifPicker from '@/components/chat/GifPicker';
 import { 
   Send, MessageSquare, Smile, Zap, ImagePlus, X, Loader2,
   Crown, Shield, Star
@@ -423,6 +424,29 @@ const VideoChatBar = ({ roomId, odious, username, avatarUrl, currentUserRole, on
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* GIF Picker */}
+        <GifPicker onSelect={(gifUrl) => {
+          const gifMessage: ChatMessage = {
+            id: crypto.randomUUID(),
+            odious,
+            username,
+            avatarUrl,
+            content: `[img:${gifUrl}]`,
+            timestamp: Date.now(),
+            role: rolesByUserId[odious]
+          };
+          channelRef.current?.send({
+            type: 'broadcast',
+            event: 'chat-message',
+            payload: gifMessage
+          });
+          setMessages(prev => [...prev, gifMessage]);
+        }}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+            <span className="text-[9px] font-bold">GIF</span>
+          </Button>
+        </GifPicker>
 
         {/* Image Upload */}
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />

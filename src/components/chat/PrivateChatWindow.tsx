@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video, ImagePlus, Zap, Loader2 } from "lucide-react";
+import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video, ImagePlus, Zap, Loader2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
 import EmojiPicker from "./EmojiPicker";
 import TextFormatMenu, { TextFormat, encodeFormat } from "./TextFormatMenu";
 import FormattedText from "./FormattedText";
+import GifPicker from "./GifPicker";
 import { useToast } from "@/hooks/use-toast";
 import { CHAT_BOTS, ROOM_BOTS } from "@/lib/chatBots";
 import { usePrivateCall } from "@/hooks/usePrivateCall";
@@ -616,6 +617,72 @@ const PrivateChatWindow = ({
     setMessage(prev => prev + emoji);
   };
 
+  // Handle GIF selection - sends immediately as a message
+  const handleSendGif = async (gifUrl: string) => {
+    const currentKey = sessionKeyRef.current || sessionKey;
+    if (!currentKey || !channelRef.current) return;
+
+    const finalMessage = `[img:${gifUrl}]`;
+    const msgId = `${Date.now()}-${Math.random()}`;
+    
+    try {
+      const encrypted = await encryptMessage(finalMessage, currentKey);
+      const masterKeyForStorage = 'JAC_PM_MASTER_2024';
+      const encryptedForStorage = await encryptWithMasterKey(finalMessage, masterKeyForStorage);
+      
+      const { error: dbError } = await supabase
+        .from('private_messages')
+        .insert({
+          sender_id: currentUserId,
+          recipient_id: targetUserId,
+          encrypted_content: encryptedForStorage.ciphertext,
+          iv: encryptedForStorage.iv
+        });
+
+      if (dbError) {
+        console.error('Failed to store GIF message:', dbError);
+      }
+      
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'message',
+        payload: {
+          id: msgId,
+          encrypted,
+          senderId: currentUserId,
+          senderName: currentUsername,
+          timestamp: new Date().toISOString(),
+          sessionId,
+          imageUrl: gifUrl
+        }
+      });
+
+      setMessages(prev => [...prev, {
+        id: msgId,
+        content: finalMessage,
+        senderId: currentUserId,
+        senderName: currentUsername,
+        timestamp: new Date(),
+        isOwn: true,
+        imageUrl: gifUrl
+      }]);
+
+      monitorMessage(finalMessage, currentUserId, currentUsername);
+      
+      if (isTargetBot) {
+        markMessageAsSeen(msgId);
+        generateBotResponse(finalMessage);
+      }
+    } catch (error) {
+      console.error('Failed to send GIF:', error);
+      toast({
+        variant: "destructive",
+        title: "Send failed",
+        description: "Could not send GIF."
+      });
+    }
+  };
+
   // Image upload handlers
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -956,6 +1023,13 @@ const PrivateChatWindow = ({
           >
             {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
           </Button>
+          
+          {/* GIF Picker */}
+          <GifPicker onSelect={(gifUrl) => handleSendGif(gifUrl)}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+              <span className="text-[10px] font-bold">GIF</span>
+            </Button>
+          </GifPicker>
           
           <input
             type="text"
