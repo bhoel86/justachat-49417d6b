@@ -13,8 +13,8 @@ WORKDIR /app
 # Copy package files
 COPY package.json ./
 
-# Install dependencies (production only)
-RUN npm install --omit=dev && npm cache clean --force
+# Install dependencies (production only, suppress warnings)
+RUN npm install --omit=dev --loglevel=error && rm -rf ~/.npm
 
 # Copy proxy script
 COPY proxy.js ./
