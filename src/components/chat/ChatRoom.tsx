@@ -1104,6 +1104,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
             channelName={currentChannel?.name || 'general'}
             onLanguageClick={() => setShowLanguageModal(true)}
             currentLanguage={preferredLanguage}
+            doNotDisturb={privateChats.doNotDisturb}
+            onToggleDND={privateChats.toggleDoNotDisturb}
           />
         </div>
         
@@ -1226,25 +1228,6 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         />
       </div>
 
-      {/* DND Toggle - Desktop only (right of member list) */}
-      <div className="hidden lg:flex flex-col items-center justify-start pt-4 px-2 border-l border-border bg-card/50">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={privateChats.toggleDoNotDisturb}
-          className={cn(
-            "h-9 w-9 rounded-lg",
-            privateChats.doNotDisturb && "bg-amber-500/20 text-amber-500"
-          )}
-          title={privateChats.doNotDisturb ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF'}
-        >
-          {privateChats.doNotDisturb ? (
-            <BellOff className="h-5 w-5" />
-          ) : (
-            <Bell className="h-5 w-5 text-muted-foreground" />
-          )}
-        </Button>
-      </div>
 
       {/* Private Chat Windows - Only active (non-minimized) */}
       {privateChats.activeChats.map(chat => (

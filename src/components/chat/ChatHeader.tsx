@@ -1,4 +1,4 @@
-import { MessageCircle, Users, LogOut, Crown, ShieldCheck, Info, Hash, Globe } from "lucide-react";
+import { MessageCircle, Users, LogOut, Crown, ShieldCheck, Info, Hash, Globe, Bell, BellOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +15,11 @@ interface ChatHeaderProps {
   channelName?: string;
   onLanguageClick?: () => void;
   currentLanguage?: string;
+  doNotDisturb?: boolean;
+  onToggleDND?: () => void;
 }
 
-const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageClick, currentLanguage = 'en' }: ChatHeaderProps) => {
+const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageClick, currentLanguage = 'en', doNotDisturb, onToggleDND }: ChatHeaderProps) => {
   const { logoutFromChat, role } = useAuth();
   const theme = getRoomTheme(channelName);
   const displayTopic = topic || getDefaultTopic(channelName);
@@ -65,9 +67,31 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
-            <span>{onlineCount}</span>
+            <span>{onlineCount} online</span>
+            {onToggleDND && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={onToggleDND}
+                    className={cn(
+                      "ml-1 p-0.5 rounded-full transition-colors",
+                      doNotDisturb ? "text-amber-500" : "hover:text-foreground"
+                    )}
+                  >
+                    {doNotDisturb ? (
+                      <BellOff className="h-3.5 w-3.5" />
+                    ) : (
+                      <Bell className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {doNotDisturb ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF'}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
           
           {onLanguageClick && (
