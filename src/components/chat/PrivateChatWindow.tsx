@@ -618,15 +618,8 @@ const PrivateChatWindow = ({
     
     const currentKey = sessionKeyRef.current || sessionKey;
     
-    // Handle image upload first if attached
-    let imageUrl: string | null = null;
-    if (attachedImage) {
-      imageUrl = await uploadImage();
-      if (!imageUrl && !message.trim()) return;
-      clearImage();
-    }
-    
-    if (!message.trim() && !imageUrl) return;
+    // Images now auto-send on selection, so handleSend is only for text messages
+    if (!message.trim()) return;
     if (!currentKey || !channelRef.current) {
       console.log('[PM-SEND] Missing key or channel', { hasKey: !!currentKey, hasChannel: !!channelRef.current });
       isSendingRef.current = false;
@@ -637,11 +630,6 @@ const PrivateChatWindow = ({
     let finalMessage = message.trim();
     if (textFormat.textStyle !== 'none' || textFormat.bgColor) {
       finalMessage = encodeFormat(textFormat, finalMessage);
-    }
-    
-    // Add image URL to message if uploaded
-    if (imageUrl) {
-      finalMessage = finalMessage ? `${finalMessage} [img:${imageUrl}]` : `[img:${imageUrl}]`;
     }
     
     console.log('[PM-SEND] Sending message:', finalMessage.substring(0, 50));
@@ -685,8 +673,7 @@ const PrivateChatWindow = ({
         senderId: currentUserId,
         senderName: currentUsername,
         timestamp: new Date(),
-        isOwn: true,
-        imageUrl: imageUrl || undefined
+        isOwn: true
       }];
     });
     
@@ -700,8 +687,7 @@ const PrivateChatWindow = ({
           senderId: currentUserId,
           senderName: currentUsername,
           timestamp: new Date().toISOString(),
-          sessionId,
-          imageUrl
+          sessionId
         }
       });
 
@@ -828,45 +814,47 @@ const PrivateChatWindow = ({
     }
   };
 
-  // Image upload handlers
+  // Image upload handlers - AUTO SEND on selection (like GIFs)
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Reset file input immediately so user can re-select same file
+    if (fileInputRef.current) fileInputRef.current.value = '';
 
     if (file.size > 25 * 1024 * 1024) {
       toast({ variant: "destructive", title: "Image too large", description: "Please select an image under 25MB" });
       return;
     }
 
-    try {
-      const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1920, quality: 0.85, outputType: "image/jpeg" });
-      if (compressed.size > 10 * 1024 * 1024) {
-        toast({ variant: "destructive", title: "Image still too large", description: "After compression, the image is still over 10MB." });
-        return;
-      }
-      setAttachedImage(compressed);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(compressed);
-    } catch (err) {
-      toast({ variant: "destructive", title: "Failed to process image", description: err instanceof Error ? err.message : "Could not compress image" });
+    // Prevent duplicate sends
+    if (isSendingRef.current) {
+      console.log('[PM-IMG] Already sending, blocking duplicate');
+      return;
     }
-  };
 
-  const clearImage = () => {
-    setAttachedImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+    const currentKey = sessionKeyRef.current || sessionKey;
+    if (!currentKey || !channelRef.current) {
+      toast({ variant: "destructive", title: "Not connected", description: "Please wait for connection" });
+      return;
+    }
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!attachedImage) return null;
-    
+    isSendingRef.current = true;
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
-      const safeName = attachedImage.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      // Compress image
+      const compressed = await compressImage(file, { maxWidth: 1920, maxHeight: 1920, quality: 0.85, outputType: "image/jpeg" });
+      if (compressed.size > 10 * 1024 * 1024) {
+        toast({ variant: "destructive", title: "Image still too large", description: "After compression, the image is still over 10MB." });
+        setIsUploading(false);
+        isSendingRef.current = false;
+        return;
+      }
+
+      // Upload directly
+      const safeName = compressed.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const suggestedPath = `chat-images/${currentUserId}/${Date.now()}-${safeName}`;
 
       const { data: sessionData } = await supabase.auth.getSession();
@@ -877,11 +865,11 @@ const PrivateChatWindow = ({
       const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       const formData = new FormData();
-      formData.append("file", attachedImage);
+      formData.append("file", compressed);
       formData.append("bucket", "avatars");
       formData.append("path", suggestedPath);
 
-      const data = await new Promise<any>((resolve, reject) => {
+      const uploadData = await new Promise<any>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", endpoint);
         xhr.responseType = "json";
@@ -904,19 +892,92 @@ const PrivateChatWindow = ({
       });
 
       setUploadProgress(100);
-      if (data?.error) {
-        toast({ variant: "destructive", title: "Upload failed", description: data.message || data.error });
-        return null;
+      
+      if (uploadData?.error || !uploadData?.url) {
+        throw new Error(uploadData?.message || uploadData?.error || "Upload failed");
       }
-      return data?.url || null;
-    } catch (error) {
-      toast({ variant: "destructive", title: "Upload failed", description: error instanceof Error ? error.message : "Failed to upload" });
-      return null;
+
+      const imageUrl = uploadData.url;
+
+      // Send the image as a message (like GIF)
+      const finalMessage = `[img:${imageUrl}]`;
+      const msgId = `${Date.now()}-${Math.random()}`;
+      
+      sentMessageIdsRef.current.add(msgId);
+      
+      const encrypted = await encryptMessage(finalMessage, currentKey);
+      const masterKeyForStorage = 'JAC_PM_MASTER_2024';
+      const encryptedForStorage = await encryptWithMasterKey(finalMessage, masterKeyForStorage);
+      
+      const { error: dbError } = await supabase
+        .from('private_messages')
+        .insert({
+          sender_id: currentUserId,
+          recipient_id: targetUserId,
+          encrypted_content: encryptedForStorage.ciphertext,
+          iv: encryptedForStorage.iv
+        });
+
+      if (dbError) {
+        console.error('Failed to store image message:', dbError);
+      }
+      
+      // Add to local state
+      setMessages(prev => [...prev, {
+        id: msgId,
+        content: finalMessage,
+        senderId: currentUserId,
+        senderName: currentUsername,
+        timestamp: new Date(),
+        isOwn: true,
+        imageUrl
+      }]);
+      
+      // Broadcast
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'message',
+        payload: {
+          id: msgId,
+          encrypted,
+          senderId: currentUserId,
+          senderName: currentUsername,
+          timestamp: new Date().toISOString(),
+          sessionId,
+          imageUrl
+        }
+      });
+
+      monitorMessage(finalMessage, currentUserId, currentUsername);
+      
+      if (isTargetBot) {
+        markMessageAsSeen(msgId);
+        generateBotResponse("sent you a photo");
+      }
+
+      toast({ title: "Photo sent", description: "Your image was shared successfully" });
+
+    } catch (err) {
+      console.error('Failed to upload/send image:', err);
+      toast({ variant: "destructive", title: "Failed to send image", description: err instanceof Error ? err.message : "Could not send image" });
     } finally {
       setIsUploading(false);
-      setTimeout(() => setUploadProgress(0), 500);
+      setUploadProgress(0);
+      setAttachedImage(null);
+      setImagePreview(null);
+      setTimeout(() => {
+        isSendingRef.current = false;
+      }, 300);
     }
   };
+
+  const clearImage = () => {
+    setAttachedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // uploadImage function removed - now handled inline in handleImageSelect for auto-send
 
   // Action selection handler
   const handleActionSelect = (action: typeof PM_ACTIONS.funny[0]) => {
@@ -1105,20 +1166,14 @@ const PrivateChatWindow = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Image Preview */}
-      {imagePreview && (
-        <div className="px-2 py-1 border-t border-border bg-muted/20">
-          <div className="relative inline-block">
-            <img src={imagePreview} alt="Preview" className="h-12 rounded border border-border" />
-            <button onClick={clearImage} className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
-              <X className="w-2.5 h-2.5" />
-            </button>
+      {/* Upload Progress Indicator - shown during image upload */}
+      {isUploading && (
+        <div className="px-2 py-1.5 border-t border-border bg-muted/20 flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress}%` }} />
           </div>
-          {isUploading && (
-            <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress}%` }} />
-            </div>
-          )}
+          <span className="text-xs text-muted-foreground shrink-0">{uploadProgress}%</span>
         </div>
       )}
 
@@ -1191,7 +1246,7 @@ const PrivateChatWindow = ({
             onClick={handleSendClick}
             onTouchEnd={handleSendClick}
             onTouchStart={(e) => e.stopPropagation()}
-            disabled={(!message.trim() && !attachedImage) || !isConnected || isUploading}
+            disabled={!message.trim() || !isConnected || isUploading}
             variant="jac"
             size="icon"
             className="h-8 w-8 rounded-lg shrink-0 touch-manipulation active:scale-95 transition-transform"
