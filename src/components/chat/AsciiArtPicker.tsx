@@ -12,14 +12,64 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AtSign, ImagePlus, Heart, Star, Skull, Cat, Dog, Fish, Coffee, Music, Sparkles, Flame, Moon, Sun, Zap, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// ASCII characters from light to dark (inverted - so dark areas like text become spaces)
-const ASCII_CHARS_DETAILED = ' .\'`^",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
+// ASCII characters for different density levels (dark to light)
+const ASCII_DENSITY = '@%#*+=-:. ';
+const ASCII_DETAILED = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,"^`\'. ';
 
-// Apply contrast enhancement to improve detail visibility
-const enhanceContrast = (pixels: Uint8ClampedArray, width: number, height: number): number[] => {
+// Edge detection characters based on gradient direction
+const EDGE_CHARS: { [key: string]: string } = {
+  horizontal: '-',
+  vertical: '|',
+  diagonal1: '/',
+  diagonal2: '\\',
+  corner: '+',
+  none: ' '
+};
+
+// Sobel edge detection kernels
+const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
+const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
+
+// Apply Sobel edge detection
+const detectEdges = (brightness: number[], width: number, height: number): { magnitude: number[], direction: number[] } => {
+  const magnitude: number[] = new Array(width * height).fill(0);
+  const direction: number[] = new Array(width * height).fill(0);
+  
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      let gx = 0, gy = 0;
+      
+      for (let ky = -1; ky <= 1; ky++) {
+        for (let kx = -1; kx <= 1; kx++) {
+          const idx = (y + ky) * width + (x + kx);
+          const b = brightness[idx];
+          gx += b * sobelX[ky + 1][kx + 1];
+          gy += b * sobelY[ky + 1][kx + 1];
+        }
+      }
+      
+      const idx = y * width + x;
+      magnitude[idx] = Math.sqrt(gx * gx + gy * gy);
+      direction[idx] = Math.atan2(gy, gx);
+    }
+  }
+  
+  return { magnitude, direction };
+};
+
+// Get edge character based on gradient direction
+const getEdgeChar = (angle: number): string => {
+  const deg = (angle * 180 / Math.PI + 180) % 180;
+  if (deg < 22.5 || deg >= 157.5) return '-';
+  if (deg < 67.5) return '/';
+  if (deg < 112.5) return '|';
+  return '\\';
+};
+
+// Enhanced contrast with histogram equalization
+const enhanceContrast = (pixels: Uint8ClampedArray): number[] => {
   const brightnesses: number[] = [];
   
-  // First pass: collect all brightness values
   for (let i = 0; i < pixels.length; i += 4) {
     const r = pixels[i];
     const g = pixels[i + 1];
@@ -29,27 +79,31 @@ const enhanceContrast = (pixels: Uint8ClampedArray, width: number, height: numbe
     brightnesses.push(brightness);
   }
   
-  // Find min/max for contrast stretching
-  let min = 255, max = 0;
-  for (const b of brightnesses) {
-    if (b < min) min = b;
-    if (b > max) max = b;
-  }
+  // Histogram equalization for better contrast
+  const histogram = new Array(256).fill(0);
+  for (const b of brightnesses) histogram[Math.floor(b)]++;
   
-  // Apply contrast stretching
-  const range = max - min || 1;
-  return brightnesses.map(b => ((b - min) / range) * 255);
+  const cdf = new Array(256).fill(0);
+  cdf[0] = histogram[0];
+  for (let i = 1; i < 256; i++) cdf[i] = cdf[i - 1] + histogram[i];
+  
+  const cdfMin = cdf.find(v => v > 0) || 0;
+  const total = brightnesses.length;
+  
+  return brightnesses.map(b => {
+    const idx = Math.floor(b);
+    return ((cdf[idx] - cdfMin) / (total - cdfMin)) * 255;
+  });
 };
 
-// Convert image to ASCII art with enhanced detail
-const imageToAscii = (img: HTMLImageElement, maxWidth: number = 80, maxHeight: number = 40): string => {
+// Convert image to ASCII art with edge detection
+const imageToAscii = (img: HTMLImageElement, maxWidth: number = 100, maxHeight: number = 50): string => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
 
-  // Calculate aspect ratio and dimensions - higher resolution for more detail
+  // Calculate dimensions with character aspect ratio compensation
   const aspectRatio = img.width / img.height;
-  // Character aspect ratio is approximately 2:1 (height:width)
   const charAspect = 0.5;
   
   let width = maxWidth;
@@ -60,38 +114,42 @@ const imageToAscii = (img: HTMLImageElement, maxWidth: number = 80, maxHeight: n
     width = Math.floor(height * aspectRatio / charAspect);
   }
 
-  // Use a larger internal canvas for better sampling
-  const sampleScale = 2;
-  canvas.width = width * sampleScale;
-  canvas.height = height * sampleScale;
+  canvas.width = width;
+  canvas.height = height;
   
-  // Enable image smoothing for better quality
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, width, height);
   
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const pixels = imageData.data;
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const brightness = enhanceContrast(imageData.data);
   
-  // Get contrast-enhanced brightness values
-  const enhancedBrightness = enhanceContrast(pixels, canvas.width, canvas.height);
-
+  // Detect edges
+  const { magnitude, direction } = detectEdges(brightness, width, height);
+  
+  // Find max magnitude for normalization
+  const maxMag = Math.max(...magnitude, 1);
+  
+  // Threshold for edge detection
+  const edgeThreshold = maxMag * 0.15;
+  
   let ascii = '';
+  
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      // Sample multiple pixels and average them for better quality
-      let totalBrightness = 0;
-      for (let sy = 0; sy < sampleScale; sy++) {
-        for (let sx = 0; sx < sampleScale; sx++) {
-          const idx = ((y * sampleScale + sy) * canvas.width + (x * sampleScale + sx));
-          totalBrightness += enhancedBrightness[idx];
-        }
-      }
-      const avgBrightness = totalBrightness / (sampleScale * sampleScale);
+      const idx = y * width + x;
+      const b = brightness[idx];
+      const mag = magnitude[idx];
+      const dir = direction[idx];
       
-      // Map brightness to character
-      const charIndex = Math.floor((avgBrightness / 255) * (ASCII_CHARS_DETAILED.length - 1));
-      ascii += ASCII_CHARS_DETAILED[Math.min(charIndex, ASCII_CHARS_DETAILED.length - 1)];
+      if (mag > edgeThreshold) {
+        // Use edge character
+        ascii += getEdgeChar(dir);
+      } else {
+        // Use density character (inverted - dark areas become spaces)
+        const charIndex = Math.floor((b / 255) * (ASCII_DETAILED.length - 1));
+        ascii += ASCII_DETAILED[charIndex];
+      }
     }
     ascii += '\n';
   }
@@ -275,7 +333,7 @@ const AsciiArtPicker = ({ onArtSelect }: AsciiArtPickerProps) => {
 
       reader.onload = (event) => {
         img.onload = () => {
-          const asciiArt = imageToAscii(img, 80, 40);
+          const asciiArt = imageToAscii(img, 100, 50);
           if (asciiArt) {
             onArtSelect(asciiArt);
             toast({
