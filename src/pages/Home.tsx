@@ -324,17 +324,6 @@ const Home = () => {
                   </Link>
                 </DropdownMenuItem>
                 
-                {/* Games Section */}
-                <DropdownMenuItem asChild>
-                  <Link to="/games" className="flex items-center gap-2 cursor-pointer">
-                    <Gamepad2 className="w-4 h-4 text-orange-500" />
-                    <div>
-                      <span>Game Arcade</span>
-                      <p className="text-xs text-muted-foreground">Free games to play</p>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-                
                 {/* Help Section */}
                 <DropdownMenuItem asChild>
                   <Link to="/chat/help" className="flex items-center gap-2 cursor-pointer">
@@ -721,14 +710,14 @@ const Home = () => {
                           {/* Dark overlay for readability */}
                           <div className="absolute inset-0 bg-black/30" />
                           
-                          {/* Content */}
+                      {/* Content */}
                           <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
                             <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg group-hover:scale-110 transition-transform">
                               <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
                             </div>
                             <div className="flex flex-col">
                               <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                                <span className="animate-pulse">📹</span> Video Chat
+                                <Camera className="w-4 h-4" /> Cams
                               </h3>
                               <span className="text-[10px] sm:text-xs text-white/80">Broadcast webcam live</span>
                             </div>
@@ -736,6 +725,36 @@ const Home = () => {
 
                           {/* Hover effect overlay */}
                           <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Link>
+                      </div>
+                      
+                      {/* Games Section */}
+                      <div className="mt-2 lg:mt-2">
+                        <Link
+                          to="/games"
+                          className="group relative flex h-12 sm:h-14 w-full rounded-xl overflow-hidden bg-card border-2 border-orange-500/60 hover:border-orange-500 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 active:scale-[0.98]"
+                        >
+                          {/* Gradient background */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-yellow-600 opacity-40 group-hover:opacity-60 transition-opacity" />
+                          
+                          {/* Dark overlay for readability */}
+                          <div className="absolute inset-0 bg-black/30" />
+                          
+                          {/* Content */}
+                          <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
+                            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-600 text-white shadow-lg group-hover:scale-110 transition-transform">
+                              <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
+                            <div className="flex flex-col">
+                              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
+                                <Gamepad2 className="w-3 h-3" /> Games
+                              </h3>
+                              <span className="text-[9px] sm:text-[10px] text-white/80">Free arcade games</span>
+                            </div>
+                          </div>
+
+                          {/* Hover effect overlay */}
+                          <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Link>
                       </div>
                       
