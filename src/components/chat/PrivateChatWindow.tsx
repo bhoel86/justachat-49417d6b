@@ -121,6 +121,7 @@ const PrivateChatWindow = ({
   const lastMessageCountRef = useRef(0);
   const hasLoadedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sentMessageIdsRef = useRef<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Check if target user is a bot
@@ -319,9 +320,9 @@ const PrivateChatWindow = ({
           if (!isMounted) return;
           const data = payload.payload;
           
-          // CRITICAL: Never add our own broadcast messages (double safety check)
-          if (data.senderId === currentUserId) {
-            console.log('[PM] Ignoring own broadcast echo:', data.id);
+          // CRITICAL: Never add our own sent messages (triple safety check)
+          if (data.senderId === currentUserId || sentMessageIdsRef.current.has(data.id)) {
+            console.log('[PM] Ignoring own message:', data.id, 'sender match:', data.senderId === currentUserId, 'in sent set:', sentMessageIdsRef.current.has(data.id));
             return;
           }
 
@@ -587,6 +588,7 @@ const PrivateChatWindow = ({
     // Add message locally FIRST (before broadcast to prevent race conditions)
     setMessages(prev => {
       if (prev.some(m => m.id === msgId)) return prev;
+      sentMessageIdsRef.current.add(msgId); // Track as sent
       return [...prev, {
         id: msgId,
         content: finalMessage,
@@ -665,6 +667,7 @@ const PrivateChatWindow = ({
     // Add message locally FIRST (before broadcast to prevent race conditions)
     setMessages(prev => {
       if (prev.some(m => m.id === msgId)) return prev;
+      sentMessageIdsRef.current.add(msgId); // Track as sent
       return [...prev, {
         id: msgId,
         content: finalMessage,
