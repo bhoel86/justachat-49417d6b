@@ -1238,8 +1238,14 @@ const PrivateChatWindow = ({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* Image Upload - opens file picker, auto-sends on selection */}
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+          {/* Image Upload - specific types to force gallery picker on mobile */}
+          <input 
+            ref={fileInputRef} 
+            type="file" 
+            accept=".jpg,.jpeg,.png,.gif,.webp,.heic" 
+            onChange={handleImageSelect} 
+            className="hidden" 
+          />
           <Button 
             variant="ghost" 
             size="icon" 
