@@ -819,37 +819,31 @@ const Home = () => {
               </div>
             </div>
             
-            {/* Footer - Mobile responsive */}
-            <footer className="mt-6 sm:mt-8 py-4 sm:py-6">
-              <div className="flex flex-col sm:flex-row items-center gap-4 sm:justify-between">
+            {/* Footer - Clean and organized */}
+            <footer className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-border">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 {/* Logo and tagline */}
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
-                    <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl jac-gradient-bg flex items-center justify-center shadow-lg">
+                    <MessageSquare className="w-4 h-4 text-primary-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold jac-gradient-text">Justachat<sup className="text-[6px] sm:text-[8px]">™</sup></h3>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">Chat. Connect. Chill.</p>
+                    <h3 className="text-base font-bold jac-gradient-text">Justachat<sup className="text-[7px]">™</sup></h3>
+                    <p className="text-xs text-muted-foreground">Chat. Connect. Chill.</p>
                   </div>
                 </div>
                 
-                {/* Mascots - Hidden on very small screens */}
-                <div className="hidden xs:flex flex-1 justify-center">
-                  <img 
-                    src={footerMascots} 
-                    alt="Justachat Mascots" 
-                    className="h-10 sm:h-14 w-auto object-contain"
-                  />
-                </div>
-                
-                {/* Copyright */}
+                {/* Copyright - centered on mobile, right on desktop */}
                 <div className="text-center sm:text-right">
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     © {new Date().getFullYear()} Justachat™ All rights reserved.
                   </p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                    <a href="https://justachat.net" className="hover:text-primary transition-colors">justachat.net</a>
-                  </p>
+                  <a 
+                    href="https://justachat.net" 
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    justachat.net
+                  </a>
                 </div>
               </div>
             </footer>
