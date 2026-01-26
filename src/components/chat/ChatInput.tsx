@@ -699,18 +699,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
           <>
             <TextFormatMenu currentFormat={textFormat} onFormatChange={setTextFormat} />
             <EmojiPicker onEmojiSelect={handleEmojiSelect} onGifSelect={(gifUrl) => onSend(`[img:${gifUrl}]`)} />
-            <AsciiArtPicker 
-              onArtSelect={(art) => setMessage(prev => prev + art)} 
-              onImageUpload={(file) => {
-                // Set the file for upload
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                if (fileInputRef.current) {
-                  fileInputRef.current.files = dataTransfer.files;
-                  fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-              }}
-            />
+            <AsciiArtPicker onArtSelect={(art) => setMessage(prev => prev + art)} />
             
             {/* User Actions Dropdown */}
             <DropdownMenu>
