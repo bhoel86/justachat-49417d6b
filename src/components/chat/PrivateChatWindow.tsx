@@ -728,10 +728,9 @@ const PrivateChatWindow = ({
   // Mobile-friendly send handler
   const handleSendClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     console.log('[PM-SEND] Button clicked/tapped');
     handleSend();
-  }, []);
+  }, [handleSend]);
 
   const handleEmojiSelect = (emoji: string) => {
     setMessage(prev => prev + emoji);
@@ -1247,7 +1246,7 @@ const PrivateChatWindow = ({
           <input 
             ref={fileInputRef} 
             type="file" 
-            accept="image/*" 
+           accept=".jpg,.jpeg,.png,.gif,.webp,.heic"
             onChange={handleImageSelect} 
             className="hidden" 
           />
@@ -1304,12 +1303,10 @@ const PrivateChatWindow = ({
           <Button
             ref={sendButtonRef}
             onClick={handleSendClick}
-            onTouchEnd={handleSendClick}
-            onTouchStart={(e) => e.stopPropagation()}
             disabled={!message.trim() || !isConnected || isUploading}
             variant="jac"
             size="icon"
-            className="h-8 w-8 rounded-lg shrink-0 touch-manipulation active:scale-95 transition-transform"
+           className="h-8 w-8 rounded-lg shrink-0 touch-manipulation"
             aria-label="Send message"
           >
             <Send className="h-3.5 w-3.5" />

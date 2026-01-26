@@ -808,7 +808,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
           type="file"
           ref={fileInputRef}
           onChange={handleImageSelect}
-          accept="image/*"
+         accept=".jpg,.jpeg,.png,.gif,.webp,.heic"
           className="hidden"
         />
         
@@ -890,7 +890,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
           type="submit"
           variant="jac"
           size="icon"
-          className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl shrink-0"
+         className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl shrink-0 touch-manipulation"
           disabled={(!message.trim() && !attachedImage) || isUploading}
         >
           {isUploading ? (
