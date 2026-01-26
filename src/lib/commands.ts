@@ -222,6 +222,7 @@ const opCommand: CommandHandler = async (args, context) => {
     message: `${targetUser.username} has been given moderator status.`,
     isSystemMessage: true,
     broadcast: true,
+    refreshRole: targetUser.user_id === context.userId, // Refresh if promoting self
   };
 };
 
@@ -269,6 +270,7 @@ const deopCommand: CommandHandler = async (args, context) => {
     message: `${targetUser.username} has been demoted to user.`,
     isSystemMessage: true,
     broadcast: true,
+    refreshRole: targetUser.user_id === context.userId, // Refresh if demoting self
   };
 };
 
@@ -398,6 +400,7 @@ const adminCommand: CommandHandler = async (args, context) => {
     message: `${targetUser.username} has been promoted to admin.`,
     isSystemMessage: true,
     broadcast: true,
+    refreshRole: targetUser.user_id === context.userId,
   };
 };
 
@@ -442,6 +445,7 @@ const deadminCommand: CommandHandler = async (args, context) => {
     message: `${targetUser.username} has been demoted to moderator.`,
     isSystemMessage: true,
     broadcast: true,
+    refreshRole: targetUser.user_id === context.userId,
   };
 };
 

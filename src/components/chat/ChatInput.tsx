@@ -11,6 +11,7 @@ import MentionAutocomplete from "./MentionAutocomplete";
 import CommandAutocomplete, { CommandDefinition } from "./CommandAutocomplete";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useInputHistory } from "@/hooks/useInputHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { compressImage } from "@/lib/imageCompression";
@@ -65,6 +66,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const radio = useRadioOptional();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { addToHistory, navigateHistory, resetHistoryNavigation } = useInputHistory();
 
   // Detect @mention and /command typing
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,11 +360,35 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
         finalMessage = finalMessage ? `${finalMessage} [img:${imageUrl}]` : `[img:${imageUrl}]`;
       }
       
+      // Add to history before sending
+      addToHistory(message.trim());
+      resetHistoryNavigation();
+      
       onSend(finalMessage);
       setMessage("");
       clearImage();
     }
   };
+
+  // Handle keyboard navigation for history
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Don't handle if autocomplete is open
+    if (showCommands || showMentions) return;
+    
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevInput = navigateHistory('up', message);
+      if (prevInput !== null) {
+        setMessage(prevInput);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextInput = navigateHistory('down', message);
+      if (nextInput !== null) {
+        setMessage(nextInput);
+      }
+    }
+  }, [showCommands, showMentions, navigateHistory, message]);
 
   const handleEmojiSelect = (emoji: string) => {
     setMessage(prev => prev + emoji);
@@ -933,7 +959,8 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
             type="text"
             value={message}
             onChange={handleInputChange}
-            placeholder={isMuted ? "Commands only..." : "Type a message... (use @ to mention)"}
+            onKeyDown={handleKeyDown}
+            placeholder={isMuted ? "Commands only..." : "Type a message... (↑ for history)"}
             className="w-full bg-input rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
           />
           {showMentions && (
