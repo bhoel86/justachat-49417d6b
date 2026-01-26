@@ -56,7 +56,7 @@ const findClosestColor = (r: number, g: number, b: number): string => {
   return closest;
 };
 
-// Convert image to IRC colored block art with 99-color palette
+// Convert image to colored block art with direct RGB
 const imageToColoredBlocks = (img: HTMLImageElement, maxWidth: number = 100, maxHeight: number = 50): string => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -64,7 +64,7 @@ const imageToColoredBlocks = (img: HTMLImageElement, maxWidth: number = 100, max
 
   // Calculate dimensions - for tiny block chars, aspect is nearly 1:1
   const aspectRatio = img.width / img.height;
-  const charAspect = 1.2; // Blocks are slightly taller than wide at 6px
+  const charAspect = 1.2; // Blocks are slightly taller than wide at 8px
   
   let width = maxWidth;
   let height = Math.floor(width / aspectRatio / charAspect);
@@ -84,6 +84,7 @@ const imageToColoredBlocks = (img: HTMLImageElement, maxWidth: number = 100, max
   const imageData = ctx.getImageData(0, 0, width, height);
   const pixels = imageData.data;
 
+  // Use simple RGB format: [rgb:R,G,B]█
   let result = '';
   
   for (let y = 0; y < height; y++) {
@@ -97,12 +98,11 @@ const imageToColoredBlocks = (img: HTMLImageElement, maxWidth: number = 100, max
       if (a < 128) {
         result += ' ';
       } else {
-        const colorCode = findClosestColor(r, g, b);
-        // Always add color code for each block to ensure consistency
-        result += `\x03${colorCode}█`;
+        // Use direct RGB color format
+        result += `[rgb:${r},${g},${b}]█`;
       }
     }
-    result += '\x03\n'; // Reset color at end of line
+    result += '\n';
   }
 
   return result.trim();
@@ -337,10 +337,6 @@ const AsciiArtPicker = ({ onArtSelect }: AsciiArtPickerProps) => {
           const coloredArt = imageToColoredBlocks(img, 100, 50);
           if (coloredArt) {
             onArtSelect(coloredArt);
-            toast({
-              title: "Image converted!",
-              description: "Your image has been converted to colored block art",
-            });
           }
           setIsConverting(false);
           setIsOpen(false);

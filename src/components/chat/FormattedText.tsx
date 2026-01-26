@@ -45,15 +45,14 @@ const getIrcColor = (code: string): string => {
   return '#FFFFFF';
 };
 
-// Parse IRC color codes (\x03FG or \x03FG,BG) - supports 0-98
-const parseIrcColors = (text: string): React.ReactNode[] => {
+// Parse RGB color codes [rgb:R,G,B] format
+const parseRgbColors = (text: string): React.ReactNode[] => {
   const parts: React.ReactNode[] = [];
-  let currentFg: string | null = null;
-  let currentBg: string | null = null;
   
-  // Split by color codes (1-2 digits) and newlines
-  // Match \x03 followed by optional FG (1-2 digits) and optional ,BG (1-2 digits)
-  const segments = text.split(/(\x03(?:\d{1,2}(?:,\d{1,2})?)?|\n)/);
+  // Split by [rgb:R,G,B] patterns and newlines
+  const segments = text.split(/(\[rgb:\d+,\d+,\d+\]|\n)/);
+  
+  let currentColor: string | null = null;
   
   segments.forEach((segment, i) => {
     if (!segment) return;
@@ -64,39 +63,29 @@ const parseIrcColors = (text: string): React.ReactNode[] => {
     }
     
     // Check if this is a color code
-    if (segment.startsWith('\x03')) {
-      if (segment === '\x03') {
-        // Plain \x03 resets colors
-        currentFg = null;
-        currentBg = null;
-        return;
-      }
-      
-      const colorMatch = segment.match(/^\x03(\d{1,2})(?:,(\d{1,2}))?$/);
-      if (colorMatch) {
-        const fg = colorMatch[1];
-        const bg = colorMatch[2];
-        currentFg = getIrcColor(fg);
-        // If no background specified, use foreground color as background for block art
-        currentBg = bg ? getIrcColor(bg) : currentFg;
-        return;
-      }
+    const colorMatch = segment.match(/^\[rgb:(\d+),(\d+),(\d+)\]$/);
+    if (colorMatch) {
+      const r = colorMatch[1];
+      const g = colorMatch[2];
+      const b = colorMatch[3];
+      currentColor = `rgb(${r},${g},${b})`;
+      return;
     }
     
-    // Regular text - apply current colors
-    if (currentFg || currentBg) {
+    // Regular text - apply current color
+    if (currentColor && segment.includes('█')) {
       parts.push(
         <span
           key={`text-${i}`}
           style={{
-            color: currentBg || currentFg || undefined, // Use bg color for text too
-            backgroundColor: currentBg || currentFg || undefined,
+            color: currentColor,
+            backgroundColor: currentColor,
           }}
         >
           {segment}
         </span>
       );
-    } else {
+    } else if (segment.trim()) {
       parts.push(<span key={`text-${i}`}>{segment}</span>);
     }
   });
@@ -104,9 +93,9 @@ const parseIrcColors = (text: string): React.ReactNode[] => {
   return parts;
 };
 
-// Check if text contains IRC color codes
-const hasIrcColors = (text: string): boolean => {
-  return text.includes('\x03');
+// Check if text contains RGB color codes
+const hasRgbColors = (text: string): boolean => {
+  return text.includes('[rgb:');
 };
 
 // Extract image URL from [img:url] format
@@ -201,8 +190,8 @@ const FormattedText = ({ text, className = '' }: FormattedTextProps) => {
   };
   
   const renderText = () => {
-    // Check for IRC color codes first (colored block art)
-    if (hasIrcColors(textContent)) {
+    // Check for RGB color codes first (colored block art)
+    if (hasRgbColors(textContent)) {
       return (
         <div className="flex justify-center w-full">
           <pre 
@@ -218,7 +207,7 @@ const FormattedText = ({ text, className = '' }: FormattedTextProps) => {
               padding: 0,
             }}
           >
-            {parseIrcColors(textContent)}
+            {parseRgbColors(textContent)}
           </pre>
         </div>
       );
