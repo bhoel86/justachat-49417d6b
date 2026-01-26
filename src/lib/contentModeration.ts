@@ -104,20 +104,20 @@ export interface ModerationResult {
 export const moderateContent = (
   message: string, 
   channelName: string,
-  isRegistered18Plus: boolean = false
+  _isRegistered18Plus: boolean = false // Kept for API compatibility but no longer used
 ): ModerationResult => {
   const warnings: string[] = [];
   let filteredMessage = message;
   
-  // Skip moderation for adult channels or 18+ registered users
-  if (isAdultChannel(channelName) || isRegistered18Plus) {
+  // Skip moderation for adult channels only
+  if (isAdultChannel(channelName)) {
     return { allowed: true, filteredMessage: message, warnings: [] };
   }
   
   // Check and filter URLs
   if (containsUrl(message)) {
     filteredMessage = filterUrls(filteredMessage);
-    warnings.push('URLs are not allowed for non-18+ users');
+    warnings.push('URLs are filtered in this channel');
   }
   
   // Check and filter profanity
