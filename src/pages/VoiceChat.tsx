@@ -36,7 +36,9 @@ const VoiceChat = () => {
     minimizeChat,
     restoreChat,
     setUnread,
-    reorderChats
+    reorderChats,
+    doNotDisturb,
+    toggleDoNotDisturb
   } = usePrivateChats(user?.id || '', profile?.username || 'Anonymous');
 
   const refreshProfile = useCallback(async () => {
@@ -493,14 +495,14 @@ const VoiceChat = () => {
       ))}
 
       {/* PM Tray */}
-      {minimizedChats.length > 0 && (
-        <PMTray
-          minimizedChats={minimizedChats}
-          onRestore={restoreChat}
-          onClose={closeChat}
-          onReorder={reorderChats}
-        />
-      )}
+      <PMTray
+        minimizedChats={minimizedChats}
+        onRestore={restoreChat}
+        onClose={closeChat}
+        onReorder={reorderChats}
+        doNotDisturb={doNotDisturb}
+        onToggleDND={toggleDoNotDisturb}
+      />
     </div>
   );
 };

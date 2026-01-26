@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, GripHorizontal, GripVertical } from "lucide-react";
+import { MessageSquare, X, GripHorizontal, GripVertical, BellOff, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MinimizedChat {
   id: string;
@@ -14,9 +15,11 @@ interface PMTrayProps {
   onRestore: (chatId: string) => void;
   onClose: (chatId: string) => void;
   onReorder?: (fromIndex: number, toIndex: number) => void;
+  doNotDisturb?: boolean;
+  onToggleDND?: () => void;
 }
 
-const PMTray = ({ minimizedChats, onRestore, onClose, onReorder }: PMTrayProps) => {
+const PMTray = ({ minimizedChats, onRestore, onClose, onReorder, doNotDisturb, onToggleDND }: PMTrayProps) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [draggedTab, setDraggedTab] = useState<number | null>(null);
@@ -97,7 +100,10 @@ const PMTray = ({ minimizedChats, onRestore, onClose, onReorder }: PMTrayProps) 
     setDragOverTab(null);
   };
 
-  if (minimizedChats.length === 0) return null;
+  // Show tray if there are chats OR if DND toggle should be visible
+  const showTray = minimizedChats.length > 0 || onToggleDND;
+  
+  if (!showTray) return null;
 
   return (
     <div 
@@ -107,6 +113,30 @@ const PMTray = ({ minimizedChats, onRestore, onClose, onReorder }: PMTrayProps) 
         transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
       }}
     >
+      {/* DND Toggle */}
+      {onToggleDND && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onToggleDND}
+              className={cn(
+                "flex items-center justify-center px-2 py-2 rounded-t-lg border border-b-0 border-border bg-muted/80 shadow-lg transition-colors",
+                doNotDisturb ? "bg-amber-500/20 border-amber-500/50 text-amber-500" : "hover:bg-muted"
+              )}
+            >
+              {doNotDisturb ? (
+                <BellOff className="h-4 w-4" />
+              ) : (
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            {doNotDisturb ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF'}
+          </TooltipContent>
+        </Tooltip>
+      )}
+
       {/* Drag handle for whole tray */}
       <div
         onMouseDown={handleMouseDown}

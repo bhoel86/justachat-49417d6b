@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { playPMNotificationSound } from '@/lib/notificationSound';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface PrivateChat {
   id: string;
@@ -15,7 +16,26 @@ interface PrivateChat {
 export const usePrivateChats = (currentUserId: string, currentUsername: string) => {
   const [chats, setChats] = useState<PrivateChat[]>([]);
   const [topZIndex, setTopZIndex] = useState(1000);
+  const [doNotDisturb, setDoNotDisturb] = useState(false);
   const listenerSetupRef = useRef(false);
+  const dndRef = useRef(doNotDisturb);
+
+  // Keep ref in sync with state for use in async callbacks
+  useEffect(() => {
+    dndRef.current = doNotDisturb;
+  }, [doNotDisturb]);
+
+  const toggleDoNotDisturb = useCallback(() => {
+    setDoNotDisturb(prev => {
+      const newValue = !prev;
+      toast.info(newValue ? 'Do Not Disturb enabled' : 'Do Not Disturb disabled', {
+        description: newValue 
+          ? 'New messages will appear in your tray' 
+          : 'New messages will open automatically'
+      });
+      return newValue;
+    });
+  }, []);
 
   // Listen for incoming private messages and auto-open chat windows
   useEffect(() => {
@@ -53,7 +73,7 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
               return prev; // Chat is already open and active
             }
             
-            // No existing chat - fetch sender profile and auto-open
+            // No existing chat - fetch sender profile and create chat
             (async () => {
               const { data: senderProfile } = await supabase
                 .from('profiles')
@@ -66,10 +86,13 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
               // Play notification sound
               playPMNotificationSound();
               
-              // Auto-open the chat window
+              // Calculate position for new window
               const offset = (prev.length % 5) * 30;
               const baseX = Math.min(window.innerWidth - 340, 100 + offset);
               const baseY = Math.min(window.innerHeight - 440, 100 + offset);
+              
+              // Check DND mode - if enabled, create minimized in tray
+              const isDND = dndRef.current;
               
               const newChat: PrivateChat = {
                 id: `${newMessage.sender_id}-${Date.now()}`,
@@ -77,8 +100,8 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
                 targetUsername: senderUsername,
                 position: { x: baseX, y: baseY },
                 zIndex: 1001 + prev.length,
-                isMinimized: false,
-                hasUnread: false
+                isMinimized: isDND, // Minimized if DND is on
+                hasUnread: isDND   // Mark as unread if going to tray
               };
               
               setChats(current => {
@@ -201,6 +224,8 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     restoreChat,
     setUnread,
     reorderChats,
+    doNotDisturb,
+    toggleDoNotDisturb,
     currentUserId,
     currentUsername
   };

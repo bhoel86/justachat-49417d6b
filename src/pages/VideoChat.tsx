@@ -44,7 +44,9 @@ const VideoChat = () => {
     minimizeChat,
     restoreChat,
     setUnread,
-    reorderChats
+    reorderChats,
+    doNotDisturb,
+    toggleDoNotDisturb
   } = usePrivateChats(user?.id || '', profile?.username || 'Anonymous');
 
   const refreshProfile = useCallback(async () => {
@@ -549,6 +551,8 @@ const VideoChat = () => {
         onRestore={restoreChat}
         onClose={closeChat}
         onReorder={reorderChats}
+        doNotDisturb={doNotDisturb}
+        onToggleDND={toggleDoNotDisturb}
       />
     </div>
   );
