@@ -51,6 +51,8 @@ export const ProfileViewModal = ({
     sendFriendRequest,
     removeFriend,
     cancelFriendRequest,
+    acceptFriendRequest,
+    declineFriendRequest,
     blockUser,
     unblockUser,
     isFriend,
@@ -224,10 +226,38 @@ export const ProfileViewModal = ({
                       Pending
                     </Button>
                   ) : hasReceivedRequest ? (
-                    <Badge variant="secondary" className="py-1.5 px-3">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Sent you a request
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={async () => {
+                          if (!pendingRequest) return;
+                          setActionLoading(true);
+                          await acceptFriendRequest(pendingRequest.id);
+                          setActionLoading(false);
+                        }}
+                        disabled={actionLoading}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                        Accept
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          if (!pendingRequest) return;
+                          setActionLoading(true);
+                          await declineFriendRequest(pendingRequest.id);
+                          setActionLoading(false);
+                        }}
+                        disabled={actionLoading}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <UserMinus className="h-4 w-4 mr-2" />
+                        Decline
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       variant="default"
