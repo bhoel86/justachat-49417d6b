@@ -39,7 +39,8 @@ import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 
 // Banner and footer graphics
 import welcomeBanner from "@/assets/welcome-banner.png";
-import footerMascots from "@/assets/footer-mascots.png";
+import mascotLeft from "@/assets/mascot-left.png";
+import mascotRight from "@/assets/mascot-right.png";
 import DonationBanner from "@/components/home/DonationBanner";
 
 interface Channel {
@@ -837,13 +838,9 @@ const Home = () => {
                 <div className="flex items-center">
                   {/* Left mascot - positioned to end at Facebook */}
                   <img 
-                    src={footerMascots} 
-                    alt="" 
-                    className="h-16 sm:h-20 w-auto opacity-70 object-contain -mr-1"
-                    style={{ 
-                      clipPath: 'inset(0 60% 0 0)',
-                      filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.8))'
-                    }}
+                    src={mascotLeft} 
+                    alt="Mascot" 
+                    className="h-14 sm:h-16 w-auto opacity-80 object-contain"
                   />
                   
                   {/* Social Media Links */}
@@ -896,13 +893,9 @@ const Home = () => {
                   
                   {/* Right mascot */}
                   <img 
-                    src={footerMascots} 
-                    alt="" 
-                    className="h-16 sm:h-20 w-auto opacity-70 object-contain -ml-1"
-                    style={{ 
-                      clipPath: 'inset(0 0 0 60%)',
-                      filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.8))'
-                    }}
+                    src={mascotRight} 
+                    alt="Mascot" 
+                    className="h-14 sm:h-16 w-auto opacity-80 object-contain"
                   />
                 </div>
                 
