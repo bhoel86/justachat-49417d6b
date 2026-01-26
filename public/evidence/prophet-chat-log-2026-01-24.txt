@@ -4,7 +4,7 @@
 ================================================================================
 
 Generated: January 26, 2026
-Platform: justachat.net (justachat.lovable.app)
+Platform: justachat.net
 Database: Supabase PostgreSQL (Project: hliytlezggzryetekpvo)
 
 ================================================================================

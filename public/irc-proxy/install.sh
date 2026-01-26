@@ -10,9 +10,6 @@
 # With HTTPS Admin API (recommended):
 #   curl -fsSL https://justachat.net/irc-proxy/install.sh | bash -s -- --https-admin ircadmin.yourdomain.com
 #
-# If your domain isn't live yet, use the fallback host:
-#   curl -fsSL https://justachat.lovable.app/irc-proxy/install.sh | bash
-#
 # This script will:
 #   1. Install Docker & Docker Compose if missing
 #   2. Create /opt/justachat-irc directory
@@ -34,10 +31,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-PRIMARY_BASE_URL="https://justachat.net/irc-proxy"
-# IMPORTANT: The published lovable.app domain may redirect to the custom domain if the
-# custom domain is set as Primary. Use the preview host as a reliable fallback.
-FALLBACK_BASE_URL="https://id-preview--3468328b-9f6a-4d30-ad57-93742355db43.lovable.app/irc-proxy"
+BASE_URL="https://justachat.net/irc-proxy"
 
 # Parse arguments
 HTTPS_ADMIN_DOMAIN=""
@@ -58,25 +52,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-pick_base_url() {
-  # Allow manual override: BASE_URL=https://.../irc-proxy curl ... | bash
-  if [ -n "${BASE_URL:-}" ]; then
-    echo "$BASE_URL"
-    return 0
-  fi
-
-  # Prefer justachat.net when it is live (silently check, no error output)
-  if curl -fsIL --connect-timeout 3 --max-time 5 "${PRIMARY_BASE_URL}/proxy.js" >/dev/null 2>/dev/null; then
-    echo "$PRIMARY_BASE_URL"
-    return 0
-  fi
-
-  echo "$FALLBACK_BASE_URL"
-}
-
-# Base URL for downloading files
-BASE_URL="$(pick_base_url)"
 
 # Installation directory
 INSTALL_DIR="/opt/justachat-irc"
