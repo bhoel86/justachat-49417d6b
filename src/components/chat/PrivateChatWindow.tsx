@@ -318,6 +318,10 @@ const PrivateChatWindow = ({
         .on('broadcast', { event: 'message' }, async (payload) => {
           if (!isMounted) return;
           const data = payload.payload;
+          
+          // Skip if this is our own message - we already added it locally when sending
+          if (data.senderId === currentUserId) return;
+          
           const currentKey = sessionKeyRef.current;
           if (currentKey) {
             try {
