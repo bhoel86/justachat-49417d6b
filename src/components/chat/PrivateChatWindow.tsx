@@ -1238,8 +1238,8 @@ const PrivateChatWindow = ({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* Image Upload - capture for mobile camera access */}
-          <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageSelect} className="hidden" />
+          {/* Image Upload - opens file picker, auto-sends on selection */}
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
           <Button 
             variant="ghost" 
             size="icon" 
