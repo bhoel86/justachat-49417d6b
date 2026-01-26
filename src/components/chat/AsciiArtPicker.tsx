@@ -12,11 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AtSign, ImagePlus, Heart, Star, Skull, Cat, Dog, Fish, Coffee, Music, Sparkles, Flame, Moon, Sun, Zap, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// ASCII characters from dark to light (extended set for more detail)
-const ASCII_CHARS_DETAILED = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,"^`\'. ';
-
-// Block characters for better visual representation
-const BLOCK_CHARS = '█▓▒░ ';
+// ASCII characters from light to dark (inverted - so dark areas like text become spaces)
+const ASCII_CHARS_DETAILED = ' .\'`^",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
 
 // Apply contrast enhancement to improve detail visibility
 const enhanceContrast = (pixels: Uint8ClampedArray, width: number, height: number): number[] => {
@@ -45,7 +42,7 @@ const enhanceContrast = (pixels: Uint8ClampedArray, width: number, height: numbe
 };
 
 // Convert image to ASCII art with enhanced detail
-const imageToAscii = (img: HTMLImageElement, maxWidth: number = 80, maxHeight: number = 40, useBlocks: boolean = false): string => {
+const imageToAscii = (img: HTMLImageElement, maxWidth: number = 80, maxHeight: number = 40): string => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return '';
@@ -79,9 +76,7 @@ const imageToAscii = (img: HTMLImageElement, maxWidth: number = 80, maxHeight: n
   // Get contrast-enhanced brightness values
   const enhancedBrightness = enhanceContrast(pixels, canvas.width, canvas.height);
 
-  const chars = useBlocks ? BLOCK_CHARS : ASCII_CHARS_DETAILED;
   let ascii = '';
-  
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       // Sample multiple pixels and average them for better quality
@@ -95,8 +90,8 @@ const imageToAscii = (img: HTMLImageElement, maxWidth: number = 80, maxHeight: n
       const avgBrightness = totalBrightness / (sampleScale * sampleScale);
       
       // Map brightness to character
-      const charIndex = Math.floor((avgBrightness / 255) * (chars.length - 1));
-      ascii += chars[Math.min(charIndex, chars.length - 1)];
+      const charIndex = Math.floor((avgBrightness / 255) * (ASCII_CHARS_DETAILED.length - 1));
+      ascii += ASCII_CHARS_DETAILED[Math.min(charIndex, ASCII_CHARS_DETAILED.length - 1)];
     }
     ascii += '\n';
   }
@@ -280,7 +275,7 @@ const AsciiArtPicker = ({ onArtSelect }: AsciiArtPickerProps) => {
 
       reader.onload = (event) => {
         img.onload = () => {
-          const asciiArt = imageToAscii(img, 80, 40, false);
+          const asciiArt = imageToAscii(img, 80, 40);
           if (asciiArt) {
             onArtSelect(asciiArt);
             toast({
