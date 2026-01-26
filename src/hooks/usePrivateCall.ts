@@ -350,12 +350,14 @@ export const usePrivateCall = ({
     }
   }, []);
 
-  // Handle signaling
+  // Handle signaling - IMPORTANT: minimal dependencies to avoid recreating channel
   useEffect(() => {
     if (!currentUserId || !targetUserId) return;
 
     console.log('[usePrivateCall] Setting up call channel:', `call-${channelName}`);
-    const channel = supabase.channel(`call-${channelName}`);
+    const channel = supabase.channel(`call-${channelName}`, {
+      config: { broadcast: { self: false } }
+    });
     channelRef.current = channel;
 
     channel
@@ -382,23 +384,33 @@ export const usePrivateCall = ({
           const pc = peerConnectionRef.current;
           if (pc) {
             console.log('[usePrivateCall] Creating WebRTC offer');
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            
-            channel.send({
-              type: 'broadcast',
-              event: 'webrtc-offer',
-              payload: {
-                from: currentUserId,
-                to: targetUserId,
-                offer,
-              }
-            });
+            try {
+              const offer = await pc.createOffer();
+              await pc.setLocalDescription(offer);
+              
+              channel.send({
+                type: 'broadcast',
+                event: 'webrtc-offer',
+                payload: {
+                  from: currentUserId,
+                  to: targetUserId,
+                  offer: pc.localDescription,
+                }
+              });
+              console.log('[usePrivateCall] Sent WebRTC offer');
+            } catch (err) {
+              console.error('[usePrivateCall] Error creating offer:', err);
+            }
           } else {
             console.error('[usePrivateCall] No peer connection when call answered');
           }
           setCallState('connected');
-          startCallTimer();
+          // Start timer for the caller
+          if (!callTimerRef.current) {
+            callTimerRef.current = setInterval(() => {
+              setCallDuration(prev => prev + 1);
+            }, 1000);
+          }
           toast.success('Call connected');
         } else {
           // Call was rejected
@@ -428,25 +440,36 @@ export const usePrivateCall = ({
         
         const pc = peerConnectionRef.current;
         if (pc) {
-          console.log('[usePrivateCall] Setting remote description from offer');
-          await pc.setRemoteDescription(new RTCSessionDescription(payload.offer));
-          
-          console.log('[usePrivateCall] Creating answer');
-          const answer = await pc.createAnswer();
-          
-          console.log('[usePrivateCall] Setting local description');
-          await pc.setLocalDescription(answer);
-          
-          console.log('[usePrivateCall] Sending webrtc-answer');
-          channel.send({
-            type: 'broadcast',
-            event: 'webrtc-answer',
-            payload: {
-              from: currentUserId,
-              to: targetUserId,
-              answer,
+          try {
+            console.log('[usePrivateCall] Setting remote description from offer');
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.offer));
+            
+            console.log('[usePrivateCall] Creating answer');
+            const answer = await pc.createAnswer();
+            
+            console.log('[usePrivateCall] Setting local description');
+            await pc.setLocalDescription(answer);
+            
+            console.log('[usePrivateCall] Sending webrtc-answer');
+            channel.send({
+              type: 'broadcast',
+              event: 'webrtc-answer',
+              payload: {
+                from: currentUserId,
+                to: targetUserId,
+                answer: pc.localDescription,
+              }
+            });
+            
+            // Start timer for the answerer
+            if (!callTimerRef.current) {
+              callTimerRef.current = setInterval(() => {
+                setCallDuration(prev => prev + 1);
+              }, 1000);
             }
-          });
+          } catch (err) {
+            console.error('[usePrivateCall] Error handling offer:', err);
+          }
         } else {
           console.error('[usePrivateCall] No peer connection when offer received');
         }
@@ -457,7 +480,13 @@ export const usePrivateCall = ({
         
         const pc = peerConnectionRef.current;
         if (pc) {
-          await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
+          try {
+            console.log('[usePrivateCall] Setting remote description from answer');
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
+            console.log('[usePrivateCall] WebRTC connection established');
+          } catch (err) {
+            console.error('[usePrivateCall] Error setting remote description:', err);
+          }
         }
       })
       .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
@@ -465,29 +494,35 @@ export const usePrivateCall = ({
         
         const pc = peerConnectionRef.current;
         if (pc && payload.candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+          } catch (err) {
+            console.warn('[usePrivateCall] Error adding ICE candidate:', err);
+          }
         }
       })
       .subscribe((status) => {
         console.log('[usePrivateCall] Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
           channelSubscribedRef.current = true;
-          // If we have a pending call, now process it
-          if (pendingIncomingCall && callState === 'idle') {
-            console.log('[usePrivateCall] Processing pending call after subscribe:', pendingIncomingCall.callType);
-            setIncomingCallType(pendingIncomingCall.callType);
-            setCallState('ringing');
-            onClearPendingCall?.();
-          }
         }
       });
 
     return () => {
       channelSubscribedRef.current = false;
       supabase.removeChannel(channel);
-      cleanup();
     };
-  }, [currentUserId, targetUserId, channelName, onIncomingCall, targetUsername, cleanup, startCallTimer, pendingIncomingCall, callState, onClearPendingCall]);
+  }, [currentUserId, targetUserId, channelName, targetUsername, cleanup, onIncomingCall]);
+
+  // Handle pending incoming calls separately to avoid recreating channel
+  useEffect(() => {
+    if (pendingIncomingCall && callState === 'idle' && channelSubscribedRef.current) {
+      console.log('[usePrivateCall] Processing pending call:', pendingIncomingCall.callType);
+      setIncomingCallType(pendingIncomingCall.callType);
+      setCallState('ringing');
+      onClearPendingCall?.();
+    }
+  }, [pendingIncomingCall, callState, onClearPendingCall]);
 
   // Format call duration
   const formatDuration = (seconds: number) => {
