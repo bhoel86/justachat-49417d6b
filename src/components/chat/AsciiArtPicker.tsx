@@ -12,8 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AtSign, ImagePlus, Heart, Star, Skull, Cat, Dog, Fish, Coffee, Music, Sparkles, Flame, Moon, Sun, Zap, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// ASCII characters from dark to light
-const ASCII_CHARS = '@%#*+=-:. ';
+// ASCII characters from dark to light (extended set for more detail)
+const ASCII_CHARS = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,"^`\'. ';
 
 // Convert image to ASCII art
 const imageToAscii = (img: HTMLImageElement, maxWidth: number = 60, maxHeight: number = 30): string => {
