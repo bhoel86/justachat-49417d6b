@@ -113,7 +113,7 @@ serve(async (req) => {
       country: geoData.country,
       country_code: geoData.countryCode,
       timezone: geoData.timezone,
-      isp: null, // Don't store ISP for privacy
+      isp: geoData.isp || null,
       last_seen: new Date().toISOString(),
     };
 
