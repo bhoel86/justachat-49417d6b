@@ -123,6 +123,7 @@ const PrivateChatWindow = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sentMessageIdsRef = useRef<Set<string>>(new Set());
   const isSendingRef = useRef(false);
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
   const { toast } = useToast();
 
   // Check if target user is a bot
@@ -266,6 +267,8 @@ const PrivateChatWindow = ({
       if (hasLoadedRef.current || isTargetBot) return;
       hasLoadedRef.current = true;
       
+      console.log('[PM-HISTORY] Loading message history...');
+      
       try {
         const { data, error } = await supabase
           .from('private_messages')
@@ -275,9 +278,11 @@ const PrivateChatWindow = ({
           .limit(100);
 
         if (error || !isMounted) {
-          console.error('Failed to load messages:', error);
+          console.error('[PM-HISTORY] Failed to load messages:', error);
           return;
         }
+        
+        console.log('[PM-HISTORY] Loaded', data?.length || 0, 'messages from DB');
 
         if (data && data.length > 0) {
           const decryptedMessages: PrivateMessage[] = [];
@@ -286,8 +291,12 @@ const PrivateChatWindow = ({
             const decrypted = await decryptDbMessage(msg);
             if (decrypted) {
               decryptedMessages.push(decrypted);
+            } else {
+              console.warn('[PM-HISTORY] Failed to decrypt message:', msg.id);
             }
           }
+          
+          console.log('[PM-HISTORY] Successfully decrypted', decryptedMessages.length, 'messages');
           
           if (isMounted) {
             setMessages(decryptedMessages);
@@ -299,9 +308,11 @@ const PrivateChatWindow = ({
               }
             });
           }
+        } else {
+          console.log('[PM-HISTORY] No messages found in DB');
         }
       } catch (err) {
-        console.error('Error loading messages:', err);
+        console.error('[PM-HISTORY] Error loading messages:', err);
       }
     };
 
@@ -597,6 +608,14 @@ const PrivateChatWindow = ({
   }, [isTargetBot]);
 
   const handleSend = async () => {
+    // Prevent rapid double-taps on mobile
+    if (isSendingRef.current) {
+      console.log('[PM-SEND] Already sending, blocked');
+      return;
+    }
+    
+    isSendingRef.current = true;
+    
     const currentKey = sessionKeyRef.current || sessionKey;
     
     // Handle image upload first if attached
@@ -608,7 +627,11 @@ const PrivateChatWindow = ({
     }
     
     if (!message.trim() && !imageUrl) return;
-    if (!currentKey || !channelRef.current) return;
+    if (!currentKey || !channelRef.current) {
+      console.log('[PM-SEND] Missing key or channel', { hasKey: !!currentKey, hasChannel: !!channelRef.current });
+      isSendingRef.current = false;
+      return;
+    }
 
     // Apply text formatting if set
     let finalMessage = message.trim();
@@ -620,6 +643,8 @@ const PrivateChatWindow = ({
     if (imageUrl) {
       finalMessage = finalMessage ? `${finalMessage} [img:${imageUrl}]` : `[img:${imageUrl}]`;
     }
+    
+    console.log('[PM-SEND] Sending message:', finalMessage.substring(0, 50));
     
     const msgId = `${Date.now()}-${Math.random()}`;
     
@@ -638,7 +663,14 @@ const PrivateChatWindow = ({
         });
 
       if (dbError) {
-        console.error('Failed to store message:', dbError);
+        console.error('[PM-SEND] Failed to store message in DB:', dbError);
+        toast({
+          variant: "destructive",
+          title: "Message not saved",
+          description: "Message sent but not saved to history"
+        });
+      } else {
+        console.log('[PM-SEND] Message stored in DB successfully');
       }
       
     // CRITICAL: Mark as sent BEFORE adding to state to prevent race conditions
@@ -676,6 +708,8 @@ const PrivateChatWindow = ({
       monitorMessage(finalMessage, currentUserId, currentUsername);
       setMessage('');
       setTextFormat({ textStyle: 'none' });
+      
+      console.log('[PM-SEND] Message sent successfully');
 
       // Trigger bot "seen" and response if chatting with a simulated user
       if (isTargetBot) {
@@ -689,8 +723,21 @@ const PrivateChatWindow = ({
         title: "Send failed",
         description: "Could not encrypt and send message."
       });
+    } finally {
+      // Reset send lock after a brief delay
+      setTimeout(() => {
+        isSendingRef.current = false;
+      }, 500);
     }
   };
+
+  // Mobile-friendly send handler
+  const handleSendClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('[PM-SEND] Button clicked/tapped');
+    handleSend();
+  }, []);
 
   const handleEmojiSelect = (emoji: string) => {
     setMessage(prev => prev + emoji);
@@ -1126,28 +1173,29 @@ const PrivateChatWindow = ({
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             placeholder="Message..."
             disabled={!isConnected || isUploading}
             className="flex-1 bg-input rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50 min-w-0"
           />
           <Button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSend();
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSend();
-            }}
+            ref={sendButtonRef}
+            onClick={handleSendClick}
+            onTouchEnd={handleSendClick}
+            onTouchStart={(e) => e.stopPropagation()}
             disabled={(!message.trim() && !attachedImage) || !isConnected || isUploading}
             variant="jac"
             size="icon"
-            className="h-8 w-8 rounded-lg shrink-0 touch-manipulation"
+            className="h-8 w-8 rounded-lg shrink-0 touch-manipulation active:scale-95 transition-transform"
+            aria-label="Send message"
           >
             <Send className="h-3.5 w-3.5" />
           </Button>
