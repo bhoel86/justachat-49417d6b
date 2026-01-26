@@ -614,7 +614,7 @@ const Home = () => {
           {/* Main Content */}
           <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
             {/* Mobile: Stack vertically, Desktop: Side by side */}
-            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 sm:gap-6">
               {/* Room Cards - Horizontal scroll on mobile */}
               <div className="lg:w-80 xl:w-96 flex-shrink-0">
                 <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4">
@@ -780,7 +780,7 @@ const Home = () => {
               </div>
 
               {/* Center - Public Chat Preview */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 flex flex-col">
                 {/* Welcome Banner */}
                 <div className="relative rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-border">
                   <img 
@@ -806,8 +806,8 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* Chat Preview - Smaller on mobile */}
-                <div className="bg-card rounded-xl sm:rounded-2xl border border-border h-[50vh] sm:h-[calc(100vh-340px)] flex flex-col overflow-hidden">
+                {/* Chat Preview - Fills remaining height to align with left column */}
+                <div className="bg-card rounded-xl sm:rounded-2xl border border-border flex-1 flex flex-col overflow-hidden">
                   {/* Topic bar */}
                   <div className="px-3 sm:px-4 py-1.5 sm:py-2 border-b border-border bg-primary/5">
                     <p className="text-xs sm:text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
