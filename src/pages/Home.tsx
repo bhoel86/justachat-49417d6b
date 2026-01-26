@@ -296,9 +296,8 @@ const Home = () => {
               <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
             </div>
             <h1 className="text-lg sm:text-2xl font-bold brand jac-gradient-text">Justachat<sup className="text-[8px] sm:text-xs">™</sup></h1>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Site Navigation Dropdown */}
+            
+            {/* Site Navigation Dropdown - moved next to logo */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 border-primary/50 hover:border-primary hover:bg-primary/10">
@@ -307,7 +306,7 @@ const Home = () => {
                   <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 bg-popover border border-border shadow-lg z-50">
+              <DropdownMenuContent align="start" className="w-64 bg-popover border border-border shadow-lg z-50">
                 <DropdownMenuLabel className="flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-primary" />
                   Site Navigation
@@ -335,7 +334,6 @@ const Home = () => {
                     </div>
                   </Link>
                 </DropdownMenuItem>
-                
                 
                 {/* Help Section */}
                 <DropdownMenuItem asChild>
@@ -401,7 +399,8 @@ const Home = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Admin Dropdown - Owner/Admin Only */}
             {(isOwner || isAdmin) && (
               <DropdownMenu>
