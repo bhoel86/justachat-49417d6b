@@ -237,11 +237,11 @@ const Home = () => {
                 
                 {/* Help Section */}
                 <DropdownMenuItem asChild>
-                  <Link to="/chat/help" className="flex items-center gap-2 cursor-pointer">
+                  <Link to="/help" className="flex items-center gap-2 cursor-pointer">
                     <LifeBuoy className="w-4 h-4 text-green-500" />
                     <div>
                       <span>Help & Support</span>
-                      <p className="text-xs text-muted-foreground">Get help from the community</p>
+                      <p className="text-xs text-muted-foreground">Get help & contact support</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
