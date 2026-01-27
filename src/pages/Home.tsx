@@ -918,12 +918,12 @@ const Home = () => {
                   />
                 </div>
                 
-                {/* Copyright & Version */}
-                <div className="text-center sm:text-right">
+                {/* Copyright & Version - centered under social links */}
+                <div className="text-center mt-3">
                   <p className="text-xs text-muted-foreground">
                     © {new Date().getFullYear()} Justachat™ All rights reserved.
                   </p>
-                  <div className="flex items-center justify-center sm:justify-end gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <a 
                       href="https://justachat.net" 
                       className="text-xs text-muted-foreground hover:text-primary transition-colors"
