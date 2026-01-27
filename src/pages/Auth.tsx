@@ -896,7 +896,7 @@ const Auth = () => {
                 type="button"
                 onClick={async () => {
                   // Sign out any existing session first, then force account chooser
-                  await supabase.auth.signOut();
+                  await supabase.auth.signOut({ scope: 'local' });
                   const { error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {

@@ -80,7 +80,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Logout from chat function - call this when leaving chat room
   const logoutFromChat = async () => {
-    await supabase.auth.signOut();
+    // Local sign-out clears browser storage even if the server session is already gone.
+    // This prevents the "sign out then immediately sign back in" loop.
+    await supabase.auth.signOut({ scope: 'local' });
+    setSession(null);
+    setUser(null);
     setRole(null);
     setIsMinor(false);
     setHasParentConsent(true);
@@ -153,8 +157,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Use local sign-out to reliably clear auth in the browser.
+    await supabase.auth.signOut({ scope: 'local' });
+    setSession(null);
+    setUser(null);
     setRole(null);
+    setIsMinor(false);
+    setHasParentConsent(true);
   };
 
   return (
