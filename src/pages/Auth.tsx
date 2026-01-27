@@ -329,6 +329,9 @@ const Auth = () => {
           title: "Password updated!",
           description: "You can now sign in with your new password."
         });
+        // Sign out the recovery session so user can log in fresh
+        await supabase.auth.signOut();
+        setIsPasswordResetFlow(false);
         setMode("login");
         setNewPassword("");
         // Clear the hash from URL
