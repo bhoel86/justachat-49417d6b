@@ -96,16 +96,27 @@ serve(async (req) => {
     }
 
     console.log(`VPS Deploy: ${action} requested by owner ${user.email}`);
+    console.log(`VPS Deploy: Calling ${VPS_DEPLOY_URL}${endpoint} with method ${method}`);
 
     // Call the VPS deploy server
-    const response = await fetch(`${VPS_DEPLOY_URL}${endpoint}`, {
-      method,
-      headers: {
-        "Authorization": `Bearer ${deployToken}`,
-        "Content-Type": "application/json",
-      },
-      body: method === "POST" ? JSON.stringify(body) : undefined,
-    });
+    let response;
+    try {
+      response = await fetch(`${VPS_DEPLOY_URL}${endpoint}`, {
+        method,
+        headers: {
+          "Authorization": `Bearer ${deployToken}`,
+          "Content-Type": "application/json",
+        },
+        body: method === "POST" ? JSON.stringify(body) : undefined,
+      });
+    } catch (fetchError: unknown) {
+      const fetchErrorMsg = fetchError instanceof Error ? fetchError.message : "Network error";
+      console.error("VPS Deploy fetch error:", fetchErrorMsg);
+      return new Response(
+        JSON.stringify({ error: `Cannot reach VPS: ${fetchErrorMsg}` }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     let data;
     try {
@@ -113,6 +124,8 @@ serve(async (req) => {
     } catch {
       data = { error: "Invalid response from VPS" };
     }
+
+    console.log(`VPS Deploy: Response status ${response.status}, data:`, JSON.stringify(data));
 
     // Log the action
     await supabase.from("audit_logs").insert({
