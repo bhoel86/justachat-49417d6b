@@ -6,8 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// VPS IRC Proxy admin endpoint
-const VPS_ADMIN_URL = "http://157.245.174.197:6680";
+// VPS Deploy server endpoint (runs on localhost on the VPS)
+const VPS_DEPLOY_URL = "http://157.245.174.197:6680";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -55,17 +55,25 @@ serve(async (req) => {
       );
     }
 
-    // Get admin token from secrets
-    const adminToken = Deno.env.get("IRC_PROXY_ADMIN_TOKEN");
-    if (!adminToken) {
+    // Get deploy token from secrets - support both old and new secret names
+    const deployToken = Deno.env.get("VPS_DEPLOY_TOKEN") || Deno.env.get("IRC_PROXY_ADMIN_TOKEN");
+    if (!deployToken) {
       return new Response(
-        JSON.stringify({ error: "IRC proxy admin token not configured" }),
+        JSON.stringify({ error: "VPS deploy token not configured. Add VPS_DEPLOY_TOKEN secret." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const url = new URL(req.url);
-    const action = url.searchParams.get("action") || "status";
+    // Parse request body to get action
+    let action = "status";
+    try {
+      const body = await req.json();
+      if (body?.action) {
+        action = body.action;
+      }
+    } catch {
+      // No body or invalid JSON, default to status
+    }
 
     let endpoint = "/deploy/status";
     let method = "GET";
@@ -77,16 +85,21 @@ serve(async (req) => {
 
     console.log(`VPS Deploy: ${action} requested by owner ${user.email}`);
 
-    // Call the VPS IRC proxy admin API
-    const response = await fetch(`${VPS_ADMIN_URL}${endpoint}`, {
+    // Call the VPS deploy server
+    const response = await fetch(`${VPS_DEPLOY_URL}${endpoint}`, {
       method,
       headers: {
-        "Authorization": `Bearer ${adminToken}`,
+        "Authorization": `Bearer ${deployToken}`,
         "Content-Type": "application/json",
       },
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { error: "Invalid response from VPS" };
+    }
 
     // Log the action
     await supabase.from("audit_logs").insert({
@@ -107,7 +120,7 @@ serve(async (req) => {
         ...data 
       }),
       { 
-        status: response.status, 
+        status: response.ok ? 200 : response.status, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
