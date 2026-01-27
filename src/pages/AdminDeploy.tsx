@@ -6,7 +6,8 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Rocket, RefreshCw, GitBranch, Server, CheckCircle, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, RefreshCw, GitBranch, Server, CheckCircle, XCircle, Download, Upload, Clock, HardDrive } from "lucide-react";
 import { toast } from "sonner";
 
 interface DeployStatus {
@@ -18,6 +19,8 @@ interface DeployStatus {
     date: string;
   };
   serverVersion?: string;
+  backupSchedule?: string;
+  lastBackup?: string;
   error?: string;
 }
 
@@ -35,8 +38,9 @@ export default function AdminDeploy() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<DeployStatus | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
-  const [deploying, setDeploying] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deployResult, setDeployResult] = useState<DeployResult | null>(null);
+  const [backupFrequency, setBackupFrequency] = useState("daily");
 
   useEffect(() => {
     if (!authLoading && !isOwner) {
@@ -70,12 +74,12 @@ export default function AdminDeploy() {
     }
   };
 
-  const triggerDeploy = async () => {
-    if (!confirm("Are you sure you want to deploy? This will update the VPS from Git.")) {
+  const executeAction = async (action: string, confirmMessage: string) => {
+    if (!confirm(confirmMessage)) {
       return;
     }
 
-    setDeploying(true);
+    setActionLoading(action);
     setDeployResult(null);
     
     try {
@@ -85,10 +89,15 @@ export default function AdminDeploy() {
         return;
       }
 
-      toast.info("Deploying... This may take a few minutes.");
+      toast.info(`Executing ${action}... This may take a few minutes.`);
+
+      const body: any = { action };
+      if (action === "schedule-backup") {
+        body.frequency = backupFrequency;
+      }
 
       const response = await supabase.functions.invoke("vps-deploy", {
-        body: { action: "deploy" },
+        body,
       });
 
       if (response.error) {
@@ -98,18 +107,17 @@ export default function AdminDeploy() {
       setDeployResult(response.data);
 
       if (response.data.success) {
-        toast.success("Deploy completed successfully!");
-        // Refresh status after deploy
+        toast.success(`${action} completed successfully!`);
         await fetchStatus();
       } else {
-        toast.error("Deploy failed: " + (response.data.error || "Unknown error"));
+        toast.error(`${action} failed: ` + (response.data.error || "Unknown error"));
       }
     } catch (error: any) {
-      console.error("Deploy failed:", error);
-      toast.error("Deploy failed: " + error.message);
-      setDeployResult({ success: false, action: "deploy", error: error.message });
+      console.error(`${action} failed:`, error);
+      toast.error(`${action} failed: ` + error.message);
+      setDeployResult({ success: false, action, error: error.message });
     } finally {
-      setDeploying(false);
+      setActionLoading(null);
     }
   };
 
@@ -136,8 +144,8 @@ export default function AdminDeploy() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">VPS Deployment</h1>
-            <p className="text-muted-foreground">Deploy updates to the production VPS</p>
+            <h1 className="text-3xl font-bold">VPS Management</h1>
+            <p className="text-muted-foreground">Manage backups and sync with GitHub</p>
           </div>
           <Button variant="outline" onClick={fetchStatus} disabled={loadingStatus}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loadingStatus ? "animate-spin" : ""}`} />
@@ -145,95 +153,182 @@ export default function AdminDeploy() {
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Status Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Server className="h-5 w-5" />
-                Current Status
-              </CardTitle>
-              <CardDescription>Live VPS deployment information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {loadingStatus ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading status...
+        {/* Status Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Server className="h-5 w-5" />
+              Current Status
+            </CardTitle>
+            <CardDescription>Live VPS deployment information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loadingStatus ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading status...
+              </div>
+            ) : status?.error ? (
+              <div className="text-destructive">Error: {status.error}</div>
+            ) : status ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">App Version</span>
+                  <Badge variant="secondary">v{status.appVersion}</Badge>
                 </div>
-              ) : status?.error ? (
-                <div className="text-destructive">Error: {status.error}</div>
-              ) : status ? (
-                <>
+                {status.serverVersion && (
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">App Version</span>
-                    <Badge variant="secondary">v{status.appVersion}</Badge>
+                    <span className="text-muted-foreground">Deploy Server</span>
+                    <Badge variant="outline">v{status.serverVersion}</Badge>
                   </div>
-                  {status.serverVersion && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Deploy Server</span>
-                      <Badge variant="outline">v{status.serverVersion}</Badge>
+                )}
+                {status.git && (
+                  <div className="md:col-span-2 border-t pt-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <GitBranch className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-mono text-sm">{status.git.hash}</span>
                     </div>
-                  )}
-                  {status.git && (
-                    <>
-                      <div className="border-t pt-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <GitBranch className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-mono text-sm">{status.git.hash}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{status.git.message}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(status.git.date).toLocaleString()}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="text-muted-foreground">No status available</div>
-              )}
-            </CardContent>
-          </Card>
+                    <p className="text-sm text-muted-foreground">{status.git.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(status.git.date).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-muted-foreground">No status available</div>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Deploy Card */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Scheduled Backups Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Rocket className="h-5 w-5" />
-                Deploy Update
+                <HardDrive className="h-5 w-5" />
+                Scheduled Backups
               </CardTitle>
               <CardDescription>
-                Pull latest code from Git and rebuild the application
+                Configure automatic backups to VPS
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-muted/50 p-4 rounded-lg text-sm space-y-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Backup Frequency</label>
+                <Select value={backupFrequency} onValueChange={setBackupFrequency}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hourly">Hourly</SelectItem>
+                    <SelectItem value="daily">Daily (2 AM)</SelectItem>
+                    <SelectItem value="weekly">Weekly (Sunday 3 AM)</SelectItem>
+                    <SelectItem value="disable">Disable</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-1">
+                <p className="flex items-center gap-2">
+                  <Clock className="h-3 w-3" />
+                  Backups saved to: <code>/backups/justachat/</code>
+                </p>
+              </div>
+
+              <Button 
+                className="w-full" 
+                onClick={() => executeAction("schedule-backup", `Set backup frequency to ${backupFrequency}?`)}
+                disabled={actionLoading !== null}
+              >
+                {actionLoading === "schedule-backup" ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+                ) : (
+                  <><Clock className="h-4 w-4 mr-2" /> Save Schedule</>
+                )}
+              </Button>
+
+              <Button 
+                variant="outline"
+                className="w-full" 
+                onClick={() => executeAction("backup-now", "Create a backup now?")}
+                disabled={actionLoading !== null}
+              >
+                {actionLoading === "backup-now" ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Backing up...</>
+                ) : (
+                  <><HardDrive className="h-4 w-4 mr-2" /> Backup Now</>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Pull from GitHub Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="h-5 w-5" />
+                Update VPS from GitHub
+              </CardTitle>
+              <CardDescription>
+                Pull latest code and rebuild
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-1">
                 <p><strong>This will:</strong></p>
-                <ul className="list-disc list-inside text-muted-foreground space-y-1">
-                  <li>Fetch latest code from <code>main</code> branch</li>
-                  <li>Install dependencies</li>
-                  <li>Build the production bundle</li>
-                  <li>Deploy to /var/www/justachat</li>
+                <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                  <li>git pull origin main</li>
+                  <li>npm install</li>
+                  <li>npm run build</li>
                 </ul>
               </div>
 
               <Button 
                 className="w-full" 
-                size="lg"
-                onClick={triggerDeploy}
-                disabled={deploying}
+                onClick={() => executeAction("deploy", "Pull latest from GitHub and rebuild?")}
+                disabled={actionLoading !== null}
               >
-                {deploying ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Deploying...
-                  </>
+                {actionLoading === "deploy" ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Deploying...</>
                 ) : (
-                  <>
-                    <Rocket className="h-4 w-4 mr-2" />
-                    Deploy Now
-                  </>
+                  <><Download className="h-4 w-4 mr-2" /> Pull &amp; Deploy</>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Push to GitHub Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Push VPS to GitHub
+              </CardTitle>
+              <CardDescription>
+                Commit local changes to repo
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-1">
+                <p><strong>This will:</strong></p>
+                <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                  <li>git add .</li>
+                  <li>git commit -m "VPS update"</li>
+                  <li>git push origin main</li>
+                </ul>
+              </div>
+
+              <Button 
+                className="w-full" 
+                variant="secondary"
+                onClick={() => executeAction("push", "Push VPS changes to GitHub? This will commit and push all local changes.")}
+                disabled={actionLoading !== null}
+              >
+                {actionLoading === "push" ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Pushing...</>
+                ) : (
+                  <><Upload className="h-4 w-4 mr-2" /> Push to GitHub</>
                 )}
               </Button>
             </CardContent>
@@ -250,7 +345,7 @@ export default function AdminDeploy() {
                 ) : (
                   <XCircle className="h-5 w-5 text-destructive" />
                 )}
-                Deploy {deployResult.success ? "Succeeded" : "Failed"}
+                {deployResult.action} {deployResult.success ? "Succeeded" : "Failed"}
               </CardTitle>
             </CardHeader>
             <CardContent>

@@ -77,8 +77,24 @@ serve(async (req) => {
 
     let endpoint = "/deploy/status";
     let method = "GET";
+    let body: any = { action };
 
-    if (action === "deploy") {
+    // Parse request body
+    let requestBody: any = {};
+    try {
+      requestBody = await req.json();
+      if (requestBody?.action) {
+        action = requestBody.action;
+        body.action = action;
+      }
+      if (requestBody?.frequency) {
+        body.frequency = requestBody.frequency;
+      }
+    } catch {
+      // No body or invalid JSON, default to status
+    }
+
+    if (action !== "status") {
       endpoint = "/deploy";
       method = "POST";
     }
@@ -92,6 +108,7 @@ serve(async (req) => {
         "Authorization": `Bearer ${deployToken}`,
         "Content-Type": "application/json",
       },
+      body: method === "POST" ? JSON.stringify(body) : undefined,
     });
 
     let data;
