@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Scale, Shield, FileText, AlertTriangle, ArrowLeft, DollarSign, Globe, Database, UserCheck, Eye, Ban, Gavel, Server } from "lucide-react";
+import { Scale, Shield, FileText, AlertTriangle, ArrowLeft, DollarSign, Globe, Database, UserCheck, Eye, Ban, Gavel, Server, Copyright, Link2, Users, Mail, CloudOff, ScrollText, MapPin, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -376,15 +376,386 @@ const Legal = () => {
           </CardContent>
         </Card>
 
+        {/* Section 230 - Communications Decency Act */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ScrollText className="h-5 w-5 text-primary" />
+              Communications Decency Act (Section 230)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              Justachat™ operates as an interactive computer service provider under Section 230 of the 
+              Communications Decency Act (47 U.S.C. § 230).
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We are a <strong>platform</strong>, not a publisher of user-generated content
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We are not liable for content created, posted, or shared by users
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Good faith content moderation does not create publisher liability
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Users are solely responsible for their own communications
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        {/* DMCA Policy */}
+        <Card className="border-orange-500/30 bg-orange-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Copyright className="h-5 w-5 text-orange-500" />
+              DMCA Copyright Policy
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              Justachat™ respects intellectual property rights and complies with the Digital Millennium 
+              Copyright Act (DMCA). We will respond to valid takedown notices for infringing content.
+            </p>
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-semibold text-foreground">To file a DMCA takedown request, provide:</p>
+              <ul className="text-sm text-foreground space-y-1">
+                <li>1. Your contact information (name, address, email, phone)</li>
+                <li>2. Description of the copyrighted work being infringed</li>
+                <li>3. Location of the infringing material on our service</li>
+                <li>4. Statement of good faith belief of infringement</li>
+                <li>5. Statement of accuracy under penalty of perjury</li>
+                <li>6. Your physical or electronic signature</li>
+              </ul>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              <strong>DMCA Agent:</strong> Submit copyright complaints to <strong>legal@justachat.net</strong>
+            </p>
+            <Separator className="my-2" />
+            <p className="text-muted-foreground text-xs">
+              Repeat infringers will have their accounts terminated. Counter-notices may be filed if you 
+              believe content was removed in error.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Third-Party Links */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-primary" />
+              Third-Party Links & Content
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              Users may share links to external websites, services, or content. Justachat™ is not responsible for:
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                The content, accuracy, or availability of third-party websites
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Privacy practices or terms of service of external sites
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Any damages resulting from accessing third-party links
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Products, services, or transactions conducted on external sites
+              </li>
+            </ul>
+            <p className="text-muted-foreground text-sm">
+              Accessing external links is at your own risk. We recommend reviewing the terms and privacy 
+              policies of any third-party sites you visit.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Indemnification */}
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Handshake className="h-5 w-5 text-amber-600" />
+              Indemnification
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              You agree to <strong>indemnify, defend, and hold harmless</strong> Justachat™, its owners, 
+              operators, employees, and affiliates from any and all claims, damages, losses, liabilities, 
+              costs, and expenses (including attorney's fees) arising from:
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-amber-600 font-bold">•</span>
+                Your use or misuse of the service
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-amber-600 font-bold">•</span>
+                Content you post, transmit, or share
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-amber-600 font-bold">•</span>
+                Violation of these Terms of Service
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-amber-600 font-bold">•</span>
+                Infringement of any third-party rights
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-amber-600 font-bold">•</span>
+                Any illegal or unauthorized activity conducted through your account
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        {/* Governing Law & Jurisdiction */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              Governing Law & Jurisdiction
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              These Terms of Service and any disputes arising from your use of Justachat™ shall be governed by 
+              and construed in accordance with the laws of the <strong>State of Texas, United States</strong>, 
+              without regard to conflict of law principles.
+            </p>
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <p className="text-sm text-foreground">
+                <strong>Exclusive Jurisdiction:</strong> You agree to submit to the exclusive jurisdiction of 
+                the state and federal courts located in <strong>Bexar County, Texas</strong> for resolution 
+                of any disputes.
+              </p>
+              <p className="text-sm text-foreground">
+                <strong>Waiver of Jury Trial:</strong> To the fullest extent permitted by law, you waive any 
+                right to a jury trial in any proceeding arising from these Terms.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dispute Resolution */}
+        <Card className="border-purple-500/30 bg-purple-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-500" />
+              Dispute Resolution & Arbitration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-purple-500/20 border-2 border-purple-500/40 rounded-lg p-4">
+              <p className="text-foreground font-semibold text-sm">
+                PLEASE READ THIS SECTION CAREFULLY — IT AFFECTS YOUR LEGAL RIGHTS
+              </p>
+            </div>
+            <p className="text-foreground leading-relaxed">
+              Any dispute, claim, or controversy arising from your use of Justachat™ shall be resolved through 
+              <strong> binding arbitration</strong> rather than in court, except for claims that qualify for 
+              small claims court.
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-purple-500 font-bold">•</span>
+                <strong>No Class Actions:</strong> You agree to resolve disputes only on an individual basis 
+                and waive any right to participate in class action lawsuits or class-wide arbitration
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-purple-500 font-bold">•</span>
+                <strong>Arbitration Rules:</strong> Arbitration will be conducted by the American Arbitration 
+                Association (AAA) under its Consumer Arbitration Rules
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-purple-500 font-bold">•</span>
+                <strong>Location:</strong> Arbitration shall take place in Bexar County, Texas, or via 
+                telephone/video conference at our discretion
+              </li>
+            </ul>
+            <p className="text-muted-foreground text-xs">
+              You may opt out of this arbitration agreement by sending written notice within 30 days of 
+              account creation to legal@justachat.net.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Service Modifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ScrollText className="h-5 w-5 text-primary" />
+              Service Modifications & Termination
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              Justachat™ reserves the right to modify, suspend, or discontinue any part of the service at any 
+              time, with or without notice:
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We may add, remove, or modify features without prior notice
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We may terminate or suspend your account at our sole discretion
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We may impose limits on certain features or restrict access
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We are not liable for any modification, suspension, or discontinuation
+              </li>
+            </ul>
+            <Separator className="my-2" />
+            <p className="text-muted-foreground text-sm">
+              <strong>Account Data:</strong> Upon termination, we may delete your account data. You are 
+              responsible for backing up any content you wish to retain before termination.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Electronic Communications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Electronic Communications Consent
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              By creating an account, you consent to receive electronic communications from Justachat™, including:
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Service announcements and updates
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Security alerts and password reset emails
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Account notifications and moderation notices
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Legal notices and terms updates
+              </li>
+            </ul>
+            <p className="text-muted-foreground text-sm">
+              These communications satisfy any legal requirement that notices be provided in writing.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* International Users */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-primary" />
+              International Users & GDPR
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              Justachat™ is operated from the United States. If you access this service from outside the U.S., 
+              you do so at your own risk and are responsible for compliance with local laws.
+            </p>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-semibold text-foreground">For users in the European Union (GDPR):</p>
+              <ul className="text-sm text-foreground space-y-1">
+                <li>• <strong>Data Controller:</strong> Justachat™ operates as the data controller</li>
+                <li>• <strong>Legal Basis:</strong> Consent and legitimate interests for service operation</li>
+                <li>• <strong>Data Rights:</strong> You may request access, correction, or deletion of personal data</li>
+                <li>• <strong>Data Transfers:</strong> Your data is transferred to and processed in the United States</li>
+              </ul>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              To exercise your GDPR rights, contact <strong>privacy@justachat.net</strong>. We will respond 
+              within 30 days.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Force Majeure */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CloudOff className="h-5 w-5 text-primary" />
+              Force Majeure
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              Justachat™ shall not be liable for any failure or delay in performance due to circumstances 
+              beyond our reasonable control, including but not limited to:
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Natural disasters, acts of God, or severe weather events
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                War, terrorism, civil unrest, or government actions
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Internet or telecommunications outages beyond our control
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Cyberattacks, DDoS attacks, or security incidents
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Power failures, hardware failures, or third-party service outages
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Pandemics, epidemics, or public health emergencies
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
         {/* Contact */}
         <Card>
           <CardHeader>
             <CardTitle>Legal Inquiries</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              For trademark licensing, legal inquiries, law enforcement requests, or to report infringement, 
-              please contact us through our official channels at <strong>justachat.net</strong>.
+          <CardContent className="space-y-3">
+            <p className="text-foreground">
+              For legal inquiries, please contact us through the appropriate channel:
+            </p>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><strong>General Legal:</strong> legal@justachat.net</li>
+              <li><strong>DMCA/Copyright:</strong> legal@justachat.net</li>
+              <li><strong>Privacy/GDPR:</strong> privacy@justachat.net</li>
+              <li><strong>Law Enforcement:</strong> legal@justachat.net (include valid legal process)</li>
+              <li><strong>Trademark Licensing:</strong> legal@justachat.net</li>
+            </ul>
+            <p className="text-muted-foreground text-xs mt-4">
+              Official domain: <strong>justachat.net</strong>
             </p>
           </CardContent>
         </Card>
