@@ -896,11 +896,15 @@ const Auth = () => {
                 Continue with Google
               </Button>
               
-              {/* Use Different Account link */}
+            </div>
+          )}
+
+          {/* Links row: Use different account | Sign up/in */}
+          {(mode === "login" || mode === "signup") && (
+            <div className="mt-4 flex items-center justify-center gap-3 text-sm">
               <button
                 type="button"
                 onClick={async () => {
-                  // Sign out any existing session first, then force account chooser
                   try {
                     await supabase.auth.signOut({ scope: 'local' });
                   } finally {
@@ -923,16 +927,13 @@ const Auth = () => {
                     });
                   }
                 }}
-                className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors mt-2"
+                className="text-muted-foreground hover:text-primary transition-colors"
               >
                 Use a different Google account
               </button>
-            </div>
-          )}
-
-          {/* Toggle between login/signup */}
-          {(mode === "login" || mode === "signup") && (
-            <div className="mt-6 text-center">
+              
+              <span className="text-muted-foreground/50">|</span>
+              
               <button
                 type="button"
                 onClick={() => {
@@ -943,7 +944,7 @@ const Auth = () => {
                   setParentEmail("");
                   setAgreedToTerms(false);
                 }}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors"
               >
                 {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
               </button>
