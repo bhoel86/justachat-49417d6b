@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getIceServers } from '@/lib/environment';
 
 export type CallType = 'voice' | 'video';
 export type CallState = 'idle' | 'calling' | 'ringing' | 'connected' | 'ended';
@@ -40,12 +41,10 @@ export const usePrivateCall = ({
   const ringTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const channelSubscribedRef = useRef(false);
 
-  // ICE servers for NAT traversal
-  const iceServers = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-    ]
+  // ICE servers for NAT traversal - environment-aware with TURN fallback
+  const iceServers: RTCConfiguration = {
+    iceServers: getIceServers(),
+    iceCandidatePoolSize: 10,
   };
 
   // Create channel name (sorted for consistency)
