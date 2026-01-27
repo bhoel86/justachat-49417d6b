@@ -7,10 +7,11 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Shield, Crown, Star, UserPlus, UserMinus, Ban, Check, Clock, Loader2 } from "lucide-react";
+import { MessageCircle, Shield, Crown, Star, UserPlus, UserMinus, Ban, Check, Clock, Loader2, Flag } from "lucide-react";
 import UserAvatar from "@/components/avatar/UserAvatar";
 import { useFriends } from "@/hooks/useFriends";
 import { useAuth } from "@/hooks/useAuth";
+import ReportUserModal from "./ReportUserModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +63,7 @@ export const ProfileViewModal = ({
   const [actionLoading, setActionLoading] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [showRemoveFriendConfirm, setShowRemoveFriendConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const getRoleBadge = () => {
     switch (role) {
@@ -297,6 +299,19 @@ export const ProfileViewModal = ({
                   </Button>
                 )
               )}
+
+              {/* Report User */}
+              {showFriendActions && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowReportModal(true)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Flag className="h-4 w-4 mr-2" />
+                  Report
+                </Button>
+              )}
             </div>
 
             {isBlocked && (
@@ -343,6 +358,17 @@ export const ProfileViewModal = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Report User Modal */}
+      {user?.id && targetUserId && (
+        <ReportUserModal
+          open={showReportModal}
+          onOpenChange={setShowReportModal}
+          reporterId={user.id}
+          preselectedUserId={targetUserId}
+          preselectedUsername={username}
+        />
+      )}
     </>
   );
 };
