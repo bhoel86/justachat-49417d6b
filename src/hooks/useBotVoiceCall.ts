@@ -11,6 +11,7 @@ interface BotVoiceCallState {
   responsesGiven: number;
   userAudioLevel: number;
   botAudioLevel: number;
+  speechSupported: boolean;
 }
 
 interface UseBotVoiceCallProps {
@@ -33,6 +34,7 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
     responsesGiven: 0,
     userAudioLevel: 0,
     botAudioLevel: 0,
+    speechSupported: ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window),
   });
   
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -153,11 +155,9 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
   // Start speech recognition
   const startListening = useCallback(() => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      toast({
-        variant: 'destructive',
-        title: 'Speech not supported',
-        description: 'Your browser does not support speech recognition.',
-      });
+      // Speech not supported - switch to text input mode
+      console.log('[BOT-VOICE] Speech recognition not supported, using text input mode');
+      setState(prev => ({ ...prev, status: 'listening', speechSupported: false }));
       return;
     }
 
@@ -266,14 +266,15 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
     lastTranscriptRef.current = '';
     responsesGivenRef.current = 0;
     
-    setState({
+    setState(prev => ({
       status: 'connecting',
       botResponse: '',
       userTranscript: '',
       responsesGiven: 0,
       userAudioLevel: 0,
       botAudioLevel: 0,
-    });
+      speechSupported: prev.speechSupported,
+    }));
 
     try {
       // Request microphone permission
@@ -365,17 +366,45 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
     
     analyserRef.current = null;
     
-    setState({
+    setState(prev => ({
       status: 'idle',
       botResponse: '',
       userTranscript: '',
       responsesGiven: 0,
       userAudioLevel: 0,
       botAudioLevel: 0,
-    });
+      speechSupported: prev.speechSupported,
+    }));
     
     conversationHistoryRef.current = [];
   }, [stopBotAudioSimulation]);
+
+  // Send a text message (fallback when speech isn't supported)
+  const sendTextMessage = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+    
+    setState(prev => ({ ...prev, userTranscript: text, status: 'responding' }));
+    
+    const response = await getBotResponse(text);
+    responsesGivenRef.current += 1;
+    
+    setState(prev => ({ 
+      ...prev, 
+      botResponse: response,
+      responsesGiven: responsesGivenRef.current,
+    }));
+    
+    onBotMessage?.(response);
+    
+    await speak(response);
+    
+    // Check if we should continue or end
+    if (responsesGivenRef.current >= maxResponsesRef.current) {
+      setState(prev => ({ ...prev, status: 'ended' }));
+    } else {
+      setState(prev => ({ ...prev, status: 'listening', userTranscript: '' }));
+    }
+  }, [getBotResponse, onBotMessage, speak]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -388,6 +417,7 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
     ...state,
     startCall,
     endCall,
+    sendTextMessage,
     isActive: state.status !== 'idle' && state.status !== 'ended',
   };
 };

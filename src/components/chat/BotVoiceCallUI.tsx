@@ -1,5 +1,7 @@
-import { Phone, PhoneOff, Mic, Volume2, User } from 'lucide-react';
+import { useState } from 'react';
+import { Phone, PhoneOff, Mic, Volume2, User, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useBotVoiceCall } from '@/hooks/useBotVoiceCall';
 
 interface BotVoiceCallUIProps {
@@ -52,18 +54,33 @@ const AudioLevelRing = ({ level, color, size = 96 }: { level: number; color: str
 };
 
 const BotVoiceCallUI = ({ isOpen, onClose, botId, botName, onBotMessage, userName = 'You' }: BotVoiceCallUIProps) => {
+  const [textInput, setTextInput] = useState('');
   const voiceCall = useBotVoiceCall({ 
     botId, 
     botName, 
     onBotMessage 
   });
 
-  if (!isOpen) return null;
-
   const handleEndCall = () => {
     voiceCall.endCall();
     onClose();
   };
+
+  const handleSendText = () => {
+    if (textInput.trim() && voiceCall.status === 'listening') {
+      voiceCall.sendTextMessage(textInput);
+      setTextInput('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendText();
+    }
+  };
+
+  if (!isOpen) return null;
 
   const getStatusText = () => {
     switch (voiceCall.status) {
@@ -183,13 +200,39 @@ const BotVoiceCallUI = ({ isOpen, onClose, botId, botName, onBotMessage, userNam
           )}
           
           {voiceCall.status === 'listening' && !voiceCall.userTranscript && (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-              <span className="text-sm">Speak now...</span>
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+              {voiceCall.speechSupported ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <span className="text-sm">Speak now...</span>
+                </div>
+              ) : (
+                <div className="w-full flex gap-2">
+                  <Input
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type your message..."
+                    className="flex-1 text-sm"
+                    autoFocus
+                  />
+                  <Button 
+                    size="icon" 
+                    onClick={handleSendText}
+                    disabled={!textInput.trim()}
+                    className="shrink-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              {!voiceCall.speechSupported && (
+                <p className="text-xs text-amber-500">Speech not supported - use text input</p>
+              )}
             </div>
           )}
         </div>
