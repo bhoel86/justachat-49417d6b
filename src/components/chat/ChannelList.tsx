@@ -273,14 +273,14 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
 
   if (loading) {
     return (
-      <div className="w-64 sm:w-56 bg-secondary/30 border-r border-border p-4 flex items-center justify-center">
+      <div className="w-full bg-secondary/30 border-r border-border p-4 flex items-center justify-center">
         <div className="h-6 w-6 rounded-full jac-gradient-bg animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="w-56 bg-secondary/30 border-r border-border flex flex-col h-full">
+    <div className="w-full bg-secondary/30 border-r border-border flex flex-col h-full">
       <div className="p-3 border-b border-border">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-foreground text-sm flex-1">Channels</h2>
