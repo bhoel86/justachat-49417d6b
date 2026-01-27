@@ -48,13 +48,13 @@ const Ethos = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background" />
         <div className="container mx-auto px-4 relative">
           <div className="max-w-3xl mx-auto text-center">
-            {/* Watermark logo above title - positioned absolutely */}
+            {/* Watermark logo - large, blended */}
             <img 
               src="/justachat-logo-google-ads.png" 
               alt="Justachat™" 
-              className="w-40 sm:w-52 mx-auto mb-0 opacity-60 absolute left-1/2 -translate-x-1/2 -top-4 sm:-top-6"
+              className="w-[400px] sm:w-[500px] lg:w-[600px] mx-auto absolute left-1/2 -translate-x-1/2 -top-8 sm:-top-12 opacity-20 pointer-events-none mix-blend-screen"
             />
-            <h1 className="text-4xl sm:text-5xl font-bold mb-6">
+            <h1 className="text-4xl sm:text-5xl font-bold mb-6 relative z-10">
               Why This <span className="jac-gradient-text">Exists</span>
             </h1>
             <p className="text-xl text-muted-foreground">
