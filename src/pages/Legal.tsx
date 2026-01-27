@@ -29,6 +29,19 @@ const Legal = () => {
           </p>
         </div>
 
+        {/* Agreement Notice */}
+        <Card className="border-primary/40 bg-primary/10">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-center gap-3">
+              <Shield className="h-6 w-6 text-primary flex-shrink-0" />
+              <p className="text-foreground font-medium text-center">
+                By registering an account on Justachat™, you acknowledge that you have read, understood, and agree 
+                to be bound by all policies outlined on this page in <strong className="text-primary">good faith</strong>.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Age Requirements */}
         <Card className="border-destructive/30 bg-destructive/5">
           <CardHeader>
