@@ -18,7 +18,7 @@ interface AuthContextType {
   isOwner: boolean;
   isModerator: boolean;
   role: AppRole | null;
-  signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, username: string, age: number, parentEmail?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   logoutFromChat: () => Promise<void>;
@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (email: string, password: string, username: string, age: number, parentEmail?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -106,7 +106,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          username
+          username,
+          age,
+          parent_email: parentEmail || null,
+          is_minor: age < 18
         }
       }
     });

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle } from "lucide-react";
+import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle, Calendar, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,8 @@ import mascotRight from "@/assets/mascot-right.png";
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 const usernameSchema = z.string().min(2, "Username must be at least 2 characters").max(20, "Username must be less than 20 characters");
+const ageSchema = z.number().min(13, "You must be at least 13 years old").max(120, "Please enter a valid age");
+const parentEmailSchema = z.string().email("Please enter a valid parent/guardian email");
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
 
@@ -25,9 +27,12 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [age, setAge] = useState("");
+  const [parentEmail, setParentEmail] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string; age?: string; parentEmail?: string; terms?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [resetEmailSentAt, setResetEmailSentAt] = useState<number | null>(null);
@@ -139,6 +144,37 @@ const Auth = () => {
       const usernameResult = usernameSchema.safeParse(username);
       if (!usernameResult.success) {
         newErrors.username = usernameResult.error.errors[0].message;
+      }
+      
+      // Validate age
+      const ageNum = parseInt(age, 10);
+      if (!age || isNaN(ageNum)) {
+        newErrors.age = "Please enter your age";
+      } else {
+        const ageResult = ageSchema.safeParse(ageNum);
+        if (!ageResult.success) {
+          newErrors.age = ageResult.error.errors[0].message;
+        }
+      }
+      
+      // If minor (13-17), require parent/guardian email from someone 21+
+      const parsedAge = parseInt(age, 10);
+      if (!isNaN(parsedAge) && parsedAge >= 13 && parsedAge < 18) {
+        if (!parentEmail) {
+          newErrors.parentEmail = "Parent/guardian email is required for users under 18";
+        } else {
+          const parentEmailResult = parentEmailSchema.safeParse(parentEmail);
+          if (!parentEmailResult.success) {
+            newErrors.parentEmail = parentEmailResult.error.errors[0].message;
+          } else if (parentEmail.toLowerCase() === email.toLowerCase()) {
+            newErrors.parentEmail = "Parent/guardian email must be different from your email";
+          }
+        }
+      }
+      
+      // Require agreement to terms
+      if (!agreedToTerms) {
+        newErrors.terms = "You must agree to the Terms of Service";
       }
       
       // Require CAPTCHA for signup
@@ -345,7 +381,8 @@ const Auth = () => {
           return;
         }
         
-        const { error } = await signUp(email, password, username);
+        const parsedAge = parseInt(age, 10);
+        const { error } = await signUp(email, password, username, parsedAge, parsedAge < 18 ? parentEmail : undefined);
         if (error) {
           if (error.message.includes("already registered")) {
             toast({
@@ -500,6 +537,65 @@ const Auth = () => {
               </div>
             )}
 
+              {/* Age field - show for signup */}
+              {mode === "signup" && (
+                <div>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <input
+                      type="number"
+                      value={age}
+                      onChange={(e) => {
+                        setAge(e.target.value);
+                        setErrors(prev => ({ ...prev, age: undefined, parentEmail: undefined }));
+                      }}
+                      placeholder="Your Age"
+                      className="w-full bg-input rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      min={13}
+                      max={120}
+                    />
+                  </div>
+                  {errors.age && (
+                    <p className="text-destructive text-xs mt-1">{errors.age}</p>
+                  )}
+                  {age && parseInt(age, 10) >= 13 && parseInt(age, 10) < 18 && (
+                    <p className="text-amber-500 text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Parental consent required for users under 18
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Parent/Guardian Email - show for minors during signup */}
+              {mode === "signup" && age && parseInt(age, 10) >= 13 && parseInt(age, 10) < 18 && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-500 text-sm font-medium">
+                    <Users className="h-4 w-4" />
+                    Parent/Guardian Consent Required
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Users under 18 must have a parent or guardian (21+) provide their email to consent to account creation.
+                  </p>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <input
+                      type="email"
+                      value={parentEmail}
+                      onChange={(e) => {
+                        setParentEmail(e.target.value);
+                        setErrors(prev => ({ ...prev, parentEmail: undefined }));
+                      }}
+                      placeholder="Parent/Guardian Email (21+)"
+                      className="w-full bg-input rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                  </div>
+                  {errors.parentEmail && (
+                    <p className="text-destructive text-xs">{errors.parentEmail}</p>
+                  )}
+                </div>
+              )}
+
               {/* Email field - show for login, signup, forgot */}
               {(mode === "login" || mode === "signup" || mode === "forgot") && (
                 <div>
@@ -582,6 +678,36 @@ const Auth = () => {
                 </div>
               )}
 
+              {/* Terms Agreement - signup only */}
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => {
+                        setAgreedToTerms(e.target.checked);
+                        setErrors(prev => ({ ...prev, terms: undefined }));
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-border bg-input text-primary focus:ring-primary/50"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      I confirm that I am registering in <strong className="text-foreground">good faith</strong> and agree to the{" "}
+                      <Link to="/legal" target="_blank" className="text-primary hover:underline">
+                        Terms of Service
+                      </Link>
+                      {" "}and{" "}
+                      <Link to="/cookies" target="_blank" className="text-primary hover:underline">
+                        Cookie Policy
+                      </Link>
+                    </span>
+                  </label>
+                  {errors.terms && (
+                    <p className="text-destructive text-xs">{errors.terms}</p>
+                  )}
+                </div>
+              )}
+
               {/* CAPTCHA for signup only */}
               {mode === "signup" && (
                 <div className="space-y-2">
@@ -610,7 +736,7 @@ const Auth = () => {
                 variant="jac"
                 size="lg"
                 className="w-full"
-                disabled={isSubmitting || (mode === "signup" && !captchaToken) || (mode === "login" && rateLimitInfo?.locked)}
+                disabled={isSubmitting || (mode === "signup" && (!captchaToken || !agreedToTerms)) || (mode === "login" && rateLimitInfo?.locked)}
               >
                 {isSubmitting ? (
                   <span className="animate-pulse">Please wait...</span>
