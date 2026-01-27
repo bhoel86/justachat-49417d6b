@@ -890,6 +890,34 @@ const Auth = () => {
                 </svg>
                 Continue with Google
               </Button>
+              
+              {/* Use Different Account link */}
+              <button
+                type="button"
+                onClick={async () => {
+                  // Sign out any existing session first, then force account chooser
+                  await supabase.auth.signOut();
+                  const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                      redirectTo: `${window.location.origin}/`,
+                      queryParams: {
+                        prompt: 'select_account'
+                      }
+                    }
+                  });
+                  if (error) {
+                    toast({
+                      variant: "destructive",
+                      title: "Failed to switch account",
+                      description: error.message
+                    });
+                  }
+                }}
+                className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors mt-2"
+              >
+                Use a different Google account
+              </button>
             </div>
           )}
 
