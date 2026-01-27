@@ -52,7 +52,7 @@ const Ethos = () => {
             <img 
               src="/justachat-logo-google-ads.png" 
               alt="Justachat™" 
-              className="w-[400px] sm:w-[500px] lg:w-[600px] mx-auto mb-8 opacity-20"
+              className="w-[400px] sm:w-[500px] lg:w-[600px] mx-auto mb-2 opacity-20"
             />
             <h1 className="text-4xl sm:text-5xl font-bold mb-6">
               Why This <span className="jac-gradient-text">Exists</span>
