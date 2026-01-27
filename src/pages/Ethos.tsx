@@ -38,6 +38,18 @@ const Ethos = () => {
         </div>
       </header>
 
+      {/* Fixed centered watermark logo */}
+      <div 
+        className="fixed inset-0 flex items-center justify-center pointer-events-none z-0"
+        style={{
+          backgroundImage: 'url(/justachat-logo-google-ads.png)',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '300px',
+          opacity: 0.15
+        }}
+      />
+
       {/* Hero Section - with monitor glow background */}
       <section className="relative py-16 sm:py-24 overflow-hidden">
         {/* Background image - faded */}
