@@ -681,11 +681,17 @@ const PrivateChatWindow = ({
 
       if (dbError) {
         console.error('[PM-SEND] Failed to store message in DB:', dbError);
-        toast({
-          variant: "destructive",
-          title: "Message not saved",
-          description: "Message sent but not saved to history"
-        });
+
+        // If the recipient is a simulated/bot user (non-UUID), DB persistence will fail.
+        // Suppress the user-facing toast to avoid noisy "sent but not saved" popups.
+        const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
+        if (!isSimulatedRecipient) {
+          toast({
+            variant: "destructive",
+            title: "Message not saved",
+            description: "Message sent but not saved to history"
+          });
+        }
       } else {
         console.log('[PM-SEND] Message stored in DB successfully');
       }
