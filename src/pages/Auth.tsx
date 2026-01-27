@@ -35,6 +35,7 @@ const Auth = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
+  const [captchaDebugInfo, setCaptchaDebugInfo] = useState<Record<string, unknown> | null>(null);
   const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string; age?: string; parentEmail?: string; terms?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -42,6 +43,7 @@ const Auth = () => {
   const [canResend, setCanResend] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(30);
   const [rateLimitInfo, setRateLimitInfo] = useState<{ locked: boolean; message?: string; remainingAttempts?: number } | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -49,6 +51,22 @@ const Auth = () => {
 
   const captchaRequired =
     mode === "signup" && CAPTCHA_REQUIRED_HOSTS.has(window.location.hostname);
+
+  // Check if current user is owner (for debug mode)
+  useEffect(() => {
+    const checkOwnerStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+        setIsOwner(data?.role === 'owner');
+      }
+    };
+    checkOwnerStatus();
+  }, []);
 
   // Track if we're in password reset mode (takes priority over auto-redirect)
   const [isPasswordResetFlow, setIsPasswordResetFlow] = useState(false);
@@ -217,22 +235,39 @@ const Auth = () => {
 
   const verifyCaptchaOnServer = async (token: string): Promise<boolean> => {
     try {
+      // Get current session for owner debug mode
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('verify-captcha', {
-        body: { token }
+        body: { token, debug: isOwner },
+        headers: session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : undefined
       });
       
       if (error) {
         console.error('CAPTCHA verification error:', error);
+        if (isOwner) {
+          setCaptchaDebugInfo({ error: error.message, context: 'Function invocation failed' });
+        }
         return false;
       }
 
       if (data?.success !== true) {
         console.warn("CAPTCHA rejected:", data);
+        if (isOwner && data?.debug) {
+          setCaptchaDebugInfo(data.debug);
+        } else if (isOwner && data?.codes) {
+          setCaptchaDebugInfo({ errorCodes: data.codes });
+        }
       }
       
       return data?.success === true;
     } catch (err) {
       console.error('CAPTCHA verification failed:', err);
+      if (isOwner) {
+        setCaptchaDebugInfo({ exception: err instanceof Error ? err.message : String(err) });
+      }
       return false;
     }
   };
@@ -806,6 +841,25 @@ const Auth = () => {
                   )}
                   {captchaError && (
                     <p className="text-destructive text-xs text-center">CAPTCHA error. Please refresh and try again.</p>
+                  )}
+                  {/* Owner-only CAPTCHA debug info */}
+                  {isOwner && captchaDebugInfo && (
+                    <div className="mt-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs">
+                      <div className="flex items-center gap-1 text-destructive font-medium mb-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span>CAPTCHA Debug (Owner Only)</span>
+                      </div>
+                      <pre className="text-muted-foreground whitespace-pre-wrap break-all font-mono text-[10px]">
+                        {JSON.stringify(captchaDebugInfo, null, 2)}
+                      </pre>
+                      <button
+                        type="button"
+                        onClick={() => setCaptchaDebugInfo(null)}
+                        className="mt-2 text-muted-foreground hover:text-foreground text-[10px] underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
