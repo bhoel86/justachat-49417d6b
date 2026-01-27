@@ -5,6 +5,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Environment check - only run on Lovable Cloud, not VPS
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const IS_LOVABLE_CLOUD = SUPABASE_URL.includes("supabase.co");
+
+// If running on VPS (self-hosted Supabase), return early
+const checkEnvironment = () => {
+  if (!IS_LOVABLE_CLOUD) {
+    console.log("Chat-bot disabled: Running on VPS/self-hosted environment");
+    return false;
+  }
+  return true;
+};
+
 // User personalities (they appear as regular chatters)
 const USER_PERSONALITIES: Record<string, { name: string; personality: string; style: string; gender: string; appearance?: string }> = {
   // ========== GLOBAL BOTS ==========
@@ -829,6 +842,17 @@ async function generateBotPhoto(appearance: string, botName: string, apiKey: str
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Block execution on VPS/self-hosted - only run on Lovable Cloud
+  if (!checkEnvironment()) {
+    return new Response(JSON.stringify({ 
+      message: null, 
+      error: "Bots disabled on VPS" 
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
