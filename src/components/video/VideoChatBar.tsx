@@ -328,6 +328,48 @@ const VideoChatBar = ({ roomId, odious, username, avatarUrl, currentUserRole, on
                 );
               }
               
+              // Check if message is ONLY an image/GIF
+              const imgMatch = msg.content.match(/^\[img:(https?:\/\/[^\]]+)\]$/);
+              const isImageOnly = !!imgMatch;
+              
+              if (isImageOnly && imgMatch) {
+                const imageUrl = imgMatch[1];
+                return (
+                  <div key={msg.id} className="flex items-start gap-1.5 group">
+                    <Avatar className="w-5 h-5 shrink-0">
+                      <AvatarImage src={msg.avatarUrl || undefined} />
+                      <AvatarFallback className="text-[8px] bg-primary/20">
+                        {msg.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <VideoUserMenu
+                          odious={msg.odious}
+                          username={msg.username}
+                          avatarUrl={msg.avatarUrl}
+                          role={role}
+                          currentUserId={odious}
+                          currentUserRole={currentUserRole}
+                          onPmClick={!isOwn && onPmClick ? () => onPmClick(msg.odious, msg.username) : undefined}
+                        >
+                          <button className={`text-[10px] font-medium hover:underline cursor-pointer ${isOwn ? 'text-primary' : 'text-foreground'}`}>
+                            {msg.username}
+                          </button>
+                        </VideoUserMenu>
+                        {getRoleBadge(role)}
+                      </div>
+                      <img
+                        src={imageUrl}
+                        alt="Chat image"
+                        className="max-w-[150px] max-h-32 rounded-lg mt-0.5 cursor-pointer hover:opacity-90 transition-opacity object-contain"
+                        onClick={() => window.open(imageUrl, '_blank')}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+              
               return (
                 <div key={msg.id} className="flex items-start gap-1.5 group">
                   <Avatar className="w-5 h-5 shrink-0">
