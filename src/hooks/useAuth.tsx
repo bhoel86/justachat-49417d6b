@@ -18,6 +18,8 @@ interface AuthContextType {
   isOwner: boolean;
   isModerator: boolean;
   role: AppRole | null;
+  isMinor: boolean;
+  hasParentConsent: boolean;
   signUp: (email: string, password: string, username: string, age: number, parentEmail?: string) => Promise<{ error: Error | null; data: { user: User | null } | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -32,6 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [isMinor, setIsMinor] = useState(false);
+  const [hasParentConsent, setHasParentConsent] = useState(true);
 
   const isAdmin = role === 'admin' || role === 'owner';
   const isOwner = role === 'owner';
@@ -49,9 +53,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           setTimeout(() => {
             checkUserRole(session.user.id);
+            checkMinorStatus(session.user.id);
           }, 0);
         } else {
           setRole(null);
+          setIsMinor(false);
+          setHasParentConsent(true);
         }
       }
     );
@@ -64,6 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (session?.user) {
         checkUserRole(session.user.id);
+        checkMinorStatus(session.user.id);
       }
     });
 
@@ -74,6 +82,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logoutFromChat = async () => {
     await supabase.auth.signOut();
     setRole(null);
+    setIsMinor(false);
+    setHasParentConsent(true);
   };
 
   const checkUserRole = async (userId: string) => {
@@ -90,10 +100,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const checkMinorStatus = async (userId: string) => {
+    const { data } = await supabaseUntyped
+      .from('profiles')
+      .select('is_minor, parent_consent_verified')
+      .eq('user_id', userId)
+      .single();
+    
+    if (data) {
+      setIsMinor(data.is_minor || false);
+      setHasParentConsent(data.parent_consent_verified || !data.is_minor);
+    }
+  };
+
   // Public method to refresh role (e.g., after /oper command)
   const refreshRole = async () => {
     if (user) {
       await checkUserRole(user.id);
+      await checkMinorStatus(user.id);
     }
   };
 
@@ -132,7 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isOwner, isModerator, role, signUp, signIn, signOut, logoutFromChat, refreshRole }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isOwner, isModerator, role, isMinor, hasParentConsent, signUp, signIn, signOut, logoutFromChat, refreshRole }}>
       {children}
     </AuthContext.Provider>
   );
