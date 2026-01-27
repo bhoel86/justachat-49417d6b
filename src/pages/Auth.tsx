@@ -426,6 +426,9 @@ const Auth = () => {
             });
           }
         } else {
+          // Store email for auto-fill on login
+          const signupEmail = email;
+          
           // If minor, send parent consent email
           if (isMinor && parentEmail && data?.user?.id) {
             try {
@@ -439,21 +442,31 @@ const Auth = () => {
               });
               toast({
                 title: "Account Created!",
-                description: "A consent email has been sent to your parent/guardian. Your account will be fully activated once they approve."
+                description: "A consent email has been sent to your parent/guardian. Please sign in to continue."
               });
             } catch (emailError) {
               console.error("Failed to send parent consent email:", emailError);
               toast({
                 title: "Account Created",
-                description: "Your account was created but we couldn't send the consent email. An admin will review your account."
+                description: "Your account was created. Please sign in to continue."
               });
             }
           } else {
             toast({
               title: "Welcome to Justachat™!",
-              description: "Your account has been created successfully."
+              description: "Your account has been created. Please sign in to continue."
             });
           }
+          
+          // Switch to login mode and auto-fill email
+          setMode("login");
+          setEmail(signupEmail);
+          setPassword("");
+          setUsername("");
+          setAge("");
+          setParentEmail("");
+          setAgreedToTerms(false);
+          setErrors({});
         }
       }
     } finally {
