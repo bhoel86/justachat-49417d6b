@@ -7,7 +7,7 @@
  * Update this file before each deployment to VPS.
  */
 
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.0";
 export const APP_BUILD_DATE = "2026-01-27";
 export const APP_CODENAME = "Genesis"; // Optional: fun codenames for major versions
 
