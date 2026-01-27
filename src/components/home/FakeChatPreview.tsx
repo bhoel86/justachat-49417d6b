@@ -395,7 +395,18 @@ const FakeChatPreview = () => {
         </div>
         
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 relative">
+          {/* Transparent logo watermark */}
+          <div 
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+            style={{
+              backgroundImage: 'url(/justachat-logo-google-ads.png)',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '200px',
+              opacity: 0.08
+            }}
+          />
           {messages.map((msg) => {
             const userData = getUserData(msg.username);
             return (
