@@ -49,7 +49,7 @@ const Ethos = () => {
         <div className="container mx-auto px-4 relative">
           <div className="max-w-3xl mx-auto text-center">
             {/* Justachat wordmark watermark - directly above title (no bubble/background) */}
-            <div className="brand jac-gradient-text font-bold leading-none select-none pointer-events-none opacity-30 mb-16 text-5xl sm:text-7xl lg:text-8xl">
+            <div className="brand jac-gradient-text font-bold leading-none select-none pointer-events-none opacity-30 mb-20 text-5xl sm:text-7xl lg:text-8xl">
               Justachat<sup className="text-xs sm:text-sm lg:text-base align-super">™</sup>
             </div>
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">
