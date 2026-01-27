@@ -60,3 +60,6 @@ verify_jwt = false
 
 [functions.oper-auth]
 verify_jwt = false
+
+[functions.vps-deploy]
+verify_jwt = false

@@ -17,7 +17,7 @@ interface DeployStatus {
     message: string;
     date: string;
   };
-  proxyVersion?: string;
+  serverVersion?: string;
   error?: string;
 }
 
@@ -169,10 +169,12 @@ export default function AdminDeploy() {
                     <span className="text-muted-foreground">App Version</span>
                     <Badge variant="secondary">v{status.appVersion}</Badge>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Proxy Version</span>
-                    <Badge variant="outline">{status.proxyVersion}</Badge>
-                  </div>
+                  {status.serverVersion && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Deploy Server</span>
+                      <Badge variant="outline">v{status.serverVersion}</Badge>
+                    </div>
+                  )}
                   {status.git && (
                     <>
                       <div className="border-t pt-4">
