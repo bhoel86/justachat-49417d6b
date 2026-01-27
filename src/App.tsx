@@ -27,6 +27,7 @@ import Games from "./pages/Games";
 import VoiceChat from "./pages/VoiceChat";
 import VideoChat from "./pages/VideoChat";
 import Legal from "./pages/Legal";
+import CookiePolicy from "./pages/CookiePolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/voice-chat" element={<VoiceChat />} />
               <Route path="/video-chat" element={<VideoChat />} />
               <Route path="/legal" element={<Legal />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
