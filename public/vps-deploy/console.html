@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAC VPS Console</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { color: #00d4ff; margin-bottom: 20px; font-size: 24px; }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #1a1a2e;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    button:hover { background: #252545; border-color: #00d4ff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.danger { border-color: #ff4444; }
+    button.danger:hover { background: #3a1a1a; }
+    .output {
+      background: #0d0d0d;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 15px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 500px;
+      overflow-y: auto;
+      min-height: 200px;
+    }
+    .output .success { color: #00ff88; }
+    .output .error { color: #ff4444; }
+    .output .info { color: #00d4ff; }
+    .spinner { display: inline-block; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status { margin-bottom: 15px; padding: 10px; background: #1a1a2e; border-radius: 8px; font-size: 13px; }
+    .restore-form { display: flex; gap: 10px; margin-bottom: 20px; }
+    .restore-form select { 
+      flex: 1; padding: 10px; background: #1a1a2e; border: 1px solid #333; 
+      color: #fff; border-radius: 8px; 
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🖥️ JAC VPS Console</h1>
+    
+    <div class="status" id="status">Loading status...</div>
+    
+    <div class="buttons">
+      <button onclick="runCommand('status')">📊 Status</button>
+      <button onclick="runCommand('deploy')">🚀 Deploy</button>
+      <button onclick="runCommand('backup')">💾 Backup Now</button>
+      <button onclick="runCommand('list')">📁 List Backups</button>
+      <button onclick="runCommand('schedule', 'daily')">⏰ Schedule Daily</button>
+      <button onclick="runCommand('schedule', 'disable')">🔕 Disable Schedule</button>
+    </div>
+    
+    <div class="restore-form">
+      <select id="backupSelect">
+        <option value="">-- Select backup to restore --</option>
+      </select>
+      <button class="danger" onclick="restoreBackup()">⚠️ Restore</button>
+      <button onclick="loadBackups()">🔄</button>
+    </div>
+    
+    <div class="output" id="output">Ready. Click a button to run a command.</div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+    const output = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+    const backupSelect = document.getElementById('backupSelect');
+    
+    function log(msg, type = '') {
+      const span = document.createElement('span');
+      span.className = type;
+      span.textContent = msg + '\n';
+      output.appendChild(span);
+      output.scrollTop = output.scrollHeight;
+    }
+    
+    function clearOutput() {
+      output.innerHTML = '';
+    }
+    
+    async function runCommand(cmd, arg = '') {
+      clearOutput();
+      log(`> Running: ${cmd} ${arg}`.trim(), 'info');
+      log('');
+      
+      document.querySelectorAll('button').forEach(b => b.disabled = true);
+      
+      try {
+        const url = arg ? `${API_BASE}/${cmd}/${arg}` : `${API_BASE}/${cmd}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.success) {
+          log(data.output || data.message || 'Done', 'success');
+        } else {
+          log('Error: ' + (data.error || 'Unknown error'), 'error');
+          if (data.stderr) log(data.stderr, 'error');
+        }
+      } catch (err) {
+        log('Request failed: ' + err.message, 'error');
+      }
+      
+      document.querySelectorAll('button').forEach(b => b.disabled = false);
+    }
+    
+    async function loadBackups() {
+      try {
+        const res = await fetch(`${API_BASE}/list`);
+        const data = await res.json();
+        
+        backupSelect.innerHTML = '<option value="">-- Select backup to restore --</option>';
+        
+        if (data.backups && data.backups.length > 0) {
+          data.backups.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b.filename;
+            opt.textContent = `${b.filename} (${b.sizeFormatted})`;
+            backupSelect.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load backups:', err);
+      }
+    }
+    
+    async function restoreBackup() {
+      const file = backupSelect.value;
+      if (!file) {
+        alert('Please select a backup first');
+        return;
+      }
+      if (!confirm(`Restore from ${file}? This will overwrite current files.`)) {
+        return;
+      }
+      await runCommand('restore', file);
+    }
+    
+    async function loadStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/status`);
+        const data = await res.json();
+        
+        if (data.success && data.status) {
+          const s = data.status;
+          statusEl.innerHTML = `
+            <strong>Version:</strong> ${s.appVersion || 'Unknown'} | 
+            <strong>Commit:</strong> ${s.git?.hash || 'Unknown'} | 
+            <strong>Deploy Server:</strong> v${s.serverVersion || 'Unknown'}
+          `;
+        }
+      } catch (err) {
+        statusEl.textContent = 'Could not load status';
+      }
+    }
+    
+    // Init
+    loadStatus();
+    loadBackups();
+  </script>
+</body>
+</html>
