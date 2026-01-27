@@ -203,13 +203,10 @@ const Home = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link to="/" className="flex items-center">
-              <img 
-                src="/justachat-logo-google-ads.png" 
-                alt="Justachat™" 
-                className="w-20 sm:w-24 h-auto opacity-80 hover:opacity-100 transition-opacity"
-              />
-            </Link>
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-lg sm:text-2xl font-bold brand jac-gradient-text">Justachat<sup className="text-[8px] sm:text-xs">™</sup></h1>
             
             {/* Site Navigation Dropdown - moved next to logo */}
             <DropdownMenu>
