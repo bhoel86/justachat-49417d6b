@@ -64,6 +64,7 @@ const VolumeControl = ({ volume, setVolume }: { volume: number; setVolume: (v: n
           orientation="vertical"
           onValueChange={(value) => setVolume(value[0])}
           className="h-24 w-3"
+          onKeyDown={(e) => e.stopPropagation()}
         />
         <Button
           type="button"
