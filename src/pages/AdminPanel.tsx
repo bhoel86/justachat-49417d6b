@@ -218,7 +218,7 @@ const AdminPanel = () => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   // Redirect admins to users page (they can't see audit logs but can access other admin pages)

@@ -328,7 +328,7 @@ const Auth = () => {
     
     setIsSubmitting(true);
     try {
-      const redirectUrl = `${window.location.origin}/login`;
+      const redirectUrl = `${window.location.origin}/home`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });

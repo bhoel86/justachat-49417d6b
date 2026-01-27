@@ -129,7 +129,7 @@ const Dating = () => {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/login');
+      navigate('/home');
     }
   }, [user, authLoading, navigate]);
 

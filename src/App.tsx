@@ -48,7 +48,7 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/chat" element={<Index />} />
               <Route path="/chat/:channelName" element={<Index />} />
-              <Route path="/login" element={<Auth />} />
+              <Route path="/home" element={<Auth />} />
               <Route path="/map" element={<MapView />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/admin/bans" element={<AdminBans />} />

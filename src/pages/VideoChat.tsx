@@ -165,7 +165,7 @@ const VideoChat = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/login');
+      navigate('/home');
     }
   }, [user, loading, navigate]);
 

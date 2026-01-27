@@ -127,7 +127,7 @@ const AdminMinors = () => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   if (!isOwner && !isAdmin) {
