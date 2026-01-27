@@ -21,6 +21,7 @@ import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
 import RoomSettingsModal from "./RoomSettingsModal";
 import RoomPasswordModal from "./RoomPasswordModal";
 import ArtDisplay from "./ArtDisplay";
+import MinorRestrictionBanner from "./MinorRestrictionBanner";
 import RoomInvitePopup, { sendRoomInvite } from "./RoomInvitePopup";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
@@ -53,7 +54,7 @@ interface ChatRoomProps {
 }
 
 const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
-  const { user, isAdmin, isOwner, role, refreshRole } = useAuth();
+  const { user, isAdmin, isOwner, role, refreshRole, isMinor, hasParentConsent } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<{ username: string; avatarUrl?: string | null }[]>([]);
@@ -67,6 +68,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const [isRoomOwner, setIsRoomOwner] = useState(false);
   const [isRoomAdmin, setIsRoomAdmin] = useState(false);
   const [username, setUsername] = useState('');
+  const [parentEmail, setParentEmail] = useState<string | null>(null);
   // Private chats hook - moved pmTarget to hook-based system
   const [preferredLanguage, setPreferredLanguage] = useState('en');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
@@ -91,6 +93,21 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   
   // Private chats system
   const privateChats = usePrivateChats(user?.id || '', username);
+  
+  // Minor restriction check helper
+  const canAccessPrivateMessaging = !isMinor || hasParentConsent;
+  
+  const handleOpenPm = (userId: string, targetUsername: string) => {
+    if (!canAccessPrivateMessaging) {
+      toast({
+        variant: "destructive",
+        title: "Feature Restricted",
+        description: "Private messaging requires parental consent for users under 18. Please ask your parent/guardian to verify their email.",
+      });
+      return;
+    }
+    privateChats.openChat(userId, targetUsername);
+  };
   
   // Channel moderation settings
   const { settings: moderationSettings } = useChannelModerationSettings(currentChannel?.id || null);
@@ -152,13 +169,16 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       if (!user) return;
       const { data } = await supabaseUntyped
         .from('profiles')
-        .select('username, preferred_language')
+        .select('username, preferred_language, parent_email')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
         setUsername(data.username);
         if (data.preferred_language) {
           setPreferredLanguage(data.preferred_language);
+        }
+        if (data.parent_email) {
+          setParentEmail(data.parent_email);
         }
       }
     };
@@ -1120,7 +1140,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           autoSelectFirst={false}
           currentUserId={user?.id || ''}
           onOpenPm={(userId, targetUsername) => {
-            privateChats.openChat(userId, targetUsername);
+            handleOpenPm(userId, targetUsername);
             setShowChannelSidebar(false);
           }}
         />
@@ -1180,6 +1200,11 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
             onToggleDND={privateChats.toggleDoNotDisturb}
           />
         </div>
+
+        {/* Minor Restriction Banner */}
+        {isMinor && !hasParentConsent && (
+          <MinorRestrictionBanner parentEmail={parentEmail} />
+        )}
         
         <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-col">
           {loading ? (
@@ -1302,7 +1327,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           onlineUserIds={onlineUserIds} 
           listeningUsers={listeningUsers}
           channelName={currentChannel?.name} 
-          onOpenPm={(userId, targetUsername) => privateChats.openChat(userId, targetUsername)}
+          onOpenPm={handleOpenPm}
           onAction={(targetUsername, actionMessage) => handleSend(actionMessage)}
         />
       </div>
