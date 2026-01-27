@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MessageSquare, ArrowLeft, Heart, Users, Zap, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 // Background images
 import chatSilhouettes1 from "@/assets/ethos/chat-silhouettes-1.jpg";
@@ -319,14 +320,7 @@ const Ethos = () => {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/30 py-8">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Justachat™ — Bringing back the conversation.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };
