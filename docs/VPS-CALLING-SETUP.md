@@ -84,3 +84,19 @@ Then update `src/lib/environment.ts` with your TURN server credentials.
 ### Signaling Issues
 - Check Realtime is running: `docker compose logs realtime`
 - Verify Supabase Realtime subscription in browser DevTools Network tab
+
+## Bot Voice Calls
+
+Bot voice calls use browser-native Web Speech APIs:
+
+### On Lovable Cloud (Preview)
+- Uses AI chat-bot edge function for intelligent responses
+- Browser SpeechRecognition for user input
+- Browser SpeechSynthesis for bot voice output
+
+### On VPS (Production)
+- Falls back to canned responses (no AI API required)
+- Browser SpeechRecognition for user input  
+- Browser SpeechSynthesis for bot voice output
+
+This ensures the feature works without external AI API keys on VPS.

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CHAT_BOTS, ROOM_BOTS } from "@/lib/chatBots";
 import { usePrivateCall } from "@/hooks/usePrivateCall";
 import PrivateCallUI from "./PrivateCallUI";
+import BotVoiceCallUI from "./BotVoiceCallUI";
 import IncomingCallModal from "./IncomingCallModal";
 import { compressImage } from "@/lib/imageCompression";
 import {
@@ -110,6 +111,7 @@ const PrivateChatWindow = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [textFormat, setTextFormat] = useState<TextFormat>({ textStyle: 'none' });
   const [selectedAction, setSelectedAction] = useState<{ emoji: string; action: string; suffix: string } | null>(null);
+  const [showBotVoiceCall, setShowBotVoiceCall] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1095,7 +1097,7 @@ const PrivateChatWindow = ({
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
-          {/* Call buttons - only show for real users, not bots */}
+          {/* Call buttons - for real users */}
           {!isTargetBot && privateCall.callState === 'idle' && (
             <>
               <Button 
@@ -1117,6 +1119,18 @@ const PrivateChatWindow = ({
                 <Video className="h-3 w-3" />
               </Button>
             </>
+          )}
+          {/* Voice call button for bots */}
+          {isTargetBot && !showBotVoiceCall && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={(e) => { e.stopPropagation(); setShowBotVoiceCall(true); }} 
+              className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary"
+              title="Voice chat with bot"
+            >
+              <Phone className="h-3 w-3" />
+            </Button>
           )}
           <Button 
             variant="ghost" 
@@ -1380,6 +1394,27 @@ const PrivateChatWindow = ({
           onEndCall={privateCall.endCall}
           onToggleAudio={privateCall.toggleAudioMute}
           onToggleVideo={privateCall.toggleVideoMute}
+        />
+      )}
+
+      {/* Bot Voice Call UI */}
+      {isTargetBot && targetBotId && (
+        <BotVoiceCallUI
+          isOpen={showBotVoiceCall}
+          onClose={() => setShowBotVoiceCall(false)}
+          botId={targetBotId}
+          botName={targetUsername}
+          onBotMessage={(msg) => {
+            // Add bot message to chat
+            setMessages(prev => [...prev, {
+              id: `bot-voice-${Date.now()}`,
+              content: msg,
+              senderId: targetUserId,
+              senderName: targetUsername,
+              timestamp: new Date(),
+              isOwn: false,
+            }]);
+          }}
         />
       )}
     </div>
