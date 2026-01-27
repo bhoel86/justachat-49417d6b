@@ -38,17 +38,8 @@ const Ethos = () => {
         </div>
       </header>
 
-      {/* Large watermark logo - scrolls with page, centered below header */}
-      <div className="flex justify-center py-6 pointer-events-none">
-        <img 
-          src="/justachat-logo-google-ads.png" 
-          alt="Justachat™" 
-          className="w-[400px] sm:w-[500px] lg:w-[600px] opacity-15"
-        />
-      </div>
-
       {/* Hero Section - with monitor glow background */}
-      <section className="relative py-10 sm:py-16 overflow-hidden">
+      <section className="relative py-16 sm:py-24 overflow-hidden">
         {/* Background image - faded */}
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-[0.35]"
@@ -57,6 +48,12 @@ const Ethos = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background" />
         <div className="container mx-auto px-4 relative">
           <div className="max-w-3xl mx-auto text-center">
+            {/* Justachat watermark logo - directly above title */}
+            <img 
+              src="/justachat-logo-google-ads.png" 
+              alt="Justachat™" 
+              className="w-[400px] sm:w-[500px] lg:w-[600px] mx-auto mb-8 opacity-20"
+            />
             <h1 className="text-4xl sm:text-5xl font-bold mb-6">
               Why This <span className="jac-gradient-text">Exists</span>
             </h1>
