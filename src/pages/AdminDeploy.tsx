@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Loader2, RefreshCw, GitBranch, Server, Download, Upload, Clock, HardDrive, RotateCcw, Key, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
-// VPS server URL - calls directly, no edge function
-const VPS_URL = "http://157.245.174.197:6680";
+// VPS server URL - proxied through Nginx for HTTPS
+const VPS_URL = "https://justachat.net/deploy";
 const TOKEN_STORAGE_KEY = "jac_vps_deploy_token";
 
 interface DeployStatus {
