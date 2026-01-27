@@ -61,13 +61,35 @@ const Auth = () => {
       setMode("reset");
       setIsPasswordResetFlow(true);
       
-      // Sign out any existing session so user can reset password
-      // This prevents the "already signed in" redirect issue
-      supabase.auth.signOut().then(() => {
-        console.log("Signed out for password reset flow");
-      });
+      // Extract tokens from hash and exchange for session
+      // The hash contains: #access_token=...&refresh_token=...&type=recovery
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        
+        if (accessToken && refreshToken) {
+          // Set the session from the recovery tokens
+          supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          }).then(({ error }) => {
+            if (error) {
+              console.error("Failed to set session from recovery token:", error);
+              toast({
+                variant: "destructive",
+                title: "Session Error",
+                description: "Failed to verify reset link. Please request a new one."
+              });
+              setMode("forgot");
+            } else {
+              console.log("Session established from recovery token");
+            }
+          });
+        }
+      }
     }
-  }, []);
+  }, [toast]);
 
   const handleCaptchaVerify = useCallback((token: string) => {
     setCaptchaToken(token);
