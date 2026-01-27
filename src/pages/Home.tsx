@@ -12,6 +12,7 @@ import {
   Radio, Camera
 } from "lucide-react";
 import { toast } from "sonner";
+import { getVersionString } from "@/lib/version";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -917,17 +918,21 @@ const Home = () => {
                   />
                 </div>
                 
-                {/* Copyright */}
+                {/* Copyright & Version */}
                 <div className="text-center sm:text-right">
                   <p className="text-xs text-muted-foreground">
                     © {new Date().getFullYear()} Justachat™ All rights reserved.
                   </p>
-                  <a 
-                    href="https://justachat.net" 
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    justachat.net
-                  </a>
+                  <div className="flex items-center justify-center sm:justify-end gap-2">
+                    <a 
+                      href="https://justachat.net" 
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      justachat.net
+                    </a>
+                    <span className="text-xs text-muted-foreground/50">•</span>
+                    <span className="text-xs text-muted-foreground/70 font-mono">{getVersionString()}</span>
+                  </div>
                 </div>
               </div>
             </footer>
