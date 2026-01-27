@@ -762,6 +762,9 @@ const Auth = () => {
                   setMode(mode === "login" ? "signup" : "login");
                   setErrors({});
                   setCaptchaToken(null);
+                  setAge("");
+                  setParentEmail("");
+                  setAgreedToTerms(false);
                 }}
                 className="text-sm text-muted-foreground hover:text-primary transition-colors"
               >
