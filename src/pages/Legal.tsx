@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Scale, Shield, FileText, AlertTriangle, ArrowLeft, DollarSign, Globe } from "lucide-react";
+import { Scale, Shield, FileText, AlertTriangle, ArrowLeft, DollarSign, Globe, Database, UserCheck, Eye, Ban, Gavel, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -23,11 +23,184 @@ const Legal = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <Scale className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold">Legal Notice</h1>
+          <h1 className="text-3xl md:text-4xl font-bold">Legal Notice & Terms of Use</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Trademark and intellectual property information for Justachat™
+            Trademark, privacy, and terms of service information for Justachat™
           </p>
         </div>
+
+        {/* Age Requirements */}
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-destructive" />
+              Age Requirements & Eligibility
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-destructive/20 border-2 border-destructive/40 rounded-lg p-4">
+              <p className="text-foreground font-semibold">
+                You must be at least <strong className="text-destructive text-lg">13 years of age</strong> to use Justachat™.
+              </p>
+            </div>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Users under 18 are prohibited from accessing adult-designated channels (21+)
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                False representation of age is a violation of these terms and may result in immediate account termination
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Parents/guardians are responsible for monitoring minors' use of this service
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We comply with COPPA (Children's Online Privacy Protection Act) requirements
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        {/* Data Collection & Logging */}
+        <Card className="border-blue-500/30 bg-blue-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-blue-500" />
+              Data Collection & Chat Logging
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-blue-500/20 border-2 border-blue-500/40 rounded-lg p-4">
+              <p className="text-foreground font-semibold">
+                All chat messages, network activity, and connection data are logged and stored for legal purposes.
+              </p>
+            </div>
+            <p className="text-foreground text-sm leading-relaxed">
+              By using Justachat™, you acknowledge and consent to the collection and storage of the following information:
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <Server className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <span><strong>IP Addresses</strong> — Hashed and stored for security and abuse prevention</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Server className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <span><strong>ISP Information</strong> — Internet Service Provider details for network identification</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Server className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <span><strong>Geolocation Data</strong> — Approximate location (city, region, country) for service optimization</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Server className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <span><strong>Chat Logs</strong> — All public and private messages are encrypted and stored</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Server className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <span><strong>Connection Timestamps</strong> — Login/logout times and session duration</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Server className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <span><strong>Device Information</strong> — Browser type, operating system, and device identifiers</span>
+              </li>
+            </ul>
+            <Separator className="my-4" />
+            <p className="text-muted-foreground text-xs">
+              This data may be retained for up to 90 days and may be disclosed to law enforcement agencies 
+              upon valid legal request (subpoena, court order, or warrant). Location data older than 90 days 
+              is automatically purged.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Privacy & Monitoring */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              Privacy & Monitoring Disclosure
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              Justachat™ employs both automated and manual monitoring systems to ensure user safety and 
+              compliance with our terms of service:
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                <strong>AI Content Moderation</strong> — Automated systems scan messages for prohibited content
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                <strong>Human Moderators</strong> — Staff may review flagged content and user reports
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                <strong>Private Messages</strong> — While encrypted, PMs may be decrypted and reviewed by administrators 
+                for safety investigations or legal compliance
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                <strong>No Expectation of Privacy</strong> — Users should have no expectation of privacy in any 
+                communications made through this platform
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        {/* Prohibited Conduct */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-destructive" />
+              Prohibited Conduct
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground leading-relaxed">
+              The following activities are strictly prohibited and may result in immediate termination 
+              and reporting to law enforcement:
+            </p>
+            <ul className="space-y-2 text-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-destructive font-bold">✗</span>
+                Distribution or solicitation of child sexual abuse material (CSAM)
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-destructive font-bold">✗</span>
+                Harassment, threats, stalking, or doxxing of other users
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-destructive font-bold">✗</span>
+                Spam, flooding, or denial-of-service attacks
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-destructive font-bold">✗</span>
+                Distribution of malware, phishing links, or fraudulent content
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-destructive font-bold">✗</span>
+                Impersonation of staff, law enforcement, or other users
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-destructive font-bold">✗</span>
+                Solicitation of illegal activities or services
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-destructive font-bold">✗</span>
+                Circumventing bans, mutes, or other moderation actions
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-destructive font-bold">✗</span>
+                Attempting to exploit, hack, or compromise platform security
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
 
         {/* Main Legal Notice */}
         <Card className="border-primary/20 bg-primary/5">
@@ -96,7 +269,7 @@ const Legal = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Enforcement Policy
+              Trademark Enforcement Policy
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -160,6 +333,49 @@ const Legal = () => {
           </CardContent>
         </Card>
 
+        {/* Disclaimer & Liability */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Gavel className="h-5 w-5 text-primary" />
+              Disclaimer & Limitation of Liability
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-foreground text-sm leading-relaxed">
+              Justachat™ is provided "AS IS" without warranty of any kind, express or implied. We do not guarantee 
+              uninterrupted service, security of user data, or accuracy of user-generated content.
+            </p>
+            <ul className="space-y-2 text-muted-foreground text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We are not responsible for content posted by users
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We are not liable for any damages arising from use of this service
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                We reserve the right to terminate accounts without notice
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                These terms may be modified at any time without prior notice
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold">•</span>
+                Continued use constitutes acceptance of modified terms
+              </li>
+            </ul>
+            <Separator className="my-4" />
+            <p className="text-muted-foreground text-xs">
+              This service is governed by the laws of the State of Texas, United States. Any disputes 
+              shall be resolved in the courts of Bexar County, Texas.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Contact */}
         <Card>
           <CardHeader>
@@ -167,8 +383,8 @@ const Legal = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              For trademark licensing, legal inquiries, or to report infringement, please contact us through 
-              our official channels at <strong>justachat.net</strong>.
+              For trademark licensing, legal inquiries, law enforcement requests, or to report infringement, 
+              please contact us through our official channels at <strong>justachat.net</strong>.
             </p>
           </CardContent>
         </Card>
