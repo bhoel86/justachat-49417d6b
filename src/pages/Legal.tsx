@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Scale, Shield, FileText, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Scale, Shield, FileText, AlertTriangle, ArrowLeft, DollarSign, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -124,6 +124,32 @@ const Legal = () => {
             
             <Separator className="my-4" />
             
+            {/* Imminent Domain Seizure Warning */}
+            <div className="bg-destructive/20 border-2 border-destructive/40 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-destructive" />
+                <strong className="text-destructive">Imminent Domain Seizure</strong>
+              </div>
+              <p className="text-sm text-foreground">
+                Infringing domains are subject to <strong>immediate seizure</strong> through UDRP proceedings. 
+                Domain registrars are required to comply with transfer orders, resulting in complete loss of 
+                the domain without compensation.
+              </p>
+            </div>
+
+            {/* Damages Warning */}
+            <div className="bg-amber-500/10 border-2 border-amber-500/40 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-amber-500" />
+                <strong className="text-amber-500">Statutory Damages</strong>
+              </div>
+              <p className="text-sm text-foreground">
+                Under the Lanham Act, willful trademark infringement may result in statutory damages of 
+                up to <strong className="text-amber-500">$2,000,000 per counterfeit mark</strong>, plus 
+                attorney's fees, court costs, and disgorgement of profits.
+              </p>
+            </div>
+
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
               <p className="text-sm text-foreground">
                 <strong>Legal Remedies:</strong> Violations may result in UDRP domain transfer proceedings, 
