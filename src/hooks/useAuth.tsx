@@ -84,6 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(null);
     setIsMinor(false);
     setHasParentConsent(true);
+    // Redirect to auth page
+    window.location.href = '/auth';
   };
 
   const checkUserRole = async (userId: string) => {
