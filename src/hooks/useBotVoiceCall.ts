@@ -38,6 +38,8 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
   const maxResponsesRef = useRef(3);
   const conversationHistoryRef = useRef<string[]>([]);
+  const lastTranscriptRef = useRef<string>('');
+  const responsesGivenRef = useRef(0);
 
   // Text-to-speech for bot responses
   const speak = useCallback((text: string): Promise<void> => {
@@ -146,39 +148,41 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
       for (let i = event.resultIndex; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript;
       }
+      lastTranscriptRef.current = transcript;
       setState(prev => ({ ...prev, userTranscript: transcript }));
     };
 
     recognition.onend = async () => {
-      console.log('[BOT-VOICE] Listening ended');
-      const transcript = (recognitionRef.current as any)?._lastTranscript || '';
+      console.log('[BOT-VOICE] Listening ended, transcript:', lastTranscriptRef.current);
+      const transcript = lastTranscriptRef.current;
       
       if (transcript.trim()) {
         setState(prev => ({ ...prev, status: 'responding' }));
         
         const response = await getBotResponse(transcript);
+        responsesGivenRef.current += 1;
+        
         setState(prev => ({ 
           ...prev, 
           botResponse: response,
-          responsesGiven: prev.responsesGiven + 1,
+          responsesGiven: responsesGivenRef.current,
         }));
         
         onBotMessage?.(response);
         
         await speak(response);
         
-        // Check if we should continue or end
-        setState(prev => {
-          if (prev.responsesGiven >= maxResponsesRef.current) {
-            return { ...prev, status: 'ended' };
-          }
-          return { ...prev, status: 'listening' };
-        });
+        // Reset transcript for next round
+        lastTranscriptRef.current = '';
         
-        // Continue listening if not done
-        if (state.responsesGiven < maxResponsesRef.current - 1) {
+        // Check if we should continue or end
+        if (responsesGivenRef.current >= maxResponsesRef.current) {
+          setState(prev => ({ ...prev, status: 'ended' }));
+        } else {
+          setState(prev => ({ ...prev, status: 'listening' }));
+          // Continue listening
           setTimeout(() => {
-            if (recognitionRef.current && state.status !== 'ended') {
+            if (recognitionRef.current) {
               try {
                 recognitionRef.current.start();
               } catch (e) {
@@ -190,7 +194,7 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
       } else {
         // No speech detected, try again
         setTimeout(() => {
-          if (recognitionRef.current && state.status === 'listening') {
+          if (recognitionRef.current) {
             try {
               recognitionRef.current.start();
             } catch (e) {
@@ -226,6 +230,10 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
     console.log('[BOT-VOICE] Starting call with bot:', botId, botName);
     
     conversationHistoryRef.current = [];
+    
+    // Reset refs
+    lastTranscriptRef.current = '';
+    responsesGivenRef.current = 0;
     
     setState({
       status: 'connecting',
