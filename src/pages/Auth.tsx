@@ -199,10 +199,10 @@ const Auth = () => {
         newErrors.terms = "You must agree to the Terms of Service";
       }
       
-      // Require CAPTCHA for signup
-      if (!captchaToken) {
-        newErrors.captcha = "Please complete the CAPTCHA verification";
-      }
+      // CAPTCHA temporarily disabled while DNS propagates
+      // if (!captchaToken) {
+      //   newErrors.captcha = "Please complete the CAPTCHA verification";
+      // }
     }
     
     setErrors(newErrors);
@@ -387,24 +387,25 @@ const Auth = () => {
           await resetRateLimit(email.toLowerCase());
         }
       } else if (mode === "signup") {
-        // Verify CAPTCHA on server first
-        if (!captchaToken) {
-          setErrors(prev => ({ ...prev, captcha: "Please complete the CAPTCHA" }));
-          setIsSubmitting(false);
-          return;
-        }
-        
-        const captchaValid = await verifyCaptchaOnServer(captchaToken);
-        if (!captchaValid) {
-          toast({
-            variant: "destructive",
-            title: "Verification failed",
-            description: "CAPTCHA verification failed. Please try again."
-          });
-          setCaptchaToken(null);
-          setIsSubmitting(false);
-          return;
-        }
+        // CAPTCHA temporarily disabled while DNS propagates to Cloudflare
+        // Skip server-side verification for now
+        // if (!captchaToken) {
+        //   setErrors(prev => ({ ...prev, captcha: "Please complete the CAPTCHA" }));
+        //   setIsSubmitting(false);
+        //   return;
+        // }
+        // 
+        // const captchaValid = await verifyCaptchaOnServer(captchaToken);
+        // if (!captchaValid) {
+        //   toast({
+        //     variant: "destructive",
+        //     title: "Verification failed",
+        //     description: "CAPTCHA verification failed. Please try again."
+        //   });
+        //   setCaptchaToken(null);
+        //   setIsSubmitting(false);
+        //   return;
+        // }
         
         const parsedAge = parseInt(age, 10);
         const isMinor = parsedAge >= 13 && parsedAge < 18;
@@ -758,8 +759,8 @@ const Auth = () => {
                 </div>
               )}
 
-              {/* CAPTCHA for signup only */}
-              {mode === "signup" && (
+              {/* CAPTCHA temporarily disabled while DNS propagates to Cloudflare */}
+              {/* {mode === "signup" && (
                 <div className="space-y-2">
                   <TurnstileCaptcha
                     onVerify={handleCaptchaVerify}
@@ -779,14 +780,14 @@ const Auth = () => {
                     <p className="text-destructive text-xs text-center">CAPTCHA error. Please refresh and try again.</p>
                   )}
                 </div>
-              )}
+              )} */}
 
               <Button
                 type="submit"
                 variant="jac"
                 size="lg"
                 className="w-full"
-                disabled={isSubmitting || (mode === "signup" && (!captchaToken || !agreedToTerms)) || (mode === "login" && rateLimitInfo?.locked)}
+                disabled={isSubmitting || (mode === "signup" && !agreedToTerms) || (mode === "login" && rateLimitInfo?.locked)}
               >
                 {isSubmitting ? (
                   <span className="animate-pulse">Please wait...</span>
