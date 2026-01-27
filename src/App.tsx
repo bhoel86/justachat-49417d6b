@@ -16,7 +16,7 @@ import AdminAPI from "./pages/AdminAPI";
 import AdminEmails from "./pages/AdminEmails";
 import AdminMessages from "./pages/AdminMessages";
 import AdminMutes from "./pages/AdminMutes";
-import AdminIRC from "./pages/AdminIRC";
+
 import AdminBots from "./pages/AdminBots";
 import AdminKlines from "./pages/AdminKlines";
 import AdminMinors from "./pages/AdminMinors";
@@ -57,7 +57,7 @@ const App = () => (
               <Route path="/admin/emails" element={<AdminEmails />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
               <Route path="/admin/mutes" element={<AdminMutes />} />
-              <Route path="/admin/irc" element={<AdminIRC />} />
+              
               <Route path="/admin/bots" element={<AdminBots />} />
               <Route path="/admin/klines" element={<AdminKlines />} />
               <Route path="/admin/minors" element={<AdminMinors />} />

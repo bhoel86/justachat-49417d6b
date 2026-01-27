@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import FakeChatPreview from "@/components/home/FakeChatPreview";
-import { proxyAdminRequest } from "@/lib/ircProxyAdmin";
+
 
 // Room background images
 import generalBg from "@/assets/rooms/general-bg.jpg";
@@ -114,7 +114,7 @@ const Home = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
   const [roomUserCounts, setRoomUserCounts] = useState<RoomUserCounts>({});
-  const [isUnbanningIp, setIsUnbanningIp] = useState(false);
+  
 
   // Scroll to top on page load - use requestAnimationFrame to ensure it runs after render
   useEffect(() => {
@@ -184,96 +184,6 @@ const Home = () => {
     window.location.href = '/auth';
   };
 
-  // Quick unban/allowlist my IP via IRC proxy
-  const handleUnbanMyIp = async () => {
-    setIsUnbanningIp(true);
-    try {
-      // Detect user's current IP
-      const services = [
-        'https://api.ipify.org?format=json',
-        'https://api.my-ip.io/v2/ip.json',
-      ];
-      
-      let myIp: string | null = null;
-      for (const service of services) {
-        try {
-          const res = await fetch(service, { signal: AbortSignal.timeout(3000) });
-          if (res.ok) {
-            const data = await res.json();
-            myIp = data.ip || data.IP;
-            if (myIp) break;
-          }
-        } catch {
-          continue;
-        }
-      }
-      
-      if (!myIp) {
-        toast.error("Could not detect your IP address");
-        return;
-      }
-
-      // Get proxy URL and token from localStorage (set in AdminIRC)
-      const proxyUrl = localStorage.getItem('irc_proxy_url') || 'http://localhost:6680';
-      const adminToken = localStorage.getItem('irc_admin_token');
-
-      // Prevent confusing mixed-content failures when the app runs on HTTPS.
-      try {
-        const u = new URL(proxyUrl);
-        const isHttpsSite = typeof window !== 'undefined' && window.location.protocol === 'https:';
-        const isHttpProxy = u.protocol === 'http:';
-        const isLocalhost = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
-        if (isHttpsSite && isHttpProxy && !isLocalhost) {
-          toast.error('Proxy Admin URL must be HTTPS', {
-            description:
-              'Open Admin → IRC Gateway and switch the Proxy URL to an https:// domain (enable ADMIN_SSL_ENABLED=true on the VPS).',
-          });
-          return;
-        }
-      } catch {
-        // ignore
-      }
-      
-      if (!adminToken) {
-        toast.error("IRC proxy not configured", {
-          description: "Set up the proxy connection first",
-          action: {
-            label: "Go to IRC Gateway",
-            onClick: () => navigate("/admin/irc")
-          }
-        });
-        return;
-      }
-
-      // Unban the IP
-      const unbanRelay = await proxyAdminRequest({
-        proxyUrl,
-        adminToken,
-        path: "/unban",
-        method: "POST",
-        body: { ip: myIp },
-      });
-
-      // Add to allowlist
-      const allowRelay = await proxyAdminRequest({
-        proxyUrl,
-        adminToken,
-        path: "/allowlist",
-        method: "POST",
-        body: { ip: myIp, label: `Admin (${user?.email?.split('@')[0] || 'self'})` },
-      });
-
-      if (unbanRelay.ok || allowRelay.ok) {
-        toast.success(`Unbanned & allowlisted your IP: ${myIp}`);
-      } else {
-        toast.error("Failed to unban/allowlist IP");
-      }
-    } catch (e) {
-      toast.error("Failed to connect to IRC proxy");
-    } finally {
-      setIsUnbanningIp(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -519,24 +429,6 @@ const Home = () => {
                         </Link>
                       </DropdownMenuItem>
                       
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">Quick Actions</DropdownMenuLabel>
-                      
-                      <DropdownMenuItem 
-                        onClick={handleUnbanMyIp}
-                        disabled={isUnbanningIp}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        {isUnbanningIp ? (
-                          <RefreshCw className="w-4 h-4 text-primary animate-spin" />
-                        ) : (
-                          <Unlock className="w-4 h-4 text-primary" />
-                        )}
-                        <div>
-                          <span>Unban My IP</span>
-                          <p className="text-xs text-muted-foreground">Quick IRC proxy fix</p>
-                        </div>
-                      </DropdownMenuItem>
                     </>
                   )}
                 </DropdownMenuContent>

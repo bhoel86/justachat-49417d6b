@@ -39,8 +39,6 @@ verify_jwt = false
 [functions.upload-image]
 verify_jwt = false
 
-[functions.irc-proxy-admin]
-verify_jwt = false
 
 [functions.donation-notify]
 verify_jwt = false
