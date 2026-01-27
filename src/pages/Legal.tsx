@@ -777,6 +777,8 @@ const Legal = () => {
         <div className="text-center text-sm text-muted-foreground pt-8 border-t border-border">
           <p>© {new Date().getFullYear()} Justachat™ — All rights reserved.</p>
           <p className="mt-1">
+            <Link to="/guidelines" className="hover:text-primary transition-colors">Community Guidelines</Link>
+            <span className="mx-2">•</span>
             <Link to="/cookies" className="hover:text-primary transition-colors">Cookie Policy</Link>
             <span className="mx-2">•</span>
             Last updated: January 2026
