@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, RefreshCw, GitBranch, Server, CheckCircle, XCircle, Download, Upload, Clock, HardDrive, RotateCcw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, RefreshCw, GitBranch, Server, Download, Upload, Clock, HardDrive, RotateCcw, Key, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+
+// VPS server URL - calls directly, no edge function
+const VPS_URL = "http://157.245.174.197:6680";
+const TOKEN_STORAGE_KEY = "jac_vps_deploy_token";
 
 interface DeployStatus {
   deployDir?: string;
@@ -51,6 +55,11 @@ export default function AdminDeploy() {
   const [backups, setBackups] = useState<BackupFile[]>([]);
   const [selectedBackup, setSelectedBackup] = useState<string>("");
   const [loadingBackups, setLoadingBackups] = useState(false);
+  
+  // Token management - stored locally
+  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY) || "");
+  const [showToken, setShowToken] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
 
   useEffect(() => {
     if (!authLoading && !isOwner) {
@@ -58,47 +67,75 @@ export default function AdminDeploy() {
     }
   }, [authLoading, isOwner, navigate]);
 
+  // Direct VPS API call helper
+  const callVPS = async (endpoint: string, method: "GET" | "POST" = "GET", body?: any) => {
+    if (!token) {
+      throw new Error("Deploy token not configured. Enter your VPS token below.");
+    }
+
+    const response = await fetch(`${VPS_URL}${endpoint}`, {
+      method,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: method === "POST" ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || `VPS returned ${response.status}`);
+    }
+
+    return data;
+  };
+
+  const saveToken = () => {
+    if (tokenInput.trim()) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, tokenInput.trim());
+      setToken(tokenInput.trim());
+      setTokenInput("");
+      toast.success("Token saved locally");
+      fetchStatus();
+    }
+  };
+
+  const clearToken = () => {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    setToken("");
+    toast.info("Token cleared");
+  };
+
   const fetchStatus = async () => {
+    if (!token) {
+      setLoadingStatus(false);
+      return;
+    }
+
     setLoadingStatus(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Not authenticated");
-        return;
-      }
-
-      const response = await supabase.functions.invoke("vps-deploy", {
-        body: null,
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      setStatus(response.data);
+      const data = await callVPS("/deploy/status");
+      setStatus(data);
     } catch (error: any) {
       console.error("Failed to fetch status:", error);
-      toast.error("Failed to fetch deploy status");
+      setStatus({ error: error.message });
+      toast.error("Failed to fetch deploy status: " + error.message);
     } finally {
       setLoadingStatus(false);
     }
   };
 
   const fetchBackups = async () => {
+    if (!token) return;
+
     setLoadingBackups(true);
     try {
-      const response = await supabase.functions.invoke("vps-deploy", {
-        body: { action: "list-backups" },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      setBackups(response.data.backups || []);
+      const data = await callVPS("/deploy/backups");
+      setBackups(data.backups || []);
     } catch (error: any) {
       console.error("Failed to fetch backups:", error);
-      toast.error("Failed to fetch backup list");
+      toast.error("Failed to fetch backup list: " + error.message);
     } finally {
       setLoadingBackups(false);
     }
@@ -119,24 +156,11 @@ export default function AdminDeploy() {
 
     try {
       toast.info("Restoring from backup... This may take several minutes.");
-
-      const response = await supabase.functions.invoke("vps-deploy", {
-        body: { action: "restore", filename: selectedBackup },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      setDeployResult(response.data);
-
-      if (response.data.success) {
-        toast.success("Restore completed successfully!");
-        await fetchStatus();
-        await fetchBackups();
-      } else {
-        toast.error("Restore failed: " + (response.data.error || "Unknown error"));
-      }
+      const data = await callVPS("/deploy", "POST", { action: "restore", filename: selectedBackup });
+      setDeployResult({ success: true, action: "restore", ...data });
+      toast.success("Restore completed successfully!");
+      await fetchStatus();
+      await fetchBackups();
     } catch (error: any) {
       console.error("Restore failed:", error);
       toast.error("Restore failed: " + error.message);
@@ -155,12 +179,6 @@ export default function AdminDeploy() {
     setDeployResult(null);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Not authenticated");
-        return;
-      }
-
       toast.info(`Executing ${action}... This may take a few minutes.`);
 
       const body: any = { action };
@@ -168,22 +186,10 @@ export default function AdminDeploy() {
         body.frequency = backupFrequency;
       }
 
-      const response = await supabase.functions.invoke("vps-deploy", {
-        body,
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      setDeployResult(response.data);
-
-      if (response.data.success) {
-        toast.success(`${action} completed successfully!`);
-        await fetchStatus();
-      } else {
-        toast.error(`${action} failed: ` + (response.data.error || "Unknown error"));
-      }
+      const data = await callVPS("/deploy", "POST", body);
+      setDeployResult({ success: true, action, ...data });
+      toast.success(`${action} completed successfully!`);
+      await fetchStatus();
     } catch (error: any) {
       console.error(`${action} failed:`, error);
       toast.error(`${action} failed: ` + error.message);
@@ -194,11 +200,13 @@ export default function AdminDeploy() {
   };
 
   useEffect(() => {
-    if (isOwner) {
+    if (isOwner && token) {
       fetchStatus();
       fetchBackups();
+    } else if (isOwner) {
+      setLoadingStatus(false);
     }
-  }, [isOwner]);
+  }, [isOwner, token]);
 
   if (authLoading) {
     return (
@@ -218,13 +226,57 @@ export default function AdminDeploy() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">VPS Management</h1>
-            <p className="text-muted-foreground">Manage backups and sync with GitHub</p>
+            <p className="text-muted-foreground">Manage backups and sync with GitHub (Direct VPS connection)</p>
           </div>
-          <Button variant="outline" onClick={fetchStatus} disabled={loadingStatus}>
+          <Button variant="outline" onClick={fetchStatus} disabled={loadingStatus || !token}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loadingStatus ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
+
+        {/* Token Configuration Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              VPS Deploy Token
+            </CardTitle>
+            <CardDescription>
+              Token is stored in your browser only - not sent to Lovable Cloud
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {token ? (
+              <div className="flex items-center gap-4">
+                <div className="flex-1 font-mono text-sm bg-muted px-3 py-2 rounded">
+                  {showToken ? token : "••••••••••••••••"}
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowToken(!showToken)}>
+                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+                <Button variant="destructive" size="sm" onClick={clearToken}>
+                  Clear
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="Enter VPS deploy token..."
+                  value={tokenInput}
+                  onChange={(e) => setTokenInput(e.target.value)}
+                  className="font-mono"
+                />
+                <Button onClick={saveToken} disabled={!tokenInput.trim()}>
+                  Save Token
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Get your token from <code>/opt/jac-deploy/.env</code> on your VPS
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Status Card */}
         <Card>
@@ -236,7 +288,9 @@ export default function AdminDeploy() {
             <CardDescription>Live VPS deployment information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {loadingStatus ? (
+            {!token ? (
+              <div className="text-muted-foreground">Enter your VPS token above to connect</div>
+            ) : loadingStatus ? (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading status...
@@ -312,7 +366,7 @@ export default function AdminDeploy() {
               <Button 
                 className="w-full" 
                 onClick={() => executeAction("schedule-backup", `Set backup frequency to ${backupFrequency}?`)}
-                disabled={actionLoading !== null}
+                disabled={actionLoading !== null || !token}
               >
                 {actionLoading === "schedule-backup" ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
@@ -325,7 +379,7 @@ export default function AdminDeploy() {
                 variant="outline"
                 className="w-full" 
                 onClick={() => executeAction("backup-now", "Create a backup now?")}
-                disabled={actionLoading !== null}
+                disabled={actionLoading !== null || !token}
               >
                 {actionLoading === "backup-now" ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Backing up...</>
@@ -360,7 +414,7 @@ export default function AdminDeploy() {
               <Button 
                 className="w-full" 
                 onClick={() => executeAction("deploy", "Pull latest from GitHub and rebuild?")}
-                disabled={actionLoading !== null}
+                disabled={actionLoading !== null || !token}
               >
                 {actionLoading === "deploy" ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Deploying...</>
@@ -396,7 +450,7 @@ export default function AdminDeploy() {
                 className="w-full" 
                 variant="secondary"
                 onClick={() => executeAction("push", "Push VPS changes to GitHub? This will commit and push all local changes.")}
-                disabled={actionLoading !== null}
+                disabled={actionLoading !== null || !token}
               >
                 {actionLoading === "push" ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Pushing...</>
@@ -426,7 +480,7 @@ export default function AdminDeploy() {
                     variant="ghost"
                     size="sm"
                     onClick={fetchBackups}
-                    disabled={loadingBackups}
+                    disabled={loadingBackups || !token}
                     className="h-6 px-2"
                   >
                     <RefreshCw className={`h-3 w-3 ${loadingBackups ? "animate-spin" : ""}`} />
@@ -464,7 +518,7 @@ export default function AdminDeploy() {
                 className="w-full" 
                 variant="destructive"
                 onClick={executeRestore}
-                disabled={actionLoading !== null || !selectedBackup}
+                disabled={actionLoading !== null || !selectedBackup || !token}
               >
                 {actionLoading === "restore" ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Restoring...</>
@@ -482,34 +536,32 @@ export default function AdminDeploy() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 {deployResult.success ? (
-                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <Badge variant="default" className="bg-primary">Success</Badge>
                 ) : (
-                  <XCircle className="h-5 w-5 text-destructive" />
+                  <Badge variant="destructive">Failed</Badge>
                 )}
-                {deployResult.action} {deployResult.success ? "Succeeded" : "Failed"}
+                {deployResult.action}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {deployResult.message && (
-                <p className="mb-4">{deployResult.message}</p>
+                <p className="text-sm mb-2">{deployResult.message}</p>
               )}
               {deployResult.error && (
-                <div className="bg-destructive/10 text-destructive p-4 rounded-lg mb-4">
-                  <strong>Error:</strong> {deployResult.error}
-                </div>
+                <p className="text-sm text-destructive mb-2">{deployResult.error}</p>
               )}
               {deployResult.output && (
-                <details className="cursor-pointer">
-                  <summary className="text-sm text-muted-foreground mb-2">View Output</summary>
-                  <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto max-h-64 font-mono">
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-sm text-muted-foreground">Show output</summary>
+                  <pre className="mt-2 p-3 bg-muted rounded text-xs overflow-auto max-h-64">
                     {deployResult.output}
                   </pre>
                 </details>
               )}
               {deployResult.stderr && (
-                <details className="cursor-pointer mt-2">
-                  <summary className="text-sm text-destructive mb-2">View Errors</summary>
-                  <pre className="bg-destructive/10 p-4 rounded-lg text-xs overflow-auto max-h-64 font-mono text-destructive">
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-sm text-destructive">Show errors</summary>
+                  <pre className="mt-2 p-3 bg-destructive/10 rounded text-xs overflow-auto max-h-64 text-destructive">
                     {deployResult.stderr}
                   </pre>
                 </details>
