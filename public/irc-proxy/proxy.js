@@ -1173,6 +1173,94 @@ const handleAdminRequest = (req, res) => {
     return;
   }
   
+  // Deploy/Update - triggers git pull and rebuild
+  if (reqPath === '/deploy' && req.method === 'POST') {
+    const { execSync, spawn } = require('child_process');
+    const deployDir = '/var/www/justachat';
+    
+    fileLogger.admin('DEPLOY_START', { ip: adminIP, dir: deployDir });
+    
+    try {
+      // Check if deploy directory exists
+      if (!fs.existsSync(deployDir)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Deploy directory not found', dir: deployDir }));
+        return;
+      }
+      
+      // Run git pull and npm build in background
+      const deployScript = `
+        cd ${deployDir} && \
+        git fetch origin main && \
+        git reset --hard origin/main && \
+        npm install --legacy-peer-deps && \
+        npm run build
+      `;
+      
+      // Execute synchronously but with timeout
+      const output = execSync(deployScript, { 
+        timeout: 300000, // 5 min timeout
+        encoding: 'utf8',
+        cwd: deployDir,
+        env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+      });
+      
+      fileLogger.admin('DEPLOY_SUCCESS', { ip: adminIP, output: output.slice(-500) });
+      
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: true, 
+        message: 'Deploy completed successfully',
+        output: output.slice(-1000) 
+      }));
+    } catch (err) {
+      fileLogger.admin('DEPLOY_FAILED', { ip: adminIP, error: err.message });
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        success: false, 
+        error: err.message,
+        output: err.stdout?.slice(-500) || '',
+        stderr: err.stderr?.slice(-500) || ''
+      }));
+    }
+    return;
+  }
+  
+  // Deploy Status - check current version
+  if (reqPath === '/deploy/status' && req.method === 'GET') {
+    const deployDir = '/var/www/justachat';
+    const { execSync } = require('child_process');
+    
+    try {
+      const gitLog = execSync('git log -1 --format="%H|%s|%ci"', { 
+        cwd: deployDir, 
+        encoding: 'utf8' 
+      }).trim();
+      
+      const [hash, message, date] = gitLog.split('|');
+      
+      // Try to read version from version.ts
+      let appVersion = 'unknown';
+      try {
+        const versionFile = fs.readFileSync(path.join(deployDir, 'src/lib/version.ts'), 'utf8');
+        const match = versionFile.match(/APP_VERSION\s*=\s*["']([^"']+)["']/);
+        if (match) appVersion = match[1];
+      } catch (e) {}
+      
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        deployDir,
+        appVersion,
+        git: { hash: hash.slice(0, 8), message, date },
+        proxyVersion: PROXY_VERSION
+      }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+  
   // Allowlist - GET
   if (reqPath === '/allowlist' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });

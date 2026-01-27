@@ -12,6 +12,7 @@ import {
   Bot,
   Globe,
   Baby,
+  Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { label: "Bots", href: "/admin/bots", icon: Bot, adminOnly: true },
   { label: "Emails", href: "/admin/emails", icon: Mail, ownerOnly: true },
   { label: "API Keys", href: "/admin/api", icon: Key, ownerOnly: true },
+  { label: "Deploy", href: "/admin/deploy", icon: Rocket, ownerOnly: true },
 ];
 
 interface AdminSidebarProps {

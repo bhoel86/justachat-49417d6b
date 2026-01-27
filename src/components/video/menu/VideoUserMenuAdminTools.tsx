@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Mail,
   Key,
+  Rocket,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -122,6 +123,14 @@ export function VideoUserMenuAdminTools({
           >
             <Key className="w-4 h-4 mr-2 text-muted-foreground" />
             API Keys
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => navigate("/admin/deploy")}
+            className="cursor-pointer"
+          >
+            <Rocket className="w-4 h-4 mr-2 text-muted-foreground" />
+            VPS Deploy
           </DropdownMenuItem>
         </>
       )}
