@@ -181,7 +181,7 @@ const Home = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/auth");
+    window.location.href = '/auth';
   };
 
   // Quick unban/allowlist my IP via IRC proxy
