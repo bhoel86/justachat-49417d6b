@@ -9,6 +9,8 @@ interface BotVoiceCallState {
   botResponse: string;
   userTranscript: string;
   responsesGiven: number;
+  userAudioLevel: number;
+  botAudioLevel: number;
 }
 
 interface UseBotVoiceCallProps {
@@ -29,7 +31,13 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
     botResponse: '',
     userTranscript: '',
     responsesGiven: 0,
+    userAudioLevel: 0,
+    botAudioLevel: 0,
   });
+  
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioLevelIntervalRef = useRef<number | null>(null);
+  const botSpeakingRef = useRef(false);
   
   const { toast } = useToast();
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -41,9 +49,27 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
   const lastTranscriptRef = useRef<string>('');
   const responsesGivenRef = useRef(0);
 
+  // Simulate bot audio level when speaking
+  const startBotAudioSimulation = useCallback(() => {
+    botSpeakingRef.current = true;
+    const simulateBotAudio = () => {
+      if (!botSpeakingRef.current) return;
+      // Simulate varying audio levels
+      const level = 0.3 + Math.random() * 0.5;
+      setState(prev => ({ ...prev, botAudioLevel: level }));
+      requestAnimationFrame(simulateBotAudio);
+    };
+    simulateBotAudio();
+  }, []);
+
+  const stopBotAudioSimulation = useCallback(() => {
+    botSpeakingRef.current = false;
+    setState(prev => ({ ...prev, botAudioLevel: 0 }));
+  }, []);
+
   // Text-to-speech for bot responses
   const speak = useCallback((text: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (!('speechSynthesis' in window)) {
         console.log('[BOT-VOICE] Speech synthesis not supported');
         resolve();
@@ -67,16 +93,21 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
       );
       if (preferredVoice) utterance.voice = preferredVoice;
 
-      utterance.onend = () => resolve();
+      utterance.onstart = () => startBotAudioSimulation();
+      utterance.onend = () => {
+        stopBotAudioSimulation();
+        resolve();
+      };
       utterance.onerror = (e) => {
         console.error('[BOT-VOICE] Speech error:', e);
+        stopBotAudioSimulation();
         resolve();
       };
 
       synthRef.current = utterance;
       window.speechSynthesis.speak(utterance);
     });
-  }, []);
+  }, [startBotAudioSimulation, stopBotAudioSimulation]);
 
   // Get AI response for user input
   const getBotResponse = useCallback(async (userInput: string): Promise<string> => {
@@ -240,6 +271,8 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
       botResponse: '',
       userTranscript: '',
       responsesGiven: 0,
+      userAudioLevel: 0,
+      botAudioLevel: 0,
     });
 
     try {
@@ -248,6 +281,24 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
       mediaStreamRef.current = stream;
       
       audioContextRef.current = new AudioContext();
+      
+      // Set up audio analyser for mic level
+      const analyser = audioContextRef.current.createAnalyser();
+      analyser.fftSize = 256;
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      
+      // Start monitoring audio level
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const updateAudioLevel = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        const normalized = Math.min(average / 128, 1);
+        setState(prev => ({ ...prev, userAudioLevel: normalized }));
+      };
+      audioLevelIntervalRef.current = window.setInterval(updateAudioLevel, 50);
       
       // Bot greeting
       setState(prev => ({ ...prev, status: 'greeting' }));
@@ -276,6 +327,15 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
   const endCall = useCallback(() => {
     console.log('[BOT-VOICE] Ending call');
     
+    // Stop audio level monitoring
+    if (audioLevelIntervalRef.current) {
+      clearInterval(audioLevelIntervalRef.current);
+      audioLevelIntervalRef.current = null;
+    }
+    
+    // Stop bot audio simulation
+    stopBotAudioSimulation();
+    
     // Stop recognition
     if (recognitionRef.current) {
       try {
@@ -303,15 +363,19 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
       audioContextRef.current = null;
     }
     
+    analyserRef.current = null;
+    
     setState({
       status: 'idle',
       botResponse: '',
       userTranscript: '',
       responsesGiven: 0,
+      userAudioLevel: 0,
+      botAudioLevel: 0,
     });
     
     conversationHistoryRef.current = [];
-  }, []);
+  }, [stopBotAudioSimulation]);
 
   // Cleanup on unmount
   useEffect(() => {
