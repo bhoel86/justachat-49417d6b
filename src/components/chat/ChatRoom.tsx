@@ -141,6 +141,17 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     if (!initialChannelName) return;
     
     const loadInitialChannel = async () => {
+      // Check if minor without consent is trying to join adult channel
+      if (isMinor && !hasParentConsent && isAdultChannel(initialChannelName)) {
+        toast({
+          variant: "destructive",
+          title: "Access Restricted",
+          description: "Adult chat rooms require parental consent for users under 18. Please ask your parent/guardian to verify their email.",
+        });
+        navigate('/chat/general');
+        return;
+      }
+      
       const { data } = await supabaseUntyped
         .from('channels')
         .select('*')
@@ -161,7 +172,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
     
     loadInitialChannel();
-  }, [initialChannelName, navigate, toast]);
+  }, [initialChannelName, navigate, toast, isMinor, hasParentConsent]);
 
   // Fetch user profile and language preference
   useEffect(() => {
@@ -693,6 +704,16 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   }, [currentChannel, messages, addModeratorMessage]);
 
   const handleChannelSelect = async (channel: Channel) => {
+    // Check if minor without consent is trying to join adult channel
+    if (isMinor && !hasParentConsent && isAdultChannel(channel.name)) {
+      toast({
+        variant: "destructive",
+        title: "Access Restricted",
+        description: "Adult chat rooms require parental consent for users under 18. Please ask your parent/guardian to verify their email.",
+      });
+      return;
+    }
+    
     // Check if room has a password and user is not room owner
     if (channel.created_by !== user?.id && !isAdmin && !isOwner) {
       const { data } = await supabaseUntyped
