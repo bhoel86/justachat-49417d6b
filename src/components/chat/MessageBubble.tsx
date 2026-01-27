@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Trash2, Terminal, MessageSquareLock, Ban, Flag, Info, User, MoreVertical, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -195,6 +196,61 @@ const MessageBubble = ({
       <div className="flex justify-center animate-message-in">
         <div className="px-2 py-1 text-xs italic text-primary">
           {message}
+        </div>
+      </div>
+    );
+  }
+
+  // Check if message is ONLY an image/GIF (no text besides the tag)
+  const imgMatch = message.match(/^\[img:(https?:\/\/[^\]]+)\]$/);
+  const isImageOnly = !!imgMatch;
+  
+  // Render image-only messages without bubble
+  if (isImageOnly && imgMatch) {
+    const imageUrl = imgMatch[1];
+    return (
+      <div
+        className={cn(
+          "flex animate-message-in group",
+          isOwn ? "justify-end" : "justify-start"
+        )}
+      >
+        <div className="max-w-[85%]">
+          <div className="flex items-center gap-1 mb-0.5">
+            {!isOwn ? (
+              <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={false} avatarUrl={senderAvatarUrl} />
+            ) : (
+              <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={true} avatarUrl={senderAvatarUrl} />
+            )}
+            <span className="text-[9px] ml-1 text-muted-foreground">
+              {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            {canDelete && onDelete && (
+              <button
+                onClick={() => onDelete(id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/20 ml-1 text-muted-foreground hover:text-destructive"
+                title="Delete message"
+              >
+                <Trash2 className="h-2.5 w-2.5" />
+              </button>
+            )}
+          </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <img
+                src={imageUrl}
+                alt="Chat image"
+                className="max-w-[200px] sm:max-w-[280px] max-h-40 sm:max-h-56 rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-contain"
+              />
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl p-0 bg-transparent border-none">
+              <img
+                src={imageUrl}
+                alt="Chat image full size"
+                className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     );
