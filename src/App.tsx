@@ -16,12 +16,13 @@ import AdminAPI from "./pages/AdminAPI";
 import AdminEmails from "./pages/AdminEmails";
 import AdminMessages from "./pages/AdminMessages";
 import AdminMutes from "./pages/AdminMutes";
-
+import AdminSupport from "./pages/AdminSupport";
 import AdminBots from "./pages/AdminBots";
 import AdminKlines from "./pages/AdminKlines";
 import AdminMinors from "./pages/AdminMinors";
 import AdminDeploy from "./pages/AdminDeploy";
 import VerifyConsent from "./pages/VerifyConsent";
+import Help from "./pages/Help";
 import DownloadProxy from "./pages/DownloadProxy";
 import ClientDownload from "./pages/ClientDownload";
 import Dating from "./pages/Dating";
@@ -57,11 +58,12 @@ const App = () => (
               <Route path="/admin/emails" element={<AdminEmails />} />
               <Route path="/admin/messages" element={<AdminMessages />} />
               <Route path="/admin/mutes" element={<AdminMutes />} />
-              
+              <Route path="/admin/support" element={<AdminSupport />} />
               <Route path="/admin/bots" element={<AdminBots />} />
               <Route path="/admin/klines" element={<AdminKlines />} />
               <Route path="/admin/minors" element={<AdminMinors />} />
               <Route path="/admin/deploy" element={<AdminDeploy />} />
+              <Route path="/help" element={<Help />} />
               <Route path="/verify-consent" element={<VerifyConsent />} />
               <Route path="/download-proxy" element={<DownloadProxy />} />
               <Route path="/downloads" element={<ClientDownload />} />

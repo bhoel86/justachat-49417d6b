@@ -13,6 +13,8 @@ import {
   Globe,
   Baby,
   Rocket,
+  HelpCircle,
+  MessageSquareLock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,12 +32,13 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Audit Logs", href: "/admin", icon: Shield, ownerOnly: true },
+  { label: "Support", href: "/admin/support", icon: HelpCircle, moderatorAllowed: true },
   { label: "Users", href: "/admin/users", icon: Users, adminOnly: true },
   { label: "Minors", href: "/admin/minors", icon: Baby, adminOnly: true },
   { label: "Bans", href: "/admin/bans", icon: Ban, moderatorAllowed: true },
   { label: "Mutes", href: "/admin/mutes", icon: VolumeX, moderatorAllowed: true },
   { label: "K-Lines", href: "/admin/klines", icon: Globe, adminOnly: true },
-  { label: "Messages", href: "/admin/messages", icon: MessageSquare, adminOnly: true },
+  { label: "PMs", href: "/admin/messages", icon: MessageSquareLock, adminOnly: true },
   { label: "Bots", href: "/admin/bots", icon: Bot, adminOnly: true },
   { label: "Emails", href: "/admin/emails", icon: Mail, ownerOnly: true },
   { label: "API Keys", href: "/admin/api", icon: Key, ownerOnly: true },
