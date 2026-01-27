@@ -841,9 +841,9 @@ const Home = () => {
             
             {/* Footer - Clean and organized */}
             <footer className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-border">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                {/* Logo and tagline */}
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center gap-4">
+                {/* Logo and tagline - top on mobile, hidden on larger screens for cleaner look */}
+                <div className="flex items-center gap-3 sm:hidden">
                   <div className="h-9 w-9 rounded-xl jac-gradient-bg flex items-center justify-center shadow-lg">
                     <MessageSquare className="w-4 h-4 text-primary-foreground" />
                   </div>
@@ -853,7 +853,7 @@ const Home = () => {
                   </div>
                 </div>
                 
-                {/* Center section with mascots and social links */}
+                {/* Center section with mascots and social links - always centered */}
                 <div className="flex items-center">
                   {/* Left mascot - positioned to end at Facebook */}
                   <img 
