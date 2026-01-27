@@ -21,6 +21,8 @@ const parentEmailSchema = z.string().email("Please enter a valid parent/guardian
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
 
+const CAPTCHA_REQUIRED_HOSTS = new Set(["justachat.net", "www.justachat.net"]);
+
 const Auth = () => {
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -43,6 +45,9 @@ const Auth = () => {
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const captchaRequired =
+    mode === "signup" && CAPTCHA_REQUIRED_HOSTS.has(window.location.hostname);
 
   // Track if we're in password reset mode (takes priority over auto-redirect)
   const [isPasswordResetFlow, setIsPasswordResetFlow] = useState(false);
@@ -199,8 +204,8 @@ const Auth = () => {
         newErrors.terms = "You must agree to the Terms of Service";
       }
       
-      // CAPTCHA verification required
-      if (!captchaToken) {
+      // CAPTCHA verification required only on official domains
+      if (captchaRequired && !captchaToken) {
         newErrors.captcha = "Please complete the CAPTCHA verification";
       }
     }
@@ -218,6 +223,10 @@ const Auth = () => {
       if (error) {
         console.error('CAPTCHA verification error:', error);
         return false;
+      }
+
+      if (data?.success !== true) {
+        console.warn("CAPTCHA rejected:", data);
       }
       
       return data?.success === true;
@@ -387,23 +396,25 @@ const Auth = () => {
           await resetRateLimit(email.toLowerCase());
         }
       } else if (mode === "signup") {
-        // Verify CAPTCHA on server
-        if (!captchaToken) {
-          setErrors(prev => ({ ...prev, captcha: "Please complete the CAPTCHA" }));
-          setIsSubmitting(false);
-          return;
-        }
-        
-        const captchaValid = await verifyCaptchaOnServer(captchaToken);
-        if (!captchaValid) {
-          toast({
-            variant: "destructive",
-            title: "Verification failed",
-            description: "CAPTCHA verification failed. Please try again."
-          });
-          setCaptchaToken(null);
-          setIsSubmitting(false);
-          return;
+        // Verify CAPTCHA on server (official domains only)
+        if (captchaRequired) {
+          if (!captchaToken) {
+            setErrors(prev => ({ ...prev, captcha: "Please complete the CAPTCHA" }));
+            setIsSubmitting(false);
+            return;
+          }
+          
+          const captchaValid = await verifyCaptchaOnServer(captchaToken);
+          if (!captchaValid) {
+            toast({
+              variant: "destructive",
+              title: "Verification failed",
+              description: "CAPTCHA verification failed. Please try again."
+            });
+            setCaptchaToken(null);
+            setIsSubmitting(false);
+            return;
+          }
         }
         
         const parsedAge = parseInt(age, 10);
@@ -771,8 +782,8 @@ const Auth = () => {
                 </div>
               )}
 
-              {/* CAPTCHA verification for signup */}
-              {mode === "signup" && (
+              {/* CAPTCHA verification for signup (official domains only) */}
+              {mode === "signup" && captchaRequired && (
                 <div className="space-y-2">
                   <TurnstileCaptcha
                     onVerify={handleCaptchaVerify}
@@ -794,12 +805,22 @@ const Auth = () => {
                 </div>
               )}
 
+              {mode === "signup" && !captchaRequired && (
+                <p className="text-xs text-muted-foreground text-center">
+                  CAPTCHA is only required on justachat.net.
+                </p>
+              )}
+
               <Button
                 type="submit"
                 variant="jac"
                 size="lg"
                 className="w-full"
-                disabled={isSubmitting || (mode === "signup" && (!agreedToTerms || !captchaToken)) || (mode === "login" && rateLimitInfo?.locked)}
+                disabled={
+                  isSubmitting ||
+                  (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
+                  (mode === "login" && rateLimitInfo?.locked)
+                }
               >
                 {isSubmitting ? (
                   <span className="animate-pulse">Please wait...</span>
