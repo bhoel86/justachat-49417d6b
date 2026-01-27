@@ -184,6 +184,24 @@ const Home = () => {
     navigate("/auth");
   };
 
+  const handleSwitchAccount = async () => {
+    // Sign out first, then redirect to Google OAuth with account chooser
+    await signOut();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+        queryParams: {
+          prompt: 'select_account'
+        }
+      }
+    });
+    if (error) {
+      toast.error("Failed to switch account: " + error.message);
+      navigate("/auth");
+    }
+  };
+
   // Quick unban/allowlist my IP via IRC proxy
   const handleUnbanMyIp = async () => {
     setIsUnbanningIp(true);
@@ -547,10 +565,26 @@ const Home = () => {
               <Users className="w-4 h-4" />
               <span className="text-sm">Welcome back!</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="px-2 sm:px-3">
-              <LogOut className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+                  <LogOut className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Account</span>
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+                <DropdownMenuItem onClick={handleSwitchAccount} className="cursor-pointer">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Switch Account
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
