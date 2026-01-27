@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session, createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { clearAuthStorage } from '@/lib/authStorage';
 
 // Create an untyped client for tables not yet in generated types
 const supabaseUntyped = createClient(
@@ -80,9 +81,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Logout from chat function - call this when leaving chat room
   const logoutFromChat = async () => {
-    // Local sign-out clears browser storage even if the server session is already gone.
-    // This prevents the "sign out then immediately sign back in" loop.
-    await supabase.auth.signOut({ scope: 'local' });
+    // Best-effort sign-out; if it fails, still clear local storage to prevent re-login.
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      // ignore
+    } finally {
+      clearAuthStorage();
+    }
     setSession(null);
     setUser(null);
     setRole(null);
@@ -157,8 +163,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Use local sign-out to reliably clear auth in the browser.
-    await supabase.auth.signOut({ scope: 'local' });
+    // Best-effort sign-out; if it fails, still clear local storage to prevent re-login.
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      // ignore
+    } finally {
+      clearAuthStorage();
+    }
     setSession(null);
     setUser(null);
     setRole(null);

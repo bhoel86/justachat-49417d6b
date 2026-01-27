@@ -10,6 +10,7 @@ import { z } from "zod";
 import TurnstileCaptcha from "@/components/auth/TurnstileCaptcha";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getVersionString } from "@/lib/version";
+import { clearAuthStorage } from "@/lib/authStorage";
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 
@@ -339,7 +340,11 @@ const Auth = () => {
           description: "You can now sign in with your new password."
         });
         // Sign out the recovery session so user can log in fresh
-        await supabase.auth.signOut();
+          try {
+            await supabase.auth.signOut({ scope: 'local' });
+          } finally {
+            clearAuthStorage();
+          }
         setIsPasswordResetFlow(false);
         setMode("login");
         setNewPassword("");
@@ -896,7 +901,11 @@ const Auth = () => {
                 type="button"
                 onClick={async () => {
                   // Sign out any existing session first, then force account chooser
-                  await supabase.auth.signOut({ scope: 'local' });
+                  try {
+                    await supabase.auth.signOut({ scope: 'local' });
+                  } finally {
+                    clearAuthStorage();
+                  }
                   const { error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
