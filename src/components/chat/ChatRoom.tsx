@@ -1236,7 +1236,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
               backgroundSize: '300px',
-              opacity: 0.08
+              opacity: 0.15
             }}
           />
           {loading ? (
