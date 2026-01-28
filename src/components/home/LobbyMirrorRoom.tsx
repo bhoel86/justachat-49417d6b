@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ChatHeader from "@/components/chat/ChatHeader";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Users, X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getBotsForChannel } from "@/lib/chatBots";
+import { getBotsForChannel, CHAT_BOTS, getBotResponseDelay } from "@/lib/chatBots";
 
 interface MirrorMessage {
   id: string;
@@ -28,12 +28,84 @@ const LobbyMirrorRoom = () => {
   const [messages, setMessages] = useState<MirrorMessage[]>([]);
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+  const pendingRef = useRef<boolean>(false);
 
   // Get simulated bot users for member list
   const simulatedBots = useMemo(() => getBotsForChannel('general'), []);
   const onlineUserIds = useMemo(() => new Set(simulatedBots.map(b => `bot-${b.id}`)), [simulatedBots]);
 
-  // Subscribe to mirrored messages from #general
+  // Add a message to the mirror
+  const addMirrorMessage = useCallback((username: string, content: string, avatarUrl?: string | null) => {
+    const newMsg: MirrorMessage = {
+      id: `mirror-${Date.now()}-${Math.random()}`,
+      content,
+      user_id: `bot-${username}`,
+      channel_id: 'general-mirror',
+      created_at: new Date().toISOString(),
+      profile: {
+        username,
+        avatar_url: avatarUrl || null,
+      }
+    };
+    setMessages(prev => [...prev, newMsg].slice(-50));
+    lastActivityRef.current = Date.now();
+  }, []);
+
+  // Generate bot conversation for the lobby
+  const generateBotMessage = useCallback(async (isStarter: boolean = false) => {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
+
+    try {
+      const bot = CHAT_BOTS[Math.floor(Math.random() * CHAT_BOTS.length)];
+      const recentMsgs = messages.slice(-10).map(m => ({
+        username: m.profile?.username || 'Unknown',
+        content: m.content,
+        timestamp: m.created_at,
+      }));
+
+      const { data, error } = await supabase.functions.invoke('chat-bot', {
+        body: {
+          botId: bot.id,
+          context: 'general',
+          recentMessages: recentMsgs,
+          isConversationStarter: isStarter,
+        },
+      });
+
+      if (!error && data?.message) {
+        addMirrorMessage(bot.username, data.message, bot.avatarUrl);
+      }
+    } catch (err) {
+      console.error('Lobby bot error:', err);
+    } finally {
+      pendingRef.current = false;
+    }
+  }, [messages, addMirrorMessage]);
+
+  // Periodic bot conversations for the lobby
+  useEffect(() => {
+    // Start initial conversation quickly
+    const initialTimeout = setTimeout(() => {
+      generateBotMessage(true);
+    }, 2000);
+
+    // Continue conversations every 10-25 seconds
+    const interval = setInterval(() => {
+      const timeSinceActivity = Date.now() - lastActivityRef.current;
+      if (timeSinceActivity > 8000) {
+        generateBotMessage(Math.random() < 0.3);
+      }
+    }, 10000 + Math.random() * 15000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [generateBotMessage]);
+
+  // Subscribe to mirrored messages from #general (real activity)
   useEffect(() => {
     const channel = supabase.channel('general-lobby-mirror', {
       config: { broadcast: { self: true } }
@@ -42,18 +114,7 @@ const LobbyMirrorRoom = () => {
     channel
       .on('broadcast', { event: 'bot-message' }, (payload) => {
         const { username, content, avatarUrl } = payload.payload;
-        const newMsg: MirrorMessage = {
-          id: `mirror-${Date.now()}-${Math.random()}`,
-          content,
-          user_id: `bot-${username}`,
-          channel_id: 'general-mirror',
-          created_at: new Date().toISOString(),
-          profile: {
-            username,
-            avatar_url: avatarUrl || null,
-          }
-        };
-        setMessages(prev => [...prev, newMsg].slice(-50));
+        addMirrorMessage(username, content, avatarUrl);
       })
       .on('broadcast', { event: 'user-message' }, (payload) => {
         const { username, content, avatarUrl } = payload.payload;
@@ -69,13 +130,14 @@ const LobbyMirrorRoom = () => {
           }
         };
         setMessages(prev => [...prev, newMsg].slice(-50));
+        lastActivityRef.current = Date.now();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [addMirrorMessage]);
 
   // Auto-scroll on new messages
   useEffect(() => {
