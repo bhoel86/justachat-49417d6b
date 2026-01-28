@@ -47,10 +47,23 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   age integer,
   ghost_mode boolean DEFAULT false,
   preferred_language text DEFAULT 'en',
+  parent_email text,
+  parent_consent_token text,
+  parent_consent_sent_at timestamptz,
+  parent_consent_verified boolean DEFAULT false,
+  is_minor boolean DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Create public view for profiles (excludes sensitive fields)
+CREATE OR REPLACE VIEW public.profiles_public
+WITH (security_invoker=on) AS
+SELECT 
+  id, user_id, username, avatar_url, bio, age,
+  ghost_mode, preferred_language, is_minor, created_at, updated_at
+FROM public.profiles;
 
 CREATE TABLE IF NOT EXISTS public.channels (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

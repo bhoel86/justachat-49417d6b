@@ -160,10 +160,10 @@ const UserLocationMap = ({ showControls = true, height = "400px" }: UserLocation
 
       if (error) throw error;
 
-      // Fetch usernames separately
+      // Fetch usernames separately using public view
       const userIds = data?.map(l => l.user_id) || [];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username')
         .in('user_id', userIds);
 

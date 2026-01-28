@@ -62,9 +62,9 @@ export const useFriends = (currentUserId: string) => {
         return;
       }
 
-      // Fetch profiles for all friends
+      // Fetch profiles for all friends using public view (excludes sensitive fields)
       const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username, avatar_url')
         .in('user_id', friendUserIds);
 
@@ -115,7 +115,7 @@ export const useFriends = (currentUserId: string) => {
       ])];
 
       const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username, avatar_url')
         .in('user_id', userIds);
 
@@ -166,7 +166,7 @@ export const useFriends = (currentUserId: string) => {
       const blockedIds = blocks.map(b => b.blocked_id);
 
       const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username, avatar_url')
         .in('user_id', blockedIds);
 
@@ -480,9 +480,9 @@ export const useFriends = (currentUserId: string) => {
         // Show toast notification for new incoming friend requests
         const newRequest = payload.new as { sender_id: string; recipient_id: string; status: string };
         if (newRequest.recipient_id === currentUserId && newRequest.status === 'pending') {
-          // Fetch sender's profile to get their username
+          // Fetch sender's profile to get their username (using public view)
           const { data: senderProfile } = await supabase
-            .from('profiles')
+            .from('profiles_public')
             .select('username')
             .eq('user_id', newRequest.sender_id)
             .maybeSingle();

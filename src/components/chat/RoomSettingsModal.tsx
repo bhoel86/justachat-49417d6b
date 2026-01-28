@@ -145,7 +145,7 @@ const RoomSettingsModal = ({ open, onOpenChange, channel, userId }: RoomSettings
     if (bans && bans.length > 0) {
       const userIds = bans.map((b: RoomBan) => b.user_id);
       const { data: profiles } = await supabaseUntyped
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username')
         .in('user_id', userIds);
       
@@ -164,7 +164,7 @@ const RoomSettingsModal = ({ open, onOpenChange, channel, userId }: RoomSettings
     if (mutes && mutes.length > 0) {
       const userIds = mutes.map((m: RoomMute) => m.user_id);
       const { data: profiles } = await supabaseUntyped
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username')
         .in('user_id', userIds);
       
@@ -183,7 +183,7 @@ const RoomSettingsModal = ({ open, onOpenChange, channel, userId }: RoomSettings
     if (admins && admins.length > 0) {
       const userIds = admins.map((a: RoomAdmin) => a.user_id);
       const { data: profiles } = await supabaseUntyped
-        .from('profiles')
+        .from('profiles_public')
         .select('user_id, username')
         .in('user_id', userIds);
       

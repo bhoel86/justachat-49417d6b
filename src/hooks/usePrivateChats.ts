@@ -76,7 +76,7 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
             // No existing chat - fetch sender profile and create chat
             (async () => {
               const { data: senderProfile } = await supabase
-                .from('profiles')
+                .from('profiles_public')
                 .select('username')
                 .eq('user_id', newMessage.sender_id)
                 .maybeSingle();

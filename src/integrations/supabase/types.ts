@@ -1447,6 +1447,48 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_public: {
+        Row: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          ghost_mode: boolean | null
+          id: string | null
+          is_minor: boolean | null
+          preferred_language: string | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          ghost_mode?: boolean | null
+          id?: string | null
+          is_minor?: boolean | null
+          preferred_language?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          ghost_mode?: boolean | null
+          id?: string | null
+          is_minor?: boolean | null
+          preferred_language?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       channel_has_password: { Args: { _channel_id: string }; Returns: boolean }
