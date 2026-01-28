@@ -752,13 +752,11 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     
     // Check if room has a password and user is not room owner
     if (channel.created_by !== user?.id && !isAdmin && !isOwner) {
-      const { data } = await supabaseUntyped
-        .from('channels')
-        .select('room_password')
-        .eq('id', channel.id)
-        .single();
+      // Use secure server-side function to check if room has password
+      const { data: hasPassword } = await supabaseUntyped
+        .rpc('channel_has_password', { _channel_id: channel.id });
       
-      if (data?.room_password) {
+      if (hasPassword) {
         setPendingChannel(channel);
         setShowPasswordModal(true);
         return;
@@ -1463,14 +1461,14 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           }}
           roomName={pendingChannel.name}
           onPasswordSubmit={async (password) => {
-            // Check password
-            const { data } = await supabaseUntyped
-              .from('channels')
-              .select('room_password')
-              .eq('id', pendingChannel.id)
-              .single();
+            // Verify password server-side (no password exposure)
+            const { data: isValid } = await supabaseUntyped
+              .rpc('verify_room_password', { 
+                _channel_id: pendingChannel.id, 
+                _password: password 
+              });
             
-            if (data?.room_password === password) {
+            if (isValid) {
               setShowPasswordModal(false);
               setCurrentChannel(pendingChannel);
               navigate(`/chat/${pendingChannel.name}`);

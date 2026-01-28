@@ -1044,19 +1044,15 @@ const roomadminCommand: CommandHandler = async (args, context) => {
 
   const password = args.join(' ');
   
-  // Get the room's admin password
-  const { data: channel } = await supabaseUntyped
-    .from('channels')
-    .select('admin_password')
-    .eq('id', context.channelId)
-    .single();
+  // Verify admin password server-side (no password exposure)
+  const { data: isValid } = await supabaseUntyped
+    .rpc('verify_admin_password', { 
+      _channel_id: context.channelId, 
+      _password: password 
+    });
   
-  if (!channel?.admin_password) {
-    return { success: false, message: 'This room does not have an admin password set.' };
-  }
-  
-  if (password !== channel.admin_password) {
-    return { success: false, message: 'Incorrect password.' };
+  if (!isValid) {
+    return { success: false, message: 'Incorrect password or no admin password set.' };
   }
   
   // Grant room admin
