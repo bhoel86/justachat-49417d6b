@@ -532,11 +532,36 @@ const Home = () => {
         <>
           {/* Main Content */}
           <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-            {/* Mobile: Stack vertically, Desktop: Side by side */}
-            <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 sm:gap-6">
-              {/* Room Cards - Horizontal scroll on mobile */}
+            {/* Welcome Banner - Full Width */}
+            <div className="relative rounded-xl sm:rounded-2xl overflow-hidden mb-4 sm:mb-6 border border-border">
+              <img 
+                src={welcomeBanner} 
+                alt="Welcome to Justachat" 
+                className="w-full h-24 sm:h-32 md:h-40 object-cover"
+              />
+              {/* Welcome text overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <div className="text-center">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Welcome!</h2>
+                  <p className="text-xs sm:text-sm md:text-base text-white/90 drop-shadow-md mt-1">This is the main hangout spot.</p>
+                </div>
+                <Button 
+                  onClick={() => {
+                    const generalChannel = channels.find(c => c.name === 'general');
+                    if (generalChannel) handleJoinRoom(generalChannel);
+                  }}
+                  className="absolute right-2 sm:right-4 top-2 sm:top-4 jac-gradient-bg hover:opacity-90 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 h-auto"
+                >
+                  Join Chat
+                </Button>
+              </div>
+            </div>
+
+            {/* Chat Rooms + Lobby Mirror Side by Side - Same Height */}
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+              {/* Room Cards */}
               <div className="lg:w-80 xl:w-96 flex-shrink-0">
-                <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4">
+                <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4 h-full">
                   <div className="mb-3 sm:mb-4">
                     <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
                     <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
@@ -550,7 +575,7 @@ const Home = () => {
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 lg:max-h-[calc(100vh-380px)] lg:overflow-y-auto lg:pr-2 scrollbar-thin">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 lg:max-h-[320px] lg:overflow-y-auto lg:pr-2 scrollbar-thin">
                         {channels.map((channel) => (
                           <button
                             key={channel.id}
@@ -602,7 +627,7 @@ const Home = () => {
                       <div className="mt-3 lg:mt-4">
                         <Link
                           to="/voice-chat"
-                          className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-violet-500/60 hover:border-violet-500 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/30 active:scale-[0.98]"
+                          className="group relative flex h-12 sm:h-14 w-full rounded-xl overflow-hidden bg-card border-2 border-violet-500/60 hover:border-violet-500 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/30 active:scale-[0.98]"
                         >
                           {/* Gradient background */}
                           <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 opacity-40 group-hover:opacity-60 transition-opacity" />
@@ -612,27 +637,24 @@ const Home = () => {
                           
                           {/* Content */}
                           <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                            <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg group-hover:scale-110 transition-transform">
-                              <Radio className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg group-hover:scale-110 transition-transform">
+                              <Radio className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
+                              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
                                 <span className="animate-pulse">🎙️</span> Voice Chat
                               </h3>
-                              <span className="text-[10px] sm:text-xs text-white/80">Broadcast live to listeners</span>
+                              <span className="text-[9px] sm:text-[10px] text-white/80">Broadcast live</span>
                             </div>
                           </div>
-
-                          {/* Hover effect overlay */}
-                          <div className="absolute inset-0 bg-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Link>
                       </div>
                       
                       {/* Video Chat Section */}
-                      <div className="mt-3 lg:mt-4">
+                      <div className="mt-2">
                         <Link
                           to="/video-chat"
-                          className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-green-500/60 hover:border-green-500 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 active:scale-[0.98]"
+                          className="group relative flex h-12 sm:h-14 w-full rounded-xl overflow-hidden bg-card border-2 border-green-500/60 hover:border-green-500 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 active:scale-[0.98]"
                         >
                           {/* Gradient background */}
                           <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 opacity-40 group-hover:opacity-60 transition-opacity" />
@@ -640,29 +662,26 @@ const Home = () => {
                           {/* Dark overlay for readability */}
                           <div className="absolute inset-0 bg-black/30" />
                           
-                      {/* Content */}
+                          {/* Content */}
                           <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                            <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg group-hover:scale-110 transition-transform">
-                              <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg group-hover:scale-110 transition-transform">
+                              <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                                <Camera className="w-4 h-4" /> Cams
+                              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
+                                <Camera className="w-3 h-3" /> Cams
                               </h3>
-                              <span className="text-[10px] sm:text-xs text-white/80">Broadcast webcam live</span>
+                              <span className="text-[9px] sm:text-[10px] text-white/80">Webcam live</span>
                             </div>
                           </div>
-
-                          {/* Hover effect overlay */}
-                          <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Link>
                       </div>
                       
                       {/* Games Section */}
-                      <div className="mt-2 lg:mt-2">
+                      <div className="mt-2">
                         <Link
                           to="/games"
-                          className="group relative flex h-12 sm:h-14 w-full rounded-xl overflow-hidden bg-card border-2 border-orange-500/60 hover:border-orange-500 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 active:scale-[0.98]"
+                          className="group relative flex h-10 sm:h-12 w-full rounded-xl overflow-hidden bg-card border-2 border-orange-500/60 hover:border-orange-500 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 active:scale-[0.98]"
                         >
                           {/* Gradient background */}
                           <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-yellow-600 opacity-40 group-hover:opacity-60 transition-opacity" />
@@ -672,27 +691,23 @@ const Home = () => {
                           
                           {/* Content */}
                           <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-600 text-white shadow-lg group-hover:scale-110 transition-transform">
-                              <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <div className="p-1 sm:p-1.5 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-600 text-white shadow-lg group-hover:scale-110 transition-transform">
+                              <Gamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                                <Gamepad2 className="w-3 h-3" /> Games
+                              <h3 className="font-bold text-[10px] sm:text-xs text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
+                                <Gamepad2 className="w-2.5 h-2.5" /> Games
                               </h3>
-                              <span className="text-[9px] sm:text-[10px] text-white/80">Free arcade games</span>
                             </div>
                           </div>
-
-                          {/* Hover effect overlay */}
-                          <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Link>
                       </div>
                       
-                      {/* Dating Section - Fixed at bottom */}
-                      <div className="mt-3 lg:mt-4">
+                      {/* Dating Section */}
+                      <div className="mt-2">
                         <Link
                           to="/dating"
-                          className="group relative flex h-14 sm:h-16 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
+                          className="group relative flex h-12 sm:h-14 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
                         >
                           {/* Background image */}
                           <div 
@@ -708,19 +723,16 @@ const Home = () => {
                           
                           {/* Content */}
                           <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                            <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
-                              <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
+                              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-sm sm:text-base text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                                <span className="animate-pulse">💕</span> Find Your Match
+                              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
+                                <span className="animate-pulse">💕</span> Dating
                               </h3>
-                              <span className="text-[10px] sm:text-xs text-white/80">Start connecting today</span>
+                              <span className="text-[9px] sm:text-[10px] text-white/80">Find your match</span>
                             </div>
                           </div>
-
-                          {/* Hover effect overlay */}
-                          <div className="absolute inset-0 bg-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Link>
                       </div>
                     </>
@@ -729,36 +741,8 @@ const Home = () => {
               </div>
 
               {/* Center - Public Chat Preview */}
-              <div className="flex-1 min-w-0 flex flex-col">
-                {/* Welcome Banner */}
-                <div className="relative rounded-xl sm:rounded-2xl overflow-hidden mb-3 sm:mb-4 border border-border">
-                  <img 
-                    src={welcomeBanner} 
-                    alt="Welcome to Justachat" 
-                    className="w-full h-24 sm:h-32 md:h-40 object-cover"
-                  />
-                  {/* Welcome text overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <div className="text-center">
-                      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Welcome!</h2>
-                      <p className="text-xs sm:text-sm md:text-base text-white/90 drop-shadow-md mt-1">This is the main hangout spot.</p>
-                    </div>
-                    <Button 
-                      onClick={() => {
-                        const generalChannel = channels.find(c => c.name === 'general');
-                        if (generalChannel) handleJoinRoom(generalChannel);
-                      }}
-                      className="absolute right-2 sm:right-4 top-2 sm:top-4 jac-gradient-bg hover:opacity-90 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 h-auto"
-                    >
-                      Join Chat
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Full Chat Mirror - Fills remaining height */}
-                <div className="flex-1 overflow-hidden max-h-[444px] lg:max-h-[584px]">
-                  <LobbyMirrorRoom />
-                </div>
+              <div className="flex-1 min-w-0 h-[520px] lg:h-[600px]">
+                <LobbyMirrorRoom />
               </div>
             </div>
             
