@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import ChatHeader from "@/components/chat/ChatHeader";
-import ChatSidebar from "@/components/chat/ChatSidebar";
 import MemberList from "@/components/chat/MemberList";
 import MessageBubble from "@/components/chat/MessageBubble";
 import { Button } from "@/components/ui/button";
-import { Menu, Users, X, Hash, Send } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Users, X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getBotsForChannel } from "@/lib/chatBots";
@@ -26,13 +23,10 @@ interface MirrorMessage {
 }
 
 const LobbyMirrorRoom = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [messages, setMessages] = useState<MirrorMessage[]>([]);
-  const [showChannelSidebar, setShowChannelSidebar] = useState(false);
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
-  const [showRoomSheet, setShowRoomSheet] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get simulated bot users for member list
@@ -109,51 +103,21 @@ const LobbyMirrorRoom = () => {
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleJoinChat()}
     >
-      {/* Mobile overlay when sidebar is open */}
-      {(showChannelSidebar || showMemberSidebar) && (
+      {/* Mobile overlay when member sidebar is open */}
+      {showMemberSidebar && (
         <div 
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
           onClick={(e) => {
             e.stopPropagation();
-            setShowChannelSidebar(false);
             setShowMemberSidebar(false);
           }}
         />
       )}
 
-      {/* Channel Sidebar - Hidden on mobile unless toggled */}
-      <div 
-        className={cn(
-          "fixed lg:relative inset-y-0 left-0 z-40 transition-transform duration-300 lg:transition-none",
-          showChannelSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        )}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ChatSidebar
-          currentChannelId={undefined}
-          onChannelSelect={(channel) => {
-            handleChannelSelect(channel);
-            setShowChannelSidebar(false);
-          }}
-          autoSelectFirst={false}
-        />
-      </div>
-
       {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         {/* Mobile Header Bar */}
         <div className="flex items-center gap-2 px-2 py-2 border-b border-border bg-card lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowChannelSidebar(true);
-            }}
-            className="h-9 w-9"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">#general</p>
             <p className="text-[10px] text-muted-foreground">Live preview — Tap to join</p>
@@ -221,36 +185,6 @@ const LobbyMirrorRoom = () => {
           <div ref={messagesEndRef} />
         </div>
         
-        {/* Floating Room Switcher Button for Mobile */}
-        {isMobile && (
-          <Sheet open={showRoomSheet} onOpenChange={setShowRoomSheet}>
-            <SheetTrigger asChild>
-              <Button
-                variant="jac"
-                size="icon"
-                className="fixed bottom-24 right-4 h-12 w-12 rounded-full shadow-lg z-30"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Hash className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0" onClick={(e) => e.stopPropagation()}>
-              <SheetHeader className="p-4 border-b border-border">
-                <SheetTitle className="text-left">Switch Room</SheetTitle>
-              </SheetHeader>
-              <div className="h-[calc(100vh-60px)] overflow-hidden">
-                <ChatSidebar 
-                  currentChannelId={undefined}
-                  onChannelSelect={(channel) => {
-                    handleChannelSelect(channel);
-                    setShowRoomSheet(false);
-                  }}
-                  autoSelectFirst={false}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
-        )}
         
         {/* Fake Input - Shows join prompt */}
         <div className="p-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
