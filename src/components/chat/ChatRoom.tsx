@@ -7,6 +7,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useTriviaGame } from "@/hooks/useTriviaGame";
 import { useArtCurator } from "@/hooks/useArtCurator";
 import { useChatBots } from "@/hooks/useChatBots";
+import { useBotMigration } from "@/hooks/useBotMigration";
 import { useAutoLocation } from "@/hooks/useAutoLocation";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
@@ -495,6 +496,13 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     messages,
     addBotMessage,
     enabled: currentChannel?.name === 'general',
+  });
+
+  // Bot migration system - bots randomly move between rooms
+  const botMigration = useBotMigration({
+    channelName: currentChannel?.name || 'general',
+    addBotMessage,
+    enabled: !!currentChannel,
   });
 
   // Skip vote system for radio
