@@ -200,7 +200,7 @@ const LobbyMirrorRoom = () => {
       {/* Member Sidebar - Hidden on mobile unless toggled */}
       <div 
         className={cn(
-          "fixed lg:relative inset-y-0 right-0 z-40 transition-transform duration-300 lg:transition-none",
+          "fixed lg:relative inset-y-0 right-0 z-40 transition-transform duration-300 lg:transition-none w-40 lg:w-36 shrink-0",
           showMemberSidebar ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
         onClick={(e) => e.stopPropagation()}
