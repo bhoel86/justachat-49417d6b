@@ -1220,7 +1220,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         {/* Desktop Header */}
         <div className="hidden lg:block">
           <ChatHeader 
-            onlineCount={onlineUserIds.size || 1} 
+            onlineCount={onlineUserIds.size || 1}
+            botCount={botMigration.migratingBotCount}
             topic={topic}
             channelName={currentChannel?.name || 'general'}
             onLanguageClick={() => setShowLanguageModal(true)}

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 interface ChatHeaderProps {
   onlineCount: number;
+  botCount?: number;
   topic?: string;
   channelName?: string;
   onLanguageClick?: () => void;
@@ -19,7 +20,7 @@ interface ChatHeaderProps {
   onToggleDND?: () => void;
 }
 
-const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageClick, currentLanguage = 'en', doNotDisturb, onToggleDND }: ChatHeaderProps) => {
+const ChatHeader = ({ onlineCount, botCount = 0, topic, channelName = 'general', onLanguageClick, currentLanguage = 'en', doNotDisturb, onToggleDND }: ChatHeaderProps) => {
   const { logoutFromChat, role } = useAuth();
   const theme = getRoomTheme(channelName);
   const displayTopic = topic || getDefaultTopic(channelName);
@@ -69,7 +70,7 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
-            <span>{onlineCount} online</span>
+            <span>{onlineCount}{botCount > 0 ? ` + ${botCount} bots` : ''}</span>
             {onToggleDND && (
               <Tooltip>
                 <TooltipTrigger asChild>
