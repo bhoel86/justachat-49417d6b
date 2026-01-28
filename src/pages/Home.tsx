@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import LiveChatPreview from "@/components/home/LiveChatPreview";
+import LobbyMirrorRoom from "@/components/home/LobbyMirrorRoom";
 import { getRoomBotCount } from "@/lib/chatBots";
 
 
@@ -522,19 +522,9 @@ const Home = () => {
             </div>
           </div>
           
-          {/* Fake Chat Preview - Clickable - Takes up remaining space */}
-          <div 
-            onClick={() => navigate('/chat/general')}
-            className="flex-1 mx-3 my-3 bg-card rounded-xl border border-border flex flex-col overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
-          >
-            {/* Topic bar */}
-            <div className="px-3 py-1.5 border-b border-border bg-primary/5 flex items-center justify-between">
-              <p className="text-xs text-primary font-medium">#General - Tap to join</p>
-              <Users className="w-4 h-4 text-muted-foreground" />
-            </div>
-            
-            {/* Live Chat Preview - Mirror of #general */}
-            <LiveChatPreview />
+          {/* Full Chat Mirror - Takes up remaining space */}
+          <div className="flex-1 mx-3 my-3 overflow-hidden">
+            <LobbyMirrorRoom />
           </div>
         </main>
       ) : (
@@ -765,15 +755,9 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* Chat Preview - Fills remaining height to align with left column */}
-                <div className="bg-card rounded-xl sm:rounded-2xl border border-border flex-1 flex flex-col overflow-hidden max-h-[444px] lg:max-h-[584px]">
-                  {/* Topic bar */}
-                  <div className="px-3 sm:px-4 py-1.5 sm:py-2 border-b border-border bg-primary/5">
-                    <p className="text-xs sm:text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
-                  </div>
-                  
-                  {/* Live Chat Preview - Mirror of #general */}
-                  <LiveChatPreview />
+                {/* Full Chat Mirror - Fills remaining height */}
+                <div className="flex-1 overflow-hidden max-h-[444px] lg:max-h-[584px]">
+                  <LobbyMirrorRoom />
                 </div>
               </div>
             </div>
