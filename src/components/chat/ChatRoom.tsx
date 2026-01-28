@@ -473,21 +473,31 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const artCurator = useArtCurator();
 
   // Function to add simulated user messages (they look like real users)
-  const addBotMessage = useCallback((content: string, username: string, avatarUrl?: string) => {
+  // Also broadcasts to lobby mirror if in #general
+  const addBotMessage = useCallback((content: string, botUsername: string, avatarUrl?: string) => {
     if (!currentChannel?.id) return;
     const userMsg: Message = {
       id: `sim-${Date.now()}-${Math.random()}`,
       content,
-      user_id: `sim-${username}`,
+      user_id: `sim-${botUsername}`,
       channel_id: currentChannel.id,
       created_at: new Date().toISOString(),
       profile: { 
-        username: username,
+        username: botUsername,
         avatar_url: avatarUrl || null
       }
     };
     setMessages(prev => [...prev, userMsg]);
-  }, [currentChannel?.id]);
+    
+    // Broadcast to lobby mirror if this is #general
+    if (currentChannel.name === 'general') {
+      supabase.channel('general-lobby-mirror').send({
+        type: 'broadcast',
+        event: 'bot-message',
+        payload: { username: botUsername, content, avatarUrl }
+      });
+    }
+  }, [currentChannel?.id, currentChannel?.name]);
 
   // Chat bots for general channel
   const chatBots = useChatBots({
