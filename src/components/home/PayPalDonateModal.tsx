@@ -7,6 +7,51 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+declare global {
+  interface Window {
+    paypal?: any;
+    __paypalHostedButtonsSdkPromise?: Promise<void>;
+  }
+}
+
+const PAYPAL_HOSTED_BUTTON_ID = "LGBCRRXBZ9M5E";
+const PAYPAL_SDK_SRC =
+  "https://www.paypal.com/sdk/js?client-id=BAAfdN-Qpyz2Uxu733U-e9cNqvPfjxw-i2jMzk0zWSFICd4gCcnWts5Iqoy2X-GrVeg1cppMCjARbnj6lw&components=hosted-buttons&enable-funding=venmo&currency=USD";
+const PAYPAL_SDK_SCRIPT_ID = "paypal-hosted-buttons-sdk";
+const PAYPAL_POLL_INTERVAL_MS = 250;
+const PAYPAL_MAX_WAIT_MS = 15000;
+
+const loadPayPalHostedButtonsSdk = () => {
+  if (window.paypal?.HostedButtons) return Promise.resolve();
+
+  if (!window.__paypalHostedButtonsSdkPromise) {
+    window.__paypalHostedButtonsSdkPromise = new Promise<void>((resolve, reject) => {
+      const existing = document.getElementById(PAYPAL_SDK_SCRIPT_ID) as
+        | HTMLScriptElement
+        | null;
+
+      if (existing) {
+        // If it already loaded successfully but HostedButtons isn't attached yet, polling will handle it.
+        existing.addEventListener("load", () => resolve(), { once: true });
+        existing.addEventListener("error", () => reject(new Error("PayPal SDK failed to load")), {
+          once: true,
+        });
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.id = PAYPAL_SDK_SCRIPT_ID;
+      script.src = PAYPAL_SDK_SRC;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("PayPal SDK failed to load"));
+      document.head.appendChild(script);
+    });
+  }
+
+  return window.__paypalHostedButtonsSdkPromise;
+};
+
 interface PayPalDonateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,19 +72,32 @@ const PayPalDonateModal = ({ open, onOpenChange }: PayPalDonateModalProps) => {
     if (containerRef.current) {
       containerRef.current.innerHTML = "";
     }
+    renderedRef.current = false;
     
     setStatus("loading");
 
-    const renderButton = () => {
-      const paypal = (window as any).paypal;
+    let cancelled = false;
+    let pollId: number | undefined;
+    let timeoutId: number | undefined;
+
+    const cleanup = () => {
+      if (pollId) window.clearInterval(pollId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+
+    const tryRender = () => {
+      const paypal = window.paypal;
       if (!paypal?.HostedButtons || !containerRef.current || renderedRef.current) return false;
-      
+
       try {
-        paypal.HostedButtons({
-          hostedButtonId: "LGBCRRXBZ9M5E",
-        }).render(containerRef.current);
+        paypal
+          .HostedButtons({
+            hostedButtonId: PAYPAL_HOSTED_BUTTON_ID,
+          })
+          .render(containerRef.current);
         renderedRef.current = true;
         setStatus("ready");
+        console.info("[PayPal] Hosted button rendered");
         return true;
       } catch (e) {
         console.error("[PayPal] Render error:", e);
@@ -48,37 +106,38 @@ const PayPalDonateModal = ({ open, onOpenChange }: PayPalDonateModalProps) => {
       }
     };
 
-    // Check if SDK already loaded
-    if ((window as any).paypal?.HostedButtons) {
-      renderButton();
-      return;
-    }
+    // Start polling immediately; SDK load + HostedButtons attach can be slightly delayed.
+    pollId = window.setInterval(() => {
+      if (cancelled) return;
+      if (tryRender()) cleanup();
+    }, PAYPAL_POLL_INTERVAL_MS);
 
-    // Check if script already exists
-    const existingScript = document.querySelector('script[src*="paypal.com/sdk/js"]');
-    if (existingScript) {
-      // Wait for it to load
-      const checkInterval = setInterval(() => {
-        if ((window as any).paypal?.HostedButtons) {
-          clearInterval(checkInterval);
-          renderButton();
-        }
-      }, 100);
-      setTimeout(() => clearInterval(checkInterval), 10000);
-      return;
-    }
+    timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      if (!renderedRef.current) {
+        console.error("[PayPal] Timed out waiting for HostedButtons");
+        setStatus("error");
+      }
+      cleanup();
+    }, PAYPAL_MAX_WAIT_MS);
 
-    // Load the SDK
-    const script = document.createElement("script");
-    script.src = "https://www.paypal.com/sdk/js?client-id=BAAfdN-Qpyz2Uxu733U-e9cNqvPfjxw-i2jMzk0zWSFICd4gCcnWts5Iqoy2X-GrVeg1cppMCjARbnj6lw&components=hosted-buttons&enable-funding=venmo&currency=USD";
-    script.async = true;
-    script.onload = () => {
-      setTimeout(renderButton, 100);
+    // Ensure the correct SDK is present (only injected once per app session).
+    loadPayPalHostedButtonsSdk()
+      .then(() => {
+        if (cancelled) return;
+        // Try immediately after load, without waiting for next interval tick.
+        tryRender();
+      })
+      .catch((e) => {
+        console.error("[PayPal] SDK load error:", e);
+        if (!cancelled) setStatus("error");
+        cleanup();
+      });
+
+    return () => {
+      cancelled = true;
+      cleanup();
     };
-    script.onerror = () => {
-      setStatus("error");
-    };
-    document.head.appendChild(script);
   }, [open]);
 
   return (
