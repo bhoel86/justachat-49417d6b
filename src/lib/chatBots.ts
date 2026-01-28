@@ -381,18 +381,18 @@ export const getRandomMigratingBot = (): ChatBot => {
 
 // Room-specific bot population weights (higher = more bots)
 const ROOM_BOT_WEIGHTS: Record<string, { min: number; max: number }> = {
-  'general': { min: 45, max: 75 },
-  'adults-21-plus': { min: 35, max: 55 },
-  'lounge': { min: 25, max: 40 },
-  'music': { min: 20, max: 35 },
-  'dating': { min: 18, max: 30 },
-  'games': { min: 15, max: 28 },
-  'movies-tv': { min: 12, max: 22 },
-  'technology': { min: 10, max: 18 },
-  'sports': { min: 8, max: 16 },
-  'trivia': { min: 6, max: 14 },
-  'art': { min: 5, max: 12 },
-  'politics': { min: 2, max: 6 },
+  'general': { min: 120, max: 180 },
+  'adults-21-plus': { min: 90, max: 140 },
+  'lounge': { min: 65, max: 95 },
+  'music': { min: 55, max: 85 },
+  'dating': { min: 45, max: 70 },
+  'games': { min: 40, max: 65 },
+  'movies-tv': { min: 30, max: 50 },
+  'technology': { min: 25, max: 42 },
+  'sports': { min: 22, max: 38 },
+  'trivia': { min: 18, max: 32 },
+  'art': { min: 14, max: 26 },
+  'politics': { min: 6, max: 14 },
   'help': { min: 0, max: 0 }, // No bots in help
 };
 
