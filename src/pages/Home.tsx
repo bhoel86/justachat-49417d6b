@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import LobbyMirrorRoom from "@/components/home/LobbyMirrorRoom";
+import PayPalDonateModal from "@/components/home/PayPalDonateModal";
 import { getRoomBotCount } from "@/lib/chatBots";
 
 
@@ -114,6 +115,7 @@ const Home = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
   const [roomUserCounts, setRoomUserCounts] = useState<RoomUserCounts>({});
+  const [showDonateModal, setShowDonateModal] = useState(false);
   
 
   // Scroll to top on page load - use requestAnimationFrame to ensure it runs after render
@@ -301,19 +303,15 @@ const Home = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground">Support Us</DropdownMenuLabel>
                 
-                <DropdownMenuItem asChild>
-                  <a 
-                    href="https://www.paypal.com/paypalme/justachat/5" 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <Heart className="w-4 h-4 text-pink-500" />
-                    <div>
-                      <span>Donate</span>
-                      <p className="text-xs text-muted-foreground">Help keep Justachat running</p>
-                    </div>
-                  </a>
+                <DropdownMenuItem 
+                  onClick={() => setShowDonateModal(true)}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <Heart className="w-4 h-4 text-pink-500" />
+                  <div>
+                    <span>Donate</span>
+                    <p className="text-xs text-muted-foreground">Help keep Justachat running</p>
+                  </div>
                 </DropdownMenuItem>
 
                 {(isOwner || isAdmin) && (
@@ -875,6 +873,9 @@ const Home = () => {
           </main>
         </>
       )}
+      
+      {/* PayPal Donate Modal */}
+      <PayPalDonateModal open={showDonateModal} onOpenChange={setShowDonateModal} />
     </div>
   );
 };
