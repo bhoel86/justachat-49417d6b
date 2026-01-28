@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import FakeChatPreview from "@/components/home/FakeChatPreview";
+import LiveChatPreview from "@/components/home/LiveChatPreview";
 import { getRoomBotCount } from "@/lib/chatBots";
 
 
@@ -533,8 +533,8 @@ const Home = () => {
               <Users className="w-4 h-4 text-muted-foreground" />
             </div>
             
-            {/* Live Chat Preview */}
-            <FakeChatPreview />
+            {/* Live Chat Preview - Mirror of #general */}
+            <LiveChatPreview />
           </div>
         </main>
       ) : (
@@ -772,8 +772,8 @@ const Home = () => {
                     <p className="text-xs sm:text-sm text-primary font-medium">Welcome! This is the main hangout spot.</p>
                   </div>
                   
-                  {/* Live Chat Preview */}
-                  <FakeChatPreview />
+                  {/* Live Chat Preview - Mirror of #general */}
+                  <LiveChatPreview />
                 </div>
               </div>
             </div>
