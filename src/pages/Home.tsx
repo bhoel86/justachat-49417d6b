@@ -43,7 +43,6 @@ import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 import welcomeBanner from "@/assets/welcome-banner.png";
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
-import DonationBanner from "@/components/home/DonationBanner";
 
 interface Channel {
   id: string;
@@ -298,6 +297,24 @@ const Home = () => {
                     </div>
                   </Link>
                 </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Support Us</DropdownMenuLabel>
+                
+                <DropdownMenuItem asChild>
+                  <a 
+                    href="https://www.paypal.com/paypalme/justachat/5" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Heart className="w-4 h-4 text-pink-500" />
+                    <div>
+                      <span>Donate</span>
+                      <p className="text-xs text-muted-foreground">Help keep Justachat running</p>
+                    </div>
+                  </a>
+                </DropdownMenuItem>
 
                 {(isOwner || isAdmin) && (
                   <>
@@ -494,12 +511,6 @@ const Home = () => {
         </div>
       </header>
 
-      {/* Donation Banner - Desktop only */}
-      {!isMobile && (
-        <div className="container mx-auto px-3 sm:px-4 pt-4">
-          <DonationBanner />
-        </div>
-      )}
 
       {/* MOBILE SIMPLIFIED VIEW */}
       {isMobile ? (
