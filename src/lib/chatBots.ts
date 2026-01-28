@@ -365,7 +365,7 @@ const ROOM_BOT_WEIGHTS: Record<string, { min: number; max: number }> = {
   'trivia': { min: 18, max: 32 },
   'art': { min: 14, max: 26 },
   'politics': { min: 6, max: 14 },
-  'help': { min: 0, max: 0 }, // No bots in help
+  'help': { min: 5, max: 5 },
 };
 
 // Cache for consistent bot counts during a session
