@@ -5,9 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Hardcoded oper password
-const OPER_PASSWORD = 'Khoel2015';
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,8 +39,18 @@ Deno.serve(async (req) => {
 
     const { username, password, action = 'oper' } = await req.json();
 
+    // Get oper password from secure environment variable
+    const operPassword = Deno.env.get('OPER_PASSWORD');
+    if (!operPassword) {
+      console.error('OPER_PASSWORD secret not configured');
+      return new Response(
+        JSON.stringify({ error: 'Operator authentication not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Validate password
-    if (password !== OPER_PASSWORD) {
+    if (password !== operPassword) {
       console.log(`Oper auth failed for user ${user.id} - invalid password`);
       return new Response(
         JSON.stringify({ error: 'Invalid operator password' }),
