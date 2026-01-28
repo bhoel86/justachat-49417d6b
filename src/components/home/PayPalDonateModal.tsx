@@ -169,6 +169,21 @@ const PayPalDonateModal = ({ open, onOpenChange }: PayPalDonateModalProps) => {
           <p className="text-xs text-muted-foreground text-center">
             Payments processed securely via PayPal
           </p>
+          
+          {status === "ready" && (
+            <a
+              href="https://www.paypal.com/signout"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-primary underline"
+              onClick={() => {
+                // Close modal so user can re-open after signing out
+                onOpenChange(false);
+              }}
+            >
+              Use a different PayPal account
+            </a>
+          )}
         </div>
       </DialogContent>
     </Dialog>
