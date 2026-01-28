@@ -52,38 +52,8 @@ export async function encryptMessage(message: string, key: CryptoKey): Promise<s
   
   return btoa(String.fromCharCode(...combined));
 }
-
-// Encrypt a message with a master key (for admin decryption)
-export async function encryptWithMasterKey(message: string, masterKey: string): Promise<{ ciphertext: string; iv: string }> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(message);
-  
-  // Derive a 256-bit key from the master key
-  const keyData = encoder.encode(masterKey);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    hashBuffer,
-    { name: ALGORITHM, length: KEY_LENGTH },
-    false,
-    ['encrypt']
-  );
-  
-  // Generate random IV
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  
-  const encrypted = await crypto.subtle.encrypt(
-    { name: ALGORITHM, iv },
-    cryptoKey,
-    data
-  );
-  
-  return {
-    ciphertext: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
-    iv: btoa(String.fromCharCode(...iv))
-  };
-}
+// Note: Master key encryption is now handled server-side only via encrypt-pm edge function
+// This prevents exposure of encryption keys in client-side code
 
 // Decrypt a message
 export async function decryptMessage(encryptedBase64: string, key: CryptoKey): Promise<string> {

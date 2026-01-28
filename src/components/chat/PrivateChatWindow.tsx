@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video, ImagePlus, Zap, Loader2, Camera, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { generateSessionKey, encryptMessage, encryptWithMasterKey, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
+import { generateSessionKey, encryptMessage, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
 import EmojiPicker from "./EmojiPicker";
 import TextFormatMenu, { TextFormat, encodeFormat } from "./TextFormatMenu";
 import FormattedText from "./FormattedText";
@@ -239,37 +239,25 @@ const PrivateChatWindow = ({
     };
   }, [isDragging, isResizing, dragOffset, resizeStart, size.width]);
 
-  // Helper function to decrypt a message from DB
+  // Helper function to decrypt a message from DB using server-side decryption
   const decryptDbMessage = async (msg: any): Promise<PrivateMessage | null> => {
     try {
-      const masterKey = 'JAC_PM_MASTER_2024';
-      const encoder = new TextEncoder();
-      const keyData = encoder.encode(masterKey);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
-      
-      const cryptoKey = await crypto.subtle.importKey(
-        'raw',
-        hashBuffer,
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['decrypt']
-      );
-      
-      const ciphertextBytes = Uint8Array.from(atob(msg.encrypted_content), c => c.charCodeAt(0));
-      const ivBytes = Uint8Array.from(atob(msg.iv), c => c.charCodeAt(0));
-      
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: ivBytes },
-        cryptoKey,
-        ciphertextBytes
-      );
-      
-      const decoder = new TextDecoder();
-      const content = decoder.decode(decrypted);
+      const { data, error } = await supabase.functions.invoke('decrypt-pm', {
+        body: {
+          messageId: msg.id,
+          encrypted_content: msg.encrypted_content,
+          iv: msg.iv
+        }
+      });
+
+      if (error || !data?.success) {
+        console.error('Server decryption failed:', error || data?.error);
+        return null;
+      }
       
       return {
         id: msg.id,
-        content,
+        content: data.decrypted_content,
         senderId: msg.sender_id,
         senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
         timestamp: new Date(msg.created_at),
@@ -669,33 +657,27 @@ const PrivateChatWindow = ({
     
     try {
       const encrypted = await encryptMessage(finalMessage, currentKey);
-      const masterKeyForStorage = 'JAC_PM_MASTER_2024';
-      const encryptedForStorage = await encryptWithMasterKey(finalMessage, masterKeyForStorage);
       
-      const { error: dbError } = await supabase
-        .from('private_messages')
-        .insert({
-          sender_id: currentUserId,
-          recipient_id: targetUserId,
-          encrypted_content: encryptedForStorage.ciphertext,
-          iv: encryptedForStorage.iv
+      // Store via server-side encryption (no hardcoded key)
+      const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
+      if (!isSimulatedRecipient) {
+        const { data: storeResult, error: storeError } = await supabase.functions.invoke('encrypt-pm', {
+          body: {
+            message: finalMessage,
+            recipient_id: targetUserId
+          }
         });
 
-      if (dbError) {
-        console.error('[PM-SEND] Failed to store message in DB:', dbError);
-
-        // If the recipient is a simulated/bot user (non-UUID), DB persistence will fail.
-        // Suppress the user-facing toast to avoid noisy "sent but not saved" popups.
-        const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
-        if (!isSimulatedRecipient) {
+        if (storeError || !storeResult?.success) {
+          console.error('[PM-SEND] Failed to store message in DB:', storeError || storeResult?.error);
           toast({
             variant: "destructive",
             title: "Message not saved",
             description: "Message sent but not saved to history"
           });
+        } else {
+          console.log('[PM-SEND] Message stored in DB successfully');
         }
-      } else {
-        console.log('[PM-SEND] Message stored in DB successfully');
       }
       
     // CRITICAL: Mark as sent BEFORE adding to state to prevent race conditions
@@ -793,20 +775,20 @@ const PrivateChatWindow = ({
     
     try {
       const encrypted = await encryptMessage(finalMessage, currentKey);
-      const masterKeyForStorage = 'JAC_PM_MASTER_2024';
-      const encryptedForStorage = await encryptWithMasterKey(finalMessage, masterKeyForStorage);
       
-      const { error: dbError } = await supabase
-        .from('private_messages')
-        .insert({
-          sender_id: currentUserId,
-          recipient_id: targetUserId,
-          encrypted_content: encryptedForStorage.ciphertext,
-          iv: encryptedForStorage.iv
+      // Store via server-side encryption (no hardcoded key)
+      const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
+      if (!isSimulatedRecipient) {
+        const { error: storeError } = await supabase.functions.invoke('encrypt-pm', {
+          body: {
+            message: finalMessage,
+            recipient_id: targetUserId
+          }
         });
 
-      if (dbError) {
-        console.error('Failed to store GIF message:', dbError);
+        if (storeError) {
+          console.error('Failed to store GIF message:', storeError);
+        }
       }
       
       // Add to local state with content-based dedup
@@ -959,20 +941,20 @@ const PrivateChatWindow = ({
       sentMessageIdsRef.current.add(msgId);
       
       const encrypted = await encryptMessage(finalMessage, currentKey);
-      const masterKeyForStorage = 'JAC_PM_MASTER_2024';
-      const encryptedForStorage = await encryptWithMasterKey(finalMessage, masterKeyForStorage);
       
-      const { error: dbError } = await supabase
-        .from('private_messages')
-        .insert({
-          sender_id: currentUserId,
-          recipient_id: targetUserId,
-          encrypted_content: encryptedForStorage.ciphertext,
-          iv: encryptedForStorage.iv
+      // Store via server-side encryption (no hardcoded key)
+      const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
+      if (!isSimulatedRecipient) {
+        const { error: storeError } = await supabase.functions.invoke('encrypt-pm', {
+          body: {
+            message: finalMessage,
+            recipient_id: targetUserId
+          }
         });
 
-      if (dbError) {
-        console.error('Failed to store image message:', dbError);
+        if (storeError) {
+          console.error('Failed to store image message:', storeError);
+        }
       }
       
       // Add to local state - use content-based deduplication as well
