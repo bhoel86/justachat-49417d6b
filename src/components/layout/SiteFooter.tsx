@@ -56,7 +56,7 @@ const SiteFooter = () => {
                   </svg>
                 </a>
                 <a 
-                  href="#" 
+                  href="https://x.com/UnixJustachat" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-secondary hover:bg-primary/20 flex items-center justify-center transition-colors group"
