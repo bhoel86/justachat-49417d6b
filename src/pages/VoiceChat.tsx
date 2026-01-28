@@ -241,28 +241,33 @@ const VoiceChat = () => {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate('/')}
-              className="hover:bg-primary/10"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                <Radio className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Voice Chat</h1>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {participants.length} {participants.length === 1 ? 'listener' : 'listeners'}
-                  {isConnected && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse ml-1" />}
-                </p>
-              </div>
+          {/* Left: Back button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/')}
+            className="hover:bg-primary/10"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          
+          {/* Center: Justachat Logo */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg jac-gradient-bg flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+              </svg>
             </div>
+            <span className="font-display font-bold text-lg jac-gradient-text">Justachat™</span>
+          </div>
+          
+          {/* Right: Room info */}
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {participants.length}
+              {isConnected && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse ml-1" />}
+            </p>
           </div>
           
           {/* Broadcast Button + Audio Meter */}
