@@ -55,7 +55,7 @@ const ReportUserModal = ({
     const fetchUsers = async () => {
       setFetchingUsers(true);
       const { data, error } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("user_id, username")
         .neq("user_id", reporterId)
         .order("username");

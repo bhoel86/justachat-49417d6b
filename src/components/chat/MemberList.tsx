@@ -134,9 +134,9 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   }, [user]);
 
   const fetchMembers = async () => {
-    // Fetch all profiles with their roles, avatars, bios, and ghost mode
+    // Fetch all profiles using public view (excludes sensitive fields like parent_email)
     const { data: profiles } = await supabaseUntyped
-      .from('profiles')
+      .from('profiles_public')
       .select('user_id, username, avatar_url, bio, ghost_mode');
 
     const { data: roles } = await supabaseUntyped
