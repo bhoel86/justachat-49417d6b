@@ -142,8 +142,8 @@ export const useChatBots = ({
     
     await generateBotResponse(bot, undefined, true);
 
-    // Sometimes have another bot respond
-    if (Math.random() < 0.4) {
+    // Often have another bot respond to create conversation chains
+    if (Math.random() < 0.75) {
       const delay = getBotResponseDelay();
       responseTimeoutRef.current = setTimeout(async () => {
         const respondingBot = pickRandomBot();
@@ -160,8 +160,8 @@ export const useChatBots = ({
   const handleUserMessage = useCallback(async (message: Message) => {
     if (!botsEnabled) return;
 
-    // Check if any bot should respond
-    const shouldRespond = Math.random() < 0.3; // 30% chance a bot responds to any message
+    // Check if any bot should respond - high activity mode
+    const shouldRespond = Math.random() < 0.85; // 85% chance a bot responds to any message
     
     if (!shouldRespond) return;
 
@@ -213,20 +213,20 @@ export const useChatBots = ({
   useEffect(() => {
     if (!botsEnabled) return;
 
-    // Start initial conversation after a longer delay
+    // Start initial conversation quickly
     const initialDelay = setTimeout(() => {
       startBotConversation();
-    }, 20000); // 20 seconds after joining
+    }, 3000); // 3 seconds after joining
 
-    // Periodic conversations every 45-120 seconds
+    // Frequent conversations every 8-20 seconds for active chat
     conversationIntervalRef.current = setInterval(() => {
       const timeSinceLastActivity = Date.now() - lastBotActivityRef.current;
       
-      // Only start new conversation if there's been a 30+ second gap
-      if (timeSinceLastActivity > 30000) {
+      // Start new conversation if there's been a 5+ second gap
+      if (timeSinceLastActivity > 5000) {
         startBotConversation();
       }
-    }, 45000 + Math.random() * 75000);
+    }, 8000 + Math.random() * 12000);
 
     return () => {
       clearTimeout(initialDelay);

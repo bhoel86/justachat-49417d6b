@@ -340,7 +340,7 @@ export const getRandomMigratingBot = (): ChatBot => {
 
 // Room-specific bot population weights (higher = more bots)
 const ROOM_BOT_WEIGHTS: Record<string, { min: number; max: number }> = {
-  'general': { min: 320, max: 380 },
+  'general': { min: 200, max: 200 },
   'adults-21-plus': { min: 200, max: 200 },
   'lounge': { min: 65, max: 95 },
   'music': { min: 55, max: 85 },
