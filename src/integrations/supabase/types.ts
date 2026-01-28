@@ -51,6 +51,13 @@ export type Database = {
             referencedRelation: "channels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "art_discussions_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       art_pieces: {
@@ -266,6 +273,13 @@ export type Database = {
             referencedRelation: "channels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "channel_access_list_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       channel_members: {
@@ -293,6 +307,13 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_members_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels_public"
             referencedColumns: ["id"]
           },
         ]
@@ -333,6 +354,13 @@ export type Database = {
             referencedRelation: "channels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "channel_moderation_settings_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: true
+            referencedRelation: "channels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       channel_registrations: {
@@ -368,6 +396,13 @@ export type Database = {
             referencedRelation: "channels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "channel_registrations_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: true
+            referencedRelation: "channels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       channel_settings: {
@@ -401,6 +436,13 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: true
             referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_settings_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: true
+            referencedRelation: "channels_public"
             referencedColumns: ["id"]
           },
         ]
@@ -795,6 +837,13 @@ export type Database = {
             referencedRelation: "channels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mutes: {
@@ -983,6 +1032,13 @@ export type Database = {
             referencedRelation: "channels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "room_admins_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       room_bans: {
@@ -1021,6 +1077,13 @@ export type Database = {
             referencedRelation: "channels"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "room_bans_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       room_mutes: {
@@ -1057,6 +1120,13 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_mutes_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1335,9 +1405,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      channels_public: {
+        Row: {
+          bg_color: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          is_hidden: boolean | null
+          is_private: boolean | null
+          name: string | null
+          name_color: string | null
+          name_gradient_from: string | null
+          name_gradient_to: string | null
+        }
+        Insert: {
+          bg_color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          is_hidden?: boolean | null
+          is_private?: boolean | null
+          name?: string | null
+          name_color?: string | null
+          name_gradient_from?: string | null
+          name_gradient_to?: string | null
+        }
+        Update: {
+          bg_color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          is_hidden?: boolean | null
+          is_private?: boolean | null
+          name?: string | null
+          name_color?: string | null
+          name_gradient_from?: string | null
+          name_gradient_to?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      channel_has_password: { Args: { _channel_id: string }; Returns: boolean }
       cleanup_old_locations: { Args: never; Returns: undefined }
       cleanup_old_login_attempts: { Args: never; Returns: undefined }
       has_role: {
@@ -1354,6 +1466,14 @@ export type Database = {
       }
       is_room_owner: {
         Args: { _channel_id: string; _user_id: string }
+        Returns: boolean
+      }
+      verify_admin_password: {
+        Args: { _channel_id: string; _password: string }
+        Returns: boolean
+      }
+      verify_room_password: {
+        Args: { _channel_id: string; _password: string }
         Returns: boolean
       }
     }
