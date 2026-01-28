@@ -558,11 +558,11 @@ const Home = () => {
             </div>
 
             {/* Chat Rooms + Lobby Mirror Side by Side - Same Height */}
-            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 sm:gap-6" style={{ height: '580px' }}>
               {/* Room Cards */}
-              <div className="lg:w-80 xl:w-96 flex-shrink-0">
-                <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4 h-full">
-                  <div className="mb-3 sm:mb-4">
+              <div className="lg:w-80 xl:w-96 flex-shrink-0 h-full">
+                <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4 h-full overflow-hidden flex flex-col">
+                  <div className="mb-3 sm:mb-4 flex-shrink-0">
                     <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
                     <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
                   </div>
@@ -741,7 +741,7 @@ const Home = () => {
               </div>
 
               {/* Center - Public Chat Preview */}
-              <div className="flex-1 min-w-0 h-[520px] lg:h-[600px]">
+              <div className="flex-1 min-w-0 h-full">
                 <LobbyMirrorRoom />
               </div>
             </div>
