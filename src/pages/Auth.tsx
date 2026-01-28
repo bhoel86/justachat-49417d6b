@@ -1021,7 +1021,7 @@ const Auth = () => {
               {/* Social Media Links */}
               <div className="flex items-center gap-2">
                 <a 
-                  href="#" 
+                  href="https://www.facebook.com/profile.php?id=61587064682802" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary hover:bg-primary/20 flex items-center justify-center transition-colors group"
@@ -1043,7 +1043,7 @@ const Auth = () => {
                   </svg>
                 </a>
                 <a 
-                  href="#" 
+                  href="https://www.tiktok.com/@0justachat0" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary hover:bg-primary/20 flex items-center justify-center transition-colors group"
@@ -1054,7 +1054,7 @@ const Auth = () => {
                   </svg>
                 </a>
                 <a 
-                  href="#" 
+                  href="https://x.com/UnixJustachat" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary hover:bg-primary/20 flex items-center justify-center transition-colors group"
