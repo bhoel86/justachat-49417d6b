@@ -288,14 +288,27 @@ export const getBotById = (id: string): ChatBot | undefined => {
 };
 
 export const getBotsForChannel = (channelName: string): ChatBot[] => {
-  const roomBots = ROOM_BOTS.filter(bot => bot.room === channelName);
+  // Get the bot count for this room based on weights
+  const botCount = getRoomBotCount(channelName);
   
-  if (channelName === 'general') {
-    return [...CHAT_BOTS, ...roomBots];
+  // Get all available bots - room-specific first, then global, then migrating
+  const roomBots = ROOM_BOTS.filter(bot => bot.room === channelName);
+  const availableBots = [...roomBots, ...CHAT_BOTS, ...MIGRATING_BOTS];
+  
+  // Generate the required number of bots by cycling through available ones
+  // and creating unique instances with modified IDs
+  const result: ChatBot[] = [];
+  
+  for (let i = 0; i < botCount; i++) {
+    const sourceBot = availableBots[i % availableBots.length];
+    // Create a unique instance for each slot
+    result.push({
+      ...sourceBot,
+      id: `${sourceBot.id}-slot-${i}`,
+    });
   }
   
-  const globalBots = CHAT_BOTS.slice(0, 3);
-  return [...roomBots, ...globalBots];
+  return result;
 };
 
 export const getRoomBots = (roomName: string): ChatBot[] => {
