@@ -378,3 +378,17 @@ export const getRandomTopic = (): string => {
 export const getRandomMigratingBot = (): ChatBot => {
   return MIGRATING_BOTS[Math.floor(Math.random() * MIGRATING_BOTS.length)];
 };
+
+// Get base bot count for a room (static room bots, not including migrating bots)
+export const getRoomBotCount = (roomName: string): number => {
+  // Count room-specific bots
+  const roomBotCount = ROOM_BOTS.filter(bot => bot.room === roomName).length;
+  
+  // Add a portion of global bots (they appear across rooms)
+  const globalBotShare = Math.floor(CHAT_BOTS.length / 12); // Divide among 12 rooms
+  
+  // Add random migrating bot count (simulating distribution)
+  const migratingBotShare = Math.floor(MIGRATING_BOTS.length / 12);
+  
+  return roomBotCount + globalBotShare + migratingBotShare;
+};

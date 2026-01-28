@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import FakeChatPreview from "@/components/home/FakeChatPreview";
+import { getRoomBotCount } from "@/lib/chatBots";
 
 
 // Room background images
@@ -594,10 +595,10 @@ const Home = () => {
                               <h3 className="font-semibold text-[10px] sm:text-xs text-white drop-shadow-md text-center leading-tight">
                                 #{formatRoomName(channel.name)}
                               </h3>
-                              {/* User count badge */}
+                              {/* User count badge - includes bots */}
                               <div className="flex items-center gap-0.5 text-white/80">
                                 <Users className="w-2.5 h-2.5" />
-                                <span className="text-[9px] font-medium">{roomUserCounts[channel.id] || 0}</span>
+                                <span className="text-[9px] font-medium">{(roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name)}</span>
                               </div>
                             </div>
 
