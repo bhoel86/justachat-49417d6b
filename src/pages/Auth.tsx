@@ -88,22 +88,52 @@ const Auth = () => {
           description: "Complete sign-in in your browser, then return to the app."
         });
       } else {
-        // For web: Use normal OAuth flow
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/`,
-            queryParams: {
-              prompt: 'select_account'
+        // For web: Use OAuth flow
+        // Detect if on VPS/custom domain vs Lovable preview
+        const isCustomDomain = !window.location.hostname.includes('lovable.app') &&
+                               !window.location.hostname.includes('lovableproject.com');
+        
+        if (isCustomDomain) {
+          // Bypass auth-bridge by getting OAuth URL directly for VPS
+          const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: `${window.location.origin}/`,
+              skipBrowserRedirect: true, // Critical: prevents Lovable auth-bridge interception
+              queryParams: {
+                prompt: 'select_account'
+              }
             }
-          }
-        });
-        if (error) {
-          toast({
-            variant: "destructive",
-            title: "Google Sign-In Failed",
-            description: error.message
           });
+          
+          if (error) {
+            toast({
+              variant: "destructive",
+              title: "Google Sign-In Failed",
+              description: error.message
+            });
+          } else if (data?.url) {
+            // Redirect manually to the OAuth URL
+            window.location.href = data.url;
+          }
+        } else {
+          // For Lovable preview: Use normal OAuth flow
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: `${window.location.origin}/`,
+              queryParams: {
+                prompt: 'select_account'
+              }
+            }
+          });
+          if (error) {
+            toast({
+              variant: "destructive",
+              title: "Google Sign-In Failed",
+              description: error.message
+            });
+          }
         }
       }
     } catch (err) {
