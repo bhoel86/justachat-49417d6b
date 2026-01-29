@@ -1032,7 +1032,7 @@ const Auth = () => {
                   </svg>
                 </a>
                 <a 
-                  href="#" 
+                  href="https://www.instagram.com/justachatunix/"
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary hover:bg-primary/20 flex items-center justify-center transition-colors group"
