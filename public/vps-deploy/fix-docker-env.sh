@@ -29,7 +29,7 @@ done
 echo ""
 echo "=== Restarting auth container ==="
 cd ~/supabase/docker
-docker compose up -d auth
+sudo docker compose up -d auth
 
 echo ""
 echo "=== Verifying ==="
