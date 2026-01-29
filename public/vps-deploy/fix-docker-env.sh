@@ -34,7 +34,7 @@ sudo docker compose up -d auth
 echo ""
 echo "=== Verifying ==="
 sleep 3
-docker ps | grep -E "auth|supabase-auth" && echo "✓ Auth container running"
+sudo docker ps | grep -E "auth|supabase-auth" && echo "✓ Auth container running"
 
 echo ""
 echo "=== Testing webhook connectivity ==="
