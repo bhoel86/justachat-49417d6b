@@ -5,18 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Environment check - only run on Lovable Cloud, not VPS
+// Environment detection
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
-const IS_LOVABLE_CLOUD = SUPABASE_URL.includes("supabase.co");
-
-// If running on VPS (self-hosted Supabase), return early
-const checkEnvironment = () => {
-  if (!IS_LOVABLE_CLOUD) {
-    console.log("Chat-bot disabled: Running on VPS/self-hosted environment");
-    return false;
-  }
-  return true;
-};
 
 // User personalities (they appear as regular chatters)
 const USER_PERSONALITIES: Record<string, { name: string; personality: string; style: string; gender: string; appearance?: string }> = {
@@ -826,16 +816,19 @@ async function generateBotPhoto(appearance: string, botName: string, apiKey: str
     
     console.log("Generating photo with prompt:", prompt);
     
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Use DALL-E 3 via OpenAI for image generation
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "standard",
       }),
     });
 
@@ -845,7 +838,7 @@ async function generateBotPhoto(appearance: string, botName: string, apiKey: str
     }
 
     const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    const imageUrl = data.data?.[0]?.url;
     return imageUrl || null;
   } catch (error) {
     console.error("Error generating photo:", error);
@@ -858,26 +851,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Block execution on VPS/self-hosted - only run on Lovable Cloud
-  if (!checkEnvironment()) {
-    return new Response(JSON.stringify({ 
-      message: null, 
-      error: "Bots disabled on VPS" 
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   try {
     const { botId, context, recentMessages, respondTo, isConversationStarter, isPM, pmPartnerName, customPersonality, forcedUsername } = await req.json();
     
     console.log("Received botId:", botId, "isPM:", isPM, "customPersonality:", !!customPersonality);
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
 
     // Check if this is a moderator with custom personality
     let user: { name: string; personality: string; style: string; gender: string; appearance?: string };
@@ -942,6 +919,18 @@ serve(async (req) => {
       
       const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
+      
+      if (!openaiKey) {
+        console.error("OPENAI_API_KEY not configured for photo generation");
+        return new Response(JSON.stringify({ 
+          message: "sorry cant send pics rn 😅",
+          botId,
+          username: user.name 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       
       const wantsNewPhoto = isNewPhotoRequest(respondTo);
       const specialRequest = parseSpecialPhotoRequest(respondTo);
@@ -961,7 +950,7 @@ serve(async (req) => {
       // Generate new photo if none cached, they want a new one, or special request
       if (!imageUrl) {
         console.log("Generating new photo for:", user.name, "isVariation:", wantsNewPhoto, "specialRequest:", specialRequest);
-        imageUrl = await generateBotPhoto(user.appearance, user.name, LOVABLE_API_KEY, wantsNewPhoto, specialRequest);
+        imageUrl = await generateBotPhoto(user.appearance, user.name, openaiKey, wantsNewPhoto, specialRequest);
         
         // Cache the photo for consistency (only cache the first/main selfie, not special requests)
         if (imageUrl && !wantsNewPhoto && !isSpecialRequest) {
@@ -1141,14 +1130,24 @@ ${messageContext}
 jump in and say something. pick up on what someones talking about or add to the convo. keep it casual n short`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Use OpenAI API directly (for VPS deployment)
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY not configured");
+      return new Response(JSON.stringify({ error: "AI not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",  // Fast and cost-effective
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
