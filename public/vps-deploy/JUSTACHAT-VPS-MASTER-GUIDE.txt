@@ -1,0 +1,393 @@
+================================================================================
+                    JUSTACHAT.NET VPS MASTER GUIDE
+                    Complete Administration Reference
+                    Last Updated: January 29, 2026
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. SSH ACCESS
+2. BACKUP PROCEDURES
+3. RESTORE PROCEDURES  
+4. DOWNLOAD SOURCE CODE
+5. ALL PASSWORDS & API KEYS
+6. SERVICE LOCATIONS
+7. TROUBLESHOOTING
+
+================================================================================
+1. SSH ACCESS
+================================================================================
+
+FROM WINDOWS POWERSHELL:
+------------------------
+ssh unix@157.245.174.197
+
+Password: Khoel15$$
+
+ALTERNATIVE (if you have SSH key):
+----------------------------------
+ssh -i C:\Users\dunad\.ssh\id_rsa unix@157.245.174.197
+
+
+================================================================================
+2. BACKUP PROCEDURES
+================================================================================
+
+OPTION A: QUICK ONE-LINER (run on VPS)
+--------------------------------------
+Run this command after SSH'ing into the server:
+
+sudo docker exec supabase-db pg_dumpall -U postgres | gzip > ~/backup-$(date +%Y%m%d).sql.gz && \
+tar -czf ~/justachat-backup-$(date +%Y%m%d).tar.gz \
+  ~/supabase/docker/.env \
+  ~/supabase/docker/docker-compose.yml \
+  ~/supabase/docker/volumes/functions/.env \
+  -C /opt justachat-email \
+  -C /opt jac-deploy \
+  -C /etc/nginx/sites-enabled justachat \
+  -C /etc/systemd/system justachat-email.service jac-deploy.service 2>/dev/null && \
+mv ~/backup-*.sql.gz ~/justachat-backup-*.tar.gz ~/ && \
+echo "Backup complete! Files in home directory."
+
+
+OPTION B: FULL BACKUP SCRIPT (already on VPS)
+---------------------------------------------
+sudo bash /tmp/backup-vps.sh
+
+This creates: ~/backups/justachat.net-Working-YYYY-MM-DD-HHMM.tar.gz
+
+
+DOWNLOAD BACKUP TO WINDOWS DESKTOP:
+-----------------------------------
+1. First, copy to unix home (run on VPS):
+   sudo cp /root/backups/justachat.net-Working-*.tar.gz ~/
+
+2. Then download (run on Windows PowerShell):
+   scp unix@157.245.174.197:~/justachat.net-Working-*.tar.gz C:\Users\dunad\Desktop\
+
+
+WHAT'S INCLUDED IN BACKUP:
+--------------------------
+- database.sql.gz          = Full PostgreSQL database dump
+- supabase-docker/.env     = Main Supabase configuration
+- supabase-docker/functions.env = Edge functions secrets
+- email-webhook/           = Email service config + code
+- deploy-service/          = Auto-deploy service config
+- nginx/justachat          = Nginx reverse proxy config
+- systemd/                 = Service unit files
+
+
+================================================================================
+3. RESTORE PROCEDURES
+================================================================================
+
+STEP 1: UPLOAD BACKUP TO VPS (from Windows PowerShell)
+-------------------------------------------------------
+scp C:\Users\dunad\Desktop\YOUR-BACKUP-FILE.tar.gz unix@157.245.174.197:~/
+
+
+STEP 2: RUN RESTORE (on VPS after SSH)
+--------------------------------------
+# Extract backup
+cd ~ && tar -xzf YOUR-BACKUP-FILE.tar.gz
+DIR=$(basename YOUR-BACKUP-FILE.tar.gz .tar.gz)
+
+# Restore database
+echo "Restoring database..."
+gunzip -c $DIR/database.sql.gz | docker exec -i supabase-db psql -U postgres
+
+# Restore Supabase config
+echo "Restoring Supabase config..."
+cp $DIR/supabase-docker/.env ~/supabase/docker/.env
+cp $DIR/supabase-docker/functions.env ~/supabase/docker/volumes/functions/.env
+
+# Restore email webhook
+echo "Restoring email webhook..."
+sudo cp $DIR/email-webhook/.env /opt/justachat-email/.env
+sudo cp $DIR/email-webhook/server.js /opt/justachat-email/server.js
+sudo systemctl restart justachat-email
+
+# Restore Nginx
+echo "Restoring Nginx..."
+sudo cp $DIR/nginx/justachat /etc/nginx/sites-enabled/justachat
+sudo nginx -t && sudo systemctl reload nginx
+
+# Restart Supabase
+echo "Restarting Supabase..."
+cd ~/supabase/docker && docker compose up -d
+
+# Cleanup
+rm -rf $DIR
+echo "RESTORE COMPLETE!"
+
+
+================================================================================
+4. DOWNLOAD SOURCE CODE
+================================================================================
+
+DOWNLOAD ENTIRE SOURCE (from Windows PowerShell):
+-------------------------------------------------
+# Create folder on desktop
+mkdir C:\Users\dunad\Desktop\justachat-source
+
+# Download source code
+scp -r unix@157.245.174.197:/var/www/justachat/* C:\Users\dunad\Desktop\justachat-source\
+
+Note: This excludes node_modules (too large). To get a working copy:
+1. Download the source as above
+2. Run: npm install (in the downloaded folder)
+
+
+DOWNLOAD JUST THE DIST (built files):
+-------------------------------------
+scp -r unix@157.245.174.197:/var/www/justachat/dist C:\Users\dunad\Desktop\justachat-dist
+
+
+================================================================================
+5. ALL PASSWORDS & API KEYS
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CRITICAL CREDENTIALS - KEEP THIS SECURE!                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+SSH ACCESS
+----------
+Server IP:      157.245.174.197
+Username:       unix
+Password:       Khoel15$$
+Purpose:        SSH login to VPS
+How to change:  sudo passwd unix
+
+
+SUPABASE SECRETS (~/supabase/docker/.env)
+-----------------------------------------
+Location: /home/unix/supabase/docker/.env
+
+POSTGRES_PASSWORD     = Your database password
+                        Purpose: PostgreSQL admin access
+                        
+JWT_SECRET            = Long random string ending with =
+                        Purpose: Signs all auth tokens
+                        CRITICAL: Do not truncate the trailing =
+                        
+ANON_KEY              = eyJhbGciOiJIUzI1NiIs...
+                        Purpose: Public API key for frontend
+                        
+SERVICE_ROLE_KEY      = eyJhbGciOiJIUzI1NiIs...
+                        Purpose: Admin API key (bypasses RLS)
+                        NEVER expose this publicly!
+
+DASHBOARD_PASSWORD    = Password for Supabase Studio
+                        Purpose: Access to localhost:3000 dashboard
+
+To view current values:
+  cat ~/supabase/docker/.env | grep -E "PASSWORD|SECRET|KEY"
+
+
+GOOGLE OAUTH (~/supabase/docker/.env)
+-------------------------------------
+GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID     = Your Google Client ID
+GOTRUE_EXTERNAL_GOOGLE_SECRET        = Your Google Client Secret
+
+How to recreate:
+1. Go to: https://console.cloud.google.com/apis/credentials
+2. Create OAuth 2.0 Client ID
+3. Add authorized redirect: https://justachat.net/auth/v1/callback
+
+
+RESEND API KEY (Email Service)
+------------------------------
+Location: /opt/justachat-email/.env
+Current:  re_8Qpt6Lvi_MpZ8okghH4it34WNo6jBU16Y
+Purpose:  Sends password reset and verification emails
+
+How to recreate:
+1. Go to: https://resend.com/api-keys
+2. Create new API key
+3. Update: sudo nano /opt/justachat-email/.env
+4. Restart: sudo systemctl restart justachat-email
+
+
+DEPLOY SERVICE TOKEN
+--------------------
+Location: /opt/jac-deploy/.env
+Variable: DEPLOY_TOKEN
+Purpose:  Authenticates /admin/deploy requests
+
+How to recreate:
+1. Generate random string: openssl rand -hex 32
+2. Update /opt/jac-deploy/.env
+3. Update frontend code to match
+4. Restart: sudo systemctl restart jac-deploy
+
+
+GITHUB PAT (Personal Access Token)
+----------------------------------
+Location: /opt/jac-deploy/.env (or git credential store)
+Purpose:  Allows git pull from private repo
+
+How to recreate:
+1. Go to: https://github.com/settings/tokens
+2. Generate new token (classic)
+3. Select scopes: repo (full control)
+4. Update git credentials or .env
+
+
+CLOUDFLARE (DNS)
+----------------
+Dashboard: https://dash.cloudflare.com
+Email:     bhoel86@gmail.com
+Purpose:   DNS management, SSL, CDN
+
+Nameservers:
+  alex.ns.cloudflare.com
+  bingo.ns.cloudflare.com
+
+
+DIGITAL OCEAN (VPS Host)
+------------------------
+Dashboard: https://cloud.digitalocean.com
+Purpose:   VPS hosting, server management
+
+
+ZOHO MAIL (Email Hosting)
+-------------------------
+Dashboard: https://mail.zoho.com
+Domain:    justachat.net
+Purpose:   Receives emails to @justachat.net addresses
+Forwards:  All mail → bhoel86@gmail.com
+
+
+================================================================================
+6. SERVICE LOCATIONS
+================================================================================
+
+FRONTEND SOURCE CODE
+--------------------
+Path: /var/www/justachat
+Built output: /var/www/justachat/dist
+Config: /var/www/justachat/.env
+
+
+SUPABASE DOCKER STACK
+---------------------
+Path: /home/unix/supabase/docker
+Main config: /home/unix/supabase/docker/.env
+Compose file: /home/unix/supabase/docker/docker-compose.yml
+Functions env: /home/unix/supabase/docker/volumes/functions/.env
+
+
+EMAIL WEBHOOK SERVICE
+---------------------
+Path: /opt/justachat-email
+Main file: /opt/justachat-email/server.js
+Config: /opt/justachat-email/.env
+Service: justachat-email.service
+
+Commands:
+  sudo systemctl status justachat-email
+  sudo systemctl restart justachat-email
+  sudo journalctl -u justachat-email -f
+
+
+DEPLOY SERVICE
+--------------
+Path: /opt/jac-deploy
+Config: /opt/jac-deploy/.env
+Service: jac-deploy.service
+
+Commands:
+  sudo systemctl status jac-deploy
+  sudo systemctl restart jac-deploy
+
+
+NGINX CONFIGURATION
+-------------------
+Main config: /etc/nginx/nginx.conf
+Site config: /etc/nginx/sites-enabled/justachat
+
+Commands:
+  sudo nginx -t                    # Test config
+  sudo systemctl reload nginx      # Apply changes
+  sudo systemctl status nginx
+
+
+SSL CERTIFICATES (Let's Encrypt)
+--------------------------------
+Location: /etc/letsencrypt/live/justachat.net/
+Renewal: Automatic via certbot timer
+
+Manual renewal:
+  sudo certbot renew
+
+
+================================================================================
+7. TROUBLESHOOTING
+================================================================================
+
+CHECK ALL SERVICES STATUS:
+--------------------------
+sudo systemctl status nginx
+sudo systemctl status justachat-email
+sudo systemctl status jac-deploy
+cd ~/supabase/docker && docker compose ps
+
+
+VIEW LOGS:
+----------
+# Nginx
+sudo tail -f /var/log/nginx/error.log
+
+# Email webhook
+sudo journalctl -u justachat-email -f
+
+# Supabase Auth
+docker logs supabase-auth -f
+
+# Supabase Database
+docker logs supabase-db -f
+
+# All Supabase
+cd ~/supabase/docker && docker compose logs -f
+
+
+RESTART EVERYTHING:
+-------------------
+sudo systemctl restart nginx
+sudo systemctl restart justachat-email
+cd ~/supabase/docker && docker compose restart
+
+
+DATABASE DIRECT ACCESS:
+-----------------------
+docker exec -it supabase-db psql -U postgres
+
+Common queries:
+  \dt                           # List tables
+  SELECT * FROM auth.users;     # View users
+  SELECT * FROM profiles;       # View profiles
+
+
+EMERGENCY: FULL STACK RESTART:
+------------------------------
+cd ~/supabase/docker
+docker compose down
+docker compose up -d
+sudo systemctl restart justachat-email
+sudo systemctl restart nginx
+
+
+================================================================================
+                              END OF GUIDE
+================================================================================
+
+QUICK REFERENCE CARD:
+---------------------
+SSH:        ssh unix@157.245.174.197 (password: Khoel15$$)
+Backup:     sudo bash /tmp/backup-vps.sh
+Download:   scp unix@157.245.174.197:~/FILE C:\Users\dunad\Desktop\
+Logs:       sudo journalctl -u SERVICE -f
+Restart:    sudo systemctl restart SERVICE
+
+================================================================================
