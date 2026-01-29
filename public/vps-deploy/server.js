@@ -23,6 +23,9 @@ const ADMIN_TOKEN = process.env.DEPLOY_TOKEN || process.env.IRC_PROXY_ADMIN_TOKE
 const DEPLOY_DIR = process.env.DEPLOY_DIR || '/var/www/justachat';
 const BACKUP_DIR = process.env.BACKUP_DIR || '/backups/justachat';
 const GIT_BRANCH = process.env.GIT_BRANCH || 'main';
+const GITHUB_PAT = process.env.GITHUB_PAT || '';
+const GITHUB_REPO = process.env.GITHUB_REPO || 'bhoel86/justachat';
+const DEPLOY_USER = process.env.DEPLOY_USER || 'unix';
 const CRON_FILE = '/etc/cron.d/jac-backup';
 
 // Get version from version.ts
@@ -157,15 +160,28 @@ function runRestore(filename) {
   });
 }
 
-// Run deploy (pull from GitHub)
+// Run deploy (pull from GitHub) - runs as unix user with HTTPS + PAT
 function runDeploy() {
   return new Promise((resolve) => {
+    // Build the HTTPS URL with PAT for authentication
+    const repoUrl = GITHUB_PAT 
+      ? `https://${GITHUB_PAT}@github.com/${GITHUB_REPO}.git`
+      : `https://github.com/${GITHUB_REPO}.git`;
+    
+    // First, fix permissions and switch to HTTPS if needed, then pull and build as unix user
     const script = `
+      # Fix ownership first
+      chown -R ${DEPLOY_USER}:${DEPLOY_USER} ${DEPLOY_DIR} &&
+      
+      # Switch remote to HTTPS with PAT (one-time)
       cd ${DEPLOY_DIR} &&
-      git fetch origin ${GIT_BRANCH} &&
-      git reset --hard origin/${GIT_BRANCH} &&
-      npm install --legacy-peer-deps &&
-      npm run build
+      sudo -u ${DEPLOY_USER} git remote set-url origin ${repoUrl} &&
+      
+      # Pull and build as unix user
+      sudo -u ${DEPLOY_USER} git fetch origin ${GIT_BRANCH} &&
+      sudo -u ${DEPLOY_USER} git reset --hard origin/${GIT_BRANCH} &&
+      sudo -u ${DEPLOY_USER} npm install --legacy-peer-deps &&
+      sudo -u ${DEPLOY_USER} npm run build
     `;
 
     exec(script, { 
@@ -182,15 +198,22 @@ function runDeploy() {
   });
 }
 
-// Push to GitHub
+// Push to GitHub - runs as unix user with HTTPS + PAT
 function runPush() {
   return new Promise((resolve) => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    
+    // Build the HTTPS URL with PAT for authentication
+    const repoUrl = GITHUB_PAT 
+      ? `https://${GITHUB_PAT}@github.com/${GITHUB_REPO}.git`
+      : `https://github.com/${GITHUB_REPO}.git`;
+    
     const script = `
       cd ${DEPLOY_DIR} &&
-      git add . &&
-      git commit -m "VPS update ${timestamp}" --allow-empty &&
-      git push origin ${GIT_BRANCH}
+      sudo -u ${DEPLOY_USER} git remote set-url origin ${repoUrl} &&
+      sudo -u ${DEPLOY_USER} git add . &&
+      sudo -u ${DEPLOY_USER} git commit -m "VPS update ${timestamp}" --allow-empty &&
+      sudo -u ${DEPLOY_USER} git push origin ${GIT_BRANCH}
     `;
 
     exec(script, { 

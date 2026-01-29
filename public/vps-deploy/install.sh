@@ -27,12 +27,29 @@ if [ -z "$DEPLOY_TOKEN" ]; then
   echo "Generated DEPLOY_TOKEN: $DEPLOY_TOKEN"
 fi
 
+# Prompt for GitHub PAT if not set
+if [ -z "$GITHUB_PAT" ]; then
+  echo ""
+  echo "Enter your GitHub Personal Access Token (PAT) with 'repo' scope:"
+  echo "(Get one at: https://github.com/settings/tokens/new)"
+  read -r GITHUB_PAT
+fi
+
+# Prompt for GitHub repo if not set
+if [ -z "$GITHUB_REPO" ]; then
+  GITHUB_REPO="bhoel86/justachat"
+  echo "Using default GitHub repo: $GITHUB_REPO"
+fi
+
 # Create .env file
 cat > .env << EOF
 DEPLOY_TOKEN=$DEPLOY_TOKEN
 DEPLOY_DIR=/var/www/justachat
 GIT_BRANCH=main
 DEPLOY_PORT=6680
+GITHUB_PAT=$GITHUB_PAT
+GITHUB_REPO=$GITHUB_REPO
+DEPLOY_USER=unix
 EOF
 
 echo "Configuration saved to /opt/jac-deploy/.env"
