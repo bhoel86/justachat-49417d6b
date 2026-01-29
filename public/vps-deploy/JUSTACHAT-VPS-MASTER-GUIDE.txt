@@ -29,6 +29,23 @@ ALTERNATIVE (if you have SSH key):
 ssh -i C:\Users\dunad\.ssh\id_rsa unix@157.245.174.197
 
 
+USING WINSCP (Visual File Manager):
+-----------------------------------
+WinSCP provides a "desktop computer" experience for browsing and managing files.
+
+1. Download WinSCP: https://winscp.net/eng/download.php
+2. Open WinSCP and create New Site:
+   - File Protocol: SFTP
+   - Host name: 157.245.174.197
+   - Port: 22
+   - User name: unix
+   - Password: Khoel15$$
+3. Click "Save" to remember the connection, then "Login"
+4. You'll see your local files on the LEFT, server files on the RIGHT
+5. Navigate to /var/www/justachat/ for source code
+6. Drag and drop files between sides to transfer
+
+
 ================================================================================
 2. BACKUP PROCEDURES
 ================================================================================
@@ -59,11 +76,18 @@ This creates: ~/backups/justachat.net-Working-YYYY-MM-DD-HHMM.tar.gz
 
 DOWNLOAD BACKUP TO WINDOWS DESKTOP:
 -----------------------------------
-1. First, copy to unix home (run on VPS):
-   sudo cp /root/backups/justachat.net-Working-*.tar.gz ~/
+Method 1 - WinSCP (Easiest):
+  1. Connect via WinSCP (see Section 1)
+  2. Navigate to /home/unix/ on the RIGHT panel
+  3. Find the backup file (justachat.net-Working-*.tar.gz)
+  4. Drag it to your Desktop on the LEFT panel
 
-2. Then download (run on Windows PowerShell):
-   scp unix@157.245.174.197:~/justachat.net-Working-*.tar.gz C:\Users\dunad\Desktop\
+Method 2 - PowerShell:
+  1. First, copy to unix home (run on VPS via SSH):
+     sudo cp /root/backups/justachat.net-Working-*.tar.gz ~/
+
+  2. Then download (run on Windows PowerShell):
+     scp unix@157.245.174.197:~/justachat.net-Working-*.tar.gz C:\Users\dunad\Desktop\
 
 
 WHAT'S INCLUDED IN BACKUP:
@@ -81,9 +105,16 @@ WHAT'S INCLUDED IN BACKUP:
 3. RESTORE PROCEDURES
 ================================================================================
 
-STEP 1: UPLOAD BACKUP TO VPS (from Windows PowerShell)
--------------------------------------------------------
-scp C:\Users\dunad\Desktop\YOUR-BACKUP-FILE.tar.gz unix@157.245.174.197:~/
+STEP 1: UPLOAD BACKUP TO VPS
+-----------------------------
+Method 1 - WinSCP:
+  1. Connect via WinSCP
+  2. Navigate LEFT panel to your Desktop where the backup file is
+  3. Navigate RIGHT panel to /home/unix/
+  4. Drag the backup .tar.gz file from LEFT to RIGHT
+
+Method 2 - PowerShell:
+  scp C:\Users\dunad\Desktop\YOUR-BACKUP-FILE.tar.gz unix@157.245.174.197:~/
 
 
 STEP 2: RUN RESTORE (on VPS after SSH)
@@ -125,22 +156,38 @@ echo "RESTORE COMPLETE!"
 4. DOWNLOAD SOURCE CODE
 ================================================================================
 
-DOWNLOAD ENTIRE SOURCE (from Windows PowerShell):
--------------------------------------------------
+OPTION A: USING WINSCP (Recommended - Visual & Easy)
+-----------------------------------------------------
+1. Connect to server via WinSCP (see Section 1)
+2. Navigate RIGHT panel to: /var/www/justachat/
+3. Navigate LEFT panel to: C:\Users\dunad\Desktop\
+4. Create a new folder on desktop called "justachat-source"
+5. Select all files/folders EXCEPT "node_modules" (it's 500MB+ and won't work on Windows)
+6. Drag from RIGHT to LEFT to download
+
+IMPORTANT: Do NOT download node_modules!
+- It contains Linux-compiled binaries that won't work on Windows
+- After downloading, open PowerShell in the folder and run: npm install
+- This creates fresh Windows-compatible node_modules (~30 seconds)
+
+
+OPTION B: FROM WINDOWS POWERSHELL (Command Line)
+------------------------------------------------
 # Create folder on desktop
 mkdir C:\Users\dunad\Desktop\justachat-source
 
-# Download source code
+# Download source code (excludes node_modules)
 scp -r unix@157.245.174.197:/var/www/justachat/* C:\Users\dunad\Desktop\justachat-source\
 
-Note: This excludes node_modules (too large). To get a working copy:
-1. Download the source as above
-2. Run: npm install (in the downloaded folder)
+# Then run npm install in the downloaded folder
+cd C:\Users\dunad\Desktop\justachat-source
+npm install
 
 
-DOWNLOAD JUST THE DIST (built files):
--------------------------------------
-scp -r unix@157.245.174.197:/var/www/justachat/dist C:\Users\dunad\Desktop\justachat-dist
+DOWNLOAD JUST THE DIST (built files only):
+------------------------------------------
+PowerShell: scp -r unix@157.245.174.197:/var/www/justachat/dist C:\Users\dunad\Desktop\justachat-dist
+WinSCP: Just drag the /var/www/justachat/dist folder to your desktop
 
 
 ================================================================================
