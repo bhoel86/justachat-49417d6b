@@ -49,18 +49,16 @@ Deno.serve(async (req) => {
     console.log("Authenticated user:", callingUserId);
 
     // Check if calling user is an Owner (only owners can reset passwords)
+    // NOTE: using the SECURITY DEFINER db function avoids issues if user_roles has multiple rows per user
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    
-    const { data: roleData, error: roleError } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", callingUserId)
-      .single();
 
-    console.log("Role check:", roleData, roleError);
+    const { data: isOwner, error: isOwnerError } = await adminClient
+      .rpc("is_owner", { _user_id: callingUserId });
 
-    if (roleError || roleData?.role !== "owner") {
-      console.error("Role check failed:", roleError, "Role:", roleData?.role);
+    console.log("Owner check:", { isOwner, isOwnerError });
+
+    if (isOwnerError || !isOwner) {
+      console.error("Owner check failed:", isOwnerError, "isOwner:", isOwner);
       return new Response(
         JSON.stringify({ error: "Only owners can reset passwords" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
