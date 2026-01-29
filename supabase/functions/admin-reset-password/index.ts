@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface ResetPasswordRequest {
@@ -18,34 +18,35 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
+      console.error("No auth header");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create client with user's token to verify identity
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Create client with user's token to verify identity
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Verify the calling user
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    // Verify the calling user using getUser()
+    const { data: userData, error: userError } = await userClient.auth.getUser();
     
-    if (claimsError || !claimsData?.claims?.sub) {
-      console.error("Auth error:", claimsError);
+    if (userError || !userData?.user) {
+      console.error("Auth error:", userError);
       return new Response(
         JSON.stringify({ error: "Invalid authentication" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const callingUserId = claimsData.claims.sub;
+    const callingUserId = userData.user.id;
+    console.log("Authenticated user:", callingUserId);
 
     // Check if calling user is an Owner (only owners can reset passwords)
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -55,6 +56,8 @@ Deno.serve(async (req) => {
       .select("role")
       .eq("user_id", callingUserId)
       .single();
+
+    console.log("Role check:", roleData, roleError);
 
     if (roleError || roleData?.role !== "owner") {
       console.error("Role check failed:", roleError, "Role:", roleData?.role);
@@ -81,6 +84,8 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("Resetting password for:", targetUserId);
 
     // Get target user info for logging
     const { data: targetUser } = await adminClient.auth.admin.getUserById(targetUserId);
