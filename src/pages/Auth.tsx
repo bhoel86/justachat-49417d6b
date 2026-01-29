@@ -52,6 +52,12 @@ const Auth = () => {
   const captchaRequired =
     mode === "signup" && CAPTCHA_REQUIRED_HOSTS.has(window.location.hostname);
 
+  // Detect if running in Capacitor (Android/iOS app) - Google OAuth doesn't work in WebViews
+  const isCapacitorApp = typeof window !== 'undefined' && 
+    (window.hasOwnProperty('Capacitor') || 
+     navigator.userAgent.includes('CapacitorApp') ||
+     document.URL.startsWith('capacitor://'));
+
   // Check if current user is owner (for debug mode)
   useEffect(() => {
     const checkOwnerStatus = async () => {
@@ -896,8 +902,8 @@ const Auth = () => {
             </form>
           )}
 
-          {/* Google Sign-In - show for login and signup modes */}
-          {(mode === "login" || mode === "signup") && (
+          {/* Google Sign-In - show for login and signup modes, but NOT in Capacitor/mobile app */}
+          {(mode === "login" || mode === "signup") && !isCapacitorApp && (
             <div className="mt-4">
               <div className="relative flex items-center justify-center my-4">
                 <div className="border-t border-border w-full" />
@@ -956,37 +962,42 @@ const Auth = () => {
           {/* Links row: Use different account | Sign up/in */}
           {(mode === "login" || mode === "signup") && (
             <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await supabase.auth.signOut({ scope: 'local' });
-                  } finally {
-                    clearAuthStorage();
-                  }
-                  const { error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                      redirectTo: `${window.location.origin}/`,
-                      queryParams: {
-                        prompt: 'select_account'
+              {/* Only show Google account switcher if not in Capacitor app */}
+              {!isCapacitorApp && (
+                <>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await supabase.auth.signOut({ scope: 'local' });
+                      } finally {
+                        clearAuthStorage();
                       }
-                    }
-                  });
-                  if (error) {
-                    toast({
-                      variant: "destructive",
-                      title: "Failed to switch account",
-                      description: error.message
-                    });
-                  }
-                }}
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                Use a different Google account
-              </button>
-              
-              <span className="text-muted-foreground/50">|</span>
+                      const { error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                          redirectTo: `${window.location.origin}/`,
+                          queryParams: {
+                            prompt: 'select_account'
+                          }
+                        }
+                      });
+                      if (error) {
+                        toast({
+                          variant: "destructive",
+                          title: "Failed to switch account",
+                          description: error.message
+                        });
+                      }
+                    }}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    Use a different Google account
+                  </button>
+                  
+                  <span className="text-muted-foreground/50">|</span>
+                </>
+              )}
               
               <button
                 type="button"
