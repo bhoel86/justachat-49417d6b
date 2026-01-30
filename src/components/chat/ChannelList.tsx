@@ -507,32 +507,38 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
             <div
               key={channel.id}
               className={cn(
-                "group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors",
-                isSelected && !channel.bg_color
-                  ? cn(theme.bgColor, "border border-current/20")
-                  : isSelected && channel.bg_color
-                  ? "border border-current/20"
-                  : "hover:bg-secondary",
-                channel.is_hidden && "opacity-50"
+                "group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all",
+                isSelected
+                  ? "border border-current/20 shadow-sm"
+                  : "hover:bg-secondary/50",
+                channel.is_hidden && "opacity-50",
+                // Always show theme background color as bubble
+                !channel.bg_color && theme.bgColor
               )}
-              style={getChannelBgStyle()}
+              style={channel.bg_color ? { backgroundColor: `${channel.bg_color}30` } : undefined}
               onClick={() => onChannelSelect(channel)}
             >
               {channel.is_private ? (
                 <Lock 
-                  className={cn("h-3.5 w-3.5 shrink-0", isSelected && !hasCustomColor && !hasCustomGradient ? theme.textColor : "text-muted-foreground")} 
-                  style={hasCustomColor && isSelected ? { color: channel.name_color! } : {}}
+                  className={cn(
+                    "h-3.5 w-3.5 shrink-0",
+                    hasCustomColor ? undefined : theme.textColor
+                  )} 
+                  style={hasCustomColor ? { color: channel.name_color! } : {}}
                 />
               ) : (
                 <Hash 
-                  className={cn("h-3.5 w-3.5 shrink-0", isSelected && !hasCustomColor && !hasCustomGradient ? theme.textColor : "text-muted-foreground")} 
-                  style={hasCustomColor && isSelected ? { color: channel.name_color! } : {}}
+                  className={cn(
+                    "h-3.5 w-3.5 shrink-0",
+                    hasCustomColor ? undefined : theme.textColor
+                  )} 
+                  style={hasCustomColor ? { color: channel.name_color! } : {}}
                 />
               )}
               <span 
                 className={cn(
-                  "flex-1 truncate text-xs font-medium uppercase",
-                  isSelected && !hasCustomColor && !hasCustomGradient ? theme.textColor : "text-muted-foreground hover:text-foreground"
+                  "flex-1 truncate text-xs font-semibold uppercase",
+                  hasCustomColor || hasCustomGradient ? undefined : theme.textColor
                 )}
                 style={getChannelNameStyle()}
               >
