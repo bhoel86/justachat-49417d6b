@@ -606,12 +606,72 @@ sudo systemctl restart justachat-email
 echo "  Email service started"
 
 # =============================================
-# STEP 8: Sync functions volume
+# STEP 8: Sync functions volume + create router
 # =============================================
 echo "[8/10] Syncing backend functions volume..."
 rm -rf "$DOCKER_DIR/volumes/functions"/*
 cp -r /var/www/justachat/supabase/functions/* "$DOCKER_DIR/volumes/functions/"
 
+# Create the main router (CRITICAL: dispatches requests to sub-functions)
+mkdir -p "$DOCKER_DIR/volumes/functions/main"
+cat > "$DOCKER_DIR/volumes/functions/main/index.ts" << 'MAINROUTER'
+// Edge-runtime main service router
+// Dispatches /function-name to /home/deno/functions/function-name/index.ts
+
+Deno.serve(async (req: Request) => {
+  const url = new URL(req.url);
+  const path = url.pathname;
+
+  // Health check endpoint
+  if (path === "/" || path === "/health") {
+    return new Response(JSON.stringify({ healthy: true, router: "main" }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  // Extract function name from path (e.g., /verify-captcha -> verify-captcha)
+  const match = path.match(/^\/([a-zA-Z0-9_-]+)/);
+  if (!match) {
+    return new Response(JSON.stringify({ error: "Invalid path" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const functionName = match[1];
+  const functionPath = `/home/deno/functions/${functionName}/index.ts`;
+
+  try {
+    // Dynamically import and invoke the target function
+    const mod = await import(functionPath);
+    
+    // If the module exports a default handler, call it
+    if (typeof mod.default === "function") {
+      return await mod.default(req);
+    }
+    
+    // Otherwise, look for a named 'handler' export
+    if (typeof mod.handler === "function") {
+      return await mod.handler(req);
+    }
+
+    return new Response(JSON.stringify({ error: "Function has no handler" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error(`Router error for ${functionName}:`, err);
+    return new Response(
+      JSON.stringify({ error: "Function not found", function: functionName }),
+      { status: 404, headers: { "Content-Type": "application/json" } }
+    );
+  }
+});
+MAINROUTER
+
+echo "  Main router created at volumes/functions/main/index.ts"
+
+# Create functions environment file
 cat > "$DOCKER_DIR/volumes/functions/.env" << FUNCENV
 SUPABASE_URL=https://justachat.net
 SUPABASE_ANON_KEY=${ANON_KEY}
@@ -619,12 +679,15 @@ SUPABASE_SERVICE_ROLE_KEY=${SERVICE_KEY}
 OPENAI_API_KEY=${OPENAI_API_KEY}
 FUNCENV
 
+# Set correct ownership for deno user (UID 1000)
+sudo chown -R 1000:1000 "$DOCKER_DIR/volumes/functions"
+
 # Restart functions container if present
 if require_service functions; then
   sudo docker compose restart functions 2>/dev/null || true
 fi
 
-echo "  Functions synced"
+echo "  Functions synced with router"
 
 # =============================================
 # STEP 9: Apply database schema
