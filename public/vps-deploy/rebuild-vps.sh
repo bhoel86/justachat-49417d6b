@@ -106,7 +106,13 @@ mkdir -p ~/supabase/docker/volumes/db/data
 mkdir -p ~/supabase/docker/volumes/functions
 mkdir -p ~/supabase/docker/volumes/storage
 
-# Create Supabase .env
+# Generate additional secrets
+SECRET_KEY_BASE=$(openssl rand -hex 64)
+PG_META_CRYPTO_KEY=$(openssl rand -base64 32 | tr -d '\n')
+VAULT_ENC_KEY=$(openssl rand -base64 32 | tr -d '\n')
+LOGFLARE_API_KEY=$(openssl rand -hex 32)
+
+# Create Supabase .env with ALL required variables
 cat > ~/supabase/docker/.env << ENVFILE
 ############
 # Secrets
@@ -116,13 +122,21 @@ JWT_SECRET=${JWT_SECRET}
 ANON_KEY=${ANON_KEY}
 SERVICE_ROLE_KEY=${SERVICE_KEY}
 DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
+SECRET_KEY_BASE=${SECRET_KEY_BASE}
+VAULT_ENC_KEY=${VAULT_ENC_KEY}
 
 ############
 # Database
 ############
-POSTGRES_HOST=supabase-db
+POSTGRES_HOST=db
 POSTGRES_DB=postgres
 POSTGRES_PORT=5432
+
+############
+# API Proxy
+############
+KONG_HTTP_PORT=8000
+KONG_HTTPS_PORT=8443
 
 ############
 # API
@@ -130,15 +144,37 @@ POSTGRES_PORT=5432
 SITE_URL=https://justachat.net
 API_EXTERNAL_URL=https://justachat.net
 SUPABASE_PUBLIC_URL=https://justachat.net
+PGRST_DB_SCHEMAS=public,storage,graphql_public
 
 ############
 # Studio
 ############
 DASHBOARD_USERNAME=admin
+STUDIO_DEFAULT_PROJECT=justachat
+STUDIO_DEFAULT_ORGANIZATION=justachat
+STUDIO_PG_META_URL=http://meta:8080
+SUPABASE_STUDIO_PORT=3000
+
+############
+# PG Meta
+############
+PG_META_CRYPTO_KEY=${PG_META_CRYPTO_KEY}
+PG_META_PORT=8080
+
+############
+# Imgproxy
+############
+IMGPROXY_ENABLE_WEBP_DETECTION=true
+
+############
+# Functions
+############
+FUNCTIONS_VERIFY_JWT=false
 
 ############
 # Auth
 ############
+JWT_EXPIRY=3600
 GOTRUE_SITE_URL=https://justachat.net
 GOTRUE_URI_ALLOW_LIST=https://justachat.net,https://justachat.net/*,https://justachat.net/home
 GOTRUE_EXTERNAL_GOOGLE_ENABLED=true
@@ -147,7 +183,16 @@ GOTRUE_EXTERNAL_GOOGLE_SECRET=${GOOGLE_CLIENT_SECRET}
 GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI=https://justachat.net/auth/v1/callback
 GOTRUE_MAILER_AUTOCONFIRM=true
 GOTRUE_SMTP_ADMIN_EMAIL=Unix@justachat.net
+GOTRUE_SMTP_PASS=
 GOTRUE_DISABLE_SIGNUP=false
+DISABLE_SIGNUP=false
+ENABLE_EMAIL_AUTOCONFIRM=true
+ENABLE_ANONYMOUS_USERS=false
+ADDITIONAL_REDIRECT_URLS=
+MAILER_URLPATHS_CONFIRMATION=/auth/v1/verify
+MAILER_URLPATHS_INVITE=/auth/v1/verify
+MAILER_URLPATHS_RECOVERY=/auth/v1/verify
+MAILER_URLPATHS_EMAIL_CHANGE=/auth/v1/verify
 
 ############
 # Email Hook
@@ -156,10 +201,37 @@ GOTRUE_HOOK_SEND_EMAIL_ENABLED=true
 GOTRUE_HOOK_SEND_EMAIL_URI=https://justachat.net/hook/email
 
 ############
+# Analytics/Logflare (placeholders)
+############
+LOGFLARE_PUBLIC_ACCESS_TOKEN=${LOGFLARE_API_KEY}
+LOGFLARE_PRIVATE_ACCESS_TOKEN=${LOGFLARE_API_KEY}
+
+############
+# Pooler (placeholders)
+############
+POOLER_PROXY_PORT_TRANSACTION=6543
+POOLER_TENANT_ID=justachat
+POOLER_DEFAULT_POOL_SIZE=20
+POOLER_DB_POOL_SIZE=20
+POOLER_MAX_CLIENT_CONN=100
+
+############
+# Docker
+############
+DOCKER_SOCKET_LOCATION=/var/run/docker.sock
+
+############
+# External APIs
+############
+OPENAI_API_KEY=${OPENAI_API_KEY}
+RESEND_API_KEY=${RESEND_API_KEY}
+
+############
 # Misc
 ############
 ENABLE_PHONE_SIGNUP=false
 ENABLE_PHONE_AUTOCONFIRM=false
+TURNSTILE_SECRET_KEY=
 ENVFILE
 
 echo "  Supabase environment configured"
