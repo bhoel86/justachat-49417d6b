@@ -1,0 +1,8 @@
+# Justachat User Import Template
+# Format: email,username
+# Lines starting with # are ignored
+#
+# Example:
+user1@example.com,CoolUser1
+user2@example.com,AwesomeUser2
+user3@example.com,ChatFan3
