@@ -312,12 +312,20 @@ for i in {1..40}; do
   sleep 2
 done
 
-echo "  Syncing supabase_admin password for analytics..."
+echo "  Syncing supabase_admin password for analytics (best-effort)..."
 DB_CID=$(db_container_id)
 if [ -n "$DB_CID" ]; then
+  # Some stacks treat supabase_admin as reserved and forbid changing it.
+  # This must never abort the rebuild; analytics is non-critical.
+  set +e
   sudo docker exec -i "$DB_CID" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<SQL
 ALTER USER supabase_admin WITH PASSWORD '${POSTGRES_PASSWORD}';
 SQL
+  RC=$?
+  set -e
+  if [ "$RC" -ne 0 ]; then
+    echo "  ⚠ Could not update supabase_admin (reserved role); continuing (analytics may fail)"
+  fi
 fi
 
 echo "  Stage 2: Starting analytics in background (non-blocking)..."
