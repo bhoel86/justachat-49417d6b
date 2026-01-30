@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('[Auth] State change:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -61,20 +62,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsMinor(false);
           setHasParentConsent(true);
         }
+
+        // Clear URL hash after OAuth callback is processed (VPS fix)
+        if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+          console.log('[Auth] OAuth callback processed, clearing hash');
+          window.history.replaceState(null, '', window.location.pathname);
+        }
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    // Handle OAuth callback hash explicitly (VPS self-hosted fix)
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      console.log('[Auth] Detected OAuth callback hash, setting session from URL...');
+      // The Supabase client will automatically parse this with detectSessionInUrl: true
+      // But we need to ensure it happens before other code runs
+      supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (error) {
+          console.error('[Auth] Error parsing OAuth hash:', error);
+        }
+        if (session) {
+          console.log('[Auth] Session established from OAuth hash');
+          setSession(session);
+          setUser(session.user);
+          setLoading(false);
+          checkUserRole(session.user.id);
+          checkMinorStatus(session.user.id);
+          // Clear the hash
+          window.history.replaceState(null, '', window.location.pathname);
+        } else {
+          console.log('[Auth] No session from hash, checking existing...');
+        }
+      });
+    } else {
+      // No OAuth callback, check for existing session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
 
-      if (session?.user) {
-        checkUserRole(session.user.id);
-        checkMinorStatus(session.user.id);
-      }
-    });
+        if (session?.user) {
+          checkUserRole(session.user.id);
+          checkMinorStatus(session.user.id);
+        }
+      });
+    }
 
     return () => subscription.unsubscribe();
   }, []);
