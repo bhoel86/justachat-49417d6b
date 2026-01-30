@@ -673,17 +673,17 @@ const Home = () => {
                             <div className="absolute inset-0 bg-black/40" />
                             
                             {/* Content - stacked vertically */}
-                            <div className="relative h-full flex flex-col items-center justify-center gap-0.5 px-1 py-1">
-                              <div className={`p-1 rounded bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-sm group-hover:scale-105 transition-transform`}>
+                            <div className="relative h-full flex flex-col items-center justify-center gap-0.5 px-1.5 py-1">
+                              <div className={`p-1.5 rounded bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-sm group-hover:scale-105 transition-transform`}>
                                 {roomIcons[channel.name] || <Hash className="w-3.5 h-3.5" />}
                               </div>
-                              <h3 className="font-semibold text-[8px] sm:text-[9px] text-white drop-shadow-md text-center leading-tight truncate w-full px-0.5">
+                              <h3 className="font-bold text-[10px] sm:text-xs text-white drop-shadow-lg text-center leading-tight truncate w-full">
                                 #{formatRoomName(channel.name)}
                               </h3>
                               {/* User count badge - includes bots */}
-                              <div className="flex items-center gap-0.5 text-white/80">
-                                <Users className="w-2 h-2" />
-                                <span className="text-[7px] font-medium">{(roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name)}</span>
+                              <div className="flex items-center gap-0.5 text-white/90">
+                                <Users className="w-2.5 h-2.5" />
+                                <span className="text-[8px] sm:text-[9px] font-medium">{(roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name)}</span>
                               </div>
                             </div>
 
