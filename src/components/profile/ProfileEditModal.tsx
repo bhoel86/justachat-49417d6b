@@ -5,17 +5,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Camera, AtSign, FileText, Lock, Loader2, Check, Eye, EyeOff, Calendar } from "lucide-react";
+import { Camera, AtSign, FileText, Lock, Loader2, Check, Eye, EyeOff, Calendar, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
 import UserAvatar from "@/components/avatar/UserAvatar";
+import { useNavigate } from "react-router-dom";
 import { getMaleAvatars, getFemaleAvatars } from "@/lib/defaultAvatars";
 
 const usernameSchema = z
@@ -54,6 +66,7 @@ export const ProfileEditModal = ({
   onProfileUpdated,
 }: ProfileEditModalProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("avatar");
   
   // Avatar state
@@ -79,6 +92,39 @@ export const ProfileEditModal = ({
   
   // Saving state
   const [saving, setSaving] = useState(false);
+  
+  // Delete account state
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (deleteConfirmText !== "DELETE") {
+      toast.error('Please type DELETE to confirm');
+      return;
+    }
+    
+    setDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke('delete-account');
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to delete account');
+      }
+      
+      toast.success('Your account has been permanently deleted');
+      
+      // Sign out and redirect
+      await supabase.auth.signOut();
+      onOpenChange(false);
+      navigate('/');
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      toast.error(error.message || 'Failed to delete account');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -252,7 +298,7 @@ export const ProfileEditModal = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="avatar" className="text-xs">
               <Camera className="h-4 w-4" />
             </TabsTrigger>
@@ -267,6 +313,9 @@ export const ProfileEditModal = ({
             </TabsTrigger>
             <TabsTrigger value="password" className="text-xs">
               <Lock className="h-4 w-4" />
+            </TabsTrigger>
+            <TabsTrigger value="delete" className="text-xs text-destructive">
+              <Trash2 className="h-4 w-4" />
             </TabsTrigger>
           </TabsList>
 
@@ -445,6 +494,78 @@ export const ProfileEditModal = ({
                 Leave blank to keep current password
               </p>
             </div>
+          </TabsContent>
+
+          <TabsContent value="delete" className="space-y-4 mt-4">
+            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-destructive">Delete Account</h4>
+                  <p className="text-sm text-muted-foreground">
+                    This action is <strong>permanent</strong> and cannot be undone. All your data will be deleted, including:
+                  </p>
+                  <ul className="text-sm text-muted-foreground list-disc ml-4 space-y-1">
+                    <li>Your profile and avatar</li>
+                    <li>All messages you've sent</li>
+                    <li>Friends and friend requests</li>
+                    <li>Dating profile and matches</li>
+                    <li>Support tickets and history</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="delete-confirm">
+                Type <span className="font-mono font-bold text-destructive">DELETE</span> to confirm
+              </Label>
+              <Input
+                id="delete-confirm"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE here"
+                className="font-mono"
+              />
+            </div>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  className="w-full" 
+                  disabled={deleteConfirmText !== "DELETE" || deleting}
+                >
+                  {deleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  Delete My Account Permanently
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Final Confirmation
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you absolutely sure? This will permanently delete your account 
+                    and all associated data. This action cannot be reversed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Yes, Delete Everything
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </TabsContent>
         </Tabs>
 
