@@ -247,14 +247,15 @@ sudo docker compose pull 2>/dev/null || true
 
 # Stage 1: Start database first (required by everything)
 echo "  Stage 1: Starting database..."
-sudo docker compose up -d supabase-db
+sudo docker compose up -d db
 echo "  Waiting for database to initialize (20s)..."
 sleep 20
 
 # Stage 2: Wait for DB to be healthy
 echo "  Stage 2: Waiting for database health check..."
 for i in {1..30}; do
-  if sudo docker inspect supabase-db --format='{{.State.Health.Status}}' 2>/dev/null | grep -q healthy; then
+  DB_CID=$(sudo docker compose ps -q db 2>/dev/null || true)
+  if [ -n "$DB_CID" ] && sudo docker inspect "$DB_CID" --format='{{.State.Health.Status}}' 2>/dev/null | grep -q healthy; then
     echo "  ✓ Database is healthy"
     break
   fi
@@ -262,26 +263,43 @@ for i in {1..30}; do
   sleep 2
 done
 
+# Ensure analytics can connect to DB (match supabase_admin password to POSTGRES_PASSWORD)
+echo "  Stage 2b: Syncing supabase_admin password for analytics..."
+POSTGRES_PASSWORD_LOCAL=$(grep "^POSTGRES_PASSWORD=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' || true)
+DB_CID=$(sudo docker compose ps -q db 2>/dev/null || true)
+if [ -n "$POSTGRES_PASSWORD_LOCAL" ] && [ -n "$DB_CID" ]; then
+  sudo docker exec -i "$DB_CID" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<SQL
+ALTER USER supabase_admin WITH PASSWORD '${POSTGRES_PASSWORD_LOCAL}';
+SQL
+else
+  echo "  ⚠ Could not read POSTGRES_PASSWORD or locate db container; skipping password sync"
+fi
+
 # Stage 3: Start analytics in BACKGROUND (don't wait for health)
 echo "  Stage 3: Starting analytics in background (non-blocking)..."
-sudo docker compose up -d supabase-analytics --no-deps &
+sudo docker compose up -d analytics --no-deps &
 ANALYTICS_PID=$!
 
 # Stage 4: Start all other services immediately
 echo "  Stage 4: Starting remaining services..."
 sleep 3
 sudo docker compose up -d \
-  supabase-vector \
-  supabase-imgproxy \
-  supabase-meta \
-  supabase-pooler \
-  supabase-auth \
-  supabase-rest \
-  supabase-realtime \
-  supabase-storage \
-  supabase-edge-functions \
-  supabase-kong \
-  supabase-studio
+  vector \
+  imgproxy \
+  meta \
+  supavisor \
+  auth \
+  rest \
+  realtime \
+  storage \
+  functions \
+  email-relay
+
+# Start Kong without waiting for analytics health
+sudo docker compose up -d kong --no-deps
+
+# Studio is optional; start it last (and don't let analytics block it either)
+sudo docker compose up -d studio --no-deps
 
 # Wait for analytics background process to finish (just the command, not health)
 wait $ANALYTICS_PID 2>/dev/null || true
