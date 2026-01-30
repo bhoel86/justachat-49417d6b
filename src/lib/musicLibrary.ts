@@ -315,6 +315,7 @@ export const MUSIC_LIBRARY: Genre[] = [
       { title: 'Hello', artist: 'Adele', videoId: 'YQHsXMglC9A', genre: 'Pop' },
       { title: 'Stay', artist: 'The Kid LAROI & Justin Bieber', videoId: 'kTJczUoc26U', genre: 'Pop' },
       { title: 'Peaches', artist: 'Justin Bieber', videoId: 'tQ0yjYUFKAE', genre: 'Pop' },
+      { title: 'Die With A Smile', artist: 'Lady Gaga & Bruno Mars', videoId: 'kPa7bsKwL-c', genre: 'Pop' },
     ]
   },
   {
