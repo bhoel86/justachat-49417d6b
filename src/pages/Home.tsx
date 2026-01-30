@@ -57,18 +57,18 @@ interface RoomUserCounts {
 }
 
 const roomIcons: Record<string, React.ReactNode> = {
-  "general": <Hash className="w-8 h-8" />,
-  "adults-21-plus": <Shield className="w-8 h-8" />,
-  "music": <Music className="w-8 h-8" />,
-  "help": <HelpCircle className="w-8 h-8" />,
-  "games": <Gamepad2 className="w-8 h-8" />,
-  "politics": <Vote className="w-8 h-8" />,
-  "movies-tv": <Tv className="w-8 h-8" />,
-  "sports": <Dumbbell className="w-8 h-8" />,
-  "technology": <Cpu className="w-8 h-8" />,
-  "dating": <Heart className="w-8 h-8" />,
-  "lounge": <Coffee className="w-8 h-8" />,
-  "trivia": <MessageSquare className="w-8 h-8" />,
+  "general": <Hash className="w-4 h-4" />,
+  "adults-21-plus": <Shield className="w-4 h-4" />,
+  "music": <Music className="w-4 h-4" />,
+  "help": <HelpCircle className="w-4 h-4" />,
+  "games": <Gamepad2 className="w-4 h-4" />,
+  "politics": <Vote className="w-4 h-4" />,
+  "movies-tv": <Tv className="w-4 h-4" />,
+  "sports": <Dumbbell className="w-4 h-4" />,
+  "technology": <Cpu className="w-4 h-4" />,
+  "dating": <Heart className="w-4 h-4" />,
+  "lounge": <Coffee className="w-4 h-4" />,
+  "trivia": <MessageSquare className="w-4 h-4" />,
 };
 
 const roomColors: Record<string, string> = {
@@ -634,29 +634,29 @@ const Home = () => {
             </div>
 
             {/* Chat Rooms + Lobby Mirror Side by Side - Same Height */}
-            <div className="flex flex-col lg:flex-row lg:items-stretch gap-4 sm:gap-6" style={{ height: '580px' }}>
+            <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 sm:gap-4" style={{ height: '480px' }}>
               {/* Room Cards */}
-              <div className="lg:w-80 xl:w-96 flex-shrink-0 h-full">
-                <div className="rounded-xl sm:rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-3 sm:p-4 h-full overflow-hidden flex flex-col">
-                  <div className="mb-3 sm:mb-4 flex-shrink-0">
-                    <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">Chat Rooms</h2>
-                    <p className="text-muted-foreground text-xs sm:text-sm">Select a room to join</p>
+              <div className="lg:w-64 xl:w-72 flex-shrink-0 h-full">
+                <div className="rounded-lg sm:rounded-xl border border-border bg-card/50 backdrop-blur-sm p-2 sm:p-3 h-full overflow-hidden flex flex-col">
+                  <div className="mb-2 flex-shrink-0">
+                    <h2 className="text-sm sm:text-base font-bold mb-0.5">Chat Rooms</h2>
+                    <p className="text-muted-foreground text-[10px] sm:text-xs">Select a room to join</p>
                   </div>
 
                   {loadingChannels ? (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-1.5">
                       {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="h-16 sm:h-20 rounded-lg bg-card animate-pulse" />
+                        <div key={i} className="h-12 sm:h-14 rounded-md bg-card animate-pulse" />
                       ))}
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-2 lg:max-h-[320px] lg:overflow-y-auto lg:pr-2 scrollbar-thin">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-1.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
                         {channels.map((channel) => (
                           <button
                             key={channel.id}
                             onClick={() => handleJoinRoom(channel)}
-                            className="group relative h-16 sm:h-20 rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-1 active:scale-95 active:translate-y-0"
+                            className="group relative h-12 sm:h-14 rounded-md overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-200 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-0.5 active:scale-95"
                           >
                             {/* Background image */}
                             {roomBackgrounds[channel.name] && (
@@ -673,23 +673,17 @@ const Home = () => {
                             <div className="absolute inset-0 bg-black/40" />
                             
                             {/* Content - stacked vertically */}
-                            <div className="relative h-full flex flex-col items-center justify-center gap-1 px-2 py-2">
-                              <div className={`p-2 rounded-lg bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-md group-hover:scale-105 transition-transform`}>
-                                {roomIcons[channel.name] ? (
-                                  <div className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5">
-                                    {roomIcons[channel.name]}
-                                  </div>
-                                ) : (
-                                  <Hash className="w-5 h-5" />
-                                )}
+                            <div className="relative h-full flex flex-col items-center justify-center gap-0.5 px-1 py-1">
+                              <div className={`p-1 rounded bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-sm group-hover:scale-105 transition-transform`}>
+                                {roomIcons[channel.name] || <Hash className="w-3.5 h-3.5" />}
                               </div>
-                              <h3 className="font-semibold text-[10px] sm:text-xs text-white drop-shadow-md text-center leading-tight">
+                              <h3 className="font-semibold text-[8px] sm:text-[9px] text-white drop-shadow-md text-center leading-tight truncate w-full px-0.5">
                                 #{formatRoomName(channel.name)}
                               </h3>
                               {/* User count badge - includes bots */}
                               <div className="flex items-center gap-0.5 text-white/80">
-                                <Users className="w-2.5 h-2.5" />
-                                <span className="text-[9px] font-medium">{(roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name)}</span>
+                                <Users className="w-2 h-2" />
+                                <span className="text-[7px] font-medium">{(roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name)}</span>
                               </div>
                             </div>
 
@@ -700,113 +694,89 @@ const Home = () => {
                       </div>
                       
                       {/* Voice Chat Section */}
-                      <div className="mt-3 lg:mt-4">
+                      <div className="mt-2">
                         <Link
                           to="/voice-chat"
-                          className="group relative flex h-12 sm:h-14 w-full rounded-xl overflow-hidden bg-card border-2 border-violet-500/60 hover:border-violet-500 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/30 active:scale-[0.98]"
+                          className="group relative flex h-9 sm:h-10 w-full rounded-md overflow-hidden bg-card border border-violet-500/60 hover:border-violet-500 transition-all duration-200 hover:shadow-md hover:shadow-violet-500/20 active:scale-[0.98]"
                         >
-                          {/* Gradient background */}
                           <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 opacity-40 group-hover:opacity-60 transition-opacity" />
-                          
-                          {/* Dark overlay for readability */}
                           <div className="absolute inset-0 bg-black/30" />
-                          
-                          {/* Content */}
-                          <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg group-hover:scale-110 transition-transform">
-                              <Radio className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <div className="relative h-full flex items-center gap-2 px-2">
+                            <div className="p-1 rounded bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm group-hover:scale-105 transition-transform">
+                              <Radio className="w-3 h-3" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                                <span className="animate-pulse">🎙️</span> Voice Chat
+                              <h3 className="font-bold text-[9px] sm:text-[10px] text-white drop-shadow-md whitespace-nowrap flex items-center gap-0.5">
+                                🎙️ Voice
                               </h3>
-                              <span className="text-[9px] sm:text-[10px] text-white/80">Broadcast live</span>
+                              <span className="text-[7px] text-white/80">Live broadcast</span>
                             </div>
                           </div>
                         </Link>
                       </div>
                       
                       {/* Video Chat Section */}
-                      <div className="mt-2">
+                      <div className="mt-1.5">
                         <Link
                           to="/video-chat"
-                          className="group relative flex h-12 sm:h-14 w-full rounded-xl overflow-hidden bg-card border-2 border-green-500/60 hover:border-green-500 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 active:scale-[0.98]"
+                          className="group relative flex h-9 sm:h-10 w-full rounded-md overflow-hidden bg-card border border-green-500/60 hover:border-green-500 transition-all duration-200 hover:shadow-md hover:shadow-green-500/20 active:scale-[0.98]"
                         >
-                          {/* Gradient background */}
                           <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 opacity-40 group-hover:opacity-60 transition-opacity" />
-                          
-                          {/* Dark overlay for readability */}
                           <div className="absolute inset-0 bg-black/30" />
-                          
-                          {/* Content */}
-                          <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg group-hover:scale-110 transition-transform">
-                              <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <div className="relative h-full flex items-center gap-2 px-2">
+                            <div className="p-1 rounded bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-sm group-hover:scale-105 transition-transform">
+                              <Camera className="w-3 h-3" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                                <Camera className="w-3 h-3" /> Cams
+                              <h3 className="font-bold text-[9px] sm:text-[10px] text-white drop-shadow-md whitespace-nowrap flex items-center gap-0.5">
+                                📹 Cams
                               </h3>
-                              <span className="text-[9px] sm:text-[10px] text-white/80">Webcam live</span>
+                              <span className="text-[7px] text-white/80">Webcam live</span>
                             </div>
                           </div>
                         </Link>
                       </div>
                       
                       {/* Games Section */}
-                      <div className="mt-2">
+                      <div className="mt-1.5">
                         <Link
                           to="/games"
-                          className="group relative flex h-10 sm:h-12 w-full rounded-xl overflow-hidden bg-card border-2 border-orange-500/60 hover:border-orange-500 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 active:scale-[0.98]"
+                          className="group relative flex h-8 sm:h-9 w-full rounded-md overflow-hidden bg-card border border-orange-500/60 hover:border-orange-500 transition-all duration-200 hover:shadow-md hover:shadow-orange-500/20 active:scale-[0.98]"
                         >
-                          {/* Gradient background */}
                           <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-yellow-600 opacity-40 group-hover:opacity-60 transition-opacity" />
-                          
-                          {/* Dark overlay for readability */}
                           <div className="absolute inset-0 bg-black/30" />
-                          
-                          {/* Content */}
-                          <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                            <div className="p-1 sm:p-1.5 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-600 text-white shadow-lg group-hover:scale-110 transition-transform">
-                              <Gamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <div className="relative h-full flex items-center gap-2 px-2">
+                            <div className="p-1 rounded bg-gradient-to-br from-orange-500 to-yellow-600 text-white shadow-sm group-hover:scale-105 transition-transform">
+                              <Gamepad2 className="w-2.5 h-2.5" />
                             </div>
-                            <div className="flex flex-col">
-                              <h3 className="font-bold text-[10px] sm:text-xs text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                                <Gamepad2 className="w-2.5 h-2.5" /> Games
-                              </h3>
-                            </div>
+                            <h3 className="font-bold text-[8px] sm:text-[9px] text-white drop-shadow-md whitespace-nowrap">
+                              🎮 Games
+                            </h3>
                           </div>
                         </Link>
                       </div>
                       
                       {/* Dating Section */}
-                      <div className="mt-2">
+                      <div className="mt-1.5">
                         <Link
                           to="/dating"
-                          className="group relative flex h-12 sm:h-14 w-full rounded-xl overflow-hidden bg-card border-2 border-pink-500/60 hover:border-pink-500 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/30 active:scale-[0.98]"
+                          className="group relative flex h-9 sm:h-10 w-full rounded-md overflow-hidden bg-card border border-pink-500/60 hover:border-pink-500 transition-all duration-200 hover:shadow-md hover:shadow-pink-500/20 active:scale-[0.98]"
                         >
-                          {/* Background image */}
                           <div 
                             className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
                             style={{ backgroundImage: `url(${datingBg})` }}
                           />
-                          
-                          {/* Gradient overlay */}
                           <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-30 group-hover:opacity-40 transition-opacity" />
-                          
-                          {/* Dark overlay for readability */}
                           <div className="absolute inset-0 bg-black/30" />
-                          
-                          {/* Content */}
-                          <div className="relative h-full flex items-center gap-3 px-3 sm:px-4">
-                            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg group-hover:scale-110 transition-transform">
-                              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <div className="relative h-full flex items-center gap-2 px-2">
+                            <div className="p-1 rounded bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-sm group-hover:scale-105 transition-transform">
+                              <Heart className="w-3 h-3" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-xs sm:text-sm text-white drop-shadow-lg whitespace-nowrap flex items-center gap-1">
-                                <span className="animate-pulse">💕</span> Dating
+                              <h3 className="font-bold text-[9px] sm:text-[10px] text-white drop-shadow-md whitespace-nowrap flex items-center gap-0.5">
+                                💕 Dating
                               </h3>
-                              <span className="text-[9px] sm:text-[10px] text-white/80">Find your match</span>
+                              <span className="text-[7px] text-white/80">Find your match</span>
                             </div>
                           </div>
                         </Link>
