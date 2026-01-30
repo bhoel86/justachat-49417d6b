@@ -323,6 +323,30 @@ Path: /home/unix/supabase/docker
 Main config: /home/unix/supabase/docker/.env
 Compose file: /home/unix/supabase/docker/docker-compose.yml
 Functions env: /home/unix/supabase/docker/volumes/functions/.env
+Functions router: /home/unix/supabase/docker/volumes/functions/main/index.ts
+
+
+EDGE FUNCTION ROUTER (CRITICAL)
+-------------------------------
+The edge-runtime requires a "main" service that acts as a router to dispatch
+requests to individual functions. This is created automatically by rebuild-vps-v2.sh.
+
+Location: /home/unix/supabase/docker/volumes/functions/main/index.ts
+
+If edge functions return only {"healthy":true} instead of actual responses:
+1. The router is missing or incorrect
+2. Run the edge-health-check script to diagnose:
+   bash /var/www/justachat/public/vps-deploy/edge-health-check.sh
+
+To manually recreate the router, see the STEP 8 section in rebuild-vps-v2.sh
+or run the fix script that was used to resolve this issue.
+
+The router dispatches requests like:
+  /verify-captcha → /home/deno/functions/verify-captcha/index.ts
+  /chat-bot      → /home/deno/functions/chat-bot/index.ts
+
+Important: Files must be owned by UID 1000 (deno user):
+  sudo chown -R 1000:1000 ~/supabase/docker/volumes/functions
 
 
 EMAIL WEBHOOK SERVICE
@@ -373,6 +397,15 @@ Manual renewal:
 7. TROUBLESHOOTING
 ================================================================================
 
+HEALTH CHECK SCRIPTS:
+---------------------
+# Full edge function + CAPTCHA health check (run after restarts!)
+bash /var/www/justachat/public/vps-deploy/edge-health-check.sh
+
+# General VPS health check
+bash /var/www/justachat/public/vps-deploy/health-check.sh
+
+
 CHECK ALL SERVICES STATUS:
 --------------------------
 sudo systemctl status nginx
@@ -395,8 +428,32 @@ docker logs supabase-auth -f
 # Supabase Database
 docker logs supabase-db -f
 
+# Edge Functions (check for routing errors)
+docker logs supabase-edge-functions -f
+
 # All Supabase
 cd ~/supabase/docker && docker compose logs -f
+
+
+EDGE FUNCTION TROUBLESHOOTING:
+------------------------------
+If edge functions return {"healthy":true} instead of actual responses:
+
+1. Check router exists:
+   cat ~/supabase/docker/volumes/functions/main/index.ts
+
+2. Verify it has dynamic imports (look for "import(" pattern):
+   grep -q "import(" ~/supabase/docker/volumes/functions/main/index.ts && echo "OK" || echo "MISSING"
+
+3. Check file ownership (must be UID 1000):
+   ls -la ~/supabase/docker/volumes/functions/main/
+
+4. Test direct routing:
+   curl -X POST http://127.0.0.1:9000/verify-captcha \
+     -H "Content-Type: application/json" \
+     -d '{"token":"test"}'
+
+5. If still broken, recreate the router from rebuild-vps-v2.sh STEP 8
 
 
 RESTART EVERYTHING:
