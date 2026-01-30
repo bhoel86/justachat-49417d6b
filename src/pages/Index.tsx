@@ -5,6 +5,9 @@ import ChatRoom from "@/components/chat/ChatRoom";
 
 const LAST_CHANNEL_KEY = 'jac-last-channel';
 
+// Check if we're processing an OAuth callback (VPS Google Sign-In fix)
+const hasOAuthCallback = window.location.hash.includes('access_token');
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -40,7 +43,10 @@ const Index = () => {
     }
   }, [channelName, navigate]);
 
+  // Don't redirect while processing OAuth callback - wait for session to be established
   useEffect(() => {
+    if (hasOAuthCallback) return;
+    
     if (!loading && !user) {
       navigate("/home");
     }

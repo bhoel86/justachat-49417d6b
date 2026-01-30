@@ -108,6 +108,9 @@ const formatRoomName = (name: string) => {
     .replace('21 Plus', '21+');
 };
 
+// Check if we're processing an OAuth callback (VPS Google Sign-In fix)
+const hasOAuthCallback = window.location.hash.includes('access_token');
+
 const Home = () => {
   const { user, loading, signOut, isOwner, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -125,7 +128,10 @@ const Home = () => {
     });
   }, []);
 
+  // Don't redirect while processing OAuth callback - wait for session to be established
   useEffect(() => {
+    if (hasOAuthCallback) return;
+    
     if (!loading && !user) {
       navigate("/home");
     }
