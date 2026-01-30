@@ -12,6 +12,7 @@ import TurnstileCaptcha from "@/components/auth/TurnstileCaptcha";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getVersionString } from "@/lib/version";
 import { clearAuthStorage } from "@/lib/authStorage";
+import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 
@@ -627,7 +628,12 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
+      {/* Theme selector in top right */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeSelector />
+      </div>
+
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RadioProvider } from "@/contexts/RadioContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Home from "./pages/Home";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -40,50 +41,52 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <RadioProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/chat" element={<Index />} />
-              <Route path="/chat/:channelName" element={<Index />} />
-              <Route path="/home" element={<Auth />} />
-              <Route path="/map" element={<MapView />} />
-              <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/admin/bans" element={<AdminBans />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/api" element={<AdminAPI />} />
-              <Route path="/admin/emails" element={<AdminEmails />} />
-              <Route path="/admin/messages" element={<AdminMessages />} />
-              <Route path="/admin/mutes" element={<AdminMutes />} />
-              <Route path="/admin/support" element={<AdminSupport />} />
-              <Route path="/admin/bots" element={<AdminBots />} />
-              <Route path="/admin/klines" element={<AdminKlines />} />
-              <Route path="/admin/minors" element={<AdminMinors />} />
-              <Route path="/admin/deploy" element={<AdminDeploy />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/verify-consent" element={<VerifyConsent />} />
-              <Route path="/download-proxy" element={<DownloadProxy />} />
-              <Route path="/downloads" element={<ClientDownload />} />
-              <Route path="/dating" element={<Dating />} />
-              <Route path="/ethos" element={<Ethos />} />
-              <Route path="/games" element={<Games />} />
-              <Route path="/voice-chat" element={<VoiceChat />} />
-              <Route path="/video-chat" element={<VideoChat />} />
-              <Route path="/legal" element={<Legal />} />
-              <Route path="/cookies" element={<CookiePolicy />} />
-              <Route path="/guidelines" element={<CommunityGuidelines />} />
-              <Route path="/health" element={<Health />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </RadioProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RadioProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/chat" element={<Index />} />
+                <Route path="/chat/:channelName" element={<Index />} />
+                <Route path="/home" element={<Auth />} />
+                <Route path="/map" element={<MapView />} />
+                <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/admin/bans" element={<AdminBans />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/api" element={<AdminAPI />} />
+                <Route path="/admin/emails" element={<AdminEmails />} />
+                <Route path="/admin/messages" element={<AdminMessages />} />
+                <Route path="/admin/mutes" element={<AdminMutes />} />
+                <Route path="/admin/support" element={<AdminSupport />} />
+                <Route path="/admin/bots" element={<AdminBots />} />
+                <Route path="/admin/klines" element={<AdminKlines />} />
+                <Route path="/admin/minors" element={<AdminMinors />} />
+                <Route path="/admin/deploy" element={<AdminDeploy />} />
+                <Route path="/help" element={<Help />} />
+                <Route path="/verify-consent" element={<VerifyConsent />} />
+                <Route path="/download-proxy" element={<DownloadProxy />} />
+                <Route path="/downloads" element={<ClientDownload />} />
+                <Route path="/dating" element={<Dating />} />
+                <Route path="/ethos" element={<Ethos />} />
+                <Route path="/games" element={<Games />} />
+                <Route path="/voice-chat" element={<VoiceChat />} />
+                <Route path="/video-chat" element={<VideoChat />} />
+                <Route path="/legal" element={<Legal />} />
+                <Route path="/cookies" element={<CookiePolicy />} />
+                <Route path="/guidelines" element={<CommunityGuidelines />} />
+                <Route path="/health" element={<Health />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </RadioProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

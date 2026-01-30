@@ -1,11 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=VT323&family=Press+Start+2P&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   THEME DEFINITIONS
+   ============================================ */
+
 @layer base {
-  :root {
+  /* JAC Modern Theme (Default) */
+  :root,
+  .theme-jac {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
 
@@ -50,6 +56,68 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222 47% 16%;
     --sidebar-ring: 199 89% 48%;
+
+    /* Theme-specific */
+    --theme-font-body: 'Inter', sans-serif;
+    --theme-font-heading: 'Space Grotesk', sans-serif;
+    --theme-border-style: solid;
+    --theme-border-width: 1px;
+    --theme-window-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  }
+
+  /* 80s Retro Windows Theme */
+  .theme-retro80s {
+    --background: 330 70% 75%;
+    --foreground: 0 0% 10%;
+
+    --card: 270 50% 65%;
+    --card-foreground: 0 0% 10%;
+
+    --popover: 50 80% 70%;
+    --popover-foreground: 0 0% 10%;
+
+    --primary: 175 70% 50%;
+    --primary-foreground: 0 0% 10%;
+
+    --secondary: 270 50% 65%;
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 330 50% 80%;
+    --muted-foreground: 0 0% 30%;
+
+    --accent: 50 90% 60%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 10%;
+    --input: 0 0% 95%;
+    --ring: 175 70% 50%;
+
+    --radius: 0;
+
+    /* Custom retro variables */
+    --jac-gradient: linear-gradient(180deg, hsl(175 70% 50%) 0%, hsl(175 70% 40%) 100%);
+    --jac-glow: 3px 3px 0px hsl(0 0% 0%);
+    --jac-bubble-user: 270 50% 65%;
+    --jac-bubble-other: 50 80% 70%;
+
+    --sidebar-background: 270 50% 60%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 175 70% 50%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 50 90% 60%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 175 70% 50%;
+
+    /* Theme-specific */
+    --theme-font-body: 'VT323', monospace;
+    --theme-font-heading: 'Press Start 2P', monospace;
+    --theme-border-style: solid;
+    --theme-border-width: 3px;
+    --theme-window-shadow: 4px 4px 0px hsl(0 0% 0%);
   }
 
   .dark {
@@ -61,6 +129,7 @@
 @layer base {
   * {
     @apply border-border;
+    border-style: var(--theme-border-style);
   }
 
   html, body, #root {
@@ -68,12 +137,37 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--theme-font-body);
   }
 
   h1, h2, h3, .brand {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--theme-font-heading);
+  }
+
+  /* Retro theme specific overrides */
+  .theme-retro80s h1,
+  .theme-retro80s h2,
+  .theme-retro80s h3,
+  .theme-retro80s .brand {
+    font-size: 0.8em;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .theme-retro80s .rounded-lg,
+  .theme-retro80s .rounded-md,
+  .theme-retro80s .rounded-xl,
+  .theme-retro80s .rounded-full {
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s button,
+  .theme-retro80s .card,
+  .theme-retro80s input,
+  .theme-retro80s textarea {
+    border-width: var(--theme-border-width) !important;
+    box-shadow: var(--theme-window-shadow);
   }
 }
 
@@ -91,6 +185,34 @@
 
   .jac-gradient-bg {
     background: var(--jac-gradient);
+  }
+
+  /* Retro window title bar */
+  .retro-title-bar {
+    background: var(--jac-gradient);
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: var(--theme-border-width) solid hsl(var(--border));
+  }
+
+  .retro-window-controls {
+    display: flex;
+    gap: 4px;
+  }
+
+  .retro-window-btn {
+    width: 16px;
+    height: 16px;
+    background: hsl(var(--muted));
+    border: 2px solid hsl(var(--border));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
   }
 }
 
@@ -146,4 +268,14 @@
   50% {
     box-shadow: 0 0 40px hsl(199 89% 48% / 0.5);
   }
+}
+
+/* Retro theme animations */
+.theme-retro80s .animate-pulse-glow {
+  animation: retroBlink 1s step-end infinite;
+}
+
+@keyframes retroBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }

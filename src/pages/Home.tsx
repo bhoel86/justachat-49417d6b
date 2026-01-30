@@ -24,8 +24,7 @@ import {
 import LobbyMirrorRoom from "@/components/home/LobbyMirrorRoom";
 import PayPalDonateModal from "@/components/home/PayPalDonateModal";
 import { getRoomBotCount } from "@/lib/chatBots";
-
-
+import { ThemeSelector } from "@/components/theme/ThemeSelector";
 // Room background images
 import generalBg from "@/assets/rooms/general-bg.jpg";
 import adultsBg from "@/assets/rooms/adults-bg.jpg";
@@ -394,6 +393,9 @@ const Home = () => {
             </DropdownMenu>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            {/* Theme Selector */}
+            <ThemeSelector />
+            
             {/* Admin Dropdown - Owner/Admin Only */}
             {(isOwner || isAdmin) && (
               <DropdownMenu>
