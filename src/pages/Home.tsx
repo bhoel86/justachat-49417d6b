@@ -108,9 +108,6 @@ const formatRoomName = (name: string) => {
     .replace('21 Plus', '21+');
 };
 
-// Check if we're processing an OAuth callback (VPS Google Sign-In fix)
-const hasOAuthCallback = window.location.hash.includes('access_token');
-
 const Home = () => {
   const { user, loading, signOut, isOwner, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -121,6 +118,21 @@ const Home = () => {
   const [showDonateModal, setShowDonateModal] = useState(false);
   
 
+  // OAuth callback processing guard (VPS):
+  // IMPORTANT: must be reactive (not module-level), otherwise it can get stuck "true"
+  // after we clear the hash, causing a blank screen when user is null.
+  const [oauthProcessing, setOauthProcessing] = useState(() =>
+    typeof window !== "undefined" && window.location.hash.includes("access_token")
+  );
+
+  // Safety fallback: if session isn't established shortly after returning from Google,
+  // stop waiting and let normal redirect logic run.
+  useEffect(() => {
+    if (!oauthProcessing) return;
+    const t = window.setTimeout(() => setOauthProcessing(false), 4000);
+    return () => window.clearTimeout(t);
+  }, [oauthProcessing]);
+
   // Scroll to top on page load - use requestAnimationFrame to ensure it runs after render
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -130,12 +142,12 @@ const Home = () => {
 
   // Don't redirect while processing OAuth callback - wait for session to be established
   useEffect(() => {
-    if (hasOAuthCallback) return;
+    if (oauthProcessing) return;
     
     if (!loading && !user) {
       navigate("/home");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, oauthProcessing]);
 
   useEffect(() => {
     const fetchChannels = async () => {
@@ -202,7 +214,30 @@ const Home = () => {
   }
 
   if (!user) {
-    return null;
+    // Prevent blank screen on OAuth callback failure
+    if (oauthProcessing) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-12 w-12 rounded-xl jac-gradient-bg animate-pulse" />
+            <div className="text-center">
+              <p className="text-foreground font-medium">Finishing sign-in…</p>
+              <p className="text-sm text-muted-foreground">If this takes more than a moment, you’ll be sent back to login.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Redirect will happen via the effect above; show a lightweight placeholder meanwhile.
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 rounded-xl jac-gradient-bg animate-pulse" />
+          <p className="text-sm text-muted-foreground">Redirecting to login…</p>
+        </div>
+      </div>
+    );
   }
 
   return (
