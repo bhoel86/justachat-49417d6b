@@ -531,7 +531,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
               )}
               <span 
                 className={cn(
-                  "flex-1 truncate text-xs font-medium",
+                  "flex-1 truncate text-xs font-medium uppercase",
                   isSelected && !hasCustomColor && !hasCustomGradient ? theme.textColor : "text-muted-foreground hover:text-foreground"
                 )}
                 style={getChannelNameStyle()}
