@@ -75,25 +75,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const hash = window.location.hash;
     if (hash && hash.includes('access_token')) {
       console.log('[Auth] Detected OAuth callback hash, setting session from URL...');
-      // The Supabase client will automatically parse this with detectSessionInUrl: true
-      // But we need to ensure it happens before other code runs
-      supabase.auth.getSession().then(({ data: { session }, error }) => {
-        if (error) {
-          console.error('[Auth] Error parsing OAuth hash:', error);
-        }
-        if (session) {
-          console.log('[Auth] Session established from OAuth hash');
-          setSession(session);
-          setUser(session.user);
-          setLoading(false);
-          checkUserRole(session.user.id);
-          checkMinorStatus(session.user.id);
-          // Clear the hash
+      // Some self-hosted + proxy setups don't reliably auto-ingest the hash.
+      // So we explicitly parse it and call setSession(), which will trigger SIGNED_IN.
+      const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+
+      (async () => {
+        try {
+          if (accessToken && refreshToken) {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (error) {
+              console.error('[Auth] Failed to set session from OAuth hash:', error);
+            } else if (data.session) {
+              console.log('[Auth] Session established from OAuth hash (manual setSession)');
+              setSession(data.session);
+              setUser(data.session.user);
+              setLoading(false);
+              checkUserRole(data.session.user.id);
+              checkMinorStatus(data.session.user.id);
+            }
+          } else {
+            console.warn('[Auth] OAuth hash missing access_token or refresh_token');
+          }
+        } finally {
+          // Always clear the hash to avoid leaking tokens and to prevent re-processing on refresh.
           window.history.replaceState(null, '', window.location.pathname);
-        } else {
-          console.log('[Auth] No session from hash, checking existing...');
         }
-      });
+      })();
     } else {
       // No OAuth callback, check for existing session
       supabase.auth.getSession().then(({ data: { session } }) => {
