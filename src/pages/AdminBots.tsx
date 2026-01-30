@@ -402,37 +402,65 @@ const AdminBots = () => {
           {/* Moderator Bots Toggle */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Bot className="h-5 w-5 text-primary" />
-                Moderator Bots
+              <CardTitle className="flex items-center justify-between text-base">
+                <span className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  Moderator Bots
+                </span>
+                <Switch
+                  checked={settings?.moderator_bots_enabled ?? true}
+                  onCheckedChange={handleModeratorBotsToggle}
+                  disabled={saving}
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Keep moderator bots running</p>
-                    <p className="text-xs text-muted-foreground">
-                      Pixel (video) and Echo (voice) stay active even when main bots are off
-                    </p>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Keep moderator bots running</p>
+                  <p className="text-xs text-muted-foreground">
+                    Room moderator bots stay active even when main bots are off
+                  </p>
+                </div>
+                <ScrollArea className="h-[200px]">
+                  <div className="space-y-3">
+                    {/* Video/Voice moderators */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Media Rooms</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant={settings?.moderator_bots_enabled ? "default" : "secondary"}>
+                          Pixel (Video)
+                        </Badge>
+                        <Badge variant={settings?.moderator_bots_enabled ? "default" : "secondary"}>
+                          Echo (Voice)
+                        </Badge>
+                      </div>
+                    </div>
+                    {/* Room-specific moderators */}
+                    {ROOM_NAMES.map((room) => {
+                      const roomBots = getRoomBots(room);
+                      if (roomBots.length === 0) return null;
+                      const firstBot = roomBots[0];
+                      return (
+                        <div key={room} className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            #{formatRoomName(room)}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge 
+                              variant={settings?.moderator_bots_enabled && isRoomEnabled(room) ? "default" : "secondary"}
+                            >
+                              {firstBot.username}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <Switch
-                    checked={settings?.moderator_bots_enabled ?? true}
-                    onCheckedChange={handleModeratorBotsToggle}
-                    disabled={saving}
-                  />
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <Badge variant={settings?.moderator_bots_enabled ? "default" : "secondary"}>
-                    Pixel
-                  </Badge>
-                  <Badge variant={settings?.moderator_bots_enabled ? "default" : "secondary"}>
-                    Echo
-                  </Badge>
-                  <span className="text-muted-foreground ml-2">
-                    {settings?.moderator_bots_enabled ? "Always on" : "Follow main toggle"}
-                  </span>
-                </div>
+                </ScrollArea>
+                <p className="text-xs text-muted-foreground">
+                  {settings?.moderator_bots_enabled ? "Always on" : "Follow main toggle"}
+                </p>
               </div>
             </CardContent>
           </Card>
