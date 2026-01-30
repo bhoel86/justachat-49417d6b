@@ -443,7 +443,13 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
     }));
   }, [channelName]);
 
-  const onlineMembers = [...members.filter(m => m.isOnline), ...simulatedUsers];
+  // Group online members by role
+  const allOnlineMembers = [...members.filter(m => m.isOnline), ...simulatedUsers];
+  const onlineOwners = allOnlineMembers.filter(m => m.role === 'owner');
+  const onlineAdmins = allOnlineMembers.filter(m => m.role === 'admin');
+  const onlineModerators = allOnlineMembers.filter(m => m.role === 'moderator');
+  const onlineUsers = allOnlineMembers.filter(m => m.role === 'user');
+  
   const offlineMembers = members.filter(m => !m.isOnline);
 
   if (loading) {
@@ -516,14 +522,117 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
               </div>
             </div>
 
-            {/* Online Members */}
-            {onlineMembers.length > 0 && (
-              <div className="mb-4 p-2 rounded-lg bg-muted/40 border border-border/50">
-                <p className="text-xs font-medium text-muted-foreground uppercase px-1 mb-2">
-                  Online — {onlineMembers.length}
+            {/* Online Staff - Owners */}
+            {onlineOwners.length > 0 && (
+              <div className="mb-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <p className="text-xs font-medium text-amber-400 uppercase px-1 mb-2 flex items-center gap-1.5">
+                  <Crown className="h-3 w-3" />
+                  Owners — {onlineOwners.length}
                 </p>
                 <div className="space-y-1">
-                  {onlineMembers.map((member) => (
+                  {onlineOwners.map((member) => (
+                    <MemberItem 
+                      key={member.user_id} 
+                      member={member} 
+                      canManage={canManageRole(member)}
+                      canModerate={canModerate(member)}
+                      canKline={canKline(member)}
+                      availableRoles={getAvailableRoles(member)}
+                      onRoleChange={handleRoleChange}
+                      onBan={() => handleBan(member)}
+                      onKick={() => handleKick(member)}
+                      onMute={(duration) => handleMute(member, duration)}
+                      onKline={() => handleKline(member)}
+                      onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
+                      onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
+                      isCurrentUser={member.user_id === user?.id}
+                      onProfileClick={member.user_id === user?.id 
+                        ? () => setProfileModalOpen(true) 
+                        : () => setViewProfileTarget(member)}
+                      currentlyPlaying={listeningUsers?.get(member.user_id) || null}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Online Staff - Admins */}
+            {onlineAdmins.length > 0 && (
+              <div className="mb-3 p-2 rounded-lg bg-red-500/10 border border-red-500/30">
+                <p className="text-xs font-medium text-red-400 uppercase px-1 mb-2 flex items-center gap-1.5">
+                  <ShieldCheck className="h-3 w-3" />
+                  Admins — {onlineAdmins.length}
+                </p>
+                <div className="space-y-1">
+                  {onlineAdmins.map((member) => (
+                    <MemberItem 
+                      key={member.user_id} 
+                      member={member} 
+                      canManage={canManageRole(member)}
+                      canModerate={canModerate(member)}
+                      canKline={canKline(member)}
+                      availableRoles={getAvailableRoles(member)}
+                      onRoleChange={handleRoleChange}
+                      onBan={() => handleBan(member)}
+                      onKick={() => handleKick(member)}
+                      onMute={(duration) => handleMute(member, duration)}
+                      onKline={() => handleKline(member)}
+                      onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
+                      onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
+                      isCurrentUser={member.user_id === user?.id}
+                      onProfileClick={member.user_id === user?.id 
+                        ? () => setProfileModalOpen(true) 
+                        : () => setViewProfileTarget(member)}
+                      currentlyPlaying={listeningUsers?.get(member.user_id) || null}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Online Staff - Moderators */}
+            {onlineModerators.length > 0 && (
+              <div className="mb-3 p-2 rounded-lg bg-primary/10 border border-primary/30">
+                <p className="text-xs font-medium text-primary uppercase px-1 mb-2 flex items-center gap-1.5">
+                  <Shield className="h-3 w-3" />
+                  Moderators — {onlineModerators.length}
+                </p>
+                <div className="space-y-1">
+                  {onlineModerators.map((member) => (
+                    <MemberItem 
+                      key={member.user_id} 
+                      member={member} 
+                      canManage={canManageRole(member)}
+                      canModerate={canModerate(member)}
+                      canKline={canKline(member)}
+                      availableRoles={getAvailableRoles(member)}
+                      onRoleChange={handleRoleChange}
+                      onBan={() => handleBan(member)}
+                      onKick={() => handleKick(member)}
+                      onMute={(duration) => handleMute(member, duration)}
+                      onKline={() => handleKline(member)}
+                      onPmClick={member.user_id !== user?.id && onOpenPm ? () => onOpenPm(member.user_id, member.username) : undefined}
+                      onAction={member.user_id !== user?.id && onAction ? (msg) => onAction(member.username, msg) : undefined}
+                      isCurrentUser={member.user_id === user?.id}
+                      onProfileClick={member.user_id === user?.id 
+                        ? () => setProfileModalOpen(true) 
+                        : () => setViewProfileTarget(member)}
+                      currentlyPlaying={listeningUsers?.get(member.user_id) || null}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Online Users */}
+            {onlineUsers.length > 0 && (
+              <div className="mb-4 p-2 rounded-lg bg-muted/40 border border-border/50">
+                <p className="text-xs font-medium text-muted-foreground uppercase px-1 mb-2 flex items-center gap-1.5">
+                  <Users className="h-3 w-3" />
+                  Online — {onlineUsers.length}
+                </p>
+                <div className="space-y-1">
+                  {onlineUsers.map((member) => (
                     <MemberItem 
                       key={member.user_id} 
                       member={member} 
