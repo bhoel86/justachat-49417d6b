@@ -637,16 +637,22 @@ const Home = () => {
             <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 sm:gap-4" style={{ height: '480px' }}>
               {/* Room Cards */}
               <div className="lg:w-64 xl:w-72 flex-shrink-0 h-full">
-                <div className="rounded-lg sm:rounded-xl border border-border bg-card/50 backdrop-blur-sm p-2 sm:p-3 h-full overflow-hidden flex flex-col">
+                <div className={`p-2 sm:p-3 h-full overflow-hidden flex flex-col ${
+                  isRetro 
+                    ? 'bg-secondary border-[3px] border-foreground' 
+                    : 'rounded-lg sm:rounded-xl border border-border bg-card/50 backdrop-blur-sm'
+                }`} style={isRetro ? { boxShadow: '4px 4px 0px black' } : undefined}>
                   <div className="mb-2 flex-shrink-0">
-                    <h2 className="text-sm sm:text-base font-bold mb-0.5">Chat Rooms</h2>
+                    <h2 className={`font-bold mb-0.5 ${isRetro ? 'text-xs uppercase tracking-wide' : 'text-sm sm:text-base'}`}>
+                      {isRetro ? '📁 Chat Rooms' : 'Chat Rooms'}
+                    </h2>
                     <p className="text-muted-foreground text-[10px] sm:text-xs">Select a room to join</p>
                   </div>
 
                   {loadingChannels ? (
                     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-1.5">
                       {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="h-12 sm:h-14 rounded-md bg-card animate-pulse" />
+                        <div key={i} className={`h-12 sm:h-14 bg-card animate-pulse ${isRetro ? 'border-2 border-foreground' : 'rounded-md'}`} />
                       ))}
                     </div>
                   ) : (
@@ -656,39 +662,54 @@ const Home = () => {
                           <button
                             key={channel.id}
                             onClick={() => handleJoinRoom(channel)}
-                            className="group relative h-12 sm:h-14 rounded-md overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-200 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-0.5 active:scale-95"
+                            className={`group relative h-12 sm:h-14 overflow-hidden bg-card transition-all duration-200 active:scale-95 ${
+                              isRetro 
+                                ? 'border-[2px] border-foreground hover:bg-accent' 
+                                : 'rounded-md border border-border hover:border-primary/50 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-0.5'
+                            }`}
+                            style={isRetro ? { boxShadow: '2px 2px 0px black' } : undefined}
                           >
-                            {/* Background image */}
-                            {roomBackgrounds[channel.name] && (
+                            {/* Background image - hidden in retro mode */}
+                            {!isRetro && roomBackgrounds[channel.name] && (
                               <div 
                                 className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
                                 style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
                               />
                             )}
                             
-                            {/* Gradient overlay */}
-                            <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                            {/* Gradient overlay - hidden in retro */}
+                            {!isRetro && (
+                              <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                            )}
                             
-                            {/* Dark overlay for readability */}
-                            <div className="absolute inset-0 bg-black/40" />
+                            {/* Dark overlay for readability - hidden in retro */}
+                            {!isRetro && <div className="absolute inset-0 bg-black/40" />}
                             
                             {/* Content - stacked vertically */}
                             <div className="relative h-full flex flex-col items-center justify-center gap-0.5 px-1.5 py-1">
-                              <div className={`p-1.5 rounded bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} text-white shadow-sm group-hover:scale-105 transition-transform`}>
+                              <div className={`p-1.5 text-white ${
+                                isRetro 
+                                  ? 'bg-primary border border-foreground' 
+                                  : `rounded bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} shadow-sm group-hover:scale-105 transition-transform`
+                              }`}>
                                 {roomIcons[channel.name] || <Hash className="w-3.5 h-3.5" />}
                               </div>
-                              <h3 className="font-bold text-[10px] sm:text-xs text-white drop-shadow-lg text-center leading-tight truncate w-full">
+                              <h3 className={`text-center leading-tight truncate w-full ${
+                                isRetro 
+                                  ? 'font-bold text-[9px] sm:text-[10px] text-foreground uppercase' 
+                                  : 'font-bold text-[10px] sm:text-xs text-white drop-shadow-lg'
+                              }`}>
                                 #{formatRoomName(channel.name)}
                               </h3>
                               {/* User count badge - includes bots */}
-                              <div className="flex items-center gap-0.5 text-white/90">
+                              <div className={`flex items-center gap-0.5 ${isRetro ? 'text-foreground/80' : 'text-white/90'}`}>
                                 <Users className="w-2.5 h-2.5" />
                                 <span className="text-[8px] sm:text-[9px] font-medium">{(roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name)}</span>
                               </div>
                             </div>
 
-                            {/* Hover effect overlay */}
-                            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            {/* Hover effect overlay - modern only */}
+                            {!isRetro && <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />}
                           </button>
                         ))}
                       </div>
@@ -697,19 +718,24 @@ const Home = () => {
                       <div className="mt-2">
                         <Link
                           to="/voice-chat"
-                          className="group relative flex h-9 sm:h-10 w-full rounded-md overflow-hidden bg-card border border-violet-500/60 hover:border-violet-500 transition-all duration-200 hover:shadow-md hover:shadow-violet-500/20 active:scale-[0.98]"
+                          className={`group relative flex h-9 sm:h-10 w-full overflow-hidden bg-card transition-all duration-200 active:scale-[0.98] ${
+                            isRetro 
+                              ? 'border-[2px] border-foreground hover:bg-accent' 
+                              : 'rounded-md border border-violet-500/60 hover:border-violet-500 hover:shadow-md hover:shadow-violet-500/20'
+                          }`}
+                          style={isRetro ? { boxShadow: '2px 2px 0px black' } : undefined}
                         >
-                          <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 opacity-40 group-hover:opacity-60 transition-opacity" />
-                          <div className="absolute inset-0 bg-black/30" />
+                          {!isRetro && <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 opacity-40 group-hover:opacity-60 transition-opacity" />}
+                          {!isRetro && <div className="absolute inset-0 bg-black/30" />}
                           <div className="relative h-full flex items-center gap-2 px-2">
-                            <div className="p-1 rounded bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm group-hover:scale-105 transition-transform">
+                            <div className={`p-1 text-white ${isRetro ? 'bg-primary border border-foreground' : 'rounded bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm group-hover:scale-105 transition-transform'}`}>
                               <Radio className="w-3 h-3" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-[9px] sm:text-[10px] text-white drop-shadow-md whitespace-nowrap flex items-center gap-0.5">
+                              <h3 className={`font-bold whitespace-nowrap flex items-center gap-0.5 ${isRetro ? 'text-[9px] sm:text-[10px] text-foreground uppercase' : 'text-[9px] sm:text-[10px] text-white drop-shadow-md'}`}>
                                 🎙️ Voice
                               </h3>
-                              <span className="text-[7px] text-white/80">Live broadcast</span>
+                              <span className={`text-[7px] ${isRetro ? 'text-foreground/70' : 'text-white/80'}`}>Live broadcast</span>
                             </div>
                           </div>
                         </Link>
@@ -719,19 +745,24 @@ const Home = () => {
                       <div className="mt-1.5">
                         <Link
                           to="/video-chat"
-                          className="group relative flex h-9 sm:h-10 w-full rounded-md overflow-hidden bg-card border border-green-500/60 hover:border-green-500 transition-all duration-200 hover:shadow-md hover:shadow-green-500/20 active:scale-[0.98]"
+                          className={`group relative flex h-9 sm:h-10 w-full overflow-hidden bg-card transition-all duration-200 active:scale-[0.98] ${
+                            isRetro 
+                              ? 'border-[2px] border-foreground hover:bg-accent' 
+                              : 'rounded-md border border-green-500/60 hover:border-green-500 hover:shadow-md hover:shadow-green-500/20'
+                          }`}
+                          style={isRetro ? { boxShadow: '2px 2px 0px black' } : undefined}
                         >
-                          <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 opacity-40 group-hover:opacity-60 transition-opacity" />
-                          <div className="absolute inset-0 bg-black/30" />
+                          {!isRetro && <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 opacity-40 group-hover:opacity-60 transition-opacity" />}
+                          {!isRetro && <div className="absolute inset-0 bg-black/30" />}
                           <div className="relative h-full flex items-center gap-2 px-2">
-                            <div className="p-1 rounded bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-sm group-hover:scale-105 transition-transform">
+                            <div className={`p-1 text-white ${isRetro ? 'bg-primary border border-foreground' : 'rounded bg-gradient-to-br from-green-500 to-emerald-600 shadow-sm group-hover:scale-105 transition-transform'}`}>
                               <Camera className="w-3 h-3" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-[9px] sm:text-[10px] text-white drop-shadow-md whitespace-nowrap flex items-center gap-0.5">
+                              <h3 className={`font-bold whitespace-nowrap flex items-center gap-0.5 ${isRetro ? 'text-[9px] sm:text-[10px] text-foreground uppercase' : 'text-[9px] sm:text-[10px] text-white drop-shadow-md'}`}>
                                 📹 Cams
                               </h3>
-                              <span className="text-[7px] text-white/80">Webcam live</span>
+                              <span className={`text-[7px] ${isRetro ? 'text-foreground/70' : 'text-white/80'}`}>Webcam live</span>
                             </div>
                           </div>
                         </Link>
@@ -741,15 +772,20 @@ const Home = () => {
                       <div className="mt-1.5">
                         <Link
                           to="/games"
-                          className="group relative flex h-8 sm:h-9 w-full rounded-md overflow-hidden bg-card border border-orange-500/60 hover:border-orange-500 transition-all duration-200 hover:shadow-md hover:shadow-orange-500/20 active:scale-[0.98]"
+                          className={`group relative flex h-8 sm:h-9 w-full overflow-hidden bg-card transition-all duration-200 active:scale-[0.98] ${
+                            isRetro 
+                              ? 'border-[2px] border-foreground hover:bg-accent' 
+                              : 'rounded-md border border-orange-500/60 hover:border-orange-500 hover:shadow-md hover:shadow-orange-500/20'
+                          }`}
+                          style={isRetro ? { boxShadow: '2px 2px 0px black' } : undefined}
                         >
-                          <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-yellow-600 opacity-40 group-hover:opacity-60 transition-opacity" />
-                          <div className="absolute inset-0 bg-black/30" />
+                          {!isRetro && <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-yellow-600 opacity-40 group-hover:opacity-60 transition-opacity" />}
+                          {!isRetro && <div className="absolute inset-0 bg-black/30" />}
                           <div className="relative h-full flex items-center gap-2 px-2">
-                            <div className="p-1 rounded bg-gradient-to-br from-orange-500 to-yellow-600 text-white shadow-sm group-hover:scale-105 transition-transform">
+                            <div className={`p-1 text-white ${isRetro ? 'bg-primary border border-foreground' : 'rounded bg-gradient-to-br from-orange-500 to-yellow-600 shadow-sm group-hover:scale-105 transition-transform'}`}>
                               <Gamepad2 className="w-2.5 h-2.5" />
                             </div>
-                            <h3 className="font-bold text-[8px] sm:text-[9px] text-white drop-shadow-md whitespace-nowrap">
+                            <h3 className={`font-bold whitespace-nowrap ${isRetro ? 'text-[8px] sm:text-[9px] text-foreground uppercase' : 'text-[8px] sm:text-[9px] text-white drop-shadow-md'}`}>
                               🎮 Games
                             </h3>
                           </div>
@@ -760,23 +796,30 @@ const Home = () => {
                       <div className="mt-1.5">
                         <Link
                           to="/dating"
-                          className="group relative flex h-9 sm:h-10 w-full rounded-md overflow-hidden bg-card border border-pink-500/60 hover:border-pink-500 transition-all duration-200 hover:shadow-md hover:shadow-pink-500/20 active:scale-[0.98]"
+                          className={`group relative flex h-9 sm:h-10 w-full overflow-hidden bg-card transition-all duration-200 active:scale-[0.98] ${
+                            isRetro 
+                              ? 'border-[2px] border-foreground hover:bg-accent' 
+                              : 'rounded-md border border-pink-500/60 hover:border-pink-500 hover:shadow-md hover:shadow-pink-500/20'
+                          }`}
+                          style={isRetro ? { boxShadow: '2px 2px 0px black' } : undefined}
                         >
-                          <div 
-                            className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
-                            style={{ backgroundImage: `url(${datingBg})` }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-30 group-hover:opacity-40 transition-opacity" />
-                          <div className="absolute inset-0 bg-black/30" />
+                          {!isRetro && (
+                            <div 
+                              className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
+                              style={{ backgroundImage: `url(${datingBg})` }}
+                            />
+                          )}
+                          {!isRetro && <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 opacity-30 group-hover:opacity-40 transition-opacity" />}
+                          {!isRetro && <div className="absolute inset-0 bg-black/30" />}
                           <div className="relative h-full flex items-center gap-2 px-2">
-                            <div className="p-1 rounded bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-sm group-hover:scale-105 transition-transform">
+                            <div className={`p-1 text-white ${isRetro ? 'bg-primary border border-foreground' : 'rounded bg-gradient-to-br from-pink-500 to-rose-500 shadow-sm group-hover:scale-105 transition-transform'}`}>
                               <Heart className="w-3 h-3" />
                             </div>
                             <div className="flex flex-col">
-                              <h3 className="font-bold text-[9px] sm:text-[10px] text-white drop-shadow-md whitespace-nowrap flex items-center gap-0.5">
+                              <h3 className={`font-bold whitespace-nowrap flex items-center gap-0.5 ${isRetro ? 'text-[9px] sm:text-[10px] text-foreground uppercase' : 'text-[9px] sm:text-[10px] text-white drop-shadow-md'}`}>
                                 💕 Dating
                               </h3>
-                              <span className="text-[7px] text-white/80">Find your match</span>
+                              <span className={`text-[7px] ${isRetro ? 'text-foreground/70' : 'text-white/80'}`}>Find your match</span>
                             </div>
                           </div>
                         </Link>
