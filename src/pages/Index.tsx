@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ChatRoom from "@/components/chat/ChatRoom";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const LAST_CHANNEL_KEY = 'jac-last-channel';
+const GOOGLE_WELCOME_SHOWN_KEY = 'jac-google-welcome-shown';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { channelName } = useParams<{ channelName: string }>();
+  const googleWelcomeShownRef = useRef(false);
 
   // OAuth callback processing guard (VPS)
   const [oauthProcessing, setOauthProcessing] = useState(() =>
@@ -21,6 +25,40 @@ const Index = () => {
     const t = window.setTimeout(() => setOauthProcessing(false), 4000);
     return () => window.clearTimeout(t);
   }, [oauthProcessing]);
+
+  // Show welcome toast for new Google OAuth users
+  useEffect(() => {
+    if (!user || googleWelcomeShownRef.current) return;
+    
+    // Check if this is a Google OAuth user (has Google provider data)
+    const isGoogleUser = user.app_metadata?.provider === 'google' || 
+                         user.identities?.some(i => i.provider === 'google');
+    
+    if (isGoogleUser) {
+      // Check if we've already shown the welcome for this user
+      const welcomeShownKey = `${GOOGLE_WELCOME_SHOWN_KEY}-${user.id}`;
+      const alreadyShown = localStorage.getItem(welcomeShownKey);
+      
+      if (!alreadyShown) {
+        googleWelcomeShownRef.current = true;
+        
+        // Get username to show in toast
+        supabase
+          .from('profiles')
+          .select('username')
+          .eq('user_id', user.id)
+          .single()
+          .then(({ data }) => {
+            const username = data?.username || 'there';
+            toast.success(`Welcome, ${username}!`, {
+              description: 'You can change your username anytime in your profile settings.',
+              duration: 6000,
+            });
+            localStorage.setItem(welcomeShownKey, 'true');
+          });
+      }
+    }
+  }, [user]);
 
   // Scroll to top on page load
   useEffect(() => {
