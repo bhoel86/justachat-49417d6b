@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { UserCog, Crown, Shield, ShieldCheck, User, RefreshCw } from "lucide-react";
+import { UserCog, Crown, Shield, ShieldCheck, User, RefreshCw, Trash2, Ban, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -16,6 +16,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { logModerationAction } from "@/lib/moderationAudit";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 
@@ -38,6 +51,41 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [addIpBan, setAddIpBan] = useState(false);
+
+  const handleDeleteUser = async (targetUserId: string, username: string) => {
+    if (!user) return;
+    
+    setDeletingUserId(targetUserId);
+    try {
+      const { error } = await supabase.functions.invoke('delete-account', {
+        body: { targetUserId, addIpBan },
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to delete user');
+      }
+      
+      toast.success(`User ${username} has been permanently deleted${addIpBan ? ' and IP banned' : ''}`);
+      setAddIpBan(false);
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Delete user error:', error);
+      toast.error(error.message || 'Failed to delete user');
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
+  const canDeleteUser = (targetRole: string, targetUserId: string) => {
+    // Can't delete yourself
+    if (targetUserId === user?.id) return false;
+    // Can't delete owners unless you're an owner
+    if (targetRole === 'owner') return isOwner;
+    // Admins and owners can delete non-owner users
+    return isOwner || isAdmin;
+  };
 
   const fetchUsers = async () => {
     try {
@@ -240,23 +288,83 @@ const AdminUsers = () => {
                             </div>
                           </div>
                           
-                          {canChangeRole(u.role) && !isCurrentUser && (
-                            <Select
-                              value={u.role}
-                              onValueChange={(value) => handleRoleChange(u.user_id, u.username, u.role, value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {getAvailableRoles(u.role).map(role => (
-                                  <SelectItem key={role} value={role}>
-                                    {roleConfig[role as keyof typeof roleConfig].label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {canChangeRole(u.role) && !isCurrentUser && (
+                              <Select
+                                value={u.role}
+                                onValueChange={(value) => handleRoleChange(u.user_id, u.username, u.role, value)}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {getAvailableRoles(u.role).map(role => (
+                                    <SelectItem key={role} value={role}>
+                                      {roleConfig[role as keyof typeof roleConfig].label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+
+                            {canDeleteUser(u.role, u.user_id) && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    disabled={deletingUserId === u.user_id}
+                                  >
+                                    {deletingUserId === u.user_id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                                      <Trash2 className="h-5 w-5" />
+                                      Delete User: {u.username}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription className="space-y-4">
+                                      <p>
+                                        This will <strong>permanently delete</strong> this user's account and all their data.
+                                        This action cannot be undone.
+                                      </p>
+                                      <div className="flex items-center space-x-2 pt-2">
+                                        <Checkbox 
+                                          id={`ip-ban-${u.user_id}`}
+                                          checked={addIpBan}
+                                          onCheckedChange={(checked) => setAddIpBan(checked === true)}
+                                        />
+                                        <Label 
+                                          htmlFor={`ip-ban-${u.user_id}`}
+                                          className="flex items-center gap-2 text-foreground cursor-pointer"
+                                        >
+                                          <Ban className="h-4 w-4 text-destructive" />
+                                          Also add global IP ban (K-Line)
+                                        </Label>
+                                      </div>
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={() => setAddIpBan(false)}>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDeleteUser(u.user_id, u.username)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete User
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
