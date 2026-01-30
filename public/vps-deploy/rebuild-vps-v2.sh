@@ -623,16 +623,19 @@ cp -r /var/www/justachat/supabase/functions/* "$DOCKER_DIR/volumes/functions/"
 # Create the main router (CRITICAL: dispatches requests to sub-functions)
 mkdir -p "$DOCKER_DIR/volumes/functions/main"
 cat > "$DOCKER_DIR/volumes/functions/main/index.ts" << 'MAINROUTER'
-// Edge-runtime main service router
-// Dispatches /function-name to /home/deno/functions/function-name/index.ts
+// Edge-runtime main service router (VPS)
 //
 // IMPORTANT:
-// Most functions in this repo use `serve(...)` (std/http) which internally calls `Deno.serve(...)`.
-// To run those functions from a single "main" service, we temporarily monkey-patch `Deno.serve`
-// to capture the handler for a function module when it is imported.
+// - The edge-runtime is started with: --main-service /home/deno/functions/main
+// - In this mode, imports outside the main-service directory may be blocked.
+// - Most functions in this repo call `serve(...)` (std/http) which internally calls `Deno.serve(...)`.
+//   They don't export a handler, so we capture their handler by temporarily monkey-patching Deno.serve
+//   during module import.
+//
+// This router expects each function to be mirrored under:
+//   /home/deno/functions/main/<function-name>/index.ts
 
 type Handler = (req: Request) => Response | Promise<Response>;
-
 const handlers = new Map<string, Handler>();
 
 async function loadHandler(functionName: string): Promise<Handler> {
@@ -642,29 +645,22 @@ async function loadHandler(functionName: string): Promise<Handler> {
   const originalServe = (Deno as unknown as { serve: unknown }).serve;
   let captured: Handler | null = null;
 
-  // Patch Deno.serve so imports that call serve(handler) register into `captured`
   (Deno as unknown as { serve: unknown }).serve = (optionsOrHandler: unknown, maybeHandler?: unknown) => {
     const handler = (typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler) as Handler | undefined;
     if (!handler) throw new Error("Router: could not capture handler");
     captured = handler;
-    // Return a minimal object compatible with std/http's serve() expectations.
     return { finished: Promise.resolve(), shutdown() {} } as unknown;
   };
 
   try {
-    // Use file:// URL for absolute path imports.
-    const fileUrl = new URL(`file:///home/deno/functions/${functionName}/index.ts`);
-    // Cache-bust to avoid stale modules if functions are re-synced.
+    const fileUrl = new URL(`file:///home/deno/functions/main/${functionName}/index.ts`);
     fileUrl.searchParams.set("t", String(Date.now()));
     await import(fileUrl.href);
   } finally {
     (Deno as unknown as { serve: unknown }).serve = originalServe;
   }
 
-  if (!captured) {
-    throw new Error(`Router: function '${functionName}' did not call serve()`);
-  }
-
+  if (!captured) throw new Error(`Router: function '${functionName}' did not call serve()`);
   handlers.set(functionName, captured);
   return captured;
 }
@@ -673,14 +669,12 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // Health check endpoint
   if (path === "/" || path === "/health") {
     return new Response(JSON.stringify({ healthy: true, router: "main" }), {
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // Extract function name from path (e.g., /verify-captcha -> verify-captcha)
   const match = path.match(/^\/([a-zA-Z0-9_-]+)/);
   if (!match) {
     return new Response(JSON.stringify({ error: "Invalid path" }), {
@@ -694,11 +688,8 @@ Deno.serve(async (req: Request) => {
   try {
     const handler = await loadHandler(functionName);
 
-    // Strip /<functionName> prefix so the function sees '/' as its pathname.
     const proxiedUrl = new URL(req.url);
-    const stripped = proxiedUrl.pathname.replace(new RegExp(`^\\/${functionName}`), "") || "/";
-    proxiedUrl.pathname = stripped;
-
+    proxiedUrl.pathname = proxiedUrl.pathname.replace(new RegExp(`^\\/${functionName}`), "") || "/";
     const proxiedReq = new Request(proxiedUrl.toString(), req.clone());
     return await handler(proxiedReq);
   } catch (err) {
@@ -712,6 +703,20 @@ Deno.serve(async (req: Request) => {
 MAINROUTER
 
 echo "  Main router created at volumes/functions/main/index.ts"
+
+# Mirror all functions under main/ so main-service sandbox can import them
+for d in "$DOCKER_DIR/volumes/functions"/*; do
+  name="$(basename "$d")"
+  case "$name" in
+    main|.env|deno.json|import_map.json) continue ;;
+  esac
+  if [ -d "$d" ]; then
+    rm -rf "$DOCKER_DIR/volumes/functions/main/$name"
+    cp -r "$d" "$DOCKER_DIR/volumes/functions/main/"
+  fi
+done
+
+echo "  Functions mirrored under volumes/functions/main/"
 
 # Create functions environment file
 cat > "$DOCKER_DIR/volumes/functions/.env" << FUNCENV
