@@ -642,11 +642,10 @@ const Auth = () => {
       <div className="relative z-10 w-full max-w-md animate-slide-up">
         {/* Big Justachat™ Header */}
         <div className="flex flex-col items-center mb-10">
-          <h1 className="font-display text-7xl sm:text-8xl md:text-9xl font-black text-center tracking-tight drop-shadow-2xl">
-            <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">
-              Justachat
+          <h1 className="font-display font-black text-center tracking-tight drop-shadow-2xl" style={{ fontSize: 'clamp(4rem, 15vw, 10rem)' }}>
+            <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              Justachat™
             </span>
-            <sup className="text-2xl sm:text-3xl md:text-4xl align-super text-primary font-bold">™</sup>
           </h1>
           <p className="text-muted-foreground mt-4 text-lg tracking-wide">Connect Instantly, Chat Freely</p>
         </div>
