@@ -83,7 +83,7 @@ fi
 echo ""
 read -r -p "Disable root login now (recommended)? [y/N]: " DISABLE_ROOT
 if [[ "${DISABLE_ROOT}" =~ ^[Yy]$ ]]; then
-  sudo bash "$SCRIPT_DIR/harden-disable-root.sh"
+  bash "$SCRIPT_DIR/harden-disable-root.sh"
 else
   echo "Skipping root disable step"
 fi
