@@ -512,13 +512,13 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     }
   }, [currentChannel?.id, currentChannel?.name]);
 
-  // Chat bots for general channel
+  // Chat bots - enabled per admin settings (allowed_channels in bot_settings)
   const chatBots = useChatBots({
     channelId: currentChannel?.id || null,
     channelName: currentChannel?.name || 'general',
     messages,
     addBotMessage,
-    enabled: currentChannel?.name === 'general',
+    enabled: true, // Let useChatBots check allowed_channels from DB
   });
 
   // Bot migration system - bots randomly move between rooms
