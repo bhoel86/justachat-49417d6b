@@ -340,8 +340,73 @@ compose_up_no_deps_if_exists kong
 echo "  Stage 5: Starting studio (no-deps)..."
 compose_up_no_deps_if_exists studio
 
-echo "  Waiting 20s for services to stabilize..."
-sleep 20
+echo "  Waiting 15s for Kong to stabilize..."
+sleep 15
+
+echo "  Stage 6: Fixing Kong realtime ACL (allow anon WebSocket)..."
+KONG_YML="$DOCKER_DIR/volumes/api/kong.yml"
+if [ -f "$KONG_YML" ]; then
+  # Remove the ACL plugin from realtime-v1 service to allow anon WebSocket connections
+  python3 - "$KONG_YML" <<'FIXACL'
+import sys, re
+
+path = sys.argv[1]
+lines = open(path, "r", encoding="utf-8").read().splitlines(True)
+
+out = []
+in_realtime = False
+skipping_acl = False
+acl_indent = None
+modified = False
+
+def is_new_top_service(line):
+    return bool(re.match(r"^\s{2}- name:\s+", line)) and "realtime-v1" not in line
+
+for line in lines:
+    if re.match(r"^\s{2}- name:\s+realtime-v1\s*$", line):
+        in_realtime = True
+        out.append(line)
+        continue
+
+    if in_realtime and is_new_top_service(line):
+        in_realtime = False
+        skipping_acl = False
+        acl_indent = None
+        out.append(line)
+        continue
+
+    if in_realtime:
+        m = re.match(r"^(\s+)- name:\s+acl\s*$", line)
+        if m:
+            skipping_acl = True
+            acl_indent = m.group(1)
+            modified = True
+            continue
+
+        if skipping_acl:
+            if acl_indent and re.match(r"^" + re.escape(acl_indent) + r"- name:\s+", line) and "acl" not in line:
+                skipping_acl = False
+                out.append(line)
+            continue
+        else:
+            out.append(line)
+    else:
+        out.append(line)
+
+if modified:
+    open(path, "w", encoding="utf-8").write("".join(out))
+    print("  ✓ Removed ACL from realtime-v1 (anon WebSocket now allowed)")
+else:
+    print("  ✓ Realtime ACL already fixed or not present")
+FIXACL
+
+  # Restart Kong to apply the fix
+  echo "  Restarting Kong with fixed ACL..."
+  sudo docker compose restart kong
+  sleep 5
+else
+  echo "  ⚠ kong.yml not found, skipping ACL fix"
+fi
 
 echo "  Container status:"
 sudo docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E 'supabase|realtime|kong|studio|supavisor|logflare' || true
