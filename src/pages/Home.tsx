@@ -644,14 +644,14 @@ const Home = () => {
                   </div>
 
                   {loadingChannels ? (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-1.5">
                       {Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="h-12 sm:h-14 rounded-md bg-card animate-pulse" />
                       ))}
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-1.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-1.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
                         {channels.map((channel) => (
                           <button
                             key={channel.id}
