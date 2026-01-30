@@ -14,6 +14,8 @@ import { getVersionString } from "@/lib/version";
 import { clearAuthStorage } from "@/lib/authStorage";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
+import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -49,6 +51,7 @@ const Auth = () => {
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme } = useTheme();
 
   const captchaRequired =
     mode === "signup" && CAPTCHA_REQUIRED_HOSTS.has(window.location.hostname);
@@ -626,6 +629,8 @@ const Auth = () => {
     );
   }
 
+  const isRetro = theme === 'retro80s';
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
       {/* Theme selector in top right */}
@@ -633,21 +638,39 @@ const Auth = () => {
         <ThemeSelector />
       </div>
 
-      {/* Animated background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-      </div>
+      {/* Retro floating icons for 80s theme */}
+      <RetroFloatingIcons />
+
+      {/* Animated background - only for JAC theme */}
+      {!isRetro && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        </div>
+      )}
 
       <div className="relative z-10 w-full max-w-md animate-slide-up">
-        {/* Big Justachat™ Header */}
-        <div className="flex flex-col items-center mb-10">
-          <h1 className="font-display font-black text-center tracking-tight drop-shadow-2xl" style={{ fontSize: 'clamp(4rem, 15vw, 10rem)' }}>
-            <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Justachat™
-            </span>
+        {/* Big Justachat™ Header - theme aware */}
+        <div className="flex flex-col items-center mb-8">
+          <h1 
+            className={`text-center tracking-tight ${
+              isRetro 
+                ? 'font-display text-4xl sm:text-5xl md:text-6xl font-bold bg-accent text-accent-foreground px-6 py-3 border-[4px] border-foreground'
+                : 'font-display font-black drop-shadow-2xl'
+            }`}
+            style={isRetro ? { boxShadow: '6px 6px 0px black' } : { fontSize: 'clamp(3rem, 12vw, 6rem)' }}
+          >
+            {isRetro ? (
+              'Justachat™'
+            ) : (
+              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Justachat™
+              </span>
+            )}
           </h1>
-          <p className="text-muted-foreground mt-4 text-lg tracking-wide">Connect Instantly, Chat Freely</p>
+          <p className={`mt-4 tracking-wide ${isRetro ? 'text-foreground text-base font-bold' : 'text-muted-foreground text-lg'}`}>
+            Connect Instantly, Chat Freely
+          </p>
         </div>
 
         {/* Form Card */}
