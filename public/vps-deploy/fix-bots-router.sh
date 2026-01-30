@@ -40,7 +40,9 @@ if [ -f "$FUNCTIONS_DIR/main/index.ts" ]; then
 fi
 
 echo "Writing sandbox-compatible router..."
+export TARGET_MAIN_INDEX="$FUNCTIONS_DIR/main/index.ts"
 python3 - <<'PY'
+import os
 router = r'''// Edge-runtime main service router (VPS)
 //
 // This runtime is started with: --main-service /home/deno/functions/main
@@ -69,7 +71,6 @@ async function loadHandler(functionName: string): Promise<Handler> {
 
   try {
     const fileUrl = new URL(`file:///home/deno/functions/main/${functionName}/index.ts`);
-    fileUrl.searchParams.set("t", String(Date.now()));
     await import(fileUrl.href);
   } finally {
     (Deno as unknown as { serve: unknown }).serve = originalServe;
@@ -115,8 +116,11 @@ Deno.serve(async (req: Request) => {
 });
 '''
 
-open("volumes/functions/main/index.ts", "w", encoding="utf-8").write(router)
-print("OK: wrote volumes/functions/main/index.ts")
+target = os.environ.get("TARGET_MAIN_INDEX")
+if not target:
+  raise SystemExit("TARGET_MAIN_INDEX env var not set")
+open(target, "w", encoding="utf-8").write(router)
+print(f"OK: wrote {target}")
 PY
 
 echo "Mirroring functions under main/ (sandbox requirement)..."

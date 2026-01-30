@@ -654,7 +654,6 @@ async function loadHandler(functionName: string): Promise<Handler> {
 
   try {
     const fileUrl = new URL(`file:///home/deno/functions/main/${functionName}/index.ts`);
-    fileUrl.searchParams.set("t", String(Date.now()));
     await import(fileUrl.href);
   } finally {
     (Deno as unknown as { serve: unknown }).serve = originalServe;
