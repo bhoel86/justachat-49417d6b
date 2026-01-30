@@ -16,7 +16,17 @@ import {
   DialogDescription,
   DialogFooter 
 } from "@/components/ui/dialog";
-import { Mail, RefreshCw, Search, Copy, Check, Globe, Wifi, Key, Eye, EyeOff } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Mail, RefreshCw, Search, Copy, Check, Globe, Wifi, Key, Eye, EyeOff, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
@@ -46,6 +56,11 @@ const AdminEmails = () => {
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [resetting, setResetting] = useState(false);
+  
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserEmail | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -152,6 +167,42 @@ const AdminEmails = () => {
       toast.error(err.message || "Failed to reset password");
     } finally {
       setResetting(false);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!userToDelete) return;
+    
+    setDeleting(true);
+    try {
+      // Delete profile record (this won't delete the auth user, just the profile)
+      const { error } = await supabaseUntyped
+        .from('profiles')
+        .delete()
+        .eq('user_id', userToDelete.user_id);
+
+      if (error) throw error;
+
+      // Also clean up related data
+      await supabaseUntyped
+        .from('user_locations')
+        .delete()
+        .eq('user_id', userToDelete.user_id);
+
+      await supabaseUntyped
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userToDelete.user_id);
+
+      toast.success(`Deleted profile for ${userToDelete.username}`);
+      setDeleteConfirmOpen(false);
+      setUserToDelete(null);
+      fetchUsers(); // Refresh list
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      toast.error(err.message || "Failed to delete profile");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -318,6 +369,18 @@ const AdminEmails = () => {
                               <Copy className="h-4 w-4" />
                             )}
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setUserToDelete(u);
+                              setDeleteConfirmOpen(true);
+                            }}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Delete profile (not auth user)"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -390,6 +453,36 @@ const AdminEmails = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-destructive" />
+                Delete Profile
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will delete the profile data for <span className="font-semibold">{userToDelete?.username}</span>.
+                <br /><br />
+                <span className="text-muted-foreground text-xs">
+                  Note: This removes the profile, location data, and role - but does NOT delete the auth user from Supabase. 
+                  Use this to clean up orphaned profiles that have no matching auth user.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteProfile}
+                disabled={deleting}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {deleting ? "Deleting..." : "Delete Profile"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminSidebar>
   );

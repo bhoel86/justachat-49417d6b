@@ -50,6 +50,7 @@ const AdminBots = () => {
 
       if (botError) {
         console.error("Error fetching bot settings:", botError);
+        toast.error(`Failed to load bot settings: ${botError.message}`);
         return;
       }
       
@@ -57,6 +58,9 @@ const AdminBots = () => {
         setSettings(botData as BotSettings);
       } else {
         // Create default settings if none exist
+        // Note: On VPS, this may fail due to RLS - the fix-bots-and-sync.sh script 
+        // should initialize via service role instead
+        console.log("No bot settings found, attempting to create defaults...");
         const { data: newSettings, error: createError } = await supabase
           .from("bot_settings")
           .insert({
@@ -71,7 +75,12 @@ const AdminBots = () => {
 
         if (createError) {
           console.error("Error creating bot settings:", createError);
-          toast.error("Failed to initialize bot settings");
+          // Provide helpful error message for VPS users
+          if (createError.code === '42501' || createError.message?.includes('RLS')) {
+            toast.error("Bot settings not initialized. Run fix-bots-and-sync.sh on VPS to set up.");
+          } else {
+            toast.error(`Failed to initialize: ${createError.message}`);
+          }
         } else {
           setSettings(newSettings as BotSettings);
           toast.success("Bot settings initialized");
@@ -79,6 +88,7 @@ const AdminBots = () => {
       }
     } catch (err) {
       console.error("Error:", err);
+      toast.error("Failed to connect to database");
     } finally {
       setLoading(false);
       setRefreshing(false);
