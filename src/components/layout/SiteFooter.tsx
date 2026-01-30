@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { getVersionString } from "@/lib/version";
-import mascotLeft from "@/assets/mascot-left.png";
-import mascotRight from "@/assets/mascot-right.png";
+import { ThemedMascot } from "@/components/theme/ThemedMascot";
 
 const SiteFooter = () => {
   return (
@@ -12,12 +11,8 @@ const SiteFooter = () => {
           <div className="flex-1" />
           
           <div className="flex items-center">
-            {/* Left mascot */}
-            <img 
-              src={mascotLeft} 
-              alt="Mascot" 
-              className="h-14 sm:h-16 w-auto object-contain"
-            />
+            {/* Left mascot - theme aware */}
+            <ThemedMascot side="left" />
             
             {/* Social Media Links + Copyright centered */}
             <div className="flex flex-col items-center">
@@ -100,12 +95,8 @@ const SiteFooter = () => {
               </div>
             </div>
             
-            {/* Right mascot */}
-            <img 
-              src={mascotRight} 
-              alt="Mascot" 
-              className="h-14 sm:h-16 w-auto object-contain"
-            />
+            {/* Right mascot - theme aware */}
+            <ThemedMascot side="right" />
           </div>
           
           {/* Spacer on right to balance */}
