@@ -420,25 +420,24 @@ const AdminBots = () => {
                         View all <ChevronDown className="h-3 w-3 ml-1" />
                       </Button>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="absolute right-0 mt-2 z-50 bg-popover border rounded-lg shadow-lg p-3 min-w-[200px]">
-                      <div className="space-y-2 text-xs">
-                        <div className="flex flex-wrap gap-1">
-                          <Badge variant="outline" className="text-xs">Pixel</Badge>
-                          <Badge variant="outline" className="text-xs">Echo</Badge>
+                    <CollapsibleContent className="absolute right-0 mt-2 z-50 bg-popover border rounded-lg shadow-lg p-3 min-w-[180px] max-h-[300px] overflow-y-auto">
+                      <div className="space-y-1 text-xs">
+                        <div className="font-medium text-muted-foreground mb-2">Media</div>
+                        <div className="pl-2 space-y-1">
+                          <div>Pixel (Video)</div>
+                          <div>Echo (Voice)</div>
                         </div>
-                        <div className="border-t pt-2 flex flex-wrap gap-1">
-                          {ROOM_NAMES.slice(0, 6).map((room) => {
+                        <div className="font-medium text-muted-foreground mt-3 mb-2">Rooms</div>
+                        <div className="pl-2 space-y-1">
+                          {ROOM_NAMES.map((room) => {
                             const roomBots = getRoomBots(room);
                             if (roomBots.length === 0) return null;
                             return (
-                              <Badge key={room} variant="secondary" className="text-xs">
+                              <div key={room} className="text-foreground">
                                 {roomBots[0].username}
-                              </Badge>
+                              </div>
                             );
                           })}
-                          {ROOM_NAMES.length > 6 && (
-                            <Badge variant="secondary" className="text-xs">+{ROOM_NAMES.length - 6} more</Badge>
-                          )}
                         </div>
                       </div>
                     </CollapsibleContent>
