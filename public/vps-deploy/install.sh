@@ -27,7 +27,7 @@ NC='\033[0m'
 DOMAIN="justachat.net"
 PROJECT_DIR="/var/www/justachat"
 SUPABASE_DIR="/home/unix/supabase/docker"
-GITHUB_REPO="https://github.com/UnixMint/justachat-unix.git"
+GITHUB_REPO="https://github.com/bhoel86/justachat-49417d6b.git"
 
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[OK]${NC} $1"; }

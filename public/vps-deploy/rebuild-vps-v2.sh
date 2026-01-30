@@ -355,7 +355,7 @@ sudo chown -R unix:unix /var/www/justachat
 
 cd /var/www
 rm -rf justachat
-git clone https://github.com/UnixMint/justachat-unix.git justachat
+git clone https://github.com/bhoel86/justachat-49417d6b.git justachat
 cd justachat
 
 cat > .env << FRONTENV
