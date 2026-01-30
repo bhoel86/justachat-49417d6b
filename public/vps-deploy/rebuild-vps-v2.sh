@@ -328,13 +328,8 @@ SQL
   fi
 fi
 
-echo "  Stage 2: Starting analytics in background (non-blocking)..."
-if require_service analytics; then
-  sudo docker compose up -d analytics --no-deps &
-  ANALYTICS_PID=$!
-else
-  ANALYTICS_PID=""
-fi
+echo "  Stage 2: Skipping analytics (disabled for stability)..."
+# Analytics is non-essential and frequently blocks rebuilds - permanently skipped
 
 echo "  Stage 3: Starting remaining services..."
 compose_up_if_exists meta supavisor auth rest realtime storage functions email-relay
@@ -344,10 +339,6 @@ compose_up_no_deps_if_exists kong
 
 echo "  Stage 5: Starting studio (no-deps)..."
 compose_up_no_deps_if_exists studio
-
-if [ -n "${ANALYTICS_PID}" ]; then
-  wait "$ANALYTICS_PID" 2>/dev/null || true
-fi
 
 echo "  Waiting 20s for services to stabilize..."
 sleep 20
