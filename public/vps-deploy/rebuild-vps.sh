@@ -307,6 +307,76 @@ wait $ANALYTICS_PID 2>/dev/null || true
 echo "  Waiting for services to stabilize (15s)..."
 sleep 15
 
+# =============================================
+# FIX: Realtime WebSocket 403 (Kong key-auth + acl break ?apikey=...)
+# =============================================
+echo "  Fixing Kong realtime WebSocket (remove key-auth + acl on realtime-v1)..."
+KONG_YML="$HOME/supabase/docker/volumes/api/kong.yml"
+if [ -f "$KONG_YML" ]; then
+  python3 - "$KONG_YML" <<'FIXWS'
+import sys, re
+
+path = sys.argv[1]
+lines = open(path, "r", encoding="utf-8").read().splitlines(True)
+
+out: list[str] = []
+in_realtime = False
+modified = False
+
+def is_realtime_start(line: str) -> bool:
+    return bool(re.match(r"^\s{2}- name:\s+realtime-v1\s*$", line))
+
+def is_new_top_service(line: str) -> bool:
+    return bool(re.match(r"^\s{2}- name:\s+", line)) and not is_realtime_start(line)
+
+i = 0
+while i < len(lines):
+    line = lines[i]
+
+    if is_realtime_start(line):
+        in_realtime = True
+        out.append(line)
+        i += 1
+        continue
+
+    if in_realtime and is_new_top_service(line):
+        in_realtime = False
+        out.append(line)
+        i += 1
+        continue
+
+    if in_realtime:
+        m = re.match(r"^(\s+)- name:\s+(key-auth|acl)\s*$", line)
+        if m:
+            indent = m.group(1)
+            modified = True
+            i += 1
+            while i < len(lines):
+                nxt = lines[i]
+                if is_new_top_service(nxt):
+                    break
+                if re.match(r"^" + re.escape(indent) + r"- name:\s+", nxt):
+                    break
+                i += 1
+            continue
+
+    out.append(line)
+    i += 1
+
+if modified:
+    open(path, "w", encoding="utf-8").write("".join(out))
+    print("  ✓ Removed key-auth + acl from realtime-v1")
+else:
+    print("  ✓ Realtime-v1 already fixed (no key-auth/acl)")
+FIXWS
+
+  echo "  Restarting Kong to apply realtime-v1 WebSocket fix..."
+  sudo docker compose restart kong
+  sleep 5
+else
+  echo "  ⚠ kong.yml not found, skipping realtime-v1 WebSocket fix"
+fi
+
 # Quick health verification
 echo "  Verifying core services..."
 ANON_KEY_CHECK=$(grep "^ANON_KEY=" .env | cut -d'=' -f2- | tr -d '"')

@@ -343,69 +343,78 @@ compose_up_no_deps_if_exists studio
 echo "  Waiting 15s for Kong to stabilize..."
 sleep 15
 
-echo "  Stage 6: Fixing Kong realtime ACL (allow anon WebSocket)..."
+echo "  Stage 6: Fixing Kong realtime WebSocket (remove key-auth + acl on realtime-v1)..."
 KONG_YML="$DOCKER_DIR/volumes/api/kong.yml"
 if [ -f "$KONG_YML" ]; then
-  # Remove the ACL plugin from realtime-v1 service to allow anon WebSocket connections
-  python3 - "$KONG_YML" <<'FIXACL'
+  # Supabase Realtime WebSocket connects via: /realtime/v1/websocket?apikey=...
+  # Kong's key-auth does not read query-string apikey by default, causing 403.
+  # Realtime validates JWT itself, so we remove key-auth + acl for realtime-v1.
+  python3 - "$KONG_YML" <<'FIXWS'
 import sys, re
 
 path = sys.argv[1]
 lines = open(path, "r", encoding="utf-8").read().splitlines(True)
 
-out = []
+out: list[str] = []
 in_realtime = False
-skipping_acl = False
-acl_indent = None
 modified = False
 
-def is_new_top_service(line):
-    return bool(re.match(r"^\s{2}- name:\s+", line)) and "realtime-v1" not in line
+def is_realtime_start(line: str) -> bool:
+    return bool(re.match(r"^\s{2}- name:\s+realtime-v1\s*$", line))
 
-for line in lines:
-    if re.match(r"^\s{2}- name:\s+realtime-v1\s*$", line):
+def is_new_top_service(line: str) -> bool:
+    # Top-level service entries are indented by exactly 2 spaces.
+    return bool(re.match(r"^\s{2}- name:\s+", line)) and not is_realtime_start(line)
+
+i = 0
+while i < len(lines):
+    line = lines[i]
+
+    if is_realtime_start(line):
         in_realtime = True
         out.append(line)
+        i += 1
         continue
 
     if in_realtime and is_new_top_service(line):
         in_realtime = False
-        skipping_acl = False
-        acl_indent = None
         out.append(line)
+        i += 1
         continue
 
     if in_realtime:
-        m = re.match(r"^(\s+)- name:\s+acl\s*$", line)
+        m = re.match(r"^(\s+)- name:\s+(key-auth|acl)\s*$", line)
         if m:
-            skipping_acl = True
-            acl_indent = m.group(1)
+            indent = m.group(1)
             modified = True
+            i += 1
+            # Skip the entire plugin block until the next sibling plugin (- name: ...)
+            # or until we exit the realtime-v1 service.
+            while i < len(lines):
+                nxt = lines[i]
+                if is_new_top_service(nxt):
+                    break
+                if re.match(r"^" + re.escape(indent) + r"- name:\s+", nxt):
+                    break
+                i += 1
             continue
 
-        if skipping_acl:
-            if acl_indent and re.match(r"^" + re.escape(acl_indent) + r"- name:\s+", line) and "acl" not in line:
-                skipping_acl = False
-                out.append(line)
-            continue
-        else:
-            out.append(line)
-    else:
-        out.append(line)
+    out.append(line)
+    i += 1
 
 if modified:
     open(path, "w", encoding="utf-8").write("".join(out))
-    print("  ✓ Removed ACL from realtime-v1 (anon WebSocket now allowed)")
+    print("  ✓ Removed key-auth + acl from realtime-v1 (WebSocket should upgrade to 101)")
 else:
-    print("  ✓ Realtime ACL already fixed or not present")
-FIXACL
+    print("  ✓ Realtime WebSocket plugins already fixed or not present")
+FIXWS
 
   # Restart Kong to apply the fix
-  echo "  Restarting Kong with fixed ACL..."
+  echo "  Restarting Kong with fixed realtime-v1 WebSocket config..."
   sudo docker compose restart kong
   sleep 5
 else
-  echo "  ⚠ kong.yml not found, skipping ACL fix"
+  echo "  ⚠ kong.yml not found, skipping realtime-v1 WebSocket fix"
 fi
 
 echo "  Container status:"
