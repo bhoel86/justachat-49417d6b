@@ -641,6 +641,18 @@ const Auth = () => {
       {/* Retro floating icons for 80s theme */}
       <RetroFloatingIcons />
 
+      {/* Full-width retro header banner */}
+      {isRetro && (
+        <div className="absolute top-0 left-0 right-0 z-20 bg-accent border-b-[4px] border-foreground py-4 text-center" style={{ boxShadow: '0 6px 0px black' }}>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-accent-foreground tracking-tight">
+            Justachat™
+          </h1>
+          <p className="text-foreground text-sm sm:text-base font-bold mt-1">
+            Connect Instantly, Chat Freely
+          </p>
+        </div>
+      )}
+
       {/* Animated background - only for JAC theme */}
       {!isRetro && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -649,29 +661,23 @@ const Auth = () => {
         </div>
       )}
 
-      <div className="relative z-10 w-full max-w-md animate-slide-up">
-        {/* Big Justachat™ Header - theme aware */}
-        <div className="flex flex-col items-center mb-8">
-          <h1 
-            className={`text-center tracking-tight ${
-              isRetro 
-                ? 'font-display text-4xl sm:text-5xl md:text-6xl font-bold bg-accent text-accent-foreground px-6 py-3 border-[4px] border-foreground'
-                : 'font-display font-black drop-shadow-2xl'
-            }`}
-            style={isRetro ? { boxShadow: '6px 6px 0px black' } : { fontSize: 'clamp(3rem, 12vw, 6rem)' }}
-          >
-            {isRetro ? (
-              'Justachat™'
-            ) : (
+      <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'mt-32 sm:mt-36' : ''}`}>
+        {/* Big Justachat™ Header - JAC theme only */}
+        {!isRetro && (
+          <div className="flex flex-col items-center mb-8">
+            <h1 
+              className="font-display font-black drop-shadow-2xl text-center tracking-tight"
+              style={{ fontSize: 'clamp(3rem, 12vw, 6rem)' }}
+            >
               <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
                 Justachat™
               </span>
-            )}
-          </h1>
-          <p className={`mt-4 tracking-wide ${isRetro ? 'text-foreground text-base font-bold' : 'text-muted-foreground text-lg'}`}>
-            Connect Instantly, Chat Freely
-          </p>
-        </div>
+            </h1>
+            <p className="text-muted-foreground text-lg mt-4 tracking-wide">
+              Connect Instantly, Chat Freely
+            </p>
+          </div>
+        )}
 
         {/* Form Card */}
         <div className="bg-card rounded-2xl p-6 border border-border shadow-xl">
