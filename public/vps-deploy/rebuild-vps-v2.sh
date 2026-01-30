@@ -625,6 +625,49 @@ mkdir -p "$DOCKER_DIR/volumes/functions/main"
 cat > "$DOCKER_DIR/volumes/functions/main/index.ts" << 'MAINROUTER'
 // Edge-runtime main service router
 // Dispatches /function-name to /home/deno/functions/function-name/index.ts
+//
+// IMPORTANT:
+// Most functions in this repo use `serve(...)` (std/http) which internally calls `Deno.serve(...)`.
+// To run those functions from a single "main" service, we temporarily monkey-patch `Deno.serve`
+// to capture the handler for a function module when it is imported.
+
+type Handler = (req: Request) => Response | Promise<Response>;
+
+const handlers = new Map<string, Handler>();
+
+async function loadHandler(functionName: string): Promise<Handler> {
+  const cached = handlers.get(functionName);
+  if (cached) return cached;
+
+  const originalServe = (Deno as unknown as { serve: unknown }).serve;
+  let captured: Handler | null = null;
+
+  // Patch Deno.serve so imports that call serve(handler) register into `captured`
+  (Deno as unknown as { serve: unknown }).serve = (optionsOrHandler: unknown, maybeHandler?: unknown) => {
+    const handler = (typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler) as Handler | undefined;
+    if (!handler) throw new Error("Router: could not capture handler");
+    captured = handler;
+    // Return a minimal object compatible with std/http's serve() expectations.
+    return { finished: Promise.resolve(), shutdown() {} } as unknown;
+  };
+
+  try {
+    // Use file:// URL for absolute path imports.
+    const fileUrl = new URL(`file:///home/deno/functions/${functionName}/index.ts`);
+    // Cache-bust to avoid stale modules if functions are re-synced.
+    fileUrl.searchParams.set("t", String(Date.now()));
+    await import(fileUrl.href);
+  } finally {
+    (Deno as unknown as { serve: unknown }).serve = originalServe;
+  }
+
+  if (!captured) {
+    throw new Error(`Router: function '${functionName}' did not call serve()`);
+  }
+
+  handlers.set(functionName, captured);
+  return captured;
+}
 
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
@@ -647,32 +690,23 @@ Deno.serve(async (req: Request) => {
   }
 
   const functionName = match[1];
-  const functionPath = `/home/deno/functions/${functionName}/index.ts`;
 
   try {
-    // Dynamically import and invoke the target function
-    const mod = await import(functionPath);
-    
-    // If the module exports a default handler, call it
-    if (typeof mod.default === "function") {
-      return await mod.default(req);
-    }
-    
-    // Otherwise, look for a named 'handler' export
-    if (typeof mod.handler === "function") {
-      return await mod.handler(req);
-    }
+    const handler = await loadHandler(functionName);
 
-    return new Response(JSON.stringify({ error: "Function has no handler" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    // Strip /<functionName> prefix so the function sees '/' as its pathname.
+    const proxiedUrl = new URL(req.url);
+    const stripped = proxiedUrl.pathname.replace(new RegExp(`^\\/${functionName}`), "") || "/";
+    proxiedUrl.pathname = stripped;
+
+    const proxiedReq = new Request(proxiedUrl.toString(), req.clone());
+    return await handler(proxiedReq);
   } catch (err) {
     console.error(`Router error for ${functionName}:`, err);
-    return new Response(
-      JSON.stringify({ error: "Function not found", function: functionName }),
-      { status: 404, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Function not found", function: functionName }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 });
 MAINROUTER
