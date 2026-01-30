@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { CHAT_BOTS, ROOM_BOTS, ALL_BOTS, getRoomBots, getUniqueRoomNames } from "@/lib/chatBots";
@@ -414,34 +414,42 @@ const AdminBots = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Collapsible>
-                    <CollapsibleTrigger asChild>
+                  <Popover>
+                    <PopoverTrigger asChild>
                       <Button variant="ghost" size="sm" className="text-xs">
                         View all <ChevronDown className="h-3 w-3 ml-1" />
                       </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="absolute right-0 mt-2 z-50 bg-popover border rounded-lg shadow-lg p-3 min-w-[180px] max-h-[300px] overflow-y-auto">
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-[200px] p-3">
                       <div className="space-y-1 text-xs">
                         <div className="font-medium text-muted-foreground mb-2">Media</div>
                         <div className="pl-2 space-y-1">
-                          <div>Pixel (Video)</div>
-                          <div>Echo (Voice)</div>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${settings?.moderator_bots_enabled ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                            Pixel (Video)
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${settings?.moderator_bots_enabled ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                            Echo (Voice)
+                          </div>
                         </div>
                         <div className="font-medium text-muted-foreground mt-3 mb-2">Rooms</div>
-                        <div className="pl-2 space-y-1">
+                        <div className="pl-2 space-y-1 max-h-[200px] overflow-y-auto">
                           {ROOM_NAMES.map((room) => {
                             const roomBots = getRoomBots(room);
                             if (roomBots.length === 0) return null;
+                            const isActive = settings?.moderator_bots_enabled && isRoomEnabled(room);
                             return (
-                              <div key={room} className="text-foreground">
+                              <div key={room} className="flex items-center gap-2">
+                                <div className={`h-2 w-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
                                 {roomBots[0].username}
                               </div>
                             );
                           })}
                         </div>
                       </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                    </PopoverContent>
+                  </Popover>
                   <Switch
                     checked={settings?.moderator_bots_enabled ?? true}
                     onCheckedChange={handleModeratorBotsToggle}
