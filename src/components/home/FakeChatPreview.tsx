@@ -400,7 +400,7 @@ const FakeChatPreview = () => {
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
             <span 
               className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent select-none"
-              style={{ opacity: 0.12 }}
+              style={{ opacity: 0.15 }}
             >
               Justachat™
             </span>
