@@ -41,6 +41,7 @@ interface MemberListProps {
   listeningUsers?: Map<string, { title: string; artist: string }>;
   channelName?: string;
   onOpenPm?: (userId: string, username: string) => void;
+  onOpenBotPm?: (moderator: ModeratorInfo, channelName: string) => void;
   onAction?: (targetUsername: string, action: string) => void;
 }
 
@@ -97,7 +98,7 @@ const roleConfig = {
 
 type SidebarTab = 'members' | 'friends';
 
-const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', onOpenPm, onAction }: MemberListProps) => {
+const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', onOpenPm, onOpenBotPm, onAction }: MemberListProps) => {
   const [activeTab, setActiveTab] = useState<SidebarTab>('members');
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -497,7 +498,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
                   member={botMember} 
                   moderator={moderator}
                   channelName={channelName}
-                  onPmClick={() => setBotChatTarget({ moderator, channelName })}
+                  onPmClick={() => onOpenBotPm ? onOpenBotPm(moderator, channelName) : setBotChatTarget({ moderator, channelName })}
                   onBlockClick={() => {
                     toast({
                       variant: "destructive",

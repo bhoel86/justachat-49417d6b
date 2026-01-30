@@ -16,8 +16,11 @@ import MemberList from "./MemberList";
 import ChatSidebar from "./ChatSidebar";
 import ChannelList, { Channel } from "./ChannelList";
 import PrivateChatWindow from "./PrivateChatWindow";
+import BotChatWindow from "./BotChatWindow";
 import PMTray from "./PMTray";
+import BotTray from "./BotTray";
 import { usePrivateChats } from "@/hooks/usePrivateChats";
+import { useBotChats } from "@/hooks/useBotChats";
 import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
 import RoomSettingsModal from "./RoomSettingsModal";
 import RoomPasswordModal from "./RoomPasswordModal";
@@ -95,6 +98,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   // Private chats system
   const privateChats = usePrivateChats(user?.id || '', username);
   
+  // Bot chats system (draggable windows for moderator bots)
+  const botChats = useBotChats();
+  
   // Minor restriction check helper
   const canAccessPrivateMessaging = !isMinor || hasParentConsent;
   
@@ -108,6 +114,10 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       return;
     }
     privateChats.openChat(userId, targetUsername);
+  };
+  
+  const handleOpenBotPm = (moderator: Parameters<typeof botChats.openChat>[0], channelName: string) => {
+    botChats.openChat(moderator, channelName);
   };
   
   // Channel moderation settings
@@ -1389,6 +1399,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           listeningUsers={listeningUsers}
           channelName={currentChannel?.name} 
           onOpenPm={handleOpenPm}
+          onOpenBotPm={handleOpenBotPm}
           onAction={(targetUsername, actionMessage) => handleSend(actionMessage)}
         />
       </div>
@@ -1411,12 +1422,34 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         />
       ))}
 
+      {/* Bot Chat Windows - Draggable moderator conversations */}
+      {botChats.activeChats.map(chat => (
+        <BotChatWindow
+          key={chat.id}
+          moderator={chat.moderator}
+          channelName={chat.channelName}
+          currentUsername={username}
+          onClose={() => botChats.closeChat(chat.id)}
+          onMinimize={() => botChats.minimizeChat(chat.id)}
+          initialPosition={chat.position}
+          zIndex={chat.zIndex}
+          onFocus={() => botChats.bringToFront(chat.id)}
+        />
+      ))}
+
       {/* PM Minimize Tray - DND toggle moved to header/sidebar */}
       <PMTray
         minimizedChats={privateChats.minimizedChats}
         onRestore={(chatId) => privateChats.restoreChat(chatId)}
         onClose={(chatId) => privateChats.closeChat(chatId)}
         onReorder={(fromIndex, toIndex) => privateChats.reorderChats(fromIndex, toIndex)}
+      />
+
+      {/* Bot Chat Minimize Tray */}
+      <BotTray
+        minimizedChats={botChats.minimizedChats}
+        onRestore={(chatId) => botChats.restoreChat(chatId)}
+        onClose={(chatId) => botChats.closeChat(chatId)}
       />
 
       {/* Room Invite Popup */}
