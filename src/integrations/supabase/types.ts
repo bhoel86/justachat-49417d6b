@@ -219,6 +219,7 @@ export type Database = {
       bot_settings: {
         Row: {
           allowed_channels: string[]
+          chat_speed: number
           enabled: boolean
           id: string
           updated_at: string
@@ -226,6 +227,7 @@ export type Database = {
         }
         Insert: {
           allowed_channels?: string[]
+          chat_speed?: number
           enabled?: boolean
           id?: string
           updated_at?: string
@@ -233,6 +235,7 @@ export type Database = {
         }
         Update: {
           allowed_channels?: string[]
+          chat_speed?: number
           enabled?: boolean
           id?: string
           updated_at?: string

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bot, Power, PowerOff, Loader2, Hash, ToggleLeft, ToggleRight, RefreshCw, Users } from "lucide-react";
+import { Bot, Power, PowerOff, Loader2, Hash, ToggleLeft, ToggleRight, RefreshCw, Users, Gauge } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { CHAT_BOTS, ROOM_BOTS, ALL_BOTS, getRoomBots, getUniqueRoomNames } from "@/lib/chatBots";
 
@@ -16,6 +17,7 @@ interface BotSettings {
   id: string;
   enabled: boolean;
   allowed_channels: string[];
+  chat_speed: number;
   updated_at: string;
 }
 
@@ -50,7 +52,7 @@ const AdminBots = () => {
       }
       
       if (botData) {
-        setSettings(botData);
+        setSettings(botData as BotSettings);
       } else {
         // Create default settings if none exist
         const { data: newSettings, error: createError } = await supabase
@@ -58,6 +60,7 @@ const AdminBots = () => {
           .insert({
             enabled: true,
             allowed_channels: ROOM_NAMES,
+            chat_speed: 5,
             updated_by: user?.id
           })
           .select()
@@ -67,7 +70,7 @@ const AdminBots = () => {
           console.error("Error creating bot settings:", createError);
           toast.error("Failed to initialize bot settings");
         } else {
-          setSettings(newSettings);
+          setSettings(newSettings as BotSettings);
           toast.success("Bot settings initialized");
         }
       }
@@ -181,6 +184,31 @@ const AdminBots = () => {
     } catch (err) {
       console.error("Error:", err);
       toast.error("Failed to update settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSpeedChange = async (speed: number) => {
+    if (!settings) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("bot_settings")
+        .update({ 
+          chat_speed: speed,
+          updated_by: user?.id 
+        })
+        .eq("id", settings.id);
+
+      if (error) throw error;
+
+      setSettings({ ...settings, chat_speed: speed });
+      toast.success(`Bot speed set to ${speed}s`);
+    } catch (err) {
+      console.error("Error:", err);
+      toast.error("Failed to update speed");
     } finally {
       setSaving(false);
     }
@@ -302,6 +330,45 @@ const AdminBots = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Speed Control */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Gauge className="h-5 w-5 text-primary" />
+              Chat Speed
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Bots respond every <span className="font-bold text-foreground">{settings?.chat_speed || 5}</span> seconds
+                </span>
+                <Badge variant="outline">{settings?.chat_speed || 5}s delay</Badge>
+              </div>
+              <Slider
+                value={[settings?.chat_speed || 5]}
+                onValueChange={(value) => {
+                  if (settings) {
+                    setSettings({ ...settings, chat_speed: value[0] });
+                  }
+                }}
+                onValueCommit={(value) => handleSpeedChange(value[0])}
+                min={1}
+                max={60}
+                step={1}
+                disabled={saving || !settings?.enabled}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>1s (Fast)</span>
+                <span>30s</span>
+                <span>60s (Slow)</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Split Layout: Rooms List | Bot Directory */}
         <div className="grid gap-6 lg:grid-cols-3">
