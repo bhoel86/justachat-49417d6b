@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bot, Power, PowerOff, Loader2, Hash, ToggleLeft, ToggleRight, RefreshCw, Users, Gauge } from "lucide-react";
+import { Bot, Power, PowerOff, Loader2, Hash, ToggleLeft, ToggleRight, RefreshCw, Users, Gauge, ChevronDown } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { CHAT_BOTS, ROOM_BOTS, ALL_BOTS, getRoomBots, getUniqueRoomNames } from "@/lib/chatBots";
@@ -401,66 +402,53 @@ const AdminBots = () => {
 
           {/* Moderator Bots Toggle */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-base">
-                <span className="flex items-center gap-2">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
                   <Bot className="h-5 w-5 text-primary" />
-                  Moderator Bots
-                </span>
-                <Switch
-                  checked={settings?.moderator_bots_enabled ?? true}
-                  onCheckedChange={handleModeratorBotsToggle}
-                  disabled={saving}
-                />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Keep moderator bots running</p>
-                  <p className="text-xs text-muted-foreground">
-                    Room moderator bots stay active even when main bots are off
-                  </p>
-                </div>
-                <ScrollArea className="h-[200px]">
-                  <div className="space-y-3">
-                    {/* Video/Voice moderators */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Media Rooms</p>
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant={settings?.moderator_bots_enabled ? "default" : "secondary"}>
-                          Pixel (Video)
-                        </Badge>
-                        <Badge variant={settings?.moderator_bots_enabled ? "default" : "secondary"}>
-                          Echo (Voice)
-                        </Badge>
-                      </div>
-                    </div>
-                    {/* Room-specific moderators */}
-                    {ROOM_NAMES.map((room) => {
-                      const roomBots = getRoomBots(room);
-                      if (roomBots.length === 0) return null;
-                      const firstBot = roomBots[0];
-                      return (
-                        <div key={room} className="space-y-2">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            #{formatRoomName(room)}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge 
-                              variant={settings?.moderator_bots_enabled && isRoomEnabled(room) ? "default" : "secondary"}
-                            >
-                              {firstBot.username}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div>
+                    <p className="text-sm font-medium">Moderator Bots</p>
+                    <p className="text-xs text-muted-foreground">
+                      {settings?.moderator_bots_enabled ? "Always active" : "Follow main toggle"}
+                    </p>
                   </div>
-                </ScrollArea>
-                <p className="text-xs text-muted-foreground">
-                  {settings?.moderator_bots_enabled ? "Always on" : "Follow main toggle"}
-                </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-xs">
+                        View all <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="absolute right-0 mt-2 z-50 bg-popover border rounded-lg shadow-lg p-3 min-w-[200px]">
+                      <div className="space-y-2 text-xs">
+                        <div className="flex flex-wrap gap-1">
+                          <Badge variant="outline" className="text-xs">Pixel</Badge>
+                          <Badge variant="outline" className="text-xs">Echo</Badge>
+                        </div>
+                        <div className="border-t pt-2 flex flex-wrap gap-1">
+                          {ROOM_NAMES.slice(0, 6).map((room) => {
+                            const roomBots = getRoomBots(room);
+                            if (roomBots.length === 0) return null;
+                            return (
+                              <Badge key={room} variant="secondary" className="text-xs">
+                                {roomBots[0].username}
+                              </Badge>
+                            );
+                          })}
+                          {ROOM_NAMES.length > 6 && (
+                            <Badge variant="secondary" className="text-xs">+{ROOM_NAMES.length - 6} more</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                  <Switch
+                    checked={settings?.moderator_bots_enabled ?? true}
+                    onCheckedChange={handleModeratorBotsToggle}
+                    disabled={saving}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
