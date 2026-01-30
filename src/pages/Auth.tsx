@@ -640,13 +640,12 @@ const Auth = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-md animate-slide-up">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="h-16 w-16 rounded-2xl jac-gradient-bg flex items-center justify-center mb-4 animate-pulse-glow">
-            <MessageCircle className="h-8 w-8 text-primary-foreground" />
-          </div>
-          <h1 className="font-display text-4xl font-bold jac-gradient-text">Justachat<sup className="text-lg">™</sup></h1>
-          <p className="text-muted-foreground mt-1">Connect Instantly, Chat Freely</p>
+        {/* Big Justachat™ Header */}
+        <div className="flex flex-col items-center mb-10">
+          <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-bold jac-gradient-text text-center tracking-tight">
+            Justachat<sup className="text-xl sm:text-2xl md:text-3xl align-super">™</sup>
+          </h1>
+          <p className="text-muted-foreground mt-3 text-lg">Connect Instantly, Chat Freely</p>
         </div>
 
         {/* Form Card */}
