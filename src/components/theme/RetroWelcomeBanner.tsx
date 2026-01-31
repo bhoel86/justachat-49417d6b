@@ -15,7 +15,7 @@ export const RetroWelcomeBanner: React.FC<RetroWelcomeBannerProps> = ({ onJoinCl
       <img 
         src={retroHeader} 
         alt="Justachat - Connect Instantly, Chat Freely" 
-        className="w-full max-w-2xl h-auto object-contain"
+        className="w-full max-w-2xl h-auto object-contain rounded-xl border-4 border-primary"
       />
     </div>
   );
