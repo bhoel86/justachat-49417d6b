@@ -661,14 +661,39 @@ const Auth = () => {
 
       {/* Full-width header banner - ONLY for retro theme */}
       {isRetro && (
-        <div className="absolute top-1 left-0 right-0 z-20 flex justify-center px-4">
-          <div className="border-4 border-cyan-400 rounded-lg shadow-[0_0_20px_rgba(34,211,238,0.5),inset_0_0_20px_rgba(34,211,238,0.1)] bg-black/50 p-2">
+        <div className="absolute top-4 left-0 right-0 z-20 flex flex-col items-center px-4">
+          {/* Neon framed 80s banner */}
+          <div 
+            className="border-4 border-cyan-400 rounded-lg bg-black/80 p-3 relative"
+            style={{
+              boxShadow: '0 0 30px rgba(34,211,238,0.6), 0 0 60px rgba(255,0,255,0.3), inset 0 0 20px rgba(34,211,238,0.15)',
+              animation: 'retroGlow 2s ease-in-out infinite alternate',
+            }}
+          >
+            {/* Corner accents */}
+            <div className="absolute -top-2 -left-2 w-4 h-4 border-t-4 border-l-4 border-magenta-500" style={{ borderColor: '#FF00FF' }} />
+            <div className="absolute -top-2 -right-2 w-4 h-4 border-t-4 border-r-4 border-magenta-500" style={{ borderColor: '#FF00FF' }} />
+            <div className="absolute -bottom-2 -left-2 w-4 h-4 border-b-4 border-l-4 border-magenta-500" style={{ borderColor: '#FF00FF' }} />
+            <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-4 border-r-4 border-magenta-500" style={{ borderColor: '#FF00FF' }} />
+            
             <img 
               src={headerImg} 
               alt="Justachat - Connect Instantly, Chat Freely" 
               className="h-auto w-full max-w-xs sm:max-w-sm md:max-w-md"
+              style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.5))' }}
             />
           </div>
+          
+          {/* Retro tagline */}
+          <p 
+            className="mt-4 text-cyan-400 font-bold text-sm sm:text-base tracking-[0.3em] uppercase"
+            style={{
+              textShadow: '0 0 10px #00FFFF, 0 0 20px #00FFFF',
+              fontFamily: 'VT323, monospace',
+            }}
+          >
+            ★ RADICAL CHATTING SINCE 2024 ★
+          </p>
         </div>
       )}
 

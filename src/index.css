@@ -464,6 +464,15 @@
   50% { opacity: 0.7; }
 }
 
+@keyframes retroGlow {
+  0% {
+    box-shadow: 0 0 30px rgba(34,211,238,0.5), 0 0 60px rgba(255,0,255,0.2), inset 0 0 20px rgba(34,211,238,0.1);
+  }
+  100% {
+    box-shadow: 0 0 40px rgba(34,211,238,0.7), 0 0 80px rgba(255,0,255,0.35), inset 0 0 30px rgba(34,211,238,0.2);
+  }
+}
+
 /* Valentine's theme animations */
 @keyframes valentinesFloat {
   0%, 100% {
