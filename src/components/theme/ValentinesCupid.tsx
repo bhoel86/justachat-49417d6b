@@ -90,9 +90,10 @@ export const ValentinesCupid: React.FC = () => {
           <img 
             src={cupidImage} 
             alt="" 
-            className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
+            className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-full"
             style={{
               filter: 'drop-shadow(0 4px 12px rgba(255,105,180,0.5))',
+              background: 'transparent',
             }}
           />
         </div>
