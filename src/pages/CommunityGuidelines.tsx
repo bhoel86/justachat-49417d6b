@@ -15,7 +15,7 @@ const CommunityGuidelines = () => {
         className={`border-b backdrop-blur-sm sticky top-0 z-10 ${
           isRetro ? 'bg-black/95 border-cyan-500/50' : 'border-border bg-card/50'
         }`}
-        style={isRetro ? { boxShadow: '0 4px 20px rgba(34,211,238,0.2)' } : undefined}
+        style={undefined}
       >
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <Button 
@@ -26,7 +26,7 @@ const CommunityGuidelines = () => {
             style={isRetro ? { 
               borderColor: '#FF00FF',
               color: '#FF00FF',
-              boxShadow: '0 0 10px rgba(255,0,255,0.3), 3px 3px 0 #000'
+              boxShadow: '3px 3px 0 #000'
             } : undefined}
           >
             <ArrowLeft className="h-5 w-5" />
@@ -34,11 +34,11 @@ const CommunityGuidelines = () => {
           <div className="flex items-center gap-2">
             <Shield 
               className="h-6 w-6" 
-              style={isRetro ? { color: '#00FFFF', filter: 'drop-shadow(0 0 6px #00FFFF)' } : undefined}
+              style={isRetro ? { color: '#00FFFF' } : undefined}
             />
             <h1 
               className={`text-xl font-bold ${isRetro ? 'font-mono uppercase tracking-wider' : ''}`}
-              style={isRetro ? { color: '#00FFFF', textShadow: '0 0 10px rgba(34,211,238,0.6)' } : undefined}
+              style={isRetro ? { color: '#00FFFF' } : undefined}
             >
               {isRetro ? '> COMMUNITY GUIDELINES' : 'Community Guidelines'}
             </h1>
