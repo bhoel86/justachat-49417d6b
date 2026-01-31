@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,6 +12,12 @@ import { Palette, Check } from 'lucide-react';
 
 export const ThemeSelector: React.FC = () => {
   const { theme, setTheme, themes } = useTheme();
+  const { isOwner } = useAuth();
+
+  // Only show theme selector to owners
+  if (!isOwner) {
+    return null;
+  }
 
   return (
     <DropdownMenu>
