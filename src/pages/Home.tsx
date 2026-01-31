@@ -40,9 +40,9 @@ import loungeBg from "@/assets/rooms/lounge-bg.jpg";
 import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 
 // Banner and footer graphics
-import welcomeBanner from "@/assets/welcome-banner.png";
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
+import { OGWelcomeBanner } from "@/components/theme/OGWelcomeBanner";
 import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
 import { ValentinesWelcomeBanner } from "@/components/theme/ValentinesWelcomeBanner";
 import { StPatricksWelcomeBanner } from "@/components/theme/StPatricksWelcomeBanner";
@@ -594,13 +594,7 @@ const Home = () => {
             ) : isMatrix ? (
               <MatrixWelcomeBanner variant="mobile" />
             ) : (
-              <div className="flex justify-center">
-                <img 
-                  src={welcomeBanner} 
-                  alt="Welcome to Justachat" 
-                  className="w-full max-w-md h-auto object-contain"
-                />
-              </div>
+              <OGWelcomeBanner variant="mobile" onJoinClick={() => navigate('/chat/general')} />
             )}
           </div>
           
@@ -640,17 +634,13 @@ const Home = () => {
                   if (generalChannel) handleJoinRoom(generalChannel);
                 }} />
               ) : (
-                <div className="flex justify-center">
-                  <img 
-                    src={welcomeBanner} 
-                    alt="Welcome to Justachat" 
-                    className="w-full max-w-xl h-auto object-contain cursor-pointer hover:opacity-95 transition-opacity"
-                    onClick={() => {
-                      const generalChannel = channels.find(c => c.name === 'general');
-                      if (generalChannel) handleJoinRoom(generalChannel);
-                    }}
-                  />
-                </div>
+                <OGWelcomeBanner 
+                  variant="desktop" 
+                  onJoinClick={() => {
+                    const generalChannel = channels.find(c => c.name === 'general');
+                    if (generalChannel) handleJoinRoom(generalChannel);
+                  }}
+                />
               )}
             </div>
 
