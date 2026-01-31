@@ -735,9 +735,11 @@ const Auth = () => {
         {/* Form Card - themed styling */}
         <div className={`p-6 shadow-xl ${
           isRetro 
-            ? 'bg-secondary border-[3px] border-foreground rounded-none' 
+            ? 'bg-black/80 border-4 border-cyan-400 rounded-lg' 
             : 'bg-card rounded-2xl border border-border'
-        }`} style={isRetro ? { boxShadow: '6px 6px 0px black' } : undefined}>
+        }`} style={isRetro ? { 
+          boxShadow: '0 0 30px rgba(34,211,238,0.4), inset 0 0 20px rgba(34,211,238,0.1), 6px 6px 0px rgba(255,0,255,0.5)' 
+        } : undefined}>
           {/* Back button for forgot/reset modes */}
           {(mode === "forgot" || mode === "reset") && (
             <button
@@ -754,23 +756,23 @@ const Auth = () => {
             </button>
           )}
           
-          <h2 className={`font-semibold text-foreground mb-1 text-center ${
-            isRetro ? 'text-xl font-mono uppercase tracking-wider text-primary' :
-            isMatrix ? 'text-2xl font-mono tracking-wide' : 'text-xl'
-          }`}>
+          <h2 className={`font-semibold mb-1 text-center ${
+            isRetro ? 'text-xl font-mono uppercase tracking-wider text-cyan-400' :
+            isMatrix ? 'text-2xl font-mono tracking-wide text-foreground' : 'text-xl text-foreground'
+          }`} style={isRetro ? { textShadow: '0 0 10px rgba(34,211,238,0.8)' } : undefined}>
             {mode === "login" && (isRetro ? "> LOGIN" : isMatrix ? "[ AUTHENTICATE ]" : "Welcome back")}
             {mode === "signup" && (isRetro ? "> REGISTER" : isMatrix ? "[ NEW USER ]" : "Create account")}
             {mode === "forgot" && (isRetro ? "> RECOVERY" : isMatrix ? "[ RECOVERY ]" : "Reset password")}
             {mode === "reset" && (isRetro ? "> NEW PASS" : isMatrix ? "[ NEW CREDENTIALS ]" : "Set new password")}
           </h2>
-          <p className={`text-muted-foreground text-center mb-6 ${
-            isRetro ? 'text-sm font-mono' :
-            isMatrix ? 'text-base font-mono' : 'text-sm'
-          }`}>
-            {mode === "login" && (isRetro ? "Enter your credentials" : isMatrix ? "Enter the system" : "Sign in to continue chatting")}
-            {mode === "signup" && (isRetro ? "Create your account" : isMatrix ? "Initialize your identity" : "Join the conversation")}
-            {mode === "forgot" && (isRetro ? "Enter email for reset" : isMatrix ? "Request access recovery" : "Enter your email to receive a reset link")}
-            {mode === "reset" && (isRetro ? "Set new credentials" : isMatrix ? "Establish new access codes" : "Enter your new password below")}
+          <p className={`text-center mb-6 ${
+            isRetro ? 'text-sm font-mono text-magenta-400' :
+            isMatrix ? 'text-base font-mono text-muted-foreground' : 'text-sm text-muted-foreground'
+          }`} style={isRetro ? { color: '#FF00FF', textShadow: '0 0 8px rgba(255,0,255,0.6)' } : undefined}>
+            {mode === "login" && (isRetro ? "[ ENTER YOUR CREDENTIALS ]" : isMatrix ? "Enter the system" : "Sign in to continue chatting")}
+            {mode === "signup" && (isRetro ? "[ CREATE YOUR ACCOUNT ]" : isMatrix ? "Initialize your identity" : "Join the conversation")}
+            {mode === "forgot" && (isRetro ? "[ EMAIL FOR RESET ]" : isMatrix ? "Request access recovery" : "Enter your email to receive a reset link")}
+            {mode === "reset" && (isRetro ? "[ SET NEW CREDENTIALS ]" : isMatrix ? "Establish new access codes" : "Enter your new password below")}
           </p>
 
           {/* Rate limit warning */}
@@ -1128,8 +1130,11 @@ const Auth = () => {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full font-mono uppercase tracking-wider border-[2px] border-foreground bg-primary hover:bg-primary/90 text-primary-foreground"
-                  style={{ boxShadow: '3px 3px 0px black' }}
+                  className="w-full font-mono uppercase tracking-wider border-2 border-cyan-400 bg-cyan-400/20 hover:bg-cyan-400/40 text-cyan-400 rounded-lg"
+                  style={{ 
+                    boxShadow: '0 0 20px rgba(34,211,238,0.5), inset 0 0 10px rgba(34,211,238,0.2)',
+                    textShadow: '0 0 10px rgba(34,211,238,0.8)'
+                  }}
                   disabled={
                     isSubmitting ||
                     (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
@@ -1137,13 +1142,13 @@ const Auth = () => {
                   }
                 >
                   {isSubmitting ? (
-                    <span className="animate-pulse">LOADING...</span>
+                    <span className="animate-pulse">[ LOADING... ]</span>
                   ) : (
                     <>
-                      {mode === "login" && "> LOGIN"}
-                      {mode === "signup" && "> REGISTER"}
-                      {mode === "forgot" && "> SEND"}
-                      {mode === "reset" && "> UPDATE"}
+                      {mode === "login" && "[ LOGIN ]"}
+                      {mode === "signup" && "[ REGISTER ]"}
+                      {mode === "forgot" && "[ SEND ]"}
+                      {mode === "reset" && "[ UPDATE ]"}
                     </>
                   )}
                 </Button>
@@ -1179,11 +1184,11 @@ const Auth = () => {
           {(mode === "login" || mode === "signup") && (
             <div className="mt-4">
               <div className="relative flex items-center justify-center my-4">
-                <div className={`border-t w-full ${isRetro ? 'border-foreground/50' : isMatrix ? 'border-primary/30' : 'border-border'}`} />
+                <div className={`border-t w-full ${isRetro ? 'border-magenta-500/50' : isMatrix ? 'border-primary/30' : 'border-border'}`} style={isRetro ? { borderColor: 'rgba(255,0,255,0.4)' } : undefined} />
                 <span className={`absolute px-3 text-xs ${
-                  isRetro ? 'bg-secondary text-foreground/70 font-mono uppercase' :
+                  isRetro ? 'bg-black text-magenta-400 font-mono uppercase' :
                   isMatrix ? 'bg-[hsl(120,100%,3%)] text-primary/70 font-mono' : 'bg-card text-muted-foreground'
-                }`}>
+                }`} style={isRetro ? { color: '#FF00FF' } : undefined}>
                   {isRetro ? '[ OR ]' : isMatrix ? '[ OR ]' : 'or continue with'}
                 </span>
               </div>
@@ -1192,11 +1197,16 @@ const Auth = () => {
                 variant="outline"
                 size="lg"
                 className={`w-full gap-2 ${
-                  isRetro ? 'font-mono uppercase border-[2px] border-foreground hover:bg-primary/20' :
+                  isRetro ? 'font-mono uppercase border-2 border-magenta-500 hover:bg-magenta-500/20 text-magenta-400 rounded-lg' :
                   isMatrix ? 'font-mono border-primary/30 hover:border-primary/50 hover:bg-primary/10' : ''
                 }`}
                 onClick={() => handleGoogleSignIn(false)}
-                style={isRetro ? { boxShadow: '3px 3px 0px black' } : isMatrix ? {
+                style={isRetro ? { 
+                  borderColor: '#FF00FF',
+                  color: '#FF00FF',
+                  boxShadow: '0 0 15px rgba(255,0,255,0.4), inset 0 0 10px rgba(255,0,255,0.1)',
+                  textShadow: '0 0 8px rgba(255,0,255,0.6)'
+                } : isMatrix ? {
                   boxShadow: '0 0 10px hsl(120 100% 50% / 0.2)',
                 } : undefined}
               >
