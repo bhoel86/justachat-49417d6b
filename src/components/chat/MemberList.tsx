@@ -795,8 +795,8 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
           </div>
 
           {/* Name and role */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate text-foreground">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <p className="text-sm font-medium truncate text-foreground max-w-full">
               {member.username.split(' ').slice(1).join(' ') || member.username}
             </p>
             <div className="flex items-center gap-1">
@@ -922,27 +922,27 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
       </div>
 
       {/* Name and role */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         {isCurrentUser ? (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block",
+              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block w-full max-w-full",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
           >
-            {member.username}
+            <span className="truncate block">{member.username}</span>
             <span className="text-xs text-muted-foreground ml-1">(you)</span>
           </button>
         ) : (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block",
+              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block w-full max-w-full",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
           >
-            {member.username}
+            <span className="truncate block">{member.username}</span>
           </button>
         )}
         <div className="flex items-center gap-1">
