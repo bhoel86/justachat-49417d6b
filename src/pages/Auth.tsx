@@ -747,16 +747,15 @@ const Auth = () => {
           {isRetro && (
             <>
               {/* Cyan circle - top left */}
-              <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-cyan-400 opacity-80" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.6)' }} />
+              <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-cyan-400" />
               {/* Yellow triangle - bottom right */}
               <div className="absolute -bottom-2 -right-2 w-0 h-0" style={{
                 borderLeft: '20px solid transparent',
                 borderRight: '20px solid transparent',
                 borderBottom: '35px solid #FFD700',
-                filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.6))',
               }} />
               {/* Magenta zigzag - top right */}
-              <svg className="absolute -top-1 -right-6 w-12 h-6 opacity-70" viewBox="0 0 50 20">
+              <svg className="absolute -top-1 -right-6 w-12 h-6" viewBox="0 0 50 20">
                 <polyline
                   points="0,10 10,2 20,18 30,2 40,18 50,10"
                   fill="none"
@@ -767,9 +766,9 @@ const Auth = () => {
                 />
               </svg>
               {/* Small cyan dot - left side */}
-              <div className="absolute top-1/2 -left-2 w-4 h-4 rounded-full bg-cyan-400 opacity-60" />
+              <div className="absolute top-1/2 -left-2 w-4 h-4 rounded-full bg-cyan-400" />
               {/* Small magenta dot - right side */}
-              <div className="absolute top-1/3 -right-2 w-3 h-3 rounded-full bg-fuchsia-500 opacity-70" />
+              <div className="absolute top-1/3 -right-2 w-3 h-3 rounded-full bg-fuchsia-500" />
             </>
           )}
           {/* Back button for forgot/reset modes */}
