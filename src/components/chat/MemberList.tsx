@@ -922,25 +922,26 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
       </div>
 
       {/* Name and role */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 overflow-hidden">
         {isCurrentUser ? (
-          <div className="flex items-center gap-1 max-w-full">
+          <div className="flex items-baseline gap-1">
             <button 
               onClick={onProfileClick}
               className={cn(
-                "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer truncate min-w-0 flex-1",
+                "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap",
                 member.isOnline ? "text-foreground" : "text-muted-foreground"
               )}
+              style={{ maxWidth: 'calc(100% - 2rem)' }}
             >
               {member.username}
             </button>
-            <span className="text-xs text-muted-foreground shrink-0">(you)</span>
+            <span className="text-xs text-muted-foreground flex-shrink-0">(you)</span>
           </div>
         ) : (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer truncate block max-w-full",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap w-full block",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
           >
