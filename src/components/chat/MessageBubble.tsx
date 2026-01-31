@@ -62,7 +62,7 @@ const MessageBubble = ({
     const textColor = isOwnMessage ? "text-primary-foreground/90" : "text-primary";
     const iconColor = isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground";
     
-    if (!userId) return <span className={`text-[10px] font-medium ${textColor}`}>{username}</span>;
+    if (!userId) return <span className={`text-xs font-medium ${textColor}`}>{username}</span>;
     
     return (
       <div className="flex items-center gap-0.5">
@@ -148,7 +148,7 @@ const MessageBubble = ({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className={`text-[10px] font-medium ${textColor} truncate max-w-[100px]`}>{username}</span>
+        <span className={`text-xs font-medium ${textColor} truncate max-w-[100px]`}>{username}</span>
       </div>
     );
   };
@@ -179,7 +179,7 @@ const MessageBubble = ({
             <p className="text-[10px] font-bold text-primary">{sender.split(' ').slice(1).join(' ')}</p>
             <span className="text-[9px] px-1 py-0.5 rounded-full bg-primary/20 text-primary font-medium">MOD</span>
           </div>
-          <p className="text-xs leading-tight break-words text-foreground">{message}</p>
+          <p className="text-sm leading-snug break-words text-foreground">{message}</p>
           <p className="text-[9px] text-muted-foreground mt-0.5">
             {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
@@ -298,7 +298,7 @@ const MessageBubble = ({
             </button>
           )}
         </div>
-        <FormattedText text={displayMessage} className="text-xs leading-tight break-words whitespace-pre-wrap" />
+        <FormattedText text={displayMessage} className="text-sm leading-snug break-words whitespace-pre-wrap" />
         {(translatedMessage || detectedLanguage) && (
           <div className="flex items-center gap-1.5 mt-0.5">
             {detectedLanguage && (

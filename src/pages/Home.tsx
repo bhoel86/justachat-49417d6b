@@ -766,14 +766,14 @@ const Home = () => {
                               <div className="relative h-full flex items-center justify-between px-2">
                                 <h3 className={`truncate ${
                                   isRetro 
-                                    ? 'font-mono font-bold text-[9px] sm:text-[10px] text-primary uppercase tracking-wider' 
+                                    ? 'font-mono font-bold text-xs sm:text-sm text-primary uppercase tracking-wider' 
                                     : isValentines
-                                      ? 'font-semibold text-[10px] sm:text-xs text-white drop-shadow-[0_1px_2px_rgba(236,72,153,0.8)]'
-                                      : 'font-semibold text-[10px] sm:text-xs text-white drop-shadow-lg'
+                                      ? 'font-semibold text-xs sm:text-sm text-white drop-shadow-[0_1px_2px_rgba(236,72,153,0.8)]'
+                                      : 'font-semibold text-xs sm:text-sm text-white drop-shadow-lg'
                                 }`}>
                                   {isRetro ? '>' : isValentines ? '♡' : '#'}{formatRoomName(channel.name)}
                                 </h3>
-                                <span className={`text-[9px] sm:text-[10px] font-medium shrink-0 ml-1 ${
+                                <span className={`text-xs font-medium shrink-0 ml-1 ${
                                   isRetro 
                                     ? 'text-primary/80 font-mono' 
                                     : isValentines 
