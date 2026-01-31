@@ -49,7 +49,10 @@ const BotChatWindow = ({
   const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [userMemory, setUserMemory] = useState<UserMemory>({ topics: [], mood: null, isReturning: false });
-  const [position, setPosition] = useState(initialPosition);
+  const [position, setPosition] = useState(() => ({
+    x: Math.max(0, Math.min(window.innerWidth - 340, initialPosition.x)),
+    y: Math.max(0, Math.min(window.innerHeight - 440, initialPosition.y))
+  }));
   const [size, setSize] = useState({ width: 320, height: 420 });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
