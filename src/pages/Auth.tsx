@@ -665,15 +665,16 @@ const Auth = () => {
         {/* Big Justachat™ Header - JAC theme only */}
         {!isRetro && (
           <div className="flex flex-col items-center mb-8">
-            <h1 
-              className="font-display font-black drop-shadow-2xl text-center tracking-tight"
-              style={{ fontSize: 'clamp(3rem, 12vw, 6rem)' }}
-            >
-              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                Justachat™
-              </span>
+            {/* Icon */}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl jac-gradient-bg flex items-center justify-center mb-4 shadow-lg">
+              <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+            </div>
+            {/* Title */}
+            <h1 className="text-3xl sm:text-4xl font-bold text-primary tracking-tight">
+              Justachat<sup className="text-xs">™</sup>
             </h1>
-            <p className="text-muted-foreground text-lg mt-4 tracking-wide">
+            {/* Tagline */}
+            <p className="text-muted-foreground text-sm sm:text-base mt-2 tracking-wide">
               Connect Instantly, Chat Freely
             </p>
           </div>
