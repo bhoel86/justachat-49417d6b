@@ -375,42 +375,6 @@ const Home = () => {
                     <p className="text-xs text-muted-foreground">Help keep Justachat running</p>
                   </div>
                 </DropdownMenuItem>
-
-                {(isOwner || isAdmin) && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs text-muted-foreground">
-                      Admin
-                    </DropdownMenuLabel>
-
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
-                        <Shield className="w-4 h-4 text-primary" />
-                        <div>
-                          <span>Admin Panel</span>
-                          <p className="text-xs text-muted-foreground">Moderation & tools</p>
-                        </div>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    {isOwner && (
-                      <DropdownMenuItem asChild>
-                        <Link
-                          to="/admin/deploy"
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <Rocket className="w-4 h-4 text-primary" />
-                          <div>
-                            <span>Deploy (VPS)</span>
-                            <p className="text-xs text-muted-foreground">
-                              Backups & GitHub sync
-                            </p>
-                          </div>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                  </>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
