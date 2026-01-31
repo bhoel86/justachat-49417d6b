@@ -209,6 +209,16 @@ const Home = () => {
     };
   }, [channels]);
 
+  // Lock body scroll on home page
+  useEffect(() => {
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   const handleJoinRoom = (channel: Channel) => {
     navigate(`/chat/${channel.name}`);
   };
@@ -261,7 +271,7 @@ const Home = () => {
       <StPatricksFloatingIcons />
       <MatrixFloatingCode />
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-20">
+      <header className="border-b border-border bg-card flex-shrink-0 z-20">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
