@@ -42,6 +42,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { RetroWatermark } from "@/components/theme/RetroWatermark";
 import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
 import { StPatricksWatermark } from "@/components/theme/StPatricksWatermark";
+import { MatrixWatermark } from "@/components/theme/MatrixWatermark";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 
@@ -1283,6 +1284,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
             <ValentinesWatermark />
           ) : theme === 'stpatricks' ? (
             <StPatricksWatermark />
+          ) : theme === 'matrix' ? (
+            <MatrixWatermark />
           ) : (
             <div 
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
