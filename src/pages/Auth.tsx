@@ -1048,19 +1048,20 @@ const Auth = () => {
                 </p>
               )}
 
-              {/* Matrix theme: Dual Red/Blue pill buttons */}
+              {/* Matrix theme: Dual Red/Blue pill buttons - transparent with glow */}
               {isMatrix ? (
                 <div className="flex gap-2">
                   {/* Red Pill - Sign In */}
                   <Button
                     type="submit"
                     size="lg"
-                    className="flex-1 font-mono uppercase tracking-wider relative overflow-hidden"
+                    className="flex-1 font-mono uppercase tracking-wider relative overflow-hidden transition-all hover:scale-105"
                     style={{
-                      background: 'linear-gradient(135deg, hsl(0 80% 45%) 0%, hsl(0 70% 35%) 100%)',
-                      border: '1px solid hsl(0 80% 60%)',
-                      boxShadow: '0 0 20px hsl(0 80% 50% / 0.5), inset 0 0 10px hsl(0 80% 60% / 0.3)',
-                      color: 'white',
+                      background: 'transparent',
+                      border: '1px solid hsl(0 80% 50% / 0.7)',
+                      boxShadow: '0 0 20px hsl(0 80% 50% / 0.4), inset 0 0 15px hsl(0 80% 50% / 0.15)',
+                      color: 'hsl(0 80% 60%)',
+                      textShadow: '0 0 10px hsl(0 80% 50% / 0.8)',
                     }}
                     disabled={
                       isSubmitting ||
@@ -1083,12 +1084,13 @@ const Auth = () => {
                   <Button
                     type="submit"
                     size="lg"
-                    className="flex-1 font-mono uppercase tracking-wider relative overflow-hidden"
+                    className="flex-1 font-mono uppercase tracking-wider relative overflow-hidden transition-all hover:scale-105"
                     style={{
-                      background: 'linear-gradient(135deg, hsl(210 80% 45%) 0%, hsl(210 70% 35%) 100%)',
-                      border: '1px solid hsl(210 80% 60%)',
-                      boxShadow: '0 0 20px hsl(210 80% 50% / 0.5), inset 0 0 10px hsl(210 80% 60% / 0.3)',
-                      color: 'white',
+                      background: 'transparent',
+                      border: '1px solid hsl(210 80% 50% / 0.7)',
+                      boxShadow: '0 0 20px hsl(210 80% 50% / 0.4), inset 0 0 15px hsl(210 80% 50% / 0.15)',
+                      color: 'hsl(210 80% 60%)',
+                      textShadow: '0 0 10px hsl(210 80% 50% / 0.8)',
                     }}
                     disabled={
                       isSubmitting ||
