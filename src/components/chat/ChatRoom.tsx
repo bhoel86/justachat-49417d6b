@@ -1219,10 +1219,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         {/* Mobile Header Bar */}
-        <div className={cn(
-          "flex items-center gap-2 px-2 py-2 border-b border-border lg:hidden relative z-20 shrink-0",
-          isRetro ? "bg-black" : "bg-card"
-        )}>
+        <div className="flex items-center gap-2 px-2 py-2 border-b border-border bg-card lg:hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -1262,10 +1259,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         </div>
 
         {/* Desktop Header */}
-        <div className={cn(
-          "hidden lg:block relative z-20 shrink-0",
-          isRetro && "bg-black"
-        )}>
+        <div className="hidden lg:block">
           <ChatHeader 
             onlineCount={onlineUserIds.size || 1}
             topic={topic}
@@ -1282,7 +1276,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           <MinorRestrictionBanner parentEmail={parentEmail} />
         )}
         
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-col relative isolate z-10">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-col relative">
           {/* Transparent logo watermark - theme aware */}
           {theme === 'retro80s' ? (
             <RetroWatermark />
