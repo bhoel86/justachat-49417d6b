@@ -4,7 +4,7 @@ import { ValentinesCupid } from "@/components/theme/ValentinesCupid";
 
 const SiteFooter = () => {
   return (
-    <footer className="border-t border-border bg-card/30 py-6 relative overflow-hidden">
+    <footer className="border-t border-border bg-card/30 py-6 relative overflow-visible">
       {/* Animated Cupid for Valentine's theme */}
       <ValentinesCupid />
       

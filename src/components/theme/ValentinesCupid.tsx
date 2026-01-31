@@ -66,13 +66,14 @@ export const ValentinesCupid: React.FC = () => {
   }
 
   return (
-    <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none overflow-hidden">
+    <div className="absolute inset-x-0 -top-16 h-24 pointer-events-none overflow-visible z-50">
       {/* Flying Cupid */}
       <div
-        className="absolute bottom-6 transition-transform"
+        className="absolute top-2"
         style={{
           left: `${position}%`,
           transform: `scaleX(${direction})`,
+          transition: 'left 0.05s linear',
         }}
       >
         <div className="relative">
