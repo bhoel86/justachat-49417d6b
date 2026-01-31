@@ -1,7 +1,82 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Heart } from 'lucide-react';
+
+const CherubIcon: React.FC = () => {
+  // Simple “baby with wings” cherub using theme tokens
+  // Note: using CSS variables keeps this consistent with the design system.
+  return (
+    <svg
+      width="44"
+      height="32"
+      viewBox="0 0 44 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      style={{ filter: 'drop-shadow(0 0 10px hsl(var(--primary) / 0.35))' }}
+    >
+      {/* Left wing */}
+      <path
+        d="M6 18c0-6 6-11 12-9-5 2-7 6-7 10 0 3 1 6 3 8-5 0-8-4-8-9Z"
+        fill="hsl(var(--primary) / 0.18)"
+        stroke="hsl(var(--primary) / 0.45)"
+        strokeWidth="1"
+      />
+      {/* Right wing */}
+      <path
+        d="M38 18c0-6-6-11-12-9 5 2 7 6 7 10 0 3-1 6-3 8 5 0 8-4 8-9Z"
+        fill="hsl(var(--primary) / 0.18)"
+        stroke="hsl(var(--primary) / 0.45)"
+        strokeWidth="1"
+      />
+
+      {/* Halo */}
+      <ellipse
+        cx="22"
+        cy="6"
+        rx="10"
+        ry="3"
+        stroke="hsl(var(--accent) / 0.85)"
+        strokeWidth="1.5"
+        fill="hsl(var(--accent) / 0.20)"
+      />
+
+      {/* Head */}
+      <circle
+        cx="22"
+        cy="15"
+        r="7"
+        fill="hsl(var(--foreground) / 0.06)"
+        stroke="hsl(var(--foreground) / 0.22)"
+        strokeWidth="1"
+      />
+
+      {/* Face */}
+      <circle cx="19" cy="14.5" r="0.9" fill="hsl(var(--foreground) / 0.7)" />
+      <circle cx="25" cy="14.5" r="0.9" fill="hsl(var(--foreground) / 0.7)" />
+      <path
+        d="M20.5 18.2c1 .9 2.2.9 3.2 0"
+        stroke="hsl(var(--foreground) / 0.55)"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+
+      {/* Body */}
+      <path
+        d="M17 30c0-6 10-6 10 0"
+        stroke="hsl(var(--foreground) / 0.22)"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+
+      {/* Tiny heart */}
+      <path
+        d="M22 23.2c-1.6-1.3-3.6.2-2.5 1.9.7 1.1 2.5 2.1 2.5 2.1s1.8-1 2.5-2.1c1.1-1.7-.9-3.2-2.5-1.9Z"
+        fill="hsl(var(--primary) / 0.65)"
+      />
+    </svg>
+  );
+};
 
 interface Arrow {
   id: number;
@@ -75,76 +150,44 @@ export const ValentinesCupid: React.FC = () => {
   // NOTE: fixed positioning prevents clipping from any ancestor containers
   // (some pages use overflow/isolation for layered backgrounds).
   return createPortal(
-    <div className="fixed left-0 right-0 bottom-24 h-24 pointer-events-none overflow-visible z-50">
+    <div className="fixed left-0 right-0 bottom-6 sm:bottom-8 h-16 pointer-events-none overflow-visible z-50">
       {/* Flying Cupid */}
       <div
-        className="absolute top-2"
+        className="absolute top-0"
         style={{
           left: `${position}%`,
           transform: `scaleX(${direction})`,
           transition: 'left 0.05s linear',
         }}
       >
-        <div className="relative">
-          {/* Left Wing */}
-          <div 
-            className="absolute -left-4 -top-2"
-            style={{ animation: 'cupidWingFlap 0.3s ease-in-out infinite alternate' }}
-          >
-            <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
-              <path 
-                d="M16 8C16 4 12 1 8 1C4 1 1 4 1 7C1 10 4 14 8 12" 
-                stroke="rgba(255,182,193,0.9)" 
-                strokeWidth="1.5"
-                fill="rgba(255,192,203,0.5)"
-              />
-            </svg>
-          </div>
-          {/* Right Wing */}
-          <div 
-            className="absolute -right-4 -top-2"
-            style={{ 
-              animation: 'cupidWingFlap 0.3s ease-in-out infinite alternate-reverse',
-              transform: 'scaleX(-1)'
-            }}
-          >
-            <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
-              <path 
-                d="M16 8C16 4 12 1 8 1C4 1 1 4 1 7C1 10 4 14 8 12" 
-                stroke="rgba(255,182,193,0.9)" 
-                strokeWidth="1.5"
-                fill="rgba(255,192,203,0.5)"
-              />
-            </svg>
-          </div>
-          
-          {/* Heart Body with face */}
-          <div 
-            className="w-7 h-7 flex items-center justify-center relative"
-            style={{ animation: 'cupidBob 1s ease-in-out infinite' }}
-          >
-            <Heart 
-              className="w-6 h-6 text-pink-400" 
-              fill="currentColor"
-              style={{ filter: 'drop-shadow(0 0 8px #ff69b4)' }}
-            />
-            {/* Cute face */}
-            <div className="absolute inset-0 flex items-center justify-center text-[7px] text-pink-900 font-bold" style={{ marginTop: '2px' }}>
-              ◡‿◡
-            </div>
-          </div>
-          
-          {/* Bow & Arrow */}
-          <div 
+        <div
+          className="relative"
+          style={{ animation: 'cupidBob 1s ease-in-out infinite' }}
+        >
+          <CherubIcon />
+
+          {/* Simple bow */}
+          <div
             className="absolute top-1/2 -translate-y-1/2"
-            style={{ 
-              right: direction === 1 ? '-14px' : 'auto',
-              left: direction === -1 ? '-14px' : 'auto',
+            style={{
+              right: direction === 1 ? '-10px' : 'auto',
+              left: direction === -1 ? '-10px' : 'auto',
             }}
           >
-            <svg width="14" height="18" viewBox="0 0 14 18" fill="none">
-              <path d="M2 2C8 2 12 6 12 9C12 12 8 16 2 16" stroke="#daa520" strokeWidth="2" fill="none"/>
-              <path d="M2 2L2 16" stroke="#daa520" strokeWidth="1"/>
+            <svg width="12" height="16" viewBox="0 0 12 16" fill="none" aria-hidden="true">
+              <path
+                d="M2 2c5 0 8 3 8 6 0 3-3 6-8 6"
+                stroke="hsl(var(--accent) / 0.9)"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+              />
+              <path
+                d="M2 2v12"
+                stroke="hsl(var(--accent) / 0.65)"
+                strokeWidth="1"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
         </div>
@@ -157,7 +200,7 @@ export const ValentinesCupid: React.FC = () => {
           className="absolute"
           style={{
             left: `${arrow.x}%`,
-            bottom: '32px',
+            bottom: '18px',
             animation: 'arrowFly 1.5s ease-out forwards',
             transform: `rotate(${arrow.angle}deg)`,
           }}
@@ -165,20 +208,28 @@ export const ValentinesCupid: React.FC = () => {
           <div className="relative flex items-center">
             {/* Feathers */}
             <div className="flex flex-col gap-0.5">
-              <div className="w-2 h-1 bg-pink-300 rounded-full -rotate-12" />
-              <div className="w-2 h-1 bg-pink-300 rounded-full rotate-12" />
+              <div className="w-2 h-1 bg-primary/30 rounded-full -rotate-12" />
+              <div className="w-2 h-1 bg-primary/30 rounded-full rotate-12" />
             </div>
             {/* Shaft */}
             <div 
-              className="w-10 h-0.5 bg-gradient-to-r from-amber-500 to-amber-300"
-              style={{ boxShadow: '0 0 6px rgba(255,215,0,0.6)' }}
+              className="w-10 h-0.5 bg-gradient-to-r from-accent/80 to-accent/40"
+              style={{ boxShadow: '0 0 10px hsl(var(--accent) / 0.35)' }}
             />
             {/* Heart tip */}
-            <Heart 
-              className="w-3 h-3 text-rose-500 -ml-0.5" 
-              fill="currentColor"
-              style={{ filter: 'drop-shadow(0 0 4px #ff1493)' }}
-            />
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="-ml-0.5"
+              style={{ filter: 'drop-shadow(0 0 8px hsl(var(--primary) / 0.35))' }}
+            >
+              <path
+                d="M12 21s-6.7-4.4-9.2-8.2C.8 9.5 3 6.5 6.2 6.5c1.7 0 3.2.9 3.8 2.1.6-1.2 2.1-2.1 3.8-2.1 3.2 0 5.4 3 3.4 6.3C18.7 16.6 12 21 12 21z"
+                fill="hsl(var(--primary) / 0.7)"
+              />
+            </svg>
           </div>
         </div>
       ))}
