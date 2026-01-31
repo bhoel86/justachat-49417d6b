@@ -324,13 +324,13 @@ const Home = () => {
                   </Link>
                 </DropdownMenuItem>
                 
-                {/* mIRC Connection Info */}
+                {/* mIRC Connection Guide */}
                 <DropdownMenuItem asChild>
-                  <Link to="/downloads" className="flex items-center gap-2 cursor-pointer">
+                  <Link to="/mirc" className="flex items-center gap-2 cursor-pointer">
                     <Download className="w-4 h-4 text-purple-500" />
                     <div>
                       <span>Connect with mIRC</span>
-                      <p className="text-xs text-muted-foreground">Server: 157.245.174.197:6697</p>
+                      <p className="text-xs text-muted-foreground">Step-by-step guide</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>

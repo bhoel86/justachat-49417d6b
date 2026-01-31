@@ -29,6 +29,7 @@ import VerifyConsent from "./pages/VerifyConsent";
 import Help from "./pages/Help";
 import DownloadProxy from "./pages/DownloadProxy";
 import ClientDownload from "./pages/ClientDownload";
+import MircConnect from "./pages/MircConnect";
 import Dating from "./pages/Dating";
 import Ethos from "./pages/Ethos";
 import Games from "./pages/Games";
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/verify-consent" element={<VerifyConsent />} />
                 <Route path="/download-proxy" element={<DownloadProxy />} />
                 <Route path="/downloads" element={<ClientDownload />} />
+                <Route path="/mirc" element={<MircConnect />} />
                 <Route path="/dating" element={<Dating />} />
                 <Route path="/ethos" element={<Ethos />} />
                 <Route path="/games" element={<Games />} />
