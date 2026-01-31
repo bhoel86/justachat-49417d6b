@@ -148,7 +148,7 @@ const MessageBubble = ({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className={`text-[10px] font-medium ${textColor}`}>{username}</span>
+        <span className={`text-[10px] font-medium ${textColor} truncate max-w-[100px]`}>{username}</span>
       </div>
     );
   };

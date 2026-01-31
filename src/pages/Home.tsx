@@ -9,7 +9,7 @@ import {
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
   Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX, Menu, 
   Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen,
-  Radio, Camera, Rocket, Clover
+  Radio, Camera, Rocket
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,6 +48,7 @@ import { ValentinesWelcomeBanner } from "@/components/theme/ValentinesWelcomeBan
 import { StPatricksWelcomeBanner } from "@/components/theme/StPatricksWelcomeBanner";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
+import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface Channel {
@@ -261,8 +262,6 @@ const Home = () => {
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
               {isValentines ? (
                 <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" fill="currentColor" />
-              ) : isStPatricks ? (
-                <Clover className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               ) : (
                 <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               )}
@@ -925,14 +924,8 @@ const Home = () => {
                   
                   {/* Center section with mascots and social links */}
                   <div className="flex items-center">
-                    {/* Left mascot - OG theme only */}
-                    {!isRetro && !isValentines && !isStPatricks && (
-                      <img 
-                        src={mascotLeft} 
-                        alt="Mascot" 
-                        className="h-14 sm:h-16 w-auto object-contain"
-                      />
-                    )}
+                    {/* Left mascot - theme aware */}
+                    <ThemedMascot side="left" />
                     
                     {/* Social Media Links + Copyright centered */}
                     <div className="flex flex-col items-center">
@@ -1006,14 +999,8 @@ const Home = () => {
                       </div>
                     </div>
                     
-                    {/* Right mascot - OG theme only */}
-                    {!isRetro && !isValentines && !isStPatricks && (
-                      <img 
-                        src={mascotRight} 
-                        alt="Mascot" 
-                        className="h-14 sm:h-16 w-auto object-contain"
-                      />
-                    )}
+                    {/* Right mascot - theme aware */}
+                    <ThemedMascot side="right" />
                   </div>
                   
                   {/* Spacer on right to balance */}
