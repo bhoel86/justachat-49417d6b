@@ -1267,7 +1267,7 @@ const Auth = () => {
         </div>
         
         {/* Official Footer with Mascots */}
-        <footer className="mt-8 w-full">
+        <footer className="mt-4 w-full">
         <div className="flex items-center justify-center gap-4">
           {/* Left mascot - theme aware */}
           <ThemedMascot side="left" className="h-10 sm:h-12" />
