@@ -738,13 +738,40 @@ const Auth = () => {
           </div>
         )}
         {/* Form Card - themed styling */}
-        <div className={`p-6 shadow-xl ${
+        <div className={`relative p-6 shadow-xl ${
           isRetro 
-            ? 'bg-black/80 border-4 border-cyan-400 rounded-lg' 
+            ? 'retro-memphis-container' 
             : 'bg-card rounded-2xl border border-border'
-        }`} style={isRetro ? { 
-          boxShadow: '0 0 30px rgba(34,211,238,0.4), inset 0 0 20px rgba(34,211,238,0.1), 6px 6px 0px rgba(255,0,255,0.5)' 
-        } : undefined}>
+        }`}>
+          {/* Memphis-style geometric decorations for retro theme */}
+          {isRetro && (
+            <>
+              {/* Cyan circle - top left */}
+              <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-cyan-400 opacity-80" style={{ boxShadow: '0 0 15px rgba(0,255,255,0.6)' }} />
+              {/* Yellow triangle - bottom right */}
+              <div className="absolute -bottom-2 -right-2 w-0 h-0" style={{
+                borderLeft: '20px solid transparent',
+                borderRight: '20px solid transparent',
+                borderBottom: '35px solid #FFD700',
+                filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.6))',
+              }} />
+              {/* Magenta zigzag - top right */}
+              <svg className="absolute -top-1 -right-6 w-12 h-6 opacity-70" viewBox="0 0 50 20">
+                <polyline
+                  points="0,10 10,2 20,18 30,2 40,18 50,10"
+                  fill="none"
+                  stroke="#FF00FF"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {/* Small cyan dot - left side */}
+              <div className="absolute top-1/2 -left-2 w-4 h-4 rounded-full bg-cyan-400 opacity-60" />
+              {/* Small magenta dot - right side */}
+              <div className="absolute top-1/3 -right-2 w-3 h-3 rounded-full bg-fuchsia-500 opacity-70" />
+            </>
+          )}
           {/* Back button for forgot/reset modes */}
           {(mode === "forgot" || mode === "reset") && (
             <button
