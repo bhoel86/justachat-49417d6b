@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useLayoutEffect 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'neonvoid' | 'aliencrypt' | 'terminalblood' | 'pastelweb';
+export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix';
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -16,23 +16,19 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEMES = [
   { id: 'jac' as ThemeName, name: 'OG Theme', description: 'The original Justachat look' },
-  { id: 'retro80s' as ThemeName, name: '80s Retro', description: 'Retro Windows 95/98 aesthetic' },
+  { id: 'retro80s' as ThemeName, name: '80s Retro', description: 'Memphis-style 80s aesthetic' },
   { id: 'valentines' as ThemeName, name: "Valentine's", description: 'Romantic pink hearts theme' },
   { id: 'stpatricks' as ThemeName, name: "St. Patrick's", description: 'Irish shamrocks & gold' },
   { id: 'matrix' as ThemeName, name: 'The Matrix', description: 'Follow the white rabbit' },
-  { id: 'neonvoid' as ThemeName, name: 'Neon Void', description: 'Black glass + neon cyan glow' },
-  { id: 'aliencrypt' as ThemeName, name: 'Alien Crypt', description: 'Glyph scroll + bio-tech haze' },
-  { id: 'terminalblood' as ThemeName, name: 'Terminal Blood', description: 'Dark terminal + red pulse' },
-  { id: 'pastelweb' as ThemeName, name: 'Pastel Web', description: 'Playful pastel retro popups' },
 ];
 
 const isValidTheme = (value: string): value is ThemeName => {
-  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix', 'neonvoid', 'aliencrypt', 'terminalblood', 'pastelweb'].includes(value);
+  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix'].includes(value);
 };
 
 const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix', 'theme-neonvoid', 'theme-aliencrypt', 'theme-terminalblood', 'theme-pastelweb');
+    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix');
     document.documentElement.classList.add(`theme-${theme}`);
     // Cache in localStorage for instant load on next visit
     try {
