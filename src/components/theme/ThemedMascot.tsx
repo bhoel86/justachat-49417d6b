@@ -37,12 +37,12 @@ export const ThemedMascot: React.FC<ThemedMascotProps> = ({ side, className = ''
   // For 80s Retro theme, show neon-styled retro computer icons
   if (theme === 'retro80s') {
     return (
-      <div className={`h-14 sm:h-16 flex items-center justify-center ${className}`}>
+      <div className={`h-14 sm:h-16 flex items-end justify-center ${className}`}>
         <div className="relative">
           {side === 'left' ? (
-            // Left side: Neon CRT Monitor - shifted left with background
+            // Left side: Neon CRT Monitor - with background
             <div 
-              className="flex flex-col items-center -ml-2 sm:-ml-3 p-2 rounded-none"
+              className="flex flex-col items-center mx-3 p-2 rounded-none"
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 border: '2px solid #00FFFF',
@@ -94,9 +94,9 @@ export const ThemedMascot: React.FC<ThemedMascotProps> = ({ side, className = ''
               />
             </div>
           ) : (
-            // Right side: Neon Floppy disk - sized relative to PC, shifted right with background
+            // Right side: Neon Floppy disk - sized to match PC height
             <div 
-              className="p-2 -mr-2 sm:-mr-3 rounded-none"
+              className="p-2 mx-3 rounded-none"
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 border: '2px solid #FF00FF',
