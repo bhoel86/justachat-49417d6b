@@ -209,15 +209,6 @@ const Home = () => {
     };
   }, [channels]);
 
-  // Lock body scroll on home page
-  useEffect(() => {
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-    };
-  }, []);
 
   const handleJoinRoom = (channel: Channel) => {
     navigate(`/chat/${channel.name}`);
@@ -265,7 +256,7 @@ const Home = () => {
   }
 
   return (
-    <div className="bg-background text-foreground relative h-screen overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-background text-foreground relative">
       {/* Floating theme decorations */}
       <ValentinesFloatingHearts />
       <StPatricksFloatingIcons />
