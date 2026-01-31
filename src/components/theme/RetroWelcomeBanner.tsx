@@ -1,5 +1,5 @@
 import React from 'react';
-import retroHeader from '@/assets/justachat-header-soft.png';
+import retroHeader from '@/assets/justachat-header-80s.png';
 
 interface RetroWelcomeBannerProps {
   onJoinClick?: () => void;
