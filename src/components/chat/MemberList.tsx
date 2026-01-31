@@ -23,6 +23,7 @@ import ProfileEditModal from "@/components/profile/ProfileEditModal";
 import ProfileViewModal from "@/components/profile/ProfileViewModal";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import FriendsList from "@/components/friends/FriendsList";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface Member {
   user_id: string;
@@ -109,6 +110,8 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
   const radio = useRadioOptional();
+  const { theme } = useTheme();
+  const isRetro = theme === 'retro80s';
 
   // Get current user's username and avatar
   const [currentUsername, setCurrentUsername] = useState('');
@@ -454,7 +457,10 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
 
   if (loading) {
     return (
-      <div className="w-60 bg-card border-l border-border p-4 flex items-center justify-center">
+      <div className={cn(
+        "w-60 border-l border-border p-4 flex items-center justify-center",
+        isRetro ? "bg-black" : "bg-card"
+      )}>
         <div className="h-6 w-6 rounded-full jac-gradient-bg animate-pulse" />
       </div>
     );
@@ -462,7 +468,10 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
 
   return (
     <>
-      <div className="w-64 sm:w-60 bg-card border-l border-border flex flex-col h-full max-h-screen">
+      <div className={cn(
+        "w-64 sm:w-60 border-l border-border flex flex-col h-full max-h-screen",
+        isRetro ? "bg-black" : "bg-card"
+      )}>
         {/* Tab Header - Members | Friends side by side */}
         <div className="flex border-b border-border">
           <button
