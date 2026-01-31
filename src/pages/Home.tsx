@@ -810,9 +810,36 @@ const Home = () => {
             <footer className={`border-t ${isElectron ? 'mt-3 pt-3 flex-shrink-0' : 'mt-8 sm:mt-12 pt-6 sm:pt-8'} ${
               isRetro ? 'border-cyan-400/50' : 'border-border'
             }`}>
-              {/* Unified footer content - centered as one unit */}
-              <div className="flex justify-center">
-                <div className="flex items-end gap-2 sm:gap-4">
+              {/* Footer row with logo left, center section, spacer right */}
+              <div className="flex items-center">
+                {/* Logo and tagline - left side */}
+                <div className="flex items-center gap-3">
+                  <div className={`h-9 w-9 flex items-center justify-center shadow-lg ${
+                    isRetro 
+                      ? 'rounded-none border-2 border-cyan-400 bg-black/80' 
+                      : 'rounded-xl jac-gradient-bg'
+                  }`} style={isRetro ? { boxShadow: '0 0 15px rgba(34,211,238,0.5)' } : undefined}>
+                    <MessageSquare className={`w-4 h-4 ${isRetro ? 'text-cyan-400' : 'text-primary-foreground'}`} />
+                  </div>
+                  <div>
+                    <h3 className={`text-base font-bold ${
+                      isRetro ? 'font-mono uppercase text-cyan-400' : 'jac-gradient-text'
+                    }`} style={isRetro ? { textShadow: '0 0 10px rgba(34,211,238,0.8)' } : undefined}>
+                      {isRetro ? 'JUSTACHAT' : 'Justachat'}<sup className="text-[7px]">™</sup>
+                    </h3>
+                    <p className={`text-xs ${
+                      isRetro ? 'font-mono text-magenta-400' : 'text-muted-foreground'
+                    }`} style={isRetro ? { color: '#FF00FF', textShadow: '0 0 8px rgba(255,0,255,0.5)' } : undefined}>
+                      {isRetro ? '[ CHAT. CONNECT. CHILL. ]' : 'Chat. Connect. Chill.'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Spacer to push center content */}
+                <div className="flex-1" />
+                
+                {/* Center section - unified mascots + social + copyright */}
+                <div className="flex items-end gap-2 sm:gap-4 -ml-16">
                   {/* Left mascot - theme aware */}
                   <ThemedMascot side="left" />
                   
@@ -943,6 +970,9 @@ const Home = () => {
                   {/* Right mascot - theme aware */}
                   <ThemedMascot side="right" />
                 </div>
+                
+                {/* Spacer on right to balance */}
+                <div className="flex-1" />
               </div>
             </footer>
           </main>
