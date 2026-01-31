@@ -5,6 +5,7 @@ import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 import { StPatricksMascot } from './StPatricksMascot';
 import { MatrixMascot } from './MatrixMascot';
+import { VaporMascot } from './VaporMascot';
 
 interface ThemedMascotProps {
   side: 'left' | 'right';
@@ -19,6 +20,11 @@ export const ThemedMascot: React.FC<ThemedMascotProps> = ({ side, className = ''
   // For Matrix theme, show rabbit mascots
   if (theme === 'matrix') {
     return <MatrixMascot side={side} />;
+  }
+
+  // For Vaporwave theme, show retro computer mascots
+  if (theme === 'vapor') {
+    return <VaporMascot side={side} className={className} />;
   }
   
   console.log('[ThemedMascot] Current theme:', theme, 'Side:', side);

@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Palette, Monitor, Heart, Terminal, Check, Circle } from 'lucide-react';
+import { Palette, Monitor, Heart, Terminal, Check, Circle, MonitorSmartphone } from 'lucide-react';
 
 // Theme-specific icon component
 const ThemeIcon: React.FC<{ theme: ThemeName; className?: string }> = ({ theme, className = '' }) => {
@@ -19,6 +19,8 @@ const ThemeIcon: React.FC<{ theme: ThemeName; className?: string }> = ({ theme, 
       return <span className={`text-lg ${className}`}>☘️</span>;
     case 'matrix':
       return <Terminal className={className} />;
+    case 'vapor':
+      return <MonitorSmartphone className={className} />;
     default:
       return <Palette className={className} />;
   }
@@ -35,6 +37,8 @@ const getThemeButtonStyles = (theme: ThemeName): string => {
       return 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10 shadow-[0_0_8px_rgba(16,185,129,0.3)]';
     case 'matrix':
       return 'text-green-500 hover:text-green-400 hover:bg-green-500/10 shadow-[0_0_10px_rgba(0,255,0,0.4)]';
+    case 'vapor':
+      return 'text-[#8F7AC8] hover:text-[#2EF2C2] hover:bg-[#8F7AC8]/10 shadow-[3px_3px_0_#1A1A1A]';
     default:
       return 'text-primary hover:text-primary/80 hover:bg-primary/10';
   }
