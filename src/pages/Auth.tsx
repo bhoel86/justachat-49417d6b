@@ -19,8 +19,7 @@ import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingH
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { useTheme } from "@/contexts/ThemeContext";
-import retroHeaderImg from '@/assets/retro-header.png';
-import goldenHeaderImg from '@/assets/justachat-header-80s.png';
+import headerImg from '@/assets/justachat-header-80s.png';
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
 import matrixFollowImg from '@/assets/matrix/follow-rabbit.jpg';
 
@@ -662,14 +661,13 @@ const Auth = () => {
       {/* Matrix falling code */}
       <MatrixFloatingCode />
 
-      {/* Full-width header banner - Golden for default, retro for 80s theme */}
+      {/* Full-width header banner - for default and retro themes */}
       {(isRetro || (!isValentines && !isStPatricks && !isMatrix)) && (
         <div className="absolute top-8 left-0 right-0 z-20 flex justify-center px-4">
           <img 
-            src={isRetro ? retroHeaderImg : goldenHeaderImg} 
+            src={headerImg} 
             alt="Justachat - Connect Instantly, Chat Freely" 
             className="h-auto w-full max-w-lg sm:max-w-xl md:max-w-2xl"
-            style={{ imageRendering: isRetro ? 'crisp-edges' : 'auto' }}
           />
         </div>
       )}
