@@ -92,6 +92,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           filter: 'key=eq.theme'
         },
         (payload) => {
+          // Skip realtime if user just changed theme (same cooldown as polling)
+          const timeSinceUserChange = Date.now() - lastUserChangeRef.current;
+          if (timeSinceUserChange < 5000) {
+            console.log('[Theme] Skipping realtime - user changed theme recently');
+            return;
+          }
+          
           console.log('[Theme] Realtime update:', payload);
           const newValue = (payload.new as { value?: string })?.value;
           if (newValue && isValidTheme(newValue)) {
