@@ -667,12 +667,17 @@ const Auth = () => {
 
       {/* Full-width header banner - ONLY for retro theme */}
       {isRetro && (
-        <div className="absolute top-1 left-0 right-0 z-20 flex justify-center px-4">
-          <div className="p-2" style={{ border: '4px solid #00FFFF', borderRadius: 0, boxShadow: '6px 6px 0 #FF00FF', background: 'rgba(0,0,0,0.85)' }}>
+        <div className="absolute top-2 left-0 right-0 z-20 flex justify-center px-4">
+          <div className="memphis-header-banner p-3 relative">
+            {/* Corner decorations */}
+            <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-[#FF00FF]" />
+            <div className="absolute -top-3 -right-3 w-6 h-6 bg-[#FFD700]" style={{ clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }} />
+            <div className="absolute -bottom-3 -left-3 w-5 h-5 bg-[#39FF14]" />
+            <div className="absolute -bottom-4 -right-4 w-7 h-7 rounded-full bg-[#00FFFF]" />
             <img 
               src={headerImg} 
               alt="Justachat - Connect Instantly, Chat Freely" 
-              className="h-auto w-full max-w-xs sm:max-w-sm md:max-w-md"
+              className="h-auto w-full max-w-xs sm:max-w-sm md:max-w-md relative z-10"
             />
           </div>
         </div>
