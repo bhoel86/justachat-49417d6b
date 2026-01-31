@@ -20,7 +20,7 @@ import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIc
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { useTheme } from "@/contexts/ThemeContext";
 import retroHeaderImg from '@/assets/retro-header.png';
-import goldenHeaderImg from '@/assets/retro-header-golden.png';
+import goldenHeaderImg from '@/assets/justachat-header-80s.png';
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
 import matrixFollowImg from '@/assets/matrix/follow-rabbit.jpg';
 
