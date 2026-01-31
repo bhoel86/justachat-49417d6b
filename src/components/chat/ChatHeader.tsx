@@ -1,4 +1,4 @@
-import { MessageCircle, Users, LogOut, Crown, ShieldCheck, Info, Hash, Globe, Bell, BellOff } from "lucide-react";
+import { MessagesSquare, Users, LogOut, Crown, ShieldCheck, Info, Hash, Globe, Bell, BellOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +52,7 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
             "h-8 w-8 rounded-lg flex items-center justify-center bg-gradient-to-br",
             theme.gradient
           )}>
-            <MessageCircle className="h-4 w-4 text-white" />
+            <MessagesSquare className="h-4 w-4 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
