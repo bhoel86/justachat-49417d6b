@@ -246,10 +246,10 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="border-b-[length:var(--theme-border-width)] border-border bg-card sticky top-0 z-10" style={{ boxShadow: 'var(--theme-window-shadow)' }}>
+      <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 jac-gradient-bg flex items-center justify-center" style={{ borderRadius: 'var(--radius)' }}>
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
               <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
             </div>
             <h1 className="text-lg sm:text-2xl font-bold brand text-primary">Justachat<sup className="text-[8px] sm:text-xs">™</sup></h1>
