@@ -40,7 +40,7 @@ import loungeBg from "@/assets/rooms/lounge-bg.jpg";
 import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 
 // Banner and footer graphics
-import welcomeBanner from "@/assets/welcome-banner.png";
+import welcomeBanner from "@/assets/retro-header-golden.png";
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
@@ -594,19 +594,11 @@ const Home = () => {
             ) : isMatrix ? (
               <MatrixWelcomeBanner variant="mobile" />
             ) : (
-              <>
-                <img 
-                  src={welcomeBanner} 
-                  alt="Welcome to Justachat" 
-                  className="w-full h-24 object-cover"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-bold text-white drop-shadow-lg">Welcome!</h2>
-                    <p className="text-xs text-white/90 drop-shadow-md mt-1">Tap anywhere to join chat</p>
-                  </div>
-                </div>
-              </>
+              <img 
+                src={welcomeBanner} 
+                alt="Welcome to Justachat" 
+                className="w-full h-auto object-contain"
+              />
             )}
           </div>
           
@@ -646,29 +638,15 @@ const Home = () => {
                   if (generalChannel) handleJoinRoom(generalChannel);
                 }} />
               ) : (
-                <>
-                  <img 
-                    src={welcomeBanner} 
-                    alt="Welcome to Justachat" 
-                    className="w-full h-24 sm:h-32 md:h-40 object-cover"
-                  />
-                  {/* Welcome text overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <div className="text-center">
-                      <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Welcome!</h2>
-                      <p className="text-xs sm:text-sm md:text-base text-white/90 drop-shadow-md mt-1">This is the main hangout spot.</p>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        const generalChannel = channels.find(c => c.name === 'general');
-                        if (generalChannel) handleJoinRoom(generalChannel);
-                      }}
-                      className="absolute right-2 sm:right-4 top-2 sm:top-4 jac-gradient-bg hover:opacity-90 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 h-auto"
-                    >
-                      Join Chat
-                    </Button>
-                  </div>
-                </>
+                <img 
+                  src={welcomeBanner} 
+                  alt="Welcome to Justachat" 
+                  className="w-full h-auto object-contain cursor-pointer hover:opacity-95 transition-opacity"
+                  onClick={() => {
+                    const generalChannel = channels.find(c => c.name === 'general');
+                    if (generalChannel) handleJoinRoom(generalChannel);
+                  }}
+                />
               )}
             </div>
 
