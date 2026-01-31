@@ -8,10 +8,21 @@ const SiteFooter = () => {
 
   return (
     <footer className={`border-t py-6 relative overflow-visible ${
-      isRetro ? 'bg-black/80 border-cyan-500/50' : 'border-border bg-card/30'
-    }`}
-    style={undefined}
-    >
+      isRetro ? 'memphis-footer' : 'border-border bg-card/30'
+    }`}>
+      {/* Memphis confetti decorations */}
+      {isRetro && (
+        <>
+          {/* Floating shapes */}
+          <div className="absolute top-2 left-4 w-4 h-4 bg-[#FF00FF] rotate-45" />
+          <div className="absolute top-4 left-12 w-3 h-3 rounded-full bg-[#00FFFF]" />
+          <div className="absolute top-2 right-8 w-5 h-5 bg-[#FFD700]" style={{ clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }} />
+          <div className="absolute top-5 right-20 w-3 h-3 rounded-full bg-[#39FF14]" />
+          <div className="absolute bottom-3 left-8 w-4 h-4 rounded-full bg-[#FFD700]" />
+          <div className="absolute bottom-4 right-12 w-3 h-3 bg-[#FF00FF] rotate-12" />
+        </>
+      )}
+      
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex items-center justify-center relative">
           {/* Spacer on left to help center */}
@@ -28,13 +39,10 @@ const SiteFooter = () => {
                   href="https://www.facebook.com/profile.php?id=61587064682802" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-colors group ${
-                    isRetro ? 'rounded-none border-2 bg-black/80' : 'rounded-lg bg-secondary hover:bg-primary/20'
+                  className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-all group ${
+                    isRetro ? 'memphis-social-btn' : 'rounded-lg bg-secondary hover:bg-primary/20'
                   }`}
-                  style={isRetro ? { 
-                    borderColor: '#00FFFF',
-                    boxShadow: '3px 3px 0 #000'
-                  } : undefined}
+                  style={isRetro ? { borderColor: '#00FFFF' } : undefined}
                   title="Facebook"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill={isRetro ? "#00FFFF" : "currentColor"}>
@@ -45,13 +53,10 @@ const SiteFooter = () => {
                   href="https://www.instagram.com/justachatunix/" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-colors group ${
-                    isRetro ? 'rounded-none border-2 bg-black/80' : 'rounded-lg bg-secondary hover:bg-primary/20'
+                  className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-all group ${
+                    isRetro ? 'memphis-social-btn' : 'rounded-lg bg-secondary hover:bg-primary/20'
                   }`}
-                  style={isRetro ? { 
-                    borderColor: '#FF00FF',
-                    boxShadow: '3px 3px 0 #000'
-                  } : undefined}
+                  style={isRetro ? { borderColor: '#FF00FF' } : undefined}
                   title="Instagram"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill={isRetro ? "#FF00FF" : "currentColor"}>
@@ -62,16 +67,13 @@ const SiteFooter = () => {
                   href="https://www.tiktok.com/@0justachat0" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-colors group ${
-                    isRetro ? 'rounded-none border-2 bg-black/80' : 'rounded-lg bg-secondary hover:bg-primary/20'
+                  className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-all group ${
+                    isRetro ? 'memphis-social-btn' : 'rounded-lg bg-secondary hover:bg-primary/20'
                   }`}
-                  style={isRetro ? { 
-                    borderColor: '#FFFF00',
-                    boxShadow: '3px 3px 0 #000'
-                  } : undefined}
+                  style={isRetro ? { borderColor: '#FFD700' } : undefined}
                   title="TikTok"
                 >
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill={isRetro ? "#FFFF00" : "currentColor"}>
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill={isRetro ? "#FFD700" : "currentColor"}>
                     <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
                   </svg>
                 </a>
@@ -79,13 +81,10 @@ const SiteFooter = () => {
                   href="https://x.com/UnixJustachat" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-colors group ${
-                    isRetro ? 'rounded-none border-2 bg-black/80' : 'rounded-lg bg-secondary hover:bg-primary/20'
+                  className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center transition-all group ${
+                    isRetro ? 'memphis-social-btn' : 'rounded-lg bg-secondary hover:bg-primary/20'
                   }`}
-                  style={isRetro ? { 
-                    borderColor: '#39FF14',
-                    boxShadow: '3px 3px 0 #000'
-                  } : undefined}
+                  style={isRetro ? { borderColor: '#39FF14' } : undefined}
                   title="X (Twitter)"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill={isRetro ? "#39FF14" : "currentColor"}>
@@ -96,38 +95,39 @@ const SiteFooter = () => {
               
               {/* Copyright & Version - directly under social links */}
               <div className="text-center mt-2">
-                <p className={`text-xs ${isRetro ? 'font-mono uppercase tracking-wider text-cyan-400' : 'text-muted-foreground'}`}>
+                <p className={`text-xs ${isRetro ? 'font-mono uppercase tracking-wider' : 'text-muted-foreground'}`}
+                   style={isRetro ? { color: '#00FFFF' } : undefined}>
                   {isRetro ? '> ' : ''}© {new Date().getFullYear()} Justachat™ All rights reserved.
                 </p>
                 <div className="flex items-center justify-center gap-2">
                   <a 
                     href="https://justachat.net" 
-                    className={`text-xs transition-colors ${isRetro ? 'font-mono uppercase hover:text-cyan-300' : 'text-muted-foreground hover:text-primary'}`}
+                    className={`text-xs transition-colors ${isRetro ? 'font-mono uppercase hover:opacity-80' : 'text-muted-foreground hover:text-primary'}`}
                     style={isRetro ? { color: '#FF00FF' } : undefined}
                   >
                     {isRetro ? '[ JUSTACHAT.NET ]' : 'justachat.net'}
                   </a>
-                  <span className={`text-xs ${isRetro ? '' : 'text-muted-foreground/50'}`} style={isRetro ? { color: '#FFFF00' } : undefined}>
+                  <span className={`text-xs`} style={isRetro ? { color: '#FFD700' } : undefined}>
                     {isRetro ? '|' : '•'}
                   </span>
                   <Link 
                     to="/legal" 
-                    className={`text-xs transition-colors ${isRetro ? 'font-mono uppercase hover:text-green-300' : 'text-muted-foreground hover:text-primary'}`}
+                    className={`text-xs transition-colors ${isRetro ? 'font-mono uppercase hover:opacity-80' : 'text-muted-foreground hover:text-primary'}`}
                     style={isRetro ? { color: '#39FF14' } : undefined}
                   >
                     {isRetro ? '[ LEGAL ]' : 'Legal'}
                   </Link>
-                  <span className={`text-xs ${isRetro ? '' : 'text-muted-foreground/50'}`} style={isRetro ? { color: '#FFFF00' } : undefined}>
+                  <span className={`text-xs`} style={isRetro ? { color: '#FFD700' } : undefined}>
                     {isRetro ? '|' : '•'}
                   </span>
                   <Link 
                     to="/cookies" 
-                    className={`text-xs transition-colors ${isRetro ? 'font-mono uppercase hover:text-magenta-300' : 'text-muted-foreground hover:text-primary'}`}
+                    className={`text-xs transition-colors ${isRetro ? 'font-mono uppercase hover:opacity-80' : 'text-muted-foreground hover:text-primary'}`}
                     style={isRetro ? { color: '#FF00FF' } : undefined}
                   >
                     {isRetro ? '[ PRIVACY ]' : 'Privacy'}
                   </Link>
-                  <span className={`text-xs ${isRetro ? '' : 'text-muted-foreground/50'}`} style={isRetro ? { color: '#FFFF00' } : undefined}>
+                  <span className={`text-xs`} style={isRetro ? { color: '#FFD700' } : undefined}>
                     {isRetro ? '|' : '•'}
                   </span>
                   <span 

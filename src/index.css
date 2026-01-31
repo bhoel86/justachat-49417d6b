@@ -399,16 +399,24 @@
     cursor: pointer;
   }
 
-  /* 80s Memphis-style container for login page */
+  /* ============================================
+     80s MEMPHIS DESIGN SYSTEM
+     Confetti, Squiggles, Bold Geometry
+     ============================================ */
+
+  /* Memphis-style container for login page */
   .retro-memphis-container {
-    background: linear-gradient(135deg, #EC407A 0%, #FF69B4 50%, #F06292 100%);
-    border: 5px solid #006666;
+    background: linear-gradient(135deg, #FF1493 0%, #FF69B4 40%, #FF85C1 100%);
+    border: 6px solid #008B8B;
     border-radius: 0;
-    box-shadow: 8px 8px 0 #000;
+    box-shadow: 
+      inset 0 0 0 4px #00FFFF,
+      10px 10px 0 #000;
     position: relative;
     overflow: visible;
   }
 
+  /* Yellow striped overlay pattern */
   .retro-memphis-container::before {
     content: '';
     position: absolute;
@@ -416,91 +424,203 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 10px,
-      rgba(255, 215, 0, 0.08) 10px,
-      rgba(255, 215, 0, 0.08) 20px
-    );
+    background: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 8px,
+        rgba(255, 215, 0, 0.12) 8px,
+        rgba(255, 215, 0, 0.12) 16px
+      );
     pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Memphis container inner content z-index */
+  .retro-memphis-container > * {
+    position: relative;
+    z-index: 1;
   }
 
   /* Memphis-style inputs for retro theme */
-  .theme-retro80s .retro-memphis-container input {
+  .theme-retro80s .retro-memphis-container input[type="text"],
+  .theme-retro80s .retro-memphis-container input[type="email"],
+  .theme-retro80s .retro-memphis-container input[type="password"],
+  .theme-retro80s .retro-memphis-container input[type="number"] {
     background: #FFFEF0 !important;
-    border: 3px solid #000 !important;
-    color: #222 !important;
+    border: 4px solid #000 !important;
+    color: #111 !important;
     border-radius: 0 !important;
-    box-shadow: 3px 3px 0 #006666;
+    box-shadow: 4px 4px 0 #008B8B;
+    font-family: 'VT323', monospace !important;
+    font-size: 1.1em;
   }
 
   .theme-retro80s .retro-memphis-container input::placeholder {
-    color: #666 !important;
+    color: #555 !important;
+    font-family: 'VT323', monospace !important;
   }
 
   .theme-retro80s .retro-memphis-container input:focus {
-    box-shadow: 3px 3px 0 #006666, 0 0 0 2px #00FFFF !important;
+    outline: none !important;
+    box-shadow: 4px 4px 0 #008B8B, 0 0 0 3px #00FFFF !important;
   }
 
   /* Memphis-style buttons in container */
   .theme-retro80s .retro-memphis-container button[type="submit"] {
-    background: linear-gradient(135deg, #00FFFF 0%, #00CED1 100%) !important;
-    border: 3px solid #000 !important;
+    background: linear-gradient(180deg, #00FFFF 0%, #00CED1 100%) !important;
+    border: 4px solid #000 !important;
     color: #000 !important;
-    font-weight: bold;
+    font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     border-radius: 0 !important;
-    box-shadow: 4px 4px 0 #FF00FF;
+    box-shadow: 5px 5px 0 #FF00FF;
     transition: transform 0.1s, box-shadow 0.1s;
+    font-family: 'VT323', monospace !important;
+    font-size: 1.2em;
   }
 
   .theme-retro80s .retro-memphis-container button[type="submit"]:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 #FF00FF;
+    transform: translate(-3px, -3px);
+    box-shadow: 8px 8px 0 #FF00FF;
+    background: linear-gradient(180deg, #39FF14 0%, #32CD32 100%) !important;
   }
 
   .theme-retro80s .retro-memphis-container button[type="submit"]:active {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 #FF00FF;
+    box-shadow: 3px 3px 0 #FF00FF;
   }
 
   /* Form text colors in Memphis container */
   .theme-retro80s .retro-memphis-container h2 {
     color: #FFD700 !important;
-    text-shadow: 2px 2px 0 #000 !important;
+    text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000 !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 1.8em !important;
+    letter-spacing: 0.1em;
   }
 
   .theme-retro80s .retro-memphis-container p {
-    color: #000 !important;
+    color: #111 !important;
+    font-family: 'VT323', monospace !important;
   }
 
   .theme-retro80s .retro-memphis-container a {
-    color: #006666 !important;
+    color: #008B8B !important;
     text-decoration: underline;
     font-weight: bold;
+    transition: color 0.2s;
   }
 
   .theme-retro80s .retro-memphis-container a:hover {
-    color: #00FFFF !important;
+    color: #006666 !important;
+    text-shadow: 0 0 5px #00FFFF;
   }
 
   .theme-retro80s .retro-memphis-container label,
   .theme-retro80s .retro-memphis-container .text-muted-foreground {
-    color: #333 !important;
+    color: #222 !important;
+    font-family: 'VT323', monospace !important;
   }
 
   .theme-retro80s .retro-memphis-container .text-destructive {
     color: #CC0000 !important;
     font-weight: bold;
+    text-shadow: 1px 1px 0 #000;
   }
 
   /* Checkbox styling in Memphis container */
   .theme-retro80s .retro-memphis-container input[type="checkbox"] {
     background: #FFFEF0 !important;
-    border: 2px solid #000 !important;
-    box-shadow: none !important;
+    border: 3px solid #000 !important;
+    box-shadow: 2px 2px 0 #008B8B !important;
+    border-radius: 0 !important;
+  }
+
+  /* Memphis divider line */
+  .theme-retro80s .retro-memphis-container .border-t {
+    border-color: #008B8B !important;
+    border-width: 3px !important;
+  }
+
+  /* Google button in Memphis style */
+  .theme-retro80s .retro-memphis-container button[type="button"] {
+    background: linear-gradient(180deg, #FF00FF 0%, #CC00CC 100%) !important;
+    border: 4px solid #000 !important;
+    color: #FFD700 !important;
+    font-weight: bold;
+    border-radius: 0 !important;
+    box-shadow: 5px 5px 0 #00FFFF;
+    font-family: 'VT323', monospace !important;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .theme-retro80s .retro-memphis-container button[type="button"]:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 #00FFFF;
+  }
+
+  /* Memphis header banner styling */
+  .memphis-header-banner {
+    border: 5px solid #00FFFF;
+    box-shadow: 8px 8px 0 #FF00FF, -3px -3px 0 #FFD700;
+    background: linear-gradient(135deg, #000 0%, #111 100%);
+    position: relative;
+  }
+
+  .memphis-header-banner::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    border: 3px dashed #39FF14;
+    pointer-events: none;
+  }
+
+  /* Memphis footer styling */
+  .memphis-footer {
+    background: linear-gradient(180deg, #000 0%, #111 100%);
+    border-top: 5px solid #00FFFF;
+    box-shadow: inset 0 5px 20px rgba(0, 255, 255, 0.1);
+    position: relative;
+  }
+
+  .memphis-footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: repeating-linear-gradient(
+      90deg,
+      #FF00FF 0px,
+      #FF00FF 20px,
+      #00FFFF 20px,
+      #00FFFF 40px,
+      #FFD700 40px,
+      #FFD700 60px,
+      #39FF14 60px,
+      #39FF14 80px
+    );
+  }
+
+  /* Memphis social button */
+  .memphis-social-btn {
+    background: #000 !important;
+    border: 3px solid currentColor !important;
+    border-radius: 0 !important;
+    box-shadow: 3px 3px 0 #000;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+
+  .memphis-social-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 #000;
   }
 }
 
