@@ -93,6 +93,7 @@ export const ValentinesCupid: React.FC = () => {
             className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
             style={{
               filter: 'drop-shadow(0 4px 12px rgba(255,105,180,0.5))',
+              mixBlendMode: 'multiply',
             }}
           />
         </div>
