@@ -800,16 +800,16 @@ const Home = () => {
                 </div>
               </div>
 
-              {/* Center - Public Chat Preview */}
-              <div className="flex-1 min-w-0 h-full">
-                <LobbyMirrorRoom />
-              </div>
-            </div>
-            
-            {/* Footer - Compact on Electron, normal on web - Theme aware */}
-            <footer className={`border-t ${isElectron ? 'mt-3 pt-3 flex-shrink-0' : 'mt-8 sm:mt-12 pt-6 sm:pt-8'} ${
-              isRetro ? 'border-cyan-400/50' : 'border-border'
-            }`}>
+              {/* Center - Public Chat Preview + Footer */}
+              <div className="flex-1 min-w-0 flex flex-col h-full">
+                <div className="flex-1 min-h-0">
+                  <LobbyMirrorRoom />
+                </div>
+                
+                {/* Footer - Aligned with chat area */}
+                <footer className={`border-t ${isElectron ? 'mt-2 pt-2 flex-shrink-0' : 'mt-3 pt-3'} ${
+                  isRetro ? 'border-cyan-400/50' : 'border-border'
+                }`}>
               <div className="flex flex-col gap-4">
                 {/* Main footer row */}
                 <div className="flex items-center">
@@ -977,6 +977,8 @@ const Home = () => {
                 </div>
               </div>
             </footer>
+              </div>
+            </div>
           </main>
         </>
       )}
