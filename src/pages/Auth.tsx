@@ -668,7 +668,7 @@ const Auth = () => {
       {/* Full-width header banner - ONLY for retro theme */}
       {isRetro && (
         <div className="absolute top-1 left-0 right-0 z-20 flex justify-center px-4">
-          <div className="border-4 border-cyan-400 rounded-lg shadow-[0_0_20px_rgba(0,255,255,0.5),0_0_40px_rgba(255,0,255,0.3)] bg-black/50 p-2">
+          <div className="p-2" style={{ border: '4px solid #00FFFF', borderRadius: 0, boxShadow: '6px 6px 0 #FF00FF', background: 'rgba(0,0,0,0.85)' }}>
             <img 
               src={headerImg} 
               alt="Justachat - Connect Instantly, Chat Freely" 
