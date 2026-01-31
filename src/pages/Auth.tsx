@@ -661,8 +661,8 @@ const Auth = () => {
       {/* Matrix falling code */}
       <MatrixFloatingCode />
 
-      {/* Full-width header banner - for default and retro themes */}
-      {(isRetro || (!isValentines && !isStPatricks && !isMatrix)) && (
+      {/* Full-width header banner - ONLY for retro theme */}
+      {isRetro && (
         <div className="absolute top-8 left-0 right-0 z-20 flex justify-center px-4">
           <img 
             src={headerImg} 
@@ -672,17 +672,17 @@ const Auth = () => {
         </div>
       )}
 
-      {/* Animated background - only for non-retro, non-golden header themes */}
-      {!isRetro && (isValentines || isStPatricks || isMatrix) && (
+      {/* Animated background - for non-retro themes */}
+      {!isRetro && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
         </div>
       )}
 
-      <div className={`relative z-10 w-full max-w-md animate-slide-up ${(isRetro || (!isValentines && !isStPatricks && !isMatrix)) ? 'mt-32 sm:mt-40' : ''}`}>
-        {/* Big Justachat™ Header - Only for Valentines, St. Patricks, Matrix themes */}
-        {(isValentines || isStPatricks || isMatrix) && (
+      <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'mt-32 sm:mt-40' : ''}`}>
+        {/* Big Justachat™ Header - For all themes except Retro (which uses image banner) */}
+        {!isRetro && (
           <div className="flex flex-col items-center mb-1">
             {/* Icon */}
             <div className={`w-16 h-16 sm:w-20 sm:h-20 ${isMatrix ? 'rounded-none' : 'rounded-2xl'} jac-gradient-bg flex items-center justify-center mb-2 shadow-lg`}>
