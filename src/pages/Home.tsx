@@ -254,7 +254,7 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative">
+    <div className={`bg-background text-foreground relative ${isMobile ? 'min-h-screen' : 'h-screen overflow-hidden flex flex-col'}`}>
       {/* Floating theme decorations */}
       <ValentinesFloatingHearts />
       <StPatricksFloatingIcons />
@@ -570,10 +570,10 @@ const Home = () => {
       ) : (
         /* DESKTOP FULL VIEW */
         <>
-          {/* Main Content */}
-          <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-            {/* Chat Rooms + Lobby Mirror Side by Side - Same Height */}
-            <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 sm:gap-4" style={{ height: '480px' }}>
+          {/* Main Content - fills remaining viewport */}
+          <main className="flex-1 container mx-auto px-3 sm:px-4 py-3 flex flex-col overflow-hidden">
+            {/* Chat Rooms + Lobby Mirror Side by Side - fills available height */}
+            <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 flex-1 min-h-0">
               {/* Room Cards */}
               <div className="lg:w-64 xl:w-72 flex-shrink-0 h-full">
                 <div className={`p-2 sm:p-3 h-full overflow-hidden flex flex-col ${
@@ -814,8 +814,8 @@ const Home = () => {
               </div>
             </div>
             
-            {/* Footer - Clean and organized */}
-            <footer className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-border">
+            {/* Footer - Compact for desktop */}
+            <footer className="mt-3 pt-3 border-t border-border flex-shrink-0">
               <div className="flex flex-col gap-4">
                 {/* Main footer row */}
                 <div className="flex items-center">
