@@ -927,18 +927,18 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block w-full max-w-full",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full overflow-hidden",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
           >
-            <span className="truncate block">{member.username}</span>
-            <span className="text-xs text-muted-foreground ml-1">(you)</span>
+            <span className="truncate block max-w-[calc(100%-2rem)]">{member.username}</span>
+            <span className="text-xs text-muted-foreground">(you)</span>
           </button>
         ) : (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block w-full max-w-full",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full overflow-hidden",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
           >
