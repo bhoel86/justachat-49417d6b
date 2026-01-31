@@ -43,6 +43,17 @@ const getThemeButtonStyles = (theme: ThemeName): string => {
 export const LoginThemeSelector: React.FC = () => {
   const { theme, previewTheme, themes } = useTheme();
 
+  // Only show on Lovable preview domains
+  const isLovablePreview = typeof window !== 'undefined' && 
+    (window.location.hostname.includes('lovable.app') || 
+     window.location.hostname.includes('lovableproject.com') ||
+     window.location.hostname === 'localhost');
+
+  // Don't render on VPS/production
+  if (!isLovablePreview) {
+    return null;
+  }
+
   const handlePreviewTheme = (themeId: ThemeName) => {
     console.log('[LoginThemeSelector] Previewing theme:', themeId);
     previewTheme(themeId);
