@@ -187,7 +187,10 @@ const LobbyMirrorRoom = () => {
       {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         {/* Mobile Header Bar */}
-        <div className={`flex items-center gap-2 px-2 py-2 bg-card lg:hidden relative z-20 ${isRetro ? 'border-b-4 border-violet-500' : 'border-b border-border'}`}>
+        <div className={cn(
+          "flex items-center gap-2 px-2 py-2 lg:hidden relative z-20 shrink-0",
+          isRetro ? 'border-b-4 border-violet-500 bg-black' : 'border-b border-border bg-card'
+        )}>
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold truncate">#general</p>
             <p className="text-xs text-muted-foreground">Live preview — Tap to join</p>
@@ -206,7 +209,13 @@ const LobbyMirrorRoom = () => {
         </div>
 
         {/* Desktop Header */}
-        <div className={`hidden lg:block relative z-20 ${isRetro ? 'border-b-4 border-violet-500' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div 
+          className={cn(
+            "hidden lg:block relative z-20 shrink-0",
+            isRetro ? 'border-b-4 border-violet-500 bg-black' : ''
+          )} 
+          onClick={(e) => e.stopPropagation()}
+        >
           <ChatHeader 
             onlineCount={onlineUserIds.size || 200}
             topic="Live preview of #general — Click anywhere to join the conversation!"
@@ -215,7 +224,7 @@ const LobbyMirrorRoom = () => {
         </div>
         
         {/* Messages Area - No scrolling, shows latest messages only */}
-        <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate">
+        <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate z-10">
           {/* Transparent logo watermark - theme aware */}
           {theme === 'retro80s' ? (
             <RetroWatermark />
