@@ -43,77 +43,67 @@ export const MatrixWelcomeBanner = ({ variant = 'desktop', onJoinClick }: Matrix
         <span style={{ fontSize: isMobile ? '100px' : '200px', filter: 'blur(1px)' }}>🐰</span>
       </div>
 
-      {/* Content */}
-      <div className={`relative z-10 flex flex-col items-center justify-center ${isMobile ? 'py-4 px-4' : 'py-8 px-6'}`}>
-        {/* Geometric icon */}
+      {/* Content - compact */}
+      <div className={`relative z-10 flex items-center justify-center gap-4 ${isMobile ? 'py-2 px-3' : 'py-3 px-4'}`}>
+        {/* Geometric icon - smaller */}
         <div 
-          className={`${isMobile ? 'w-12 h-12 mb-2' : 'w-20 h-20 mb-4'} rounded-none flex items-center justify-center`}
+          className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-none flex items-center justify-center flex-shrink-0`}
           style={{
-            border: '2px solid hsl(120 100% 50%)',
-            boxShadow: '0 0 20px hsl(120 100% 50% / 0.5), inset 0 0 20px hsl(120 100% 50% / 0.1)',
+            border: '1px solid hsl(120 100% 50%)',
+            boxShadow: '0 0 15px hsl(120 100% 50% / 0.4)',
             background: 'hsl(120 100% 5%)',
           }}
         >
           <Terminal 
-            className={`${isMobile ? 'w-6 h-6' : 'w-10 h-10'}`}
+            className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`}
             style={{ 
               color: 'hsl(120 100% 50%)',
-              filter: 'drop-shadow(0 0 10px hsl(120 100% 50%))',
+              filter: 'drop-shadow(0 0 8px hsl(120 100% 50%))',
             }}
           />
         </div>
 
-        {/* Title */}
-        <h1 
-          className={`font-mono font-bold tracking-widest ${isMobile ? 'text-xl' : 'text-3xl sm:text-4xl'}`}
-          style={{
-            color: 'hsl(120 100% 50%)',
-            textShadow: '0 0 10px hsl(120 100% 50%), 0 0 20px hsl(120 100% 50%), 0 0 40px hsl(120 100% 50%)',
-            animation: 'matrixGlow 3s ease-in-out infinite',
-          }}
-        >
-          JUSTACHAT
-        </h1>
+        {/* Text content - horizontal */}
+        <div className="flex flex-col">
+          {/* Title */}
+          <h1 
+            className={`font-mono font-bold tracking-widest ${isMobile ? 'text-base' : 'text-xl'}`}
+            style={{
+              color: 'hsl(120 100% 50%)',
+              textShadow: '0 0 10px hsl(120 100% 50%), 0 0 20px hsl(120 100% 50%)',
+            }}
+          >
+            JUSTACHAT
+          </h1>
 
-        {/* Tagline */}
-        <p 
-          className={`font-mono tracking-wide mt-2 ${isMobile ? 'text-xs' : 'text-sm sm:text-base'}`}
-          style={{
-            color: 'hsl(120 100% 70%)',
-            textShadow: '0 0 5px hsl(120 100% 50%)',
-          }}
-        >
-          Wake up. You're already inside.
-        </p>
+          {/* Tagline */}
+          <p 
+            className={`font-mono tracking-wide ${isMobile ? 'text-[10px]' : 'text-xs'}`}
+            style={{
+              color: 'hsl(120 100% 70%)',
+              textShadow: '0 0 5px hsl(120 100% 50%)',
+            }}
+          >
+            Wake up. You're already inside.
+          </p>
+        </div>
 
-        {/* Terminal-style buttons */}
+        {/* Terminal-style button - inline */}
         {!isMobile && onJoinClick && (
-          <div className="flex gap-4 mt-6">
-            <Button
-              onClick={onJoinClick}
-              className="font-mono uppercase tracking-wider px-6 py-2 rounded-none"
-              style={{
-                background: 'transparent',
-                border: '1px solid hsl(120 100% 50%)',
-                color: 'hsl(120 100% 50%)',
-                boxShadow: '0 0 10px hsl(120 100% 50% / 0.3)',
-              }}
-            >
-              [ ENTER NETWORK ]
-            </Button>
-          </div>
+          <Button
+            onClick={onJoinClick}
+            size="sm"
+            className="font-mono uppercase tracking-wider px-4 py-1 rounded-none text-xs ml-auto"
+            style={{
+              background: 'transparent',
+              border: '1px solid hsl(120 100% 50%)',
+              color: 'hsl(120 100% 50%)',
+              boxShadow: '0 0 10px hsl(120 100% 50% / 0.3)',
+            }}
+          >
+            [ ENTER ]
+          </Button>
         )}
-
-        {/* Follow the white rabbit hint */}
-        <p 
-          className={`font-mono ${isMobile ? 'text-[8px] mt-2' : 'text-xs mt-4'}`}
-          style={{
-            color: 'hsl(120 100% 40%)',
-            opacity: 0.6,
-          }}
-        >
-          follow the white rabbit...
-        </p>
       </div>
 
       {/* Decorative corners */}
