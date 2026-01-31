@@ -572,42 +572,6 @@ const Home = () => {
         <>
           {/* Main Content */}
           <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-            {/* Welcome Banner - Full Width */}
-            <div className={`relative rounded-xl sm:rounded-2xl overflow-hidden mb-4 sm:mb-6 z-10 ${isRetro ? '' : 'border border-border'}`}>
-              {isRetro ? (
-                <RetroWelcomeBanner 
-                  variant="desktop" 
-                  onJoinClick={() => {
-                    const generalChannel = channels.find(c => c.name === 'general');
-                    if (generalChannel) handleJoinRoom(generalChannel);
-                  }}
-                />
-              ) : isValentines ? (
-                <ValentinesWelcomeBanner 
-                  variant="desktop" 
-                  onJoinClick={() => {
-                    const generalChannel = channels.find(c => c.name === 'general');
-                    if (generalChannel) handleJoinRoom(generalChannel);
-                  }}
-                />
-              ) : isStPatricks ? (
-                <StPatricksWelcomeBanner />
-              ) : isMatrix ? (
-                <MatrixWelcomeBanner variant="desktop" onJoinClick={() => {
-                  const generalChannel = channels.find(c => c.name === 'general');
-                  if (generalChannel) handleJoinRoom(generalChannel);
-                }} />
-              ) : (
-                <OGWelcomeBanner 
-                  variant="desktop" 
-                  onJoinClick={() => {
-                    const generalChannel = channels.find(c => c.name === 'general');
-                    if (generalChannel) handleJoinRoom(generalChannel);
-                  }}
-                />
-              )}
-            </div>
-
             {/* Chat Rooms + Lobby Mirror Side by Side - Same Height */}
             <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 sm:gap-4" style={{ height: '480px' }}>
               {/* Room Cards */}
