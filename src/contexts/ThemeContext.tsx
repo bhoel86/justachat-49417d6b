@@ -7,6 +7,7 @@ export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matr
 interface ThemeContextType {
   theme: ThemeName;
   setTheme: (theme: ThemeName) => void;
+  previewTheme: (theme: ThemeName) => void;
   themes: { id: ThemeName; name: string; description: string }[];
   isLoading: boolean;
 }
@@ -190,8 +191,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // Preview theme locally without saving to database (for login page)
+  const previewTheme = (newTheme: ThemeName) => {
+    console.log('[Theme] Previewing theme locally:', newTheme);
+    setThemeState(newTheme);
+    applyThemeClass(newTheme);
+    // Note: Does NOT save to database - only applies locally via localStorage
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, themes: THEMES, isLoading }}>
+    <ThemeContext.Provider value={{ theme, setTheme, previewTheme, themes: THEMES, isLoading }}>
       {children}
     </ThemeContext.Provider>
   );
