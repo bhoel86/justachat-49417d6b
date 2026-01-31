@@ -35,13 +35,6 @@ export const MatrixWelcomeBanner = ({ variant = 'desktop', onJoinClick }: Matrix
         }}
       />
 
-      {/* Hidden rabbit watermark */}
-      <div 
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        style={{ opacity: 0.04 }}
-      >
-        <span style={{ fontSize: isMobile ? '100px' : '200px', filter: 'blur(1px)' }}>🐰</span>
-      </div>
 
       {/* Content - compact and centered */}
       <div className={`relative z-10 flex flex-col items-center justify-center ${isMobile ? 'py-2 px-3' : 'py-3 px-4'}`}>

@@ -154,35 +154,6 @@ export const MatrixFloatingCode = () => {
       >
         JUSTACHAT
       </div>
-      
-      {/* Hidden rabbit silhouettes - Easter eggs */}
-      <div
-        className="absolute opacity-[0.05] pointer-events-none"
-        style={{
-          top: '25%',
-          right: '15%',
-          fontSize: '100px',
-          color: 'hsl(120 100% 50%)',
-          animation: 'matrixRabbitFloat 10s ease-in-out infinite',
-          textShadow: '0 0 30px hsl(120 100% 50%)',
-        }}
-      >
-        🐰
-      </div>
-      <div
-        className="absolute opacity-[0.04] pointer-events-none"
-        style={{
-          bottom: '20%',
-          left: '8%',
-          fontSize: '70px',
-          color: 'hsl(120 100% 50%)',
-          animation: 'matrixRabbitFloat 12s ease-in-out infinite 2s',
-          textShadow: '0 0 20px hsl(120 100% 50%)',
-          transform: 'scaleX(-1)',
-        }}
-      >
-        🐇
-      </div>
 
       {/* Ambient corner glows */}
       <div 
