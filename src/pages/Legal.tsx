@@ -17,7 +17,7 @@ const Legal = () => {
         className={`border-b backdrop-blur sticky top-0 z-10 ${
           isRetro ? 'bg-black/95 border-cyan-500/50' : 'border-border/40 bg-background/95 supports-[backdrop-filter]:bg-background/60'
         }`}
-        style={isRetro ? { boxShadow: '0 4px 20px rgba(34,211,238,0.2)' } : undefined}
+        style={undefined}
       >
         <div className="container flex h-14 items-center px-4">
           <Link 
@@ -25,7 +25,7 @@ const Legal = () => {
             className={`flex items-center gap-2 transition-opacity hover:opacity-80 ${
               isRetro ? 'font-mono uppercase' : 'text-primary'
             }`}
-            style={isRetro ? { color: '#00FFFF', textShadow: '0 0 8px rgba(34,211,238,0.6)' } : undefined}
+            style={isRetro ? { color: '#00FFFF' } : undefined}
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="font-semibold">{isRetro ? '< BACK TO JUSTACHAT' : 'Back to Justachat™'}</span>
@@ -42,20 +42,20 @@ const Legal = () => {
             }`}
             style={isRetro ? { 
               borderColor: '#00FFFF',
-              boxShadow: '0 0 20px rgba(34,211,238,0.5), 4px 4px 0 #000'
+              boxShadow: '4px 4px 0 #000'
             } : undefined}
           >
-            <Scale className="h-8 w-8" style={isRetro ? { color: '#00FFFF', filter: 'drop-shadow(0 0 6px #00FFFF)' } : undefined} />
+            <Scale className="h-8 w-8" style={isRetro ? { color: '#00FFFF' } : undefined} />
           </div>
           <h1 
             className={`text-3xl md:text-4xl font-bold ${isRetro ? 'font-mono uppercase tracking-wider' : ''}`}
-            style={isRetro ? { color: '#00FFFF', textShadow: '0 0 15px rgba(34,211,238,0.6)' } : undefined}
+            style={isRetro ? { color: '#00FFFF' } : undefined}
           >
             {isRetro ? '> LEGAL NOTICE & TERMS' : 'Legal Notice & Terms of Use'}
           </h1>
           <p 
             className={`max-w-2xl mx-auto ${isRetro ? 'font-mono' : 'text-muted-foreground'}`}
-            style={isRetro ? { color: '#FF00FF', textShadow: '0 0 8px rgba(255,0,255,0.5)' } : undefined}
+            style={isRetro ? { color: '#FF00FF' } : undefined}
           >
             {isRetro ? '[ TRADEMARK, PRIVACY, AND TERMS OF SERVICE ]' : 'Trademark, privacy, and terms of service information for Justachat™'}
           </p>
@@ -64,14 +64,14 @@ const Legal = () => {
         {/* Agreement Notice */}
         <Card 
           className={isRetro ? 'rounded-none border-2 bg-black/90' : 'border-primary/40 bg-primary/10'}
-          style={isRetro ? { borderColor: '#00FFFF', boxShadow: '0 0 15px rgba(34,211,238,0.3), 4px 4px 0 #000' } : undefined}
+          style={isRetro ? { borderColor: '#00FFFF', boxShadow: '4px 4px 0 #000' } : undefined}
         >
           <CardContent className="py-4">
             <div className="flex items-center justify-center gap-3">
-              <Shield className="h-6 w-6 flex-shrink-0" style={isRetro ? { color: '#00FFFF', filter: 'drop-shadow(0 0 4px #00FFFF)' } : undefined} />
+              <Shield className="h-6 w-6 flex-shrink-0" style={isRetro ? { color: '#00FFFF' } : undefined} />
               <p className={`font-medium text-center ${isRetro ? 'font-mono' : 'text-foreground'}`} style={isRetro ? { color: '#00FFFF' } : undefined}>
                 By registering an account on Justachat™, you acknowledge that you have read, understood, and agree 
-                to be bound by all policies outlined on this page in <strong style={isRetro ? { color: '#39FF14', textShadow: '0 0 6px rgba(57,255,20,0.5)' } : undefined} className={isRetro ? '' : 'text-primary'}>good faith</strong>.
+                to be bound by all policies outlined on this page in <strong style={isRetro ? { color: '#39FF14' } : undefined} className={isRetro ? '' : 'text-primary'}>good faith</strong>.
               </p>
             </div>
           </CardContent>
@@ -80,11 +80,11 @@ const Legal = () => {
         {/* Age Requirements */}
         <Card 
           className={isRetro ? 'rounded-none border-2 bg-black/90' : 'border-destructive/30 bg-destructive/5'}
-          style={isRetro ? { borderColor: '#FF00FF', boxShadow: '0 0 15px rgba(255,0,255,0.3), 4px 4px 0 #000' } : undefined}
+          style={isRetro ? { borderColor: '#FF00FF', boxShadow: '4px 4px 0 #000' } : undefined}
         >
           <CardHeader>
-            <CardTitle className={`flex items-center gap-2 ${isRetro ? 'font-mono uppercase tracking-wider' : ''}`} style={isRetro ? { color: '#FF00FF', textShadow: '0 0 8px rgba(255,0,255,0.5)' } : undefined}>
-              <UserCheck className="h-5 w-5" style={isRetro ? { color: '#FF00FF', filter: 'drop-shadow(0 0 4px #FF00FF)' } : undefined} />
+            <CardTitle className={`flex items-center gap-2 ${isRetro ? 'font-mono uppercase tracking-wider' : ''}`} style={isRetro ? { color: '#FF00FF' } : undefined}>
+              <UserCheck className="h-5 w-5" style={isRetro ? { color: '#FF00FF' } : undefined} />
               {isRetro ? '> AGE REQUIREMENTS' : 'Age Requirements & Eligibility'}
             </CardTitle>
           </CardHeader>
@@ -93,7 +93,7 @@ const Legal = () => {
               className={isRetro ? 'border-2 p-4 rounded-none' : 'bg-destructive/20 border-2 border-destructive/40 rounded-lg p-4'}
               style={isRetro ? { borderColor: '#FFFF00', backgroundColor: 'rgba(255,255,0,0.1)' } : undefined}
             >
-              <p className={`font-semibold ${isRetro ? 'font-mono' : 'text-foreground'}`} style={isRetro ? { color: '#FFFF00', textShadow: '0 0 6px rgba(255,255,0,0.5)' } : undefined}>
+              <p className={`font-semibold ${isRetro ? 'font-mono' : 'text-foreground'}`} style={isRetro ? { color: '#FFFF00' } : undefined}>
                 You must be at least <strong style={isRetro ? { color: '#FF00FF' } : undefined} className={isRetro ? '' : 'text-destructive text-lg'}>13 years of age</strong> to use Justachat™.
               </p>
             </div>

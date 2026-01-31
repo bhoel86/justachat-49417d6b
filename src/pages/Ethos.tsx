@@ -30,7 +30,7 @@ const Ethos = () => {
         className={`border-b backdrop-blur-sm sticky top-0 z-10 ${
           isRetro ? 'bg-black/95 border-cyan-500/50' : 'border-border bg-card/50'
         }`}
-        style={isRetro ? { boxShadow: '0 4px 20px rgba(34,211,238,0.2)' } : undefined}
+        style={undefined}
       >
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -40,17 +40,17 @@ const Ethos = () => {
               }`}
               style={isRetro ? { 
                 borderColor: '#00FFFF',
-                boxShadow: '0 0 15px rgba(34,211,238,0.5), 3px 3px 0 #000'
+                boxShadow: '3px 3px 0 #000'
               } : undefined}
             >
               <MessageSquare 
                 className="w-5 h-5" 
-                style={isRetro ? { color: '#00FFFF', filter: 'drop-shadow(0 0 4px #00FFFF)' } : undefined}
+                style={isRetro ? { color: '#00FFFF' } : undefined}
               />
             </div>
             <h1 
               className={`text-2xl font-bold brand ${isRetro ? 'font-mono uppercase tracking-wider' : 'jac-gradient-text'}`}
-              style={isRetro ? { color: '#00FFFF', textShadow: '0 0 10px rgba(34,211,238,0.6)' } : undefined}
+              style={isRetro ? { color: '#00FFFF' } : undefined}
             >
               {isRetro ? 'JUSTACHAT' : 'Justachat'}<sup className="text-xs">™</sup>
             </h1>
@@ -63,7 +63,7 @@ const Ethos = () => {
             style={isRetro ? { 
               borderColor: '#FF00FF',
               color: '#FF00FF',
-              boxShadow: '0 0 10px rgba(255,0,255,0.3), 3px 3px 0 #000'
+              boxShadow: '3px 3px 0 #000'
             } : undefined}
           >
             <Link to="/" className="gap-2">
