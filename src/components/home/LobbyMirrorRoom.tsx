@@ -167,7 +167,7 @@ const LobbyMirrorRoom = () => {
 
   return (
     <div 
-      className="flex h-full bg-background relative overflow-hidden rounded-xl border-4 border-violet-500"
+      className="flex h-full bg-background relative overflow-hidden rounded-xl border border-border"
       onClick={handleJoinChat}
       role="button"
       tabIndex={0}
@@ -187,7 +187,7 @@ const LobbyMirrorRoom = () => {
       {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         {/* Mobile Header Bar */}
-        <div className="flex items-center gap-2 px-2 py-2 border-b border-border bg-card lg:hidden">
+        <div className="flex items-center gap-2 px-2 py-2 border-b-4 border-violet-500 bg-card lg:hidden">
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold truncate">#general</p>
             <p className="text-xs text-muted-foreground">Live preview — Tap to join</p>
@@ -206,7 +206,7 @@ const LobbyMirrorRoom = () => {
         </div>
 
         {/* Desktop Header */}
-        <div className="hidden lg:block" onClick={(e) => e.stopPropagation()}>
+        <div className="hidden lg:block border-b-4 border-violet-500" onClick={(e) => e.stopPropagation()}>
           <ChatHeader 
             onlineCount={onlineUserIds.size || 200}
             topic="Live preview of #general — Click anywhere to join the conversation!"
