@@ -684,7 +684,7 @@ const Auth = () => {
       <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'mt-32 sm:mt-36' : ''}`}>
         {/* Big Justachat™ Header - Non-retro themes */}
         {!isRetro && (
-          <div className="flex flex-col items-center mb-8">
+          <div className="flex flex-col items-center mb-4">
             {/* Icon */}
             <div className={`w-16 h-16 sm:w-20 sm:h-20 ${isMatrix ? 'rounded-none' : 'rounded-2xl'} jac-gradient-bg flex items-center justify-center mb-4 shadow-lg`}>
               {isValentines ? (
