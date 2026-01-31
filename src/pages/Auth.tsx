@@ -20,6 +20,7 @@ import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIc
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { useTheme } from "@/contexts/ThemeContext";
 import retroHeaderImg from '@/assets/retro-header.png';
+import goldenHeaderImg from '@/assets/retro-header-golden.png';
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
 import matrixFollowImg from '@/assets/matrix/follow-rabbit.jpg';
 
@@ -661,29 +662,29 @@ const Auth = () => {
       {/* Matrix falling code */}
       <MatrixFloatingCode />
 
-      {/* Full-width retro header banner */}
-      {isRetro && (
-        <div className="absolute top-8 left-0 right-0 z-20 flex justify-center">
+      {/* Full-width header banner - Golden for default, retro for 80s theme */}
+      {(isRetro || (!isValentines && !isStPatricks && !isMatrix)) && (
+        <div className="absolute top-8 left-0 right-0 z-20 flex justify-center px-4">
           <img 
-            src={retroHeaderImg} 
+            src={isRetro ? retroHeaderImg : goldenHeaderImg} 
             alt="Justachat - Connect Instantly, Chat Freely" 
-            className="h-16 sm:h-20 md:h-24 w-auto"
-            style={{ imageRendering: 'crisp-edges' }}
+            className="h-auto w-full max-w-lg sm:max-w-xl md:max-w-2xl"
+            style={{ imageRendering: isRetro ? 'crisp-edges' : 'auto' }}
           />
         </div>
       )}
 
-      {/* Animated background - only for JAC theme */}
-      {!isRetro && (
+      {/* Animated background - only for non-retro, non-golden header themes */}
+      {!isRetro && (isValentines || isStPatricks || isMatrix) && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
         </div>
       )}
 
-      <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'mt-32 sm:mt-36' : ''}`}>
-        {/* Big Justachat™ Header - Non-retro themes */}
-        {!isRetro && (
+      <div className={`relative z-10 w-full max-w-md animate-slide-up ${(isRetro || (!isValentines && !isStPatricks && !isMatrix)) ? 'mt-32 sm:mt-40' : ''}`}>
+        {/* Big Justachat™ Header - Only for Valentines, St. Patricks, Matrix themes */}
+        {(isValentines || isStPatricks || isMatrix) && (
           <div className="flex flex-col items-center mb-1">
             {/* Icon */}
             <div className={`w-16 h-16 sm:w-20 sm:h-20 ${isMatrix ? 'rounded-none' : 'rounded-2xl'} jac-gradient-bg flex items-center justify-center mb-2 shadow-lg`}>
