@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Heart } from 'lucide-react';
+import { Heart, Sparkles } from 'lucide-react';
 
 export const ValentinesWatermark: React.FC = () => {
   const { theme } = useTheme();
@@ -12,26 +12,53 @@ export const ValentinesWatermark: React.FC = () => {
 
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
-      {/* Large heart watermark */}
+      {/* Romantic styled watermark */}
       <div 
         className="text-center select-none"
-        style={{ opacity: 0.08 }}
+        style={{ opacity: 0.10 }}
       >
-        <Heart 
-          className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 text-pink-500 mx-auto"
-          fill="currentColor"
-          strokeWidth={1}
-        />
+        {/* Large decorative heart */}
+        <div className="flex justify-center mb-2">
+          <Heart 
+            className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40"
+            style={{ 
+              color: 'hsl(340 82% 52%)',
+              filter: 'drop-shadow(0 0 20px hsl(340 82% 52% / 0.5))',
+            }}
+            fill="currentColor"
+            strokeWidth={1}
+          />
+        </div>
+        
+        {/* Brand name with romantic styling */}
         <div 
-          className="font-bold text-xl sm:text-2xl md:text-3xl tracking-wider text-pink-500 mt-2"
+          className="font-display text-5xl sm:text-6xl md:text-7xl font-black tracking-tight"
           style={{
-            fontFamily: 'var(--theme-font-heading)',
+            color: 'transparent',
+            WebkitTextStroke: '2px hsl(340 82% 52%)',
+            textShadow: '4px 4px 0 hsl(340 90% 65% / 0.3)',
           }}
         >
           JUSTACHAT
         </div>
-        <div className="text-pink-400 text-sm sm:text-base tracking-widest">
-          ♥ VALENTINE'S ♥
+        
+        {/* Valentine's tagline */}
+        <div 
+          className="font-display text-xl sm:text-2xl font-bold mt-2 tracking-widest flex items-center justify-center gap-2"
+          style={{
+            color: 'hsl(340 90% 65%)',
+          }}
+        >
+          <Heart className="w-4 h-4" fill="currentColor" />
+          <span>SPREAD THE LOVE</span>
+          <Heart className="w-4 h-4" fill="currentColor" />
+        </div>
+        
+        {/* Decorative sparkles */}
+        <div className="flex justify-center gap-4 mt-3">
+          <Sparkles className="w-5 h-5" style={{ color: 'hsl(340 70% 70%)' }} />
+          <Heart className="w-4 h-4" style={{ color: 'hsl(350 80% 60%)' }} fill="currentColor" />
+          <Sparkles className="w-5 h-5" style={{ color: 'hsl(340 70% 70%)' }} />
         </div>
       </div>
     </div>
