@@ -29,12 +29,33 @@ const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
     document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix');
     document.documentElement.classList.add(`theme-${theme}`);
+    // Cache in localStorage for instant load on next visit
+    try {
+      localStorage.setItem('jac-theme', theme);
+    } catch (e) {
+      // localStorage may be unavailable
+    }
     console.log('[Theme] Applied:', theme);
   }
 };
 
+// Get cached theme from localStorage for instant render
+const getCachedTheme = (): ThemeName => {
+  if (typeof window === 'undefined') return 'jac';
+  try {
+    const cached = localStorage.getItem('jac-theme');
+    if (cached && isValidTheme(cached)) {
+      return cached;
+    }
+  } catch (e) {
+    // localStorage may be unavailable
+  }
+  return 'jac';
+};
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeName>('jac');
+  // Initialize from localStorage cache to prevent flash
+  const [theme, setThemeState] = useState<ThemeName>(getCachedTheme);
   const [isLoading, setIsLoading] = useState(true);
   const lastUserChangeRef = React.useRef<number>(0);
 
