@@ -922,27 +922,29 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
       </div>
 
       {/* Name and role */}
-      <div className="flex-1 min-w-0 overflow-hidden">
+      <div className="flex-1 min-w-0">
         {isCurrentUser ? (
-          <button 
-            onClick={onProfileClick}
-            className={cn(
-              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer flex items-center gap-1 w-full overflow-hidden",
-              member.isOnline ? "text-foreground" : "text-muted-foreground"
-            )}
-          >
-            <span className="truncate">{member.username}</span>
+          <div className="flex items-center gap-1 max-w-full">
+            <button 
+              onClick={onProfileClick}
+              className={cn(
+                "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer truncate min-w-0 flex-1",
+                member.isOnline ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              {member.username}
+            </button>
             <span className="text-xs text-muted-foreground shrink-0">(you)</span>
-          </button>
+          </div>
         ) : (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full overflow-hidden",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer truncate block max-w-full",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
           >
-            <span className="truncate block">{member.username}</span>
+            {member.username}
           </button>
         )}
         <div className="flex items-center gap-1">
