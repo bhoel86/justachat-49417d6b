@@ -9,6 +9,10 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesGlobalEffects } from "@/components/theme/ValentinesGlobalEffects";
 import { StPatricksGlobalEffects } from "@/components/theme/StPatricksGlobalEffects";
+import { NeonVoidGlobalEffects } from "@/components/theme/NeonVoidGlobalEffects";
+import { AlienCryptGlobalEffects } from "@/components/theme/AlienCryptGlobalEffects";
+import { TerminalBloodGlobalEffects } from "@/components/theme/TerminalBloodGlobalEffects";
+import { PastelWebGlobalEffects } from "@/components/theme/PastelWebGlobalEffects";
 import Home from "./pages/Home";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -52,6 +56,10 @@ const App = () => (
             <RetroFloatingIcons />
             <ValentinesGlobalEffects />
             <StPatricksGlobalEffects />
+            <NeonVoidGlobalEffects />
+            <AlienCryptGlobalEffects />
+            <TerminalBloodGlobalEffects />
+            <PastelWebGlobalEffects />
             <Toaster />
             <Sonner />
             <BrowserRouter>
