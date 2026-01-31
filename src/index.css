@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=VT323&family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=VT323&family=Press+Start+2P&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -283,6 +283,61 @@
     --theme-border-style: solid;
     --theme-border-width: 1px;
     --theme-window-shadow: 0 0 20px hsl(120 100% 50% / 0.2);
+  }
+
+  /* Vaporwave OS Theme - 90s Cyber Operating System */
+  .theme-vapor {
+    --background: 330 60% 85%;
+    --foreground: 0 0% 10%;
+
+    --card: 270 40% 72%;
+    --card-foreground: 0 0% 10%;
+
+    --popover: 50 70% 68%;
+    --popover-foreground: 0 0% 10%;
+
+    --primary: 165 85% 55%;
+    --primary-foreground: 0 0% 10%;
+
+    --secondary: 270 40% 72%;
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 330 40% 80%;
+    --muted-foreground: 0 0% 30%;
+
+    --accent: 48 90% 65%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 345 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 10%;
+    --input: 40 30% 94%;
+    --ring: 165 85% 55%;
+
+    --radius: 0;
+
+    /* Custom vapor variables */
+    --jac-gradient: linear-gradient(180deg, hsl(165 85% 55%) 0%, hsl(165 85% 45%) 100%);
+    --jac-glow: 3px 3px 0px hsl(0 0% 0%);
+    --jac-bubble-user: 270 40% 72%;
+    --jac-bubble-other: 48 90% 65%;
+
+    --sidebar-background: 270 40% 68%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 165 85% 55%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 48 90% 65%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 165 85% 55%;
+
+    /* Theme-specific */
+    --theme-font-body: 'IBM Plex Mono', 'Courier New', monospace;
+    --theme-font-heading: 'Press Start 2P', 'VT323', monospace;
+    --theme-border-style: solid;
+    --theme-border-width: 3px;
+    --theme-window-shadow: 4px 4px 0px hsl(0 0% 0%);
   }
 
   .dark {
@@ -1214,4 +1269,494 @@
 
 .theme-retro80s .prose strong {
   color: #39FF14 !important;
+}
+
+/* ============================================
+   VAPORWAVE OS THEME - 90s Cyber Operating System
+   ============================================ */
+
+/* Vaporwave color palette reference:
+   Background Pink:     #FFB6D5
+   Primary Purple:      #8F7AC8
+   Neon Teal:           #2EF2C2
+   Cyber Yellow:        #FFE066
+   Retro Mint:          #6CFFD1
+   Soft Cream:          #F5F1E8
+   Ink Black:           #1A1A1A
+   Soft Gray:           #DADADA
+   Alert Pink:          #FF5C8A
+*/
+
+/* Vaporwave animations */
+@keyframes vaporFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+  75% {
+    transform: translateY(-12px) rotate(1deg);
+  }
+}
+
+@keyframes vaporTwinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes vaporGlitch {
+  0%, 90%, 100% {
+    transform: translate(0);
+    opacity: 1;
+  }
+  92% {
+    transform: translate(-2px, 1px);
+    opacity: 0.8;
+  }
+  94% {
+    transform: translate(2px, -1px);
+    opacity: 0.9;
+  }
+  96% {
+    transform: translate(-1px, 2px);
+    opacity: 0.7;
+  }
+  98% {
+    transform: translate(1px, -2px);
+    opacity: 0.85;
+  }
+}
+
+@keyframes vaporBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes vaporBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes vaporWindowShake {
+  0%, 100% { transform: translate(0); }
+  10% { transform: translate(-2px, -1px); }
+  20% { transform: translate(2px, 1px); }
+  30% { transform: translate(-1px, 2px); }
+  40% { transform: translate(1px, -1px); }
+  50% { transform: translate(-2px, 1px); }
+  60% { transform: translate(2px, -2px); }
+  70% { transform: translate(-1px, 1px); }
+  80% { transform: translate(1px, -1px); }
+  90% { transform: translate(-2px, 2px); }
+}
+
+@keyframes vaporPopIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes vaporCursorBlink {
+  0%, 100% {
+    border-color: #2EF2C2;
+  }
+  50% {
+    border-color: transparent;
+  }
+}
+
+/* Vaporwave base page styles */
+.theme-vapor {
+  background-color: #FFB6D5;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(143, 122, 200, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(46, 242, 194, 0.2) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 224, 102, 0.2) 0%, transparent 40%);
+}
+
+/* Vaporwave typography */
+.theme-vapor h1,
+.theme-vapor h2,
+.theme-vapor h3,
+.theme-vapor .brand {
+  font-family: 'Press Start 2P', 'VT323', monospace !important;
+  font-size: 0.7em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Remove rounded corners - squared OS style */
+.theme-vapor .rounded-lg,
+.theme-vapor .rounded-md,
+.theme-vapor .rounded-xl,
+.theme-vapor .rounded-full:not(.avatar):not([class*="Avatar"]) {
+  border-radius: 0 !important;
+}
+
+/* Vaporwave cards/windows */
+.theme-vapor .card,
+.theme-vapor .bg-card,
+.theme-vapor [class*="rounded-lg"][class*="border"] {
+  background-color: #8F7AC8 !important;
+  border: 3px solid #1A1A1A !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 #1A1A1A !important;
+}
+
+.theme-vapor .card:hover {
+  animation: vaporGlitch 0.3s ease-in-out;
+}
+
+/* Vaporwave buttons */
+.theme-vapor button {
+  background-color: #FFE066 !important;
+  border: 3px solid #1A1A1A !important;
+  color: #1A1A1A !important;
+  border-radius: 0 !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 3px 3px 0 #1A1A1A;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.theme-vapor button:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #1A1A1A;
+}
+
+.theme-vapor button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #1A1A1A;
+}
+
+/* Primary buttons (teal) */
+.theme-vapor button[type="submit"],
+.theme-vapor .bg-primary {
+  background-color: #2EF2C2 !important;
+  border: 3px solid #1A1A1A !important;
+  color: #1A1A1A !important;
+}
+
+/* Vaporwave inputs */
+.theme-vapor input,
+.theme-vapor textarea,
+.theme-vapor select {
+  background-color: #F5F1E8 !important;
+  border: 3px solid #8F7AC8 !important;
+  color: #1A1A1A !important;
+  border-radius: 0 !important;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace !important;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.1);
+}
+
+.theme-vapor input:focus,
+.theme-vapor textarea:focus {
+  outline: none !important;
+  border-color: #2EF2C2 !important;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.1), 0 0 0 2px #2EF2C2 !important;
+  animation: vaporCursorBlink 1s infinite;
+}
+
+.theme-vapor input::placeholder {
+  color: #DADADA !important;
+}
+
+/* Vaporwave window/panel components */
+.vapor-window {
+  background: #8F7AC8;
+  border: 3px solid #1A1A1A;
+  box-shadow: 6px 6px 0 #1A1A1A;
+  animation: vaporPopIn 0.3s ease-out;
+}
+
+.vapor-title-bar {
+  background: #2EF2C2;
+  border-bottom: 2px solid #1A1A1A;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vapor-window-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.vapor-btn-close,
+.vapor-btn-minimize,
+.vapor-btn-maximize {
+  width: 16px;
+  height: 16px;
+  background: #F5F1E8;
+  border: 2px solid #1A1A1A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.vapor-btn-close {
+  background: #FF5C8A;
+  color: #F5F1E8;
+}
+
+.vapor-btn-minimize {
+  background: #FFE066;
+}
+
+.vapor-btn-maximize {
+  background: #2EF2C2;
+}
+
+.vapor-title-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #1A1A1A;
+  text-transform: uppercase;
+}
+
+.vapor-window-content {
+  padding: 16px;
+  background: #FFB6D5;
+  border-top: none;
+}
+
+/* Vaporwave welcome banner */
+.vapor-welcome-banner .vapor-title {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1.2rem;
+  color: #8F7AC8;
+  text-shadow: 2px 2px 0 #1A1A1A;
+  animation: vaporGlitch 8s infinite;
+}
+
+.vapor-subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: #1A1A1A;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.vapor-blink {
+  animation: vaporBlink 1s steps(1) infinite;
+  color: #2EF2C2;
+}
+
+.vapor-message-box {
+  background: #F5F1E8;
+  border: 2px solid #1A1A1A;
+  padding: 12px;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.1);
+}
+
+.vapor-message-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+  color: #1A1A1A;
+  line-height: 1.5;
+}
+
+.vapor-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: #1A1A1A;
+  text-transform: uppercase;
+  background: #DADADA;
+  padding: 4px 8px;
+  border: 2px solid #1A1A1A;
+}
+
+.vapor-status-indicator {
+  color: #2EF2C2;
+  animation: vaporBlink 2s infinite;
+}
+
+/* Vaporwave chat bubbles */
+.theme-vapor .jac-bubble-user,
+.theme-vapor [class*="bubble"][class*="user"] {
+  background: #8F7AC8 !important;
+  border: 3px solid #2EF2C2 !important;
+  border-radius: 0 !important;
+  box-shadow: 3px 3px 0 #1A1A1A;
+}
+
+.theme-vapor .jac-bubble-other,
+.theme-vapor [class*="bubble"]:not([class*="user"]) {
+  background: #FFE066 !important;
+  border: 3px solid #1A1A1A !important;
+  border-radius: 0 !important;
+  box-shadow: 3px 3px 0 #1A1A1A;
+}
+
+/* Vaporwave error/alert windows */
+.theme-vapor .bg-destructive,
+.theme-vapor [class*="error"],
+.theme-vapor [class*="alert"] {
+  background: #FFE066 !important;
+  border: 3px solid #1A1A1A !important;
+  box-shadow: 4px 4px 0 #1A1A1A;
+  animation: vaporWindowShake 0.5s ease-in-out;
+}
+
+.theme-vapor .text-destructive {
+  color: #FF5C8A !important;
+  font-weight: bold;
+}
+
+/* Vaporwave header styles */
+.vapor-header {
+  background: #8F7AC8;
+  border-bottom: 4px solid #2EF2C2;
+  box-shadow: 0 4px 0 #1A1A1A;
+}
+
+/* Vaporwave footer styles */
+.vapor-footer {
+  background: #8F7AC8;
+  border-top: 4px solid #2EF2C2;
+  box-shadow: 0 -4px 0 #1A1A1A;
+}
+
+.vapor-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    #FF5C8A 0px,
+    #FF5C8A 15px,
+    #FFE066 15px,
+    #FFE066 30px,
+    #2EF2C2 30px,
+    #2EF2C2 45px,
+    #8F7AC8 45px,
+    #8F7AC8 60px
+  );
+}
+
+/* Vaporwave social buttons */
+.vapor-social-btn {
+  background: #FFE066 !important;
+  border: 2px solid #1A1A1A !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 #1A1A1A;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.vapor-social-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #1A1A1A;
+  animation: vaporBounce 0.3s ease;
+}
+
+/* Vaporwave text colors */
+.theme-vapor .text-primary {
+  color: #2EF2C2 !important;
+}
+
+.theme-vapor .text-muted-foreground {
+  color: #1A1A1A !important;
+  opacity: 0.7;
+}
+
+.theme-vapor .text-foreground {
+  color: #1A1A1A !important;
+}
+
+/* Vaporwave icons */
+.theme-vapor svg {
+  stroke-width: 2.5;
+}
+
+/* Vaporwave login container */
+.vapor-login-container {
+  background: linear-gradient(135deg, #FFB6D5 0%, #8F7AC8 50%, #2EF2C2 100%);
+  border: 4px solid #1A1A1A;
+  box-shadow: 8px 8px 0 #1A1A1A;
+}
+
+/* Grid pattern overlay for vapor */
+.vapor-grid-overlay {
+  background-image: 
+    linear-gradient(rgba(26, 26, 26, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 26, 26, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Vaporwave typing indicator */
+.vapor-typing {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #FFE066;
+  border: 2px solid #1A1A1A;
+  border-radius: 20px;
+}
+
+.vapor-typing span {
+  width: 8px;
+  height: 8px;
+  background: #1A1A1A;
+  border-radius: 50%;
+  animation: vaporBounce 1.4s infinite ease-in-out both;
+}
+
+.vapor-typing span:nth-child(1) { animation-delay: -0.32s; }
+.vapor-typing span:nth-child(2) { animation-delay: -0.16s; }
+.vapor-typing span:nth-child(3) { animation-delay: 0s; }
+
+/* Vaporwave card variants */
+.theme-vapor [class*="CardTitle"] {
+  color: #1A1A1A !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.65em;
+  text-transform: uppercase;
+}
+
+.theme-vapor [class*="CardHeader"] svg {
+  color: #2EF2C2 !important;
+}
+
+/* Vaporwave gradient text */
+.theme-vapor .jac-gradient-text {
+  background: linear-gradient(90deg, #8F7AC8 0%, #2EF2C2 50%, #FFE066 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

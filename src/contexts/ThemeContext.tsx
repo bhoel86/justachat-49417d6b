@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useLayoutEffect 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix';
+export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'vapor';
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -20,15 +20,16 @@ const THEMES = [
   { id: 'valentines' as ThemeName, name: "Valentine's", description: 'Romantic pink hearts theme' },
   { id: 'stpatricks' as ThemeName, name: "St. Patrick's", description: 'Irish shamrocks & gold' },
   { id: 'matrix' as ThemeName, name: 'The Matrix', description: 'Follow the white rabbit' },
+  { id: 'vapor' as ThemeName, name: 'Vaporwave OS', description: '90s cyber operating system' },
 ];
 
 const isValidTheme = (value: string): value is ThemeName => {
-  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix'].includes(value);
+  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix', 'vapor'].includes(value);
 };
 
 const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix');
+    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix', 'theme-vapor');
     document.documentElement.classList.add(`theme-${theme}`);
     // Cache in localStorage for instant load on next visit
     try {
