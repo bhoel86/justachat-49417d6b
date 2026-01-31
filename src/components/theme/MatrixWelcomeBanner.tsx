@@ -43,28 +43,28 @@ export const MatrixWelcomeBanner = ({ variant = 'desktop', onJoinClick }: Matrix
         <span style={{ fontSize: isMobile ? '100px' : '200px', filter: 'blur(1px)' }}>🐰</span>
       </div>
 
-      {/* Content - compact */}
-      <div className={`relative z-10 flex items-center justify-center gap-4 ${isMobile ? 'py-2 px-3' : 'py-3 px-4'}`}>
-        {/* Geometric icon - smaller */}
-        <div 
-          className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-none flex items-center justify-center flex-shrink-0`}
-          style={{
-            border: '1px solid hsl(120 100% 50%)',
-            boxShadow: '0 0 15px hsl(120 100% 50% / 0.4)',
-            background: 'hsl(120 100% 5%)',
-          }}
-        >
-          <Terminal 
-            className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`}
-            style={{ 
-              color: 'hsl(120 100% 50%)',
-              filter: 'drop-shadow(0 0 8px hsl(120 100% 50%))',
+      {/* Content - compact and centered */}
+      <div className={`relative z-10 flex flex-col items-center justify-center ${isMobile ? 'py-2 px-3' : 'py-3 px-4'}`}>
+        {/* Icon + Text row - centered */}
+        <div className="flex items-center justify-center gap-3">
+          {/* Geometric icon - smaller */}
+          <div 
+            className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-none flex items-center justify-center flex-shrink-0`}
+            style={{
+              border: '1px solid hsl(120 100% 50%)',
+              boxShadow: '0 0 15px hsl(120 100% 50% / 0.4)',
+              background: 'hsl(120 100% 5%)',
             }}
-          />
-        </div>
+          >
+            <Terminal 
+              className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`}
+              style={{ 
+                color: 'hsl(120 100% 50%)',
+                filter: 'drop-shadow(0 0 8px hsl(120 100% 50%))',
+              }}
+            />
+          </div>
 
-        {/* Text content - horizontal */}
-        <div className="flex flex-col">
           {/* Title */}
           <h1 
             className={`font-mono font-bold tracking-widest ${isMobile ? 'text-base' : 'text-xl'}`}
@@ -75,25 +75,25 @@ export const MatrixWelcomeBanner = ({ variant = 'desktop', onJoinClick }: Matrix
           >
             JUSTACHAT
           </h1>
-
-          {/* Tagline */}
-          <p 
-            className={`font-mono tracking-wide ${isMobile ? 'text-[10px]' : 'text-xs'}`}
-            style={{
-              color: 'hsl(120 100% 70%)',
-              textShadow: '0 0 5px hsl(120 100% 50%)',
-            }}
-          >
-            Wake up. You're already inside.
-          </p>
         </div>
 
-        {/* Terminal-style button - inline */}
+        {/* Tagline - centered below */}
+        <p 
+          className={`font-mono tracking-wide ${isMobile ? 'text-[10px] mt-1' : 'text-xs mt-1'}`}
+          style={{
+            color: 'hsl(120 100% 70%)',
+            textShadow: '0 0 5px hsl(120 100% 50%)',
+          }}
+        >
+          Wake up. You're already inside.
+        </p>
+
+        {/* Terminal-style button - centered */}
         {!isMobile && onJoinClick && (
           <Button
             onClick={onJoinClick}
             size="sm"
-            className="font-mono uppercase tracking-wider px-4 py-1 rounded-none text-xs ml-auto"
+            className="font-mono uppercase tracking-wider px-4 py-1 rounded-none text-xs mt-2"
             style={{
               background: 'transparent',
               border: '1px solid hsl(120 100% 50%)',
