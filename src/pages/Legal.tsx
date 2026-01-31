@@ -62,47 +62,56 @@ const Legal = () => {
         </div>
 
         {/* Agreement Notice */}
-        <Card className="border-primary/40 bg-primary/10">
+        <Card 
+          className={isRetro ? 'rounded-none border-2 bg-black/90' : 'border-primary/40 bg-primary/10'}
+          style={isRetro ? { borderColor: '#00FFFF', boxShadow: '0 0 15px rgba(34,211,238,0.3), 4px 4px 0 #000' } : undefined}
+        >
           <CardContent className="py-4">
             <div className="flex items-center justify-center gap-3">
-              <Shield className="h-6 w-6 text-primary flex-shrink-0" />
-              <p className="text-foreground font-medium text-center">
+              <Shield className="h-6 w-6 flex-shrink-0" style={isRetro ? { color: '#00FFFF', filter: 'drop-shadow(0 0 4px #00FFFF)' } : undefined} />
+              <p className={`font-medium text-center ${isRetro ? 'font-mono' : 'text-foreground'}`} style={isRetro ? { color: '#00FFFF' } : undefined}>
                 By registering an account on Justachat™, you acknowledge that you have read, understood, and agree 
-                to be bound by all policies outlined on this page in <strong className="text-primary">good faith</strong>.
+                to be bound by all policies outlined on this page in <strong style={isRetro ? { color: '#39FF14', textShadow: '0 0 6px rgba(57,255,20,0.5)' } : undefined} className={isRetro ? '' : 'text-primary'}>good faith</strong>.
               </p>
             </div>
           </CardContent>
         </Card>
 
         {/* Age Requirements */}
-        <Card className="border-destructive/30 bg-destructive/5">
+        <Card 
+          className={isRetro ? 'rounded-none border-2 bg-black/90' : 'border-destructive/30 bg-destructive/5'}
+          style={isRetro ? { borderColor: '#FF00FF', boxShadow: '0 0 15px rgba(255,0,255,0.3), 4px 4px 0 #000' } : undefined}
+        >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-destructive" />
-              Age Requirements & Eligibility
+            <CardTitle className={`flex items-center gap-2 ${isRetro ? 'font-mono uppercase tracking-wider' : ''}`} style={isRetro ? { color: '#FF00FF', textShadow: '0 0 8px rgba(255,0,255,0.5)' } : undefined}>
+              <UserCheck className="h-5 w-5" style={isRetro ? { color: '#FF00FF', filter: 'drop-shadow(0 0 4px #FF00FF)' } : undefined} />
+              {isRetro ? '> AGE REQUIREMENTS' : 'Age Requirements & Eligibility'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-destructive/20 border-2 border-destructive/40 rounded-lg p-4">
-              <p className="text-foreground font-semibold">
-                You must be at least <strong className="text-destructive text-lg">13 years of age</strong> to use Justachat™.
+            <div 
+              className={isRetro ? 'border-2 p-4 rounded-none' : 'bg-destructive/20 border-2 border-destructive/40 rounded-lg p-4'}
+              style={isRetro ? { borderColor: '#FFFF00', backgroundColor: 'rgba(255,255,0,0.1)' } : undefined}
+            >
+              <p className={`font-semibold ${isRetro ? 'font-mono' : 'text-foreground'}`} style={isRetro ? { color: '#FFFF00', textShadow: '0 0 6px rgba(255,255,0,0.5)' } : undefined}>
+                You must be at least <strong style={isRetro ? { color: '#FF00FF' } : undefined} className={isRetro ? '' : 'text-destructive text-lg'}>13 years of age</strong> to use Justachat™.
               </p>
             </div>
-            <ul className="space-y-2 text-foreground text-sm">
+            <ul className={`space-y-2 text-sm ${isRetro ? 'font-mono' : 'text-foreground'}`} style={isRetro ? { color: '#00FFFF' } : undefined}>
               <li className="flex items-start gap-3">
-                <span className="text-primary font-bold">•</span>
+                <span style={isRetro ? { color: '#39FF14' } : undefined} className={isRetro ? '' : 'text-primary font-bold'}>•</span>
                 Users under 18 are prohibited from accessing adult-designated channels (21+)
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-primary font-bold">•</span>
+                <span style={isRetro ? { color: '#39FF14' } : undefined} className={isRetro ? '' : 'text-primary font-bold'}>•</span>
                 False representation of age is a violation of these terms and may result in immediate account termination
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-primary font-bold">•</span>
+                <span style={isRetro ? { color: '#39FF14' } : undefined} className={isRetro ? '' : 'text-primary font-bold'}>•</span>
                 Parents/guardians are responsible for monitoring minors' use of this service
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-primary font-bold">•</span>
+                <span style={isRetro ? { color: '#39FF14' } : undefined} className={isRetro ? '' : 'text-primary font-bold'}>•</span>
                 We comply with COPPA (Children's Online Privacy Protection Act) requirements
               </li>
             </ul>

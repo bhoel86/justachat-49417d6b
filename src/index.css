@@ -790,3 +790,203 @@
 .theme-matrix textarea:focus {
   box-shadow: 0 0 10px hsl(120 100% 50% / 0.3), inset 0 0 5px hsl(120 100% 50% / 0.1);
 }
+
+/* ============================================
+   80s RETRO THEME - Enhanced Card & Content Styling
+   ============================================ */
+
+/* Cards with neon borders */
+.theme-retro80s .card,
+.theme-retro80s .bg-card,
+.theme-retro80s [class*="rounded-lg"][class*="border"] {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  border: 2px solid #00FFFF !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.3), 4px 4px 0 #000 !important;
+}
+
+/* Card content text */
+.theme-retro80s .card p,
+.theme-retro80s .card span:not([class*="text-"]),
+.theme-retro80s .card li,
+.theme-retro80s [class*="CardContent"] p,
+.theme-retro80s [class*="CardContent"] span:not([class*="text-"]),
+.theme-retro80s [class*="CardContent"] li {
+  color: #00FFFF !important;
+  font-family: 'VT323', monospace !important;
+}
+
+.theme-retro80s .card strong,
+.theme-retro80s [class*="CardContent"] strong {
+  color: #39FF14 !important;
+  text-shadow: 0 0 6px rgba(57, 255, 20, 0.5);
+}
+
+/* Card titles */
+.theme-retro80s [class*="CardTitle"],
+.theme-retro80s .card h3 {
+  color: #FF00FF !important;
+  text-shadow: 0 0 10px rgba(255, 0, 255, 0.5) !important;
+  font-family: 'VT323', monospace !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.theme-retro80s [class*="CardHeader"] svg {
+  color: #FF00FF !important;
+  filter: drop-shadow(0 0 4px #FF00FF);
+}
+
+/* Text color overrides */
+.theme-retro80s .text-muted-foreground {
+  color: #00FFFF !important;
+  opacity: 0.85;
+}
+
+.theme-retro80s .text-foreground {
+  color: #00FFFF !important;
+}
+
+.theme-retro80s .text-primary {
+  color: #39FF14 !important;
+}
+
+.theme-retro80s .text-destructive {
+  color: #FF00FF !important;
+}
+
+/* Destructive/warning card variants */
+.theme-retro80s .border-destructive\/30,
+.theme-retro80s .border-destructive\/40,
+.theme-retro80s [class*="border-destructive"] {
+  border-color: #FF00FF !important;
+}
+
+.theme-retro80s .bg-destructive\/5,
+.theme-retro80s .bg-destructive\/10,
+.theme-retro80s .bg-destructive\/20,
+.theme-retro80s [class*="bg-destructive"] {
+  background-color: rgba(255, 0, 255, 0.15) !important;
+}
+
+/* Blue card variants */
+.theme-retro80s .border-blue-500\/30,
+.theme-retro80s .border-blue-500\/40,
+.theme-retro80s [class*="border-blue"] {
+  border-color: #00FFFF !important;
+}
+
+.theme-retro80s .bg-blue-500\/5,
+.theme-retro80s .bg-blue-500\/10,
+.theme-retro80s .bg-blue-500\/20,
+.theme-retro80s [class*="bg-blue"] {
+  background-color: rgba(34, 211, 238, 0.15) !important;
+}
+
+/* Primary card variants */
+.theme-retro80s .border-primary\/20,
+.theme-retro80s .border-primary\/30,
+.theme-retro80s .border-primary\/40 {
+  border-color: #00FFFF !important;
+}
+
+.theme-retro80s .bg-primary\/5,
+.theme-retro80s .bg-primary\/10,
+.theme-retro80s .bg-primary\/20 {
+  background-color: rgba(34, 211, 238, 0.15) !important;
+}
+
+/* Amber/warning variants */
+.theme-retro80s .border-amber-500\/30,
+.theme-retro80s .border-amber-500\/40,
+.theme-retro80s [class*="border-amber"] {
+  border-color: #FFFF00 !important;
+}
+
+.theme-retro80s .bg-amber-500\/10,
+.theme-retro80s .bg-amber-500\/20,
+.theme-retro80s [class*="bg-amber"] {
+  background-color: rgba(255, 255, 0, 0.15) !important;
+}
+
+.theme-retro80s .text-amber-500,
+.theme-retro80s .text-amber-400 {
+  color: #FFFF00 !important;
+}
+
+.theme-retro80s .text-blue-500,
+.theme-retro80s .text-blue-400 {
+  color: #00FFFF !important;
+}
+
+/* Green variants */
+.theme-retro80s .border-green-500\/30,
+.theme-retro80s [class*="border-green"] {
+  border-color: #39FF14 !important;
+}
+
+.theme-retro80s .bg-green-500\/10,
+.theme-retro80s [class*="bg-green"] {
+  background-color: rgba(57, 255, 20, 0.15) !important;
+}
+
+.theme-retro80s .text-green-400,
+.theme-retro80s .text-green-500 {
+  color: #39FF14 !important;
+}
+
+/* Pink/purple variants */
+.theme-retro80s .text-pink-400,
+.theme-retro80s .text-pink-500 {
+  color: #FF00FF !important;
+}
+
+.theme-retro80s .text-purple-400,
+.theme-retro80s .text-purple-500 {
+  color: #FF00FF !important;
+}
+
+.theme-retro80s .text-cyan-400,
+.theme-retro80s .text-cyan-500 {
+  color: #00FFFF !important;
+}
+
+.theme-retro80s .text-orange-400 {
+  color: #FFFF00 !important;
+}
+
+/* Retro separator */
+.theme-retro80s hr,
+.theme-retro80s [class*="Separator"] {
+  border-color: #00FFFF !important;
+  opacity: 0.5;
+}
+
+/* Gradient backgrounds */
+.theme-retro80s [class*="bg-gradient"] {
+  background: linear-gradient(135deg, rgba(0,255,255,0.1) 0%, rgba(255,0,255,0.1) 100%) !important;
+}
+
+/* Prose styling for retro */
+.theme-retro80s .prose,
+.theme-retro80s .prose-lg,
+.theme-retro80s .prose-invert {
+  color: #00FFFF !important;
+}
+
+.theme-retro80s .prose h2,
+.theme-retro80s .prose-lg h2 {
+  color: #FF00FF !important;
+  font-family: 'VT323', monospace !important;
+  text-transform: uppercase;
+}
+
+.theme-retro80s .prose p,
+.theme-retro80s .prose-lg p {
+  color: #00FFFF !important;
+  font-family: 'VT323', monospace !important;
+}
+
+.theme-retro80s .prose strong {
+  color: #39FF14 !important;
+}
