@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { getVersionString } from "@/lib/version";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
 
 const SiteFooter = () => {
@@ -90,7 +89,7 @@ const SiteFooter = () => {
                     Privacy
                   </Link>
                   <span className="text-xs text-muted-foreground/50">•</span>
-                  <span className="text-xs text-muted-foreground/70 font-mono">{getVersionString()}</span>
+                  <span className="text-xs text-muted-foreground/70 font-mono">JAC</span>
                 </div>
               </div>
             </div>
