@@ -679,35 +679,62 @@ const Home = () => {
                             <button
                               key={channel.id}
                               onClick={() => handleJoinRoom(channel)}
-                              className={`group relative h-8 sm:h-9 overflow-hidden bg-card transition-all duration-200 active:scale-95 ${
+                              className={`group relative h-8 sm:h-9 overflow-hidden bg-card transition-all duration-300 active:scale-95 ${
                                 isRetro 
-                                  ? 'border-[2px] border-foreground hover:bg-accent' 
-                                  : 'rounded-md border border-border hover:border-primary/50 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-0.5'
+                                  ? 'border-[2px] border-foreground hover:border-primary hover:shadow-[0_0_10px_rgba(0,255,0,0.5),inset_0_0_10px_rgba(0,255,0,0.1)]' 
+                                  : isValentines
+                                    ? 'rounded-lg border-2 border-pink-400/50 hover:border-pink-400 hover:shadow-lg hover:shadow-pink-500/30 hover:-translate-y-0.5'
+                                    : 'rounded-md border border-border hover:border-primary/50 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-1'
                               }`}
                               style={isRetro ? { boxShadow: '2px 2px 0px black' } : undefined}
                             >
-                              {/* Background gradient */}
-                              {!isRetro && (
-                                <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-30 group-hover:opacity-50 transition-opacity`} />
+                              {/* Background - theme aware */}
+                              {isRetro ? (
+                                <div className="absolute inset-0 bg-gradient-to-r from-green-900/50 to-cyan-900/50 group-hover:from-green-800/60 group-hover:to-cyan-800/60 transition-all" />
+                              ) : isValentines ? (
+                                <>
+                                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-rose-400 to-pink-500 opacity-40 group-hover:opacity-60 transition-opacity" />
+                                  <div className="absolute inset-0 bg-black/30" />
+                                  {/* Floating heart accent */}
+                                  <div className="absolute -right-1 -top-1 text-pink-300/60 group-hover:text-pink-200 transition-colors transform group-hover:scale-110 group-hover:rotate-12">
+                                    <Heart className="w-3 h-3" fill="currentColor" />
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-40 group-hover:opacity-60 transition-opacity`} />
+                                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
+                                  {/* Shimmer effect on hover */}
+                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                                </>
                               )}
-                              {!isRetro && <div className="absolute inset-0 bg-black/40" />}
                               
                               {/* Content - room name with count */}
                               <div className="relative h-full flex items-center justify-between px-2">
                                 <h3 className={`truncate ${
                                   isRetro 
-                                    ? 'font-bold text-[9px] sm:text-[10px] text-foreground uppercase' 
-                                    : 'font-semibold text-[10px] sm:text-xs text-white drop-shadow-lg'
+                                    ? 'font-mono font-bold text-[9px] sm:text-[10px] text-primary uppercase tracking-wider' 
+                                    : isValentines
+                                      ? 'font-semibold text-[10px] sm:text-xs text-white drop-shadow-[0_1px_2px_rgba(236,72,153,0.8)]'
+                                      : 'font-semibold text-[10px] sm:text-xs text-white drop-shadow-lg'
                                 }`}>
-                                  #{formatRoomName(channel.name)}
+                                  {isRetro ? '>' : isValentines ? '♡' : '#'}{formatRoomName(channel.name)}
                                 </h3>
-                                <span className={`text-[9px] sm:text-[10px] font-medium shrink-0 ml-1 ${isRetro ? 'text-foreground/80' : 'text-white/90'}`}>
-                                  ({userCount})
+                                <span className={`text-[9px] sm:text-[10px] font-medium shrink-0 ml-1 ${
+                                  isRetro 
+                                    ? 'text-primary/80 font-mono' 
+                                    : isValentines 
+                                      ? 'text-pink-200'
+                                      : 'text-white/90'
+                                }`}>
+                                  {isRetro ? `[${userCount}]` : `(${userCount})`}
                                 </span>
                               </div>
 
-                              {/* Hover effect overlay - modern only */}
-                              {!isRetro && <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                              {/* Scan line effect for retro */}
+                              {isRetro && (
+                                <div className="absolute inset-0 pointer-events-none opacity-10 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.3)_2px,rgba(0,0,0,0.3)_4px)]" />
+                              )}
                             </button>
                           );
                         })}
