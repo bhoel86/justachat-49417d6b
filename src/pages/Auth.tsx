@@ -17,6 +17,7 @@ import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { useTheme } from "@/contexts/ThemeContext";
+import retroHeaderImg from '@/assets/retro-header.png';
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -648,36 +649,13 @@ const Auth = () => {
 
       {/* Full-width retro header banner */}
       {isRetro && (
-        <div 
-          className="absolute top-0 left-0 right-0 z-20 py-4 sm:py-6 text-center overflow-hidden"
-          style={{
-            background: 'linear-gradient(to right, #06b6d4, #9333ea, #ec4899)',
-            borderBottom: '3px solid black',
-          }}
-        >
-          {/* Scanline effect overlay */}
-          <div 
-            className="absolute inset-0 pointer-events-none opacity-30"
-            style={{
-              background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px)',
-            }}
+        <div className="absolute top-0 left-0 right-0 z-20">
+          <img 
+            src={retroHeaderImg} 
+            alt="Justachat - Connect Instantly, Chat Freely" 
+            className="w-full h-auto"
+            style={{ imageRendering: 'pixelated' }}
           />
-          <h1 
-            className="relative font-display text-4xl sm:text-5xl md:text-6xl font-black tracking-tight"
-            style={{
-              color: '#00FFFF',
-              textShadow: `
-                3px 3px 0 #FF00FF,
-                6px 6px 0 #000,
-                0 0 20px rgba(0, 255, 255, 0.8),
-                0 0 40px rgba(255, 0, 255, 0.6)
-              `,
-              fontFamily: "'VT323', monospace",
-              letterSpacing: '0.05em',
-            }}
-          >
-            Justachat™
-          </h1>
         </div>
       )}
 
