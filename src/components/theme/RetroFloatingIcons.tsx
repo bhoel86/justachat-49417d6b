@@ -32,34 +32,60 @@ const floatingIcons = [
   { Icon: Sparkles, bottom: '15%', right: '15%', color: 'text-pink-400', size: 14, rotate: 0 },
 ];
 
-// 80s confetti pieces with neon colors
+// 80s confetti pieces with neon colors - star and geometric shapes
 const confettiPieces = [
-  // Scattered across the viewport
-  { top: '10%', left: '5%', color: '#FF00FF', shape: 'square', size: 8, delay: 0 },
-  { top: '12%', left: '20%', color: '#00FFFF', shape: 'rect', size: 6, delay: 0.5 },
-  { top: '8%', right: '15%', color: '#FFFF00', shape: 'square', size: 10, delay: 1 },
-  { top: '15%', right: '5%', color: '#FF6B9D', shape: 'rect', size: 7, delay: 0.3 },
-  { top: '20%', left: '30%', color: '#9D4EDD', shape: 'square', size: 6, delay: 0.8 },
+  // Scattered across the viewport - varied shapes
+  { top: '10%', left: '5%', color: '#FF00FF', shape: 'star', size: 12, delay: 0 },
+  { top: '12%', left: '20%', color: '#00FFFF', shape: 'diamond', size: 10, delay: 0.5 },
+  { top: '8%', right: '15%', color: '#FFFF00', shape: 'star', size: 14, delay: 1 },
+  { top: '15%', right: '5%', color: '#FF6B9D', shape: 'triangle', size: 10, delay: 0.3 },
+  { top: '20%', left: '30%', color: '#9D4EDD', shape: 'diamond', size: 8, delay: 0.8 },
   
-  { top: '25%', right: '25%', color: '#00FFFF', shape: 'square', size: 9, delay: 1.2 },
-  { top: '30%', left: '8%', color: '#FF00FF', shape: 'rect', size: 5, delay: 0.2 },
-  { top: '35%', right: '8%', color: '#FFFF00', shape: 'square', size: 8, delay: 0.7 },
-  { top: '38%', left: '22%', color: '#FF6B9D', shape: 'rect', size: 6, delay: 1.5 },
+  { top: '25%', right: '25%', color: '#00FFFF', shape: 'star', size: 12, delay: 1.2 },
+  { top: '30%', left: '8%', color: '#FF00FF', shape: 'triangle', size: 8, delay: 0.2 },
+  { top: '35%', right: '8%', color: '#FFFF00', shape: 'diamond', size: 10, delay: 0.7 },
+  { top: '38%', left: '22%', color: '#FF6B9D', shape: 'star', size: 10, delay: 1.5 },
   
-  { top: '45%', right: '18%', color: '#9D4EDD', shape: 'square', size: 7, delay: 0.4 },
-  { top: '50%', left: '12%', color: '#00FFFF', shape: 'rect', size: 8, delay: 0.9 },
-  { top: '55%', right: '6%', color: '#FF00FF', shape: 'square', size: 6, delay: 1.1 },
-  { top: '58%', left: '28%', color: '#FFFF00', shape: 'rect', size: 5, delay: 0.6 },
+  { top: '45%', right: '18%', color: '#9D4EDD', shape: 'triangle', size: 9, delay: 0.4 },
+  { top: '50%', left: '12%', color: '#00FFFF', shape: 'diamond', size: 11, delay: 0.9 },
+  { top: '55%', right: '6%', color: '#FF00FF', shape: 'star', size: 10, delay: 1.1 },
+  { top: '58%', left: '28%', color: '#FFFF00', shape: 'triangle', size: 8, delay: 0.6 },
   
-  { top: '65%', right: '22%', color: '#FF6B9D', shape: 'square', size: 9, delay: 1.3 },
-  { top: '70%', left: '6%', color: '#9D4EDD', shape: 'rect', size: 7, delay: 0.1 },
-  { top: '72%', right: '12%', color: '#00FFFF', shape: 'square', size: 6, delay: 0.8 },
-  { top: '78%', left: '18%', color: '#FF00FF', shape: 'rect', size: 8, delay: 1.4 },
+  { top: '65%', right: '22%', color: '#FF6B9D', shape: 'star', size: 14, delay: 1.3 },
+  { top: '70%', left: '6%', color: '#9D4EDD', shape: 'diamond', size: 9, delay: 0.1 },
+  { top: '72%', right: '12%', color: '#00FFFF', shape: 'triangle', size: 10, delay: 0.8 },
+  { top: '78%', left: '18%', color: '#FF00FF', shape: 'star', size: 12, delay: 1.4 },
   
-  { top: '82%', right: '28%', color: '#FFFF00', shape: 'square', size: 5, delay: 0.5 },
-  { top: '85%', left: '25%', color: '#FF6B9D', shape: 'rect', size: 7, delay: 1.0 },
-  { top: '88%', right: '8%', color: '#9D4EDD', shape: 'square', size: 6, delay: 0.3 },
+  { top: '82%', right: '28%', color: '#FFFF00', shape: 'diamond', size: 8, delay: 0.5 },
+  { top: '85%', left: '25%', color: '#FF6B9D', shape: 'triangle', size: 10, delay: 1.0 },
+  { top: '88%', right: '8%', color: '#9D4EDD', shape: 'star', size: 11, delay: 0.3 },
 ];
+
+// Render confetti shape based on type
+const ConfettiShape = ({ shape, size, color }: { shape: string; size: number; color: string }) => {
+  if (shape === 'star') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+    );
+  }
+  if (shape === 'diamond') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+        <path d="M12 2L22 12L12 22L2 12L12 2Z" />
+      </svg>
+    );
+  }
+  if (shape === 'triangle') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+        <path d="M12 2L22 22H2L12 2Z" />
+      </svg>
+    );
+  }
+  return null;
+};
 
 export const RetroFloatingIcons: React.FC = () => {
   const { theme } = useTheme();
@@ -90,26 +116,24 @@ export const RetroFloatingIcons: React.FC = () => {
         );
       })}
       
-      {/* 80s Confetti pieces */}
+      {/* 80s Confetti pieces - stars, diamonds, triangles */}
       {confettiPieces.map((piece, index) => {
         const { color, shape, size, delay, ...position } = piece;
-        const isRect = shape === 'rect';
         return (
           <div
             key={`confetti-${index}`}
             className="absolute"
             style={{
               ...position,
-              width: isRect ? size * 2 : size,
-              height: isRect ? size : size,
-              backgroundColor: color,
-              opacity: 0.6,
-              boxShadow: `0 0 ${size}px ${color}, 0 0 ${size * 2}px ${color}`,
-              transform: `rotate(${45 + index * 15}deg)`,
+              opacity: 0.5,
+              filter: `drop-shadow(0 0 ${size / 2}px ${color})`,
+              transform: `rotate(${index * 25}deg)`,
               animation: `retroConfettiFall 4s ease-in-out infinite, retroConfettiGlow 2s ease-in-out infinite`,
               animationDelay: `${delay}s, ${delay}s`,
             }}
-          />
+          >
+            <ConfettiShape shape={shape} size={size} color={color} />
+          </div>
         );
       })}
       
@@ -117,19 +141,19 @@ export const RetroFloatingIcons: React.FC = () => {
       <style>{`
         @keyframes retroConfettiFall {
           0%, 100% {
-            transform: translateY(0) rotate(45deg);
+            transform: translateY(0) rotate(0deg);
           }
           50% {
-            transform: translateY(10px) rotate(60deg);
+            transform: translateY(8px) rotate(15deg);
           }
         }
         
         @keyframes retroConfettiGlow {
           0%, 100% {
-            opacity: 0.4;
+            opacity: 0.35;
           }
           50% {
-            opacity: 0.8;
+            opacity: 0.65;
           }
         }
       `}</style>
