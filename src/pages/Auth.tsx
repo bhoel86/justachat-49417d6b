@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import TurnstileCaptcha from "@/components/auth/TurnstileCaptcha";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { getVersionString } from "@/lib/version";
+
 import { clearAuthStorage } from "@/lib/authStorage";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
@@ -1188,8 +1188,6 @@ const Auth = () => {
                   >
                     Legal
                   </Link>
-                  <span className="text-xs text-muted-foreground/50">•</span>
-                  <span className="text-xs text-muted-foreground/70 font-mono">{getVersionString()}</span>
                 </div>
               </div>
             </div>
