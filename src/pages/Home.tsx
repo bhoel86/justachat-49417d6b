@@ -40,7 +40,7 @@ import loungeBg from "@/assets/rooms/lounge-bg.jpg";
 import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 
 // Banner and footer graphics
-import welcomeBanner from "@/assets/justachat-header-80s.png";
+import welcomeBanner from "@/assets/justachat-header-soft.png";
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
@@ -594,11 +594,13 @@ const Home = () => {
             ) : isMatrix ? (
               <MatrixWelcomeBanner variant="mobile" />
             ) : (
-              <img 
-                src={welcomeBanner} 
-                alt="Welcome to Justachat" 
-                className="w-full h-auto object-contain"
-              />
+              <div className="flex justify-center">
+                <img 
+                  src={welcomeBanner} 
+                  alt="Welcome to Justachat" 
+                  className="w-full max-w-md h-auto object-contain"
+                />
+              </div>
             )}
           </div>
           
@@ -638,15 +640,17 @@ const Home = () => {
                   if (generalChannel) handleJoinRoom(generalChannel);
                 }} />
               ) : (
-                <img 
-                  src={welcomeBanner} 
-                  alt="Welcome to Justachat" 
-                  className="w-full h-auto object-contain cursor-pointer hover:opacity-95 transition-opacity"
-                  onClick={() => {
-                    const generalChannel = channels.find(c => c.name === 'general');
-                    if (generalChannel) handleJoinRoom(generalChannel);
-                  }}
-                />
+                <div className="flex justify-center">
+                  <img 
+                    src={welcomeBanner} 
+                    alt="Welcome to Justachat" 
+                    className="w-full max-w-xl h-auto object-contain cursor-pointer hover:opacity-95 transition-opacity"
+                    onClick={() => {
+                      const generalChannel = channels.find(c => c.name === 'general');
+                      if (generalChannel) handleJoinRoom(generalChannel);
+                    }}
+                  />
+                </div>
               )}
             </div>
 

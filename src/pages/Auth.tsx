@@ -19,7 +19,7 @@ import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingH
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { useTheme } from "@/contexts/ThemeContext";
-import headerImg from '@/assets/justachat-header-80s.png';
+import headerImg from '@/assets/justachat-header-soft.png';
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
 import matrixFollowImg from '@/assets/matrix/follow-rabbit.jpg';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import retroHeader from '@/assets/justachat-header-80s.png';
+import retroHeader from '@/assets/justachat-header-soft.png';
 
 interface RetroWelcomeBannerProps {
   onJoinClick?: () => void;
@@ -10,12 +10,12 @@ export const RetroWelcomeBanner: React.FC<RetroWelcomeBannerProps> = ({ onJoinCl
   return (
     <div 
       onClick={onJoinClick}
-      className={`relative overflow-hidden ${onJoinClick ? 'cursor-pointer hover:opacity-95 transition-opacity' : ''}`}
+      className={`relative overflow-hidden flex justify-center ${onJoinClick ? 'cursor-pointer hover:opacity-95 transition-opacity' : ''}`}
     >
       <img 
         src={retroHeader} 
         alt="Justachat - Connect Instantly, Chat Freely" 
-        className="w-full h-auto object-contain"
+        className="w-full max-w-2xl h-auto object-contain"
       />
     </div>
   );
