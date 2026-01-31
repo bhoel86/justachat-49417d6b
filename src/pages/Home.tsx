@@ -663,8 +663,8 @@ const Home = () => {
                                 </>
                               )}
                               
-                              {/* Content - room name with count */}
-                              <div className="relative h-full flex items-center justify-between px-2">
+                              {/* Content - room name */}
+                              <div className="relative h-full flex items-center px-2">
                                 <h3 className={`truncate ${
                                   isRetro 
                                     ? 'font-mono font-bold text-xs sm:text-sm text-primary uppercase tracking-wider' 
@@ -674,15 +674,6 @@ const Home = () => {
                                 }`}>
                                   {isRetro ? '>' : isValentines ? '♡' : '#'}{formatRoomName(channel.name)}
                                 </h3>
-                                <span className={`text-xs font-medium shrink-0 ml-1 ${
-                                  isRetro 
-                                    ? 'text-primary/80 font-mono' 
-                                    : isValentines 
-                                      ? 'text-pink-200'
-                                      : 'text-white/90'
-                                }`}>
-                                  {isRetro ? `[${userCount}]` : `(${userCount})`}
-                                </span>
                               </div>
 
                               {/* Scan line effect for retro */}
