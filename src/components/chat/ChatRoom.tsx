@@ -1274,8 +1274,10 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         
         <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-col relative">
           {/* Transparent logo watermark - theme aware */}
-          {isRetro ? (
+          {theme === 'retro80s' ? (
             <RetroWatermark />
+          ) : theme === 'valentines' ? (
+            <ValentinesWatermark />
           ) : (
             <div 
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"

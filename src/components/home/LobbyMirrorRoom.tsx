@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getBotsForChannel, CHAT_BOTS, getBotResponseDelay } from "@/lib/chatBots";
 import { useTheme } from "@/contexts/ThemeContext";
 import { RetroWatermark } from "@/components/theme/RetroWatermark";
+import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
 
 interface MirrorMessage {
   id: string;
@@ -213,8 +214,10 @@ const LobbyMirrorRoom = () => {
         {/* Messages Area - No scrolling, shows latest messages only */}
         <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col relative">
           {/* Transparent logo watermark - theme aware */}
-          {isRetro ? (
+          {theme === 'retro80s' ? (
             <RetroWatermark />
+          ) : theme === 'valentines' ? (
+            <ValentinesWatermark />
           ) : (
             <div 
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
