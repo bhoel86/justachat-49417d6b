@@ -1161,10 +1161,14 @@ const Auth = () => {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full font-mono uppercase tracking-wider border-2 border-cyan-400 bg-cyan-400/20 hover:bg-cyan-400/40 text-cyan-400 rounded-lg"
+                  className="w-full font-mono uppercase tracking-wider"
                   style={{ 
-                    boxShadow: '0 0 20px rgba(34,211,238,0.5), inset 0 0 10px rgba(34,211,238,0.2)',
-                    textShadow: '0 0 10px rgba(34,211,238,0.8)'
+                    background: 'linear-gradient(135deg, #00FFFF 0%, #00CED1 100%)',
+                    border: '3px solid #000',
+                    color: '#000',
+                    fontWeight: 'bold',
+                    borderRadius: 0,
+                    boxShadow: '4px 4px 0 #FF00FF',
                   }}
                   disabled={
                     isSubmitting ||
@@ -1228,15 +1232,17 @@ const Auth = () => {
                 variant="outline"
                 size="lg"
                 className={`w-full gap-2 ${
-                  isRetro ? 'font-mono uppercase border-2 border-magenta-500 hover:bg-magenta-500/20 text-magenta-400 rounded-lg' :
+                  isRetro ? 'font-mono uppercase' :
                   isMatrix ? 'font-mono border-primary/30 hover:border-primary/50 hover:bg-primary/10' : ''
                 }`}
                 onClick={() => handleGoogleSignIn(false)}
                 style={isRetro ? { 
-                  borderColor: '#FF00FF',
-                  color: '#FF00FF',
-                  boxShadow: '0 0 15px rgba(255,0,255,0.4), inset 0 0 10px rgba(255,0,255,0.1)',
-                  textShadow: '0 0 8px rgba(255,0,255,0.6)'
+                  background: 'linear-gradient(135deg, #FF00FF 0%, #CC00CC 100%)',
+                  border: '3px solid #000',
+                  color: '#FFD700',
+                  fontWeight: 'bold',
+                  borderRadius: 0,
+                  boxShadow: '4px 4px 0 #00FFFF',
                 } : isMatrix ? {
                   boxShadow: '0 0 10px hsl(120 100% 50% / 0.2)',
                 } : undefined}
