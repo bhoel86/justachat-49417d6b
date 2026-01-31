@@ -706,11 +706,25 @@ const Auth = () => {
               )}
             </h1>
             {/* Tagline */}
-            <p className={`text-muted-foreground mt-1 ${isMatrix ? 'text-base sm:text-lg font-mono tracking-wide' : 'text-sm sm:text-base tracking-wide'}`}>
+            <p className={`text-muted-foreground mt-2 ${isMatrix ? 'text-base sm:text-lg font-mono tracking-wide' : 'text-sm sm:text-base tracking-wide'}`}>
               {isValentines ? "Spread Love in Every Chat" : isStPatricks ? "Luck of the Irish in Every Chat" : isMatrix ? "Wake up. You're already inside." : "Connect Instantly, Chat Freely"}
             </p>
             {isMatrix && (
-              <p className="text-primary/60 text-sm font-mono mt-1 animate-pulse">follow the white rabbit...</p>
+              <p className="text-primary/60 text-sm font-mono mt-2 animate-pulse">follow the white rabbit...</p>
+            )}
+            {/* Matrix ASCII Rabbit Image - hidden in plain sight */}
+            {isMatrix && (
+              <div className="mt-4 relative">
+                <img 
+                  src={matrixRabbitImg} 
+                  alt="" 
+                  className="w-32 h-32 sm:w-40 sm:h-40 object-contain opacity-60 mx-auto"
+                  style={{
+                    filter: 'drop-shadow(0 0 15px hsl(120 100% 50% / 0.4))',
+                    animation: 'matrixRabbitFloat 6s ease-in-out infinite',
+                  }}
+                />
+              </div>
             )}
           </div>
         )}
