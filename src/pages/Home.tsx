@@ -576,7 +576,7 @@ const Home = () => {
             {/* Chat Rooms + Lobby Mirror Side by Side */}
             <div className={`flex flex-col lg:flex-row lg:items-stretch gap-3 ${isElectron ? 'flex-1 min-h-0' : ''}`} style={!isElectron ? { height: '480px' } : undefined}>
               {/* Room Cards */}
-              <div className="lg:w-64 xl:w-72 flex-shrink-0 h-full">
+              <div className="lg:w-52 xl:w-56 flex-shrink-0 h-full">
                 <div className={`p-2 sm:p-3 h-full overflow-hidden flex flex-col ${
                   isRetro 
                     ? 'bg-secondary border-[3px] border-foreground' 
