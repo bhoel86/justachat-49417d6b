@@ -682,8 +682,6 @@ const Auth = () => {
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl jac-gradient-bg flex items-center justify-center mb-4 shadow-lg">
               {isValentines ? (
                 <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" fill="currentColor" />
-              ) : isStPatricks ? (
-                <Clover className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               ) : (
                 <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               )}
