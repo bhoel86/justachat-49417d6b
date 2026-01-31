@@ -12,33 +12,19 @@ export const MatrixWatermark = () => {
 
   return (
     <div 
-      className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
-      style={{ opacity: 0.08 }}
+      className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0"
+      style={{ opacity: 0.15 }}
     >
-      <div className="relative">
-        {/* Main rabbit image */}
-        <img
-          src={matrixRabbitImg}
-          alt=""
-          className="w-64 h-64 sm:w-80 sm:h-80 object-contain"
-          style={{
-            filter: 'drop-shadow(0 0 30px hsl(120 100% 50% / 0.3))',
-            animation: 'matrixRabbitFloat 8s ease-in-out infinite',
-          }}
-        />
-        
-        {/* Overlay text hint */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-mono text-sm whitespace-nowrap"
-          style={{
-            color: 'hsl(120 100% 60%)',
-            textShadow: '0 0 10px hsl(120 100% 50%)',
-            opacity: 0.9,
-          }}
-        >
-          Wake up, Neo...
-        </div>
-      </div>
+      {/* Main rabbit image - larger and more visible */}
+      <img
+        src={matrixRabbitImg}
+        alt=""
+        className="w-72 h-72 sm:w-96 sm:h-96 object-contain"
+        style={{
+          filter: 'drop-shadow(0 0 40px hsl(120 100% 50% / 0.4))',
+          animation: 'matrixRabbitFloat 10s ease-in-out infinite',
+        }}
+      />
     </div>
   );
 };
