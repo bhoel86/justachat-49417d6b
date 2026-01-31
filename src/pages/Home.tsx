@@ -882,12 +882,14 @@ const Home = () => {
                   
                   {/* Center section with mascots and social links */}
                   <div className="flex items-center">
-                    {/* Left mascot */}
-                    <img 
-                      src={mascotLeft} 
-                      alt="Mascot" 
-                      className="h-14 sm:h-16 w-auto object-contain"
-                    />
+                    {/* Left mascot - OG theme only */}
+                    {!isRetro && !isValentines && (
+                      <img 
+                        src={mascotLeft} 
+                        alt="Mascot" 
+                        className="h-14 sm:h-16 w-auto object-contain"
+                      />
+                    )}
                     
                     {/* Social Media Links + Copyright centered */}
                     <div className="flex flex-col items-center">
@@ -961,12 +963,14 @@ const Home = () => {
                       </div>
                     </div>
                     
-                    {/* Right mascot */}
-                    <img 
-                      src={mascotRight} 
-                      alt="Mascot" 
-                      className="h-14 sm:h-16 w-auto object-contain"
-                    />
+                    {/* Right mascot - OG theme only */}
+                    {!isRetro && !isValentines && (
+                      <img 
+                        src={mascotRight} 
+                        alt="Mascot" 
+                        className="h-14 sm:h-16 w-auto object-contain"
+                      />
+                    )}
                   </div>
                   
                   {/* Spacer on right to balance */}
