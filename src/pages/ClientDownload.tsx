@@ -50,27 +50,28 @@ const ClientDownload = () => {
       os: 'windows',
       name: 'Windows',
       icon: Monitor,
-      version: '2026.1.0',
-      size: '45 MB',
-      url: 'https://github.com/justachat/jac-chat-client/releases/latest/download/JAC-Chat-Windows-x64.exe',
+      version: '1.0.0',
+      size: '~80 MB',
+      url: 'https://justachat.net/downloads/Justachat-Setup-1.0.0.exe',
+      portableUrl: 'https://justachat.net/downloads/Justachat-Portable-1.0.0.exe',
       requirements: 'Windows 10 or later (64-bit)',
     },
     {
       os: 'macos',
       name: 'macOS',
       icon: Apple,
-      version: '2026.1.0',
-      size: '52 MB',
-      url: 'https://github.com/justachat/jac-chat-client/releases/latest/download/JAC-Chat-macOS.dmg',
+      version: '1.0.0',
+      size: '~85 MB',
+      url: 'https://justachat.net/downloads/Justachat-1.0.0-mac.dmg',
       requirements: 'macOS 11 Big Sur or later',
     },
     {
       os: 'linux',
       name: 'Linux',
       icon: Laptop,
-      version: '2026.1.0',
-      size: '48 MB',
-      url: 'https://github.com/justachat/jac-chat-client/releases/latest/download/JAC-Chat-Linux-x86_64.AppImage',
+      version: '1.0.0',
+      size: '~90 MB',
+      url: 'https://justachat.net/downloads/Justachat-1.0.0-linux.AppImage',
       requirements: 'Any modern Linux distribution (64-bit)',
     },
   ];
@@ -133,13 +134,13 @@ const ClientDownload = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl jac-gradient-bg mb-6">
             <Terminal className="w-10 h-10 text-primary-foreground" />
           </div>
-          <h1 className="text-4xl font-bold mb-4">JAC Chat Client</h1>
+          <h1 className="text-4xl font-bold mb-4">Justachat Desktop</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            A custom IRC client built for Justachat™ with role-based nicklist coloring, 
-            dark theme, and pre-configured server settings.
+            The full Justachat experience in a native desktop app. 
+            Runs in its own window with system tray support.
           </p>
           <Badge variant="outline" className="mt-4 text-sm">
-            Based on Quassel IRC • Open Source
+            Built with Electron • Auto-connects to justachat.net
           </Badge>
         </div>
 
@@ -195,38 +196,36 @@ const ClientDownload = () => {
               Alternative Options
             </CardTitle>
             <CardDescription>
-              Other ways to connect to JAC Chat
+              Other ways to use Justachat
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 gap-4">
               <Link 
-                to="/download-proxy" 
+                to="/mirc" 
                 className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-colors"
               >
                 <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
                   <Download className="w-6 h-6 text-purple-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">mIRC Theme Package</h3>
-                  <p className="text-sm text-muted-foreground">Use with your existing mIRC client</p>
+                  <h3 className="font-semibold">Connect with mIRC</h3>
+                  <p className="text-sm text-muted-foreground">Step-by-step connection guide</p>
                 </div>
               </Link>
               
-              <a 
-                href="https://github.com/justachat/jac-chat-client/releases" 
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link 
+                to="/"
                 className="flex items-center gap-4 p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-colors"
               >
-                <div className="w-12 h-12 rounded-lg bg-gray-500/20 flex items-center justify-center">
-                  <Terminal className="w-6 h-6 text-gray-500" />
+                <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Globe className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Source Code</h3>
-                  <p className="text-sm text-muted-foreground">Build from source on GitHub</p>
+                  <h3 className="font-semibold">Web App</h3>
+                  <p className="text-sm text-muted-foreground">Use Justachat in your browser</p>
                 </div>
-              </a>
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -288,8 +287,7 @@ const ClientDownload = () => {
       {/* Footer */}
       <footer className="border-t border-border mt-12 py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2026 Justachat™. All rights reserved.</p>
-          <p className="mt-1">JAC Chat Client is based on <a href="https://quassel-irc.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Quassel IRC</a> (GPL-2.0 License)</p>
+          <p>© {new Date().getFullYear()} Justachat™. All rights reserved.</p>
         </div>
       </footer>
     </div>

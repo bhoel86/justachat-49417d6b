@@ -1,0 +1,54 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "net.justachat.app",
+  "productName": "Justachat",
+  "directories": {
+    "output": "electron-dist",
+    "buildResources": "electron/resources"
+  },
+  "files": [
+    "electron/**/*",
+    "public/jac-favicon.png",
+    "public/jac-favicon-jac.png"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/jac-favicon.png",
+    "artifactName": "Justachat-Setup-${version}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "public/jac-favicon.png",
+    "uninstallerIcon": "public/jac-favicon.png",
+    "installerHeaderIcon": "public/jac-favicon.png",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Justachat"
+  },
+  "portable": {
+    "artifactName": "Justachat-Portable-${version}.${ext}"
+  },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "icon": "public/jac-favicon.png",
+    "category": "public.app-category.social-networking",
+    "artifactName": "Justachat-${version}-mac.${ext}"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "public/jac-favicon.png",
+    "category": "Network;Chat",
+    "artifactName": "Justachat-${version}-linux.${ext}"
+  },
+  "publish": null
+}
