@@ -29,25 +29,32 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
   // Use site theme colors for special themes, otherwise use room-specific colors
   const isStPatricks = siteTheme === 'stpatricks';
   const isValentines = siteTheme === 'valentines';
+  const isMatrix = siteTheme === 'matrix';
   
   // Override colors for special site themes
-  const effectiveGradient = isStPatricks 
-    ? 'from-emerald-500 to-green-600' 
-    : isValentines 
-      ? 'from-pink-500 to-rose-500'
-      : roomTheme.gradient;
+  const effectiveGradient = isMatrix
+    ? 'from-green-500 to-green-700'
+    : isStPatricks 
+      ? 'from-emerald-500 to-green-600' 
+      : isValentines 
+        ? 'from-pink-500 to-rose-500'
+        : roomTheme.gradient;
   
-  const effectiveTextColor = isStPatricks 
-    ? 'text-emerald-400' 
-    : isValentines 
-      ? 'text-pink-400'
-      : roomTheme.textColor;
+  const effectiveTextColor = isMatrix
+    ? 'text-green-400'
+    : isStPatricks 
+      ? 'text-emerald-400' 
+      : isValentines 
+        ? 'text-pink-400'
+        : roomTheme.textColor;
   
-  const effectiveBgColor = isStPatricks 
-    ? 'bg-emerald-500/20' 
-    : isValentines 
-      ? 'bg-pink-500/20'
-      : roomTheme.bgColor;
+  const effectiveBgColor = isMatrix
+    ? 'bg-green-500/20'
+    : isStPatricks 
+      ? 'bg-emerald-500/20' 
+      : isValentines 
+        ? 'bg-pink-500/20'
+        : roomTheme.bgColor;
   const getRoleBadge = () => {
     if (role === 'owner') {
       return (

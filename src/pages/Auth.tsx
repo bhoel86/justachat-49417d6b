@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle, Calendar, Users, Heart, Clover } from "lucide-react";
+import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle, Calendar, Users, Heart, Terminal } from "lucide-react";
 import { Browser } from '@capacitor/browser';
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
+import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { useTheme } from "@/contexts/ThemeContext";
 import retroHeaderImg from '@/assets/retro-header.png';
 
@@ -635,6 +636,7 @@ const Auth = () => {
   const isRetro = theme === 'retro80s';
   const isValentines = theme === 'valentines';
   const isStPatricks = theme === 'stpatricks';
+  const isMatrix = theme === 'matrix';
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
@@ -653,6 +655,9 @@ const Auth = () => {
       
       {/* St. Patrick's floating icons */}
       <StPatricksFloatingIcons />
+      
+      {/* Matrix falling code */}
+      <MatrixFloatingCode />
 
       {/* Full-width retro header banner */}
       {isRetro && (
@@ -679,25 +684,32 @@ const Auth = () => {
         {!isRetro && (
           <div className="flex flex-col items-center mb-8">
             {/* Icon */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl jac-gradient-bg flex items-center justify-center mb-4 shadow-lg">
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 ${isMatrix ? 'rounded-none' : 'rounded-2xl'} jac-gradient-bg flex items-center justify-center mb-4 shadow-lg`}>
               {isValentines ? (
                 <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" fill="currentColor" />
+              ) : isMatrix ? (
+                <Terminal className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               ) : (
                 <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               )}
             </div>
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl font-bold text-primary tracking-tight">
+            <h1 className={`text-3xl sm:text-4xl font-bold text-primary ${isMatrix ? 'tracking-widest font-mono' : 'tracking-tight'}`}>
               {isValentines ? (
                 <>💕 Justachat<sup className="text-xs">™</sup> 💕</>
+              ) : isMatrix ? (
+                <>JUSTACHAT</>
               ) : (
                 <>Justachat<sup className="text-xs">™</sup></>
               )}
             </h1>
             {/* Tagline */}
-            <p className="text-muted-foreground text-sm sm:text-base mt-2 tracking-wide">
-              {isValentines ? "Spread Love in Every Chat" : isStPatricks ? "Luck of the Irish in Every Chat" : "Connect Instantly, Chat Freely"}
+            <p className={`text-muted-foreground text-sm sm:text-base mt-2 ${isMatrix ? 'font-mono tracking-wide' : 'tracking-wide'}`}>
+              {isValentines ? "Spread Love in Every Chat" : isStPatricks ? "Luck of the Irish in Every Chat" : isMatrix ? "Wake up. You're already inside." : "Connect Instantly, Chat Freely"}
             </p>
+            {isMatrix && (
+              <p className="text-primary/50 text-xs font-mono mt-1">follow the white rabbit...</p>
+            )}
           </div>
         )}
         {/* Form Card */}

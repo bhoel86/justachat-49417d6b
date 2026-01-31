@@ -230,6 +230,61 @@
     --theme-window-shadow: 0 4px 20px hsl(142 76% 36% / 0.15);
   }
 
+  /* Matrix Theme - Follow the White Rabbit */
+  .theme-matrix {
+    --background: 120 100% 2%;
+    --foreground: 120 100% 70%;
+
+    --card: 120 80% 5%;
+    --card-foreground: 120 100% 70%;
+
+    --popover: 120 70% 6%;
+    --popover-foreground: 120 100% 70%;
+
+    --primary: 120 100% 50%;
+    --primary-foreground: 120 100% 2%;
+
+    --secondary: 120 60% 8%;
+    --secondary-foreground: 120 100% 70%;
+
+    --muted: 120 40% 10%;
+    --muted-foreground: 120 60% 45%;
+
+    --accent: 120 100% 60%;
+    --accent-foreground: 120 100% 2%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 120 80% 15%;
+    --input: 120 60% 8%;
+    --ring: 120 100% 50%;
+
+    --radius: 0;
+
+    /* Custom matrix variables */
+    --jac-gradient: linear-gradient(180deg, hsl(120 100% 50%) 0%, hsl(120 100% 35%) 100%);
+    --jac-glow: 0 0 20px hsl(120 100% 50% / 0.6), 0 0 40px hsl(120 100% 50% / 0.3), 0 0 60px hsl(120 100% 50% / 0.1);
+    --jac-bubble-user: 120 80% 25%;
+    --jac-bubble-other: 120 60% 10%;
+
+    --sidebar-background: 120 80% 4%;
+    --sidebar-foreground: 120 100% 70%;
+    --sidebar-primary: 120 100% 50%;
+    --sidebar-primary-foreground: 120 100% 2%;
+    --sidebar-accent: 120 100% 60%;
+    --sidebar-accent-foreground: 120 100% 2%;
+    --sidebar-border: 120 80% 15%;
+    --sidebar-ring: 120 100% 50%;
+
+    /* Theme-specific */
+    --theme-font-body: 'VT323', monospace;
+    --theme-font-heading: 'VT323', monospace;
+    --theme-border-style: solid;
+    --theme-border-width: 1px;
+    --theme-window-shadow: 0 0 20px hsl(120 100% 50% / 0.2);
+  }
+
   .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
@@ -576,4 +631,162 @@
 
 .theme-stpatricks .jac-glow {
   box-shadow: 0 0 30px hsl(142 76% 36% / 0.4), 0 0 60px hsl(45 93% 47% / 0.2);
+}
+
+/* ============================================
+   MATRIX THEME - Follow the White Rabbit
+   ============================================ */
+
+/* Matrix theme animations */
+@keyframes matrixRain {
+  0% {
+    transform: translateY(-100%);
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes matrixFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+  75% { opacity: 0.95; }
+  90% { opacity: 0.85; }
+}
+
+@keyframes matrixGlow {
+  0%, 100% {
+    text-shadow: 0 0 5px hsl(120 100% 50%), 0 0 10px hsl(120 100% 50%), 0 0 20px hsl(120 100% 50%);
+  }
+  50% {
+    text-shadow: 0 0 10px hsl(120 100% 60%), 0 0 20px hsl(120 100% 60%), 0 0 40px hsl(120 100% 60%);
+  }
+}
+
+@keyframes matrixPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px hsl(120 100% 50% / 0.5), inset 0 0 5px hsl(120 100% 50% / 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(120 100% 50% / 0.8), inset 0 0 10px hsl(120 100% 50% / 0.2);
+  }
+}
+
+@keyframes matrixScanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes matrixRabbitFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.06;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+    opacity: 0.1;
+  }
+}
+
+@keyframes matrixTextType {
+  0% { width: 0; }
+  100% { width: 100%; }
+}
+
+@keyframes matrixBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Matrix theme specific styles */
+.theme-matrix {
+  background-color: hsl(120 100% 2%);
+  background-image: 
+    radial-gradient(ellipse 100% 60% at 50% 0%, hsl(120 100% 50% / 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 50%, hsl(120 100% 50% / 0.02) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 40% at 100% 50%, hsl(120 100% 50% / 0.02) 0%, transparent 40%);
+}
+
+.theme-matrix .card,
+.theme-matrix .bg-card {
+  box-shadow: 0 0 15px hsl(120 100% 50% / 0.1), inset 0 0 30px hsl(120 100% 50% / 0.02);
+  border: 1px solid hsl(120 100% 50% / 0.3);
+}
+
+.theme-matrix button:hover,
+.theme-matrix .hover\:shadow-lg:hover {
+  box-shadow: 0 0 20px hsl(120 100% 50% / 0.4);
+}
+
+.theme-matrix .jac-gradient-bg {
+  background: linear-gradient(180deg, hsl(120 100% 50%) 0%, hsl(120 100% 35%) 100%);
+  box-shadow: 0 0 20px hsl(120 100% 50% / 0.5);
+}
+
+.theme-matrix .jac-glow {
+  box-shadow: 0 0 20px hsl(120 100% 50% / 0.6), 0 0 40px hsl(120 100% 50% / 0.3);
+}
+
+.theme-matrix .jac-gradient-text {
+  background: linear-gradient(180deg, hsl(120 100% 70%) 0%, hsl(120 100% 50%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 10px hsl(120 100% 50% / 0.5));
+}
+
+/* Matrix terminal text effect */
+.theme-matrix h1,
+.theme-matrix h2,
+.theme-matrix h3,
+.theme-matrix .brand {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: matrixFlicker 4s infinite;
+}
+
+/* Scanline overlay effect */
+.theme-matrix::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    hsl(120 100% 50% / 0.03) 2px,
+    hsl(120 100% 50% / 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Matrix button styling */
+.theme-matrix button {
+  border: 1px solid hsl(120 100% 50% / 0.5) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.theme-matrix input,
+.theme-matrix textarea {
+  border: 1px solid hsl(120 100% 50% / 0.3) !important;
+  background: hsl(120 100% 5% / 0.8) !important;
+}
+
+.theme-matrix input:focus,
+.theme-matrix textarea:focus {
+  box-shadow: 0 0 10px hsl(120 100% 50% / 0.3), inset 0 0 5px hsl(120 100% 50% / 0.1);
 }

@@ -46,8 +46,10 @@ import mascotRight from "@/assets/mascot-right.png";
 import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
 import { ValentinesWelcomeBanner } from "@/components/theme/ValentinesWelcomeBanner";
 import { StPatricksWelcomeBanner } from "@/components/theme/StPatricksWelcomeBanner";
+import { MatrixWelcomeBanner } from "@/components/theme/MatrixWelcomeBanner";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
+import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -122,6 +124,7 @@ const Home = () => {
   const isRetro = theme === 'retro80s';
   const isValentines = theme === 'valentines';
   const isStPatricks = theme === 'stpatricks';
+  const isMatrix = theme === 'matrix';
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
   const [roomUserCounts, setRoomUserCounts] = useState<RoomUserCounts>({});
@@ -255,6 +258,7 @@ const Home = () => {
       {/* Floating theme decorations */}
       <ValentinesFloatingHearts />
       <StPatricksFloatingIcons />
+      <MatrixFloatingCode />
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
@@ -587,6 +591,8 @@ const Home = () => {
               <ValentinesWelcomeBanner variant="mobile" />
             ) : isStPatricks ? (
               <StPatricksWelcomeBanner />
+            ) : isMatrix ? (
+              <MatrixWelcomeBanner variant="mobile" />
             ) : (
               <>
                 <img 
@@ -634,6 +640,11 @@ const Home = () => {
                 />
               ) : isStPatricks ? (
                 <StPatricksWelcomeBanner />
+              ) : isMatrix ? (
+                <MatrixWelcomeBanner variant="desktop" onJoinClick={() => {
+                  const generalChannel = channels.find(c => c.name === 'general');
+                  if (generalChannel) handleJoinRoom(generalChannel);
+                }} />
               ) : (
                 <>
                   <img 

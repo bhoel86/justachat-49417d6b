@@ -13,6 +13,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { RetroWatermark } from "@/components/theme/RetroWatermark";
 import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
 import { StPatricksWatermark } from "@/components/theme/StPatricksWatermark";
+import { MatrixWatermark } from "@/components/theme/MatrixWatermark";
 
 interface MirrorMessage {
   id: string;
@@ -222,6 +223,8 @@ const LobbyMirrorRoom = () => {
             <ValentinesWatermark />
           ) : theme === 'stpatricks' ? (
             <StPatricksWatermark />
+          ) : theme === 'matrix' ? (
+            <MatrixWatermark />
           ) : (
             <div 
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"

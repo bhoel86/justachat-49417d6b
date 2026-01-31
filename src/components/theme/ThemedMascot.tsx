@@ -4,6 +4,7 @@ import { Heart, Gift, Sparkles } from 'lucide-react';
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 import { StPatricksMascot } from './StPatricksMascot';
+import { MatrixMascot } from './MatrixMascot';
 
 interface ThemedMascotProps {
   side: 'left' | 'right';
@@ -12,6 +13,13 @@ interface ThemedMascotProps {
 
 export const ThemedMascot: React.FC<ThemedMascotProps> = ({ side, className = '' }) => {
   const { theme } = useTheme();
+  
+  console.log('[ThemedMascot] Current theme:', theme, 'Side:', side);
+
+  // For Matrix theme, show rabbit mascots
+  if (theme === 'matrix') {
+    return <MatrixMascot side={side} />;
+  }
   
   console.log('[ThemedMascot] Current theme:', theme, 'Side:', side);
 

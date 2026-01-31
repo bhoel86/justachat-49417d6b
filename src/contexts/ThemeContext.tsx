@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useLayoutEffect } from 'react';
 
-export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks';
+export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix';
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -15,13 +15,14 @@ const THEMES = [
   { id: 'retro80s' as ThemeName, name: '80s Retro', description: 'Retro Windows 95/98 aesthetic' },
   { id: 'valentines' as ThemeName, name: "Valentine's", description: 'Romantic pink hearts theme' },
   { id: 'stpatricks' as ThemeName, name: "St. Patrick's", description: 'Irish shamrocks & gold' },
+  { id: 'matrix' as ThemeName, name: 'The Matrix', description: 'Follow the white rabbit' },
 ];
 
 const getStoredTheme = (): ThemeName => {
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('jac-theme');
-      if (saved === 'jac' || saved === 'retro80s' || saved === 'valentines' || saved === 'stpatricks') {
+      if (saved === 'jac' || saved === 'retro80s' || saved === 'valentines' || saved === 'stpatricks' || saved === 'matrix') {
         return saved;
       }
     } catch (e) {
@@ -33,7 +34,7 @@ const getStoredTheme = (): ThemeName => {
 
 const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks');
+    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix');
     document.documentElement.classList.add(`theme-${theme}`);
     console.log('[Theme] Applied:', theme, document.documentElement.classList.toString());
   }
