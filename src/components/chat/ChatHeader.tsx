@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 import { getRoomTheme, getDefaultTopic } from "@/lib/roomConfig";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface ChatHeaderProps {
   onlineCount: number;
@@ -21,9 +22,32 @@ interface ChatHeaderProps {
 
 const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageClick, currentLanguage = 'en', doNotDisturb, onToggleDND }: ChatHeaderProps) => {
   const { logoutFromChat, role } = useAuth();
-  const theme = getRoomTheme(channelName);
+  const { theme: siteTheme } = useTheme();
+  const roomTheme = getRoomTheme(channelName);
   const displayTopic = topic || getDefaultTopic(channelName);
-
+  
+  // Use site theme colors for special themes, otherwise use room-specific colors
+  const isStPatricks = siteTheme === 'stpatricks';
+  const isValentines = siteTheme === 'valentines';
+  
+  // Override colors for special site themes
+  const effectiveGradient = isStPatricks 
+    ? 'from-emerald-500 to-green-600' 
+    : isValentines 
+      ? 'from-pink-500 to-rose-500'
+      : roomTheme.gradient;
+  
+  const effectiveTextColor = isStPatricks 
+    ? 'text-emerald-400' 
+    : isValentines 
+      ? 'text-pink-400'
+      : roomTheme.textColor;
+  
+  const effectiveBgColor = isStPatricks 
+    ? 'bg-emerald-500/20' 
+    : isValentines 
+      ? 'bg-pink-500/20'
+      : roomTheme.bgColor;
   const getRoleBadge = () => {
     if (role === 'owner') {
       return (
@@ -50,15 +74,15 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
         <div className="flex items-center gap-2">
           <div className={cn(
             "h-8 w-8 rounded-lg flex items-center justify-center bg-gradient-to-br",
-            theme.gradient
+            effectiveGradient
           )}>
             <MessagesSquare className="h-4 w-4 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-0.5">
-                <Hash className={cn("h-3.5 w-3.5", theme.textColor)} />
-                <h1 className={cn("font-display font-bold text-sm", theme.textColor)}>{channelName}</h1>
+                <Hash className={cn("h-3.5 w-3.5", effectiveTextColor)} />
+                <h1 className={cn("font-display font-bold text-sm", effectiveTextColor)}>{channelName}</h1>
               </div>
               {getRoleBadge()}
             </div>
@@ -143,10 +167,10 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
       {/* Topic bar with colored background */}
       <div className={cn(
         "px-3 py-1.5 border-t border-border/50",
-        theme.bgColor
+        effectiveBgColor
       )}>
         <p className="text-[11px] truncate">
-          <span className={cn("font-semibold", theme.textColor)}>Topic:</span>{' '}
+          <span className={cn("font-semibold", effectiveTextColor)}>Topic:</span>{' '}
           <span className="text-foreground/80">{displayTopic}</span>
         </p>
       </div>
