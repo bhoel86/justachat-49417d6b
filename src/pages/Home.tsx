@@ -324,13 +324,13 @@ const Home = () => {
                   </Link>
                 </DropdownMenuItem>
                 
-                {/* mIRC & Proxy Section */}
+                {/* mIRC Connection Info */}
                 <DropdownMenuItem asChild>
-                  <Link to="/download-proxy" className="flex items-center gap-2 cursor-pointer">
+                  <Link to="/downloads" className="flex items-center gap-2 cursor-pointer">
                     <Download className="w-4 h-4 text-purple-500" />
                     <div>
-                      <span>mIRC Theme Package</span>
-                      <p className="text-xs text-muted-foreground">For existing mIRC users</p>
+                      <span>Connect with mIRC</span>
+                      <p className="text-xs text-muted-foreground">Server: 157.245.174.197:6697</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
