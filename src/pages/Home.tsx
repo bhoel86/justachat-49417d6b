@@ -255,7 +255,7 @@ const Home = () => {
   }
 
   return (
-    <div className={`bg-background text-foreground relative ${isElectron && !isMobile ? 'h-screen overflow-hidden flex flex-col' : 'min-h-screen'}`}>
+    <div className="bg-background text-foreground relative h-screen overflow-hidden flex flex-col">
       {/* Floating theme decorations */}
       <ValentinesFloatingHearts />
       <StPatricksFloatingIcons />
@@ -571,10 +571,10 @@ const Home = () => {
       ) : (
         /* DESKTOP FULL VIEW */
         <>
-          {/* Main Content - fills remaining viewport on Electron */}
-          <main className={`container mx-auto px-3 sm:px-4 py-3 ${isElectron ? 'flex-1 flex flex-col overflow-hidden' : ''}`}>
+          {/* Main Content - fills remaining viewport */}
+          <main className="container mx-auto px-3 sm:px-4 py-3 flex-1 flex flex-col overflow-hidden min-h-0">
             {/* Chat Rooms + Lobby Mirror Side by Side */}
-            <div className={`flex flex-col lg:flex-row lg:items-stretch gap-3 ${isElectron ? 'flex-1 min-h-0' : ''}`} style={!isElectron ? { height: '480px' } : undefined}>
+            <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 flex-1 min-h-0">
               {/* Room Cards */}
               <div className="lg:w-52 xl:w-56 flex-shrink-0 h-full">
                 <div className={`p-2 sm:p-3 h-full overflow-hidden flex flex-col ${
@@ -806,8 +806,8 @@ const Home = () => {
               </div>
             </div>
             
-            {/* Footer - Full width at bottom of page */}
-            <footer className={`border-t ${isElectron ? 'mt-3 pt-3 flex-shrink-0' : 'mt-8 sm:mt-12 pt-6 sm:pt-8'} ${
+            {/* Footer - Compact, always visible */}
+            <footer className={`border-t mt-3 pt-3 flex-shrink-0 ${
               isRetro ? 'border-cyan-400/50' : 'border-border'
             }`}>
               {/* Footer row with logo left, center section, spacer right */}
