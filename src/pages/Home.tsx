@@ -586,8 +586,6 @@ const Home = () => {
               <RetroWelcomeBanner variant="mobile" />
             ) : isValentines ? (
               <ValentinesWelcomeBanner variant="mobile" />
-            ) : isStPatricks ? (
-              <StPatricksWelcomeBanner />
             ) : (
               <>
                 <img 
@@ -598,7 +596,9 @@ const Home = () => {
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                   <div className="text-center">
                     <h2 className="text-2xl font-bold text-white drop-shadow-lg">Welcome!</h2>
-                    <p className="text-xs text-white/90 drop-shadow-md mt-1">Tap anywhere to join chat</p>
+                    <p className="text-xs text-white/90 drop-shadow-md mt-1">
+                      {isStPatricks ? "☘️ Luck of the Irish!" : "Tap anywhere to join chat"}
+                    </p>
                   </div>
                 </div>
               </>
@@ -633,8 +633,6 @@ const Home = () => {
                     if (generalChannel) handleJoinRoom(generalChannel);
                   }}
                 />
-              ) : isStPatricks ? (
-                <StPatricksWelcomeBanner />
               ) : (
                 <>
                   <img 
@@ -646,7 +644,9 @@ const Home = () => {
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                     <div className="text-center">
                       <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Welcome!</h2>
-                      <p className="text-xs sm:text-sm md:text-base text-white/90 drop-shadow-md mt-1">This is the main hangout spot.</p>
+                      <p className="text-xs sm:text-sm md:text-base text-white/90 drop-shadow-md mt-1">
+                        {isStPatricks ? "Luck of the Irish in Every Chat!" : "This is the main hangout spot."}
+                      </p>
                     </div>
                     <Button 
                       onClick={() => {
