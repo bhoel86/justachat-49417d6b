@@ -43,6 +43,7 @@ import { RetroWatermark } from "@/components/theme/RetroWatermark";
 import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
 import { StPatricksWatermark } from "@/components/theme/StPatricksWatermark";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
+import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 
 interface Message {
   id: string;

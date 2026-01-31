@@ -6,13 +6,14 @@ import { Sparkles } from "lucide-react";
  * Similar to ValentinesFloatingHearts but with shamrocks and gold coins
  */
 
-const Shamrock: React.FC<{ size: number; className?: string }> = ({ size, className }) => (
+const Shamrock: React.FC<{ size: number; className?: string; color?: string }> = ({ size, className, color = '#228B22' }) => (
   <svg
     width={size}
     height={size}
     viewBox="0 0 24 24"
-    fill="currentColor"
+    fill={color}
     className={className}
+    style={{ filter: `drop-shadow(0 0 ${size/3}px ${color}50)` }}
   >
     <path d="M12 2c-1.5 0-3 1.5-3 3.5 0 1.5 1 2.5 2 3-2 0-4.5 1-4.5 3.5S8.5 15.5 10 15c-1 1-2 3-2 4.5 0 1.5 1.5 2.5 3 2.5s2-1 2-2v-6c0 0 0 2 0 2v4c0 1 .5 2 2 2s3-1 3-2.5c0-1.5-1-3.5-2-4.5 1.5.5 3.5-.5 3.5-3S16 9.5 14 9.5c1-0.5 2-1.5 2-3C16 3.5 14.5 2 13 2c-0.5 0-1 0.5-1 1.5V5c0-1.5-.5-3-1-3z" />
   </svg>
@@ -44,9 +45,7 @@ export const StPatricksFloatingIcons = () => {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       {floatingShamrocks.map((item, index) => {
-        const color = item.isGold 
-          ? goldColors[index % goldColors.length]
-          : shamrockColors[index % shamrockColors.length];
+        const shamrockColor = shamrockColors[index % shamrockColors.length];
         const { size, delay, duration, isGold, ...position } = item;
         
         return (
@@ -80,12 +79,28 @@ export const StPatricksFloatingIcons = () => {
             ) : (
               <Shamrock 
                 size={size} 
-                className="drop-shadow-lg"
+                color={shamrockColor}
               />
             )}
           </div>
         );
       })}
+      
+      {/* Ambient glow in corners */}
+      <div 
+        className="absolute top-0 left-0 w-64 h-64 opacity-15"
+        style={{
+          background: 'radial-gradient(circle, hsl(142 76% 36%) 0%, transparent 70%)',
+          filter: 'blur(40px)',
+        }}
+      />
+      <div 
+        className="absolute bottom-0 right-0 w-64 h-64 opacity-15"
+        style={{
+          background: 'radial-gradient(circle, hsl(45 93% 47%) 0%, transparent 70%)',
+          filter: 'blur(40px)',
+        }}
+      />
       
       {/* Sparkles */}
       <Sparkles 

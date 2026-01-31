@@ -9,7 +9,7 @@ import {
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
   Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX, Menu, 
   Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen,
-  Radio, Camera, Rocket
+  Radio, Camera, Rocket, Clover
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,7 +45,9 @@ import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
 import { ValentinesWelcomeBanner } from "@/components/theme/ValentinesWelcomeBanner";
+import { StPatricksWelcomeBanner } from "@/components/theme/StPatricksWelcomeBanner";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
+import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface Channel {
@@ -248,7 +250,10 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
+      {/* Floating theme decorations */}
+      <ValentinesFloatingHearts />
+      <StPatricksFloatingIcons />
       {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
@@ -256,6 +261,8 @@ const Home = () => {
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
               {isValentines ? (
                 <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" fill="currentColor" />
+              ) : isStPatricks ? (
+                <Clover className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               ) : (
                 <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               )}
@@ -577,6 +584,10 @@ const Home = () => {
           >
             {isRetro ? (
               <RetroWelcomeBanner variant="mobile" />
+            ) : isValentines ? (
+              <ValentinesWelcomeBanner variant="mobile" />
+            ) : isStPatricks ? (
+              <StPatricksWelcomeBanner />
             ) : (
               <>
                 <img 
@@ -622,6 +633,8 @@ const Home = () => {
                     if (generalChannel) handleJoinRoom(generalChannel);
                   }}
                 />
+              ) : isStPatricks ? (
+                <StPatricksWelcomeBanner />
               ) : (
                 <>
                   <img 
@@ -913,7 +926,7 @@ const Home = () => {
                   {/* Center section with mascots and social links */}
                   <div className="flex items-center">
                     {/* Left mascot - OG theme only */}
-                    {!isRetro && !isValentines && (
+                    {!isRetro && !isValentines && !isStPatricks && (
                       <img 
                         src={mascotLeft} 
                         alt="Mascot" 
@@ -994,7 +1007,7 @@ const Home = () => {
                     </div>
                     
                     {/* Right mascot - OG theme only */}
-                    {!isRetro && !isValentines && (
+                    {!isRetro && !isValentines && !isStPatricks && (
                       <img 
                         src={mascotRight} 
                         alt="Mascot" 
