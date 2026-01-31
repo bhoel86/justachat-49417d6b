@@ -47,7 +47,8 @@ export const ThemeSelector: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Circle 
-                    className={`h-3 w-3 ${isActive ? 'fill-green-500 text-green-500' : 'fill-muted text-muted'}`} 
+                    className={`h-3 w-3 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
+                    fill="currentColor"
                   />
                   <div className="flex flex-col">
                     <span className="font-medium text-sm">{t.name}</span>
@@ -55,7 +56,7 @@ export const ThemeSelector: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {isActive && <Check className="h-4 w-4 text-green-500" />}
+                  {isActive && <Check className="h-4 w-4 text-primary" />}
                   <Button
                     size="sm"
                     variant={isActive ? "secondary" : "default"}

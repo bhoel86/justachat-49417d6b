@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useLayoutEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix';
 
@@ -131,6 +132,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setTheme = async (newTheme: ThemeName) => {
     console.log('[Theme] Owner setting theme to:', newTheme);
+    const previousTheme = theme;
     
     // Mark that user just changed theme - prevents polling from overwriting
     lastUserChangeRef.current = Date.now();
@@ -150,8 +152,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (error) {
       console.error('[Theme] Failed to save to DB:', error.message);
       // Note: Non-owners will get an RLS error, which is expected
+
+      // Revert local change so UI matches the actual global theme
+      setThemeState(previousTheme);
+      applyThemeClass(previousTheme);
+
+      toast.error('Could not set global theme', {
+        description: error.message,
+        duration: 6000,
+      });
     } else {
       console.log('[Theme] Saved to DB successfully');
+
+      toast.success('Global theme updated', {
+        description: 'Changes apply to all users site-wide.',
+        duration: 4000,
+      });
     }
   };
 
