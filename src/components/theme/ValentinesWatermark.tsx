@@ -10,7 +10,7 @@ export const ValentinesWatermark: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
       {/* Romantic styled watermark */}
       <div 
         className="text-center select-none"

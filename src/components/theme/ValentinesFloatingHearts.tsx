@@ -55,7 +55,7 @@ export const ValentinesFloatingHearts: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
       {/* Subtle ambient glow in corners */}
       <div 
         className="absolute top-0 left-0 w-64 h-64 opacity-20"
