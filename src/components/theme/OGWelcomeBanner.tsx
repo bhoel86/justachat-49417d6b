@@ -12,7 +12,7 @@ export const OGWelcomeBanner: React.FC<OGWelcomeBannerProps> = ({ onJoinClick, v
   return (
     <div 
       onClick={onJoinClick}
-      className={`relative overflow-hidden flex flex-col items-center justify-center bg-gradient-to-br from-background via-card to-background ${onJoinClick ? 'cursor-pointer hover:opacity-95 transition-opacity' : ''} ${isMobile ? 'py-4 px-3' : 'py-6 sm:py-8 px-4'}`}
+      className={`relative overflow-hidden flex flex-col items-center justify-center bg-gradient-to-br from-background via-card to-background ${onJoinClick ? 'cursor-pointer hover:opacity-95 transition-opacity' : ''} ${isMobile ? 'py-2 px-3' : 'py-3 sm:py-4 px-4'}`}
     >
       {/* Subtle animated background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -21,28 +21,28 @@ export const OGWelcomeBanner: React.FC<OGWelcomeBannerProps> = ({ onJoinClick, v
       </div>
       
       {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center gap-2 sm:gap-3">
+      <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5">
         {/* Icon */}
-        <div className={`${isMobile ? 'w-12 h-12' : 'w-14 h-14 sm:w-16 sm:h-16'} rounded-2xl jac-gradient-bg flex items-center justify-center shadow-lg`}>
-          <MessageSquare className={`${isMobile ? 'w-6 h-6' : 'w-7 h-7 sm:w-8 sm:h-8'} text-primary-foreground`} />
+        <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10 sm:w-12 sm:h-12'} rounded-xl jac-gradient-bg flex items-center justify-center shadow-lg`}>
+          <MessageSquare className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5 sm:w-6 sm:h-6'} text-primary-foreground`} />
         </div>
         
         {/* Title */}
-        <h1 className={`font-bold tracking-tight text-foreground ${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'}`}>
+        <h1 className={`font-bold tracking-tight text-foreground ${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'}`}>
           <span className="bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
             Justachat
           </span>
-          <sup className="text-[8px] sm:text-xs text-muted-foreground ml-0.5">™</sup>
+          <sup className="text-[6px] sm:text-[8px] text-muted-foreground ml-0.5">™</sup>
         </h1>
         
         {/* Tagline */}
-        <p className={`text-muted-foreground text-center max-w-md ${isMobile ? 'text-xs' : 'text-sm sm:text-base'}`}>
+        <p className={`text-muted-foreground text-center max-w-md ${isMobile ? 'text-[10px]' : 'text-xs sm:text-sm'}`}>
           Connect Instantly, Chat Freely
         </p>
         
         {/* CTA hint */}
         {onJoinClick && (
-          <p className={`text-primary/70 font-medium ${isMobile ? 'text-[10px]' : 'text-xs sm:text-sm'}`}>
+          <p className={`text-primary/70 font-medium ${isMobile ? 'text-[9px]' : 'text-[10px] sm:text-xs'}`}>
             Click to join #general →
           </p>
         )}
