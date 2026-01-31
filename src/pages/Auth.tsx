@@ -696,7 +696,7 @@ const Auth = () => {
               )}
             </div>
             {/* Title */}
-            <h1 className={`text-3xl sm:text-4xl font-bold text-primary ${isMatrix ? 'tracking-widest font-mono' : 'tracking-tight'}`}>
+            <h1 className={`font-bold text-primary ${isMatrix ? 'text-4xl sm:text-5xl tracking-widest font-mono' : 'text-3xl sm:text-4xl tracking-tight'}`}>
               {isValentines ? (
                 <>💕 Justachat<sup className="text-xs">™</sup> 💕</>
               ) : isMatrix ? (
@@ -706,11 +706,11 @@ const Auth = () => {
               )}
             </h1>
             {/* Tagline */}
-            <p className={`text-muted-foreground text-sm sm:text-base mt-2 ${isMatrix ? 'font-mono tracking-wide' : 'tracking-wide'}`}>
+            <p className={`text-muted-foreground mt-2 ${isMatrix ? 'text-base sm:text-lg font-mono tracking-wide' : 'text-sm sm:text-base tracking-wide'}`}>
               {isValentines ? "Spread Love in Every Chat" : isStPatricks ? "Luck of the Irish in Every Chat" : isMatrix ? "Wake up. You're already inside." : "Connect Instantly, Chat Freely"}
             </p>
             {isMatrix && (
-              <p className="text-primary/50 text-xs font-mono mt-1 animate-pulse">follow the white rabbit...</p>
+              <p className="text-primary/60 text-sm font-mono mt-2 animate-pulse">follow the white rabbit...</p>
             )}
             {/* Matrix ASCII Rabbit Image - hidden in plain sight */}
             {isMatrix && (
@@ -746,17 +746,17 @@ const Auth = () => {
             </button>
           )}
           
-          <h2 className="text-xl font-semibold text-foreground mb-1 text-center">
-            {mode === "login" && "Welcome back"}
-            {mode === "signup" && "Create account"}
-            {mode === "forgot" && "Reset password"}
-            {mode === "reset" && "Set new password"}
+          <h2 className={`font-semibold text-foreground mb-1 text-center ${isMatrix ? 'text-2xl font-mono tracking-wide' : 'text-xl'}`}>
+            {mode === "login" && (isMatrix ? "[ AUTHENTICATE ]" : "Welcome back")}
+            {mode === "signup" && (isMatrix ? "[ NEW USER ]" : "Create account")}
+            {mode === "forgot" && (isMatrix ? "[ RECOVERY ]" : "Reset password")}
+            {mode === "reset" && (isMatrix ? "[ NEW CREDENTIALS ]" : "Set new password")}
           </h2>
-          <p className="text-muted-foreground text-sm text-center mb-6">
-            {mode === "login" && "Sign in to continue chatting"}
-            {mode === "signup" && "Join the conversation"}
-            {mode === "forgot" && "Enter your email to receive a reset link"}
-            {mode === "reset" && "Enter your new password below"}
+          <p className={`text-muted-foreground text-center mb-6 ${isMatrix ? 'text-base font-mono' : 'text-sm'}`}>
+            {mode === "login" && (isMatrix ? "Enter the system" : "Sign in to continue chatting")}
+            {mode === "signup" && (isMatrix ? "Initialize your identity" : "Join the conversation")}
+            {mode === "forgot" && (isMatrix ? "Request access recovery" : "Enter your email to receive a reset link")}
+            {mode === "reset" && (isMatrix ? "Establish new access codes" : "Enter your new password below")}
           </p>
 
           {/* Rate limit warning */}
