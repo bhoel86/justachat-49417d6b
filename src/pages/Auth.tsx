@@ -649,11 +649,11 @@ const Auth = () => {
 
       {/* Full-width retro header banner */}
       {isRetro && (
-        <div className="absolute top-4 left-0 right-0 z-20 flex justify-center">
+        <div className="absolute top-8 left-0 right-0 z-20 flex justify-center">
           <img 
             src={retroHeaderImg} 
             alt="Justachat - Connect Instantly, Chat Freely" 
-            className="h-10 sm:h-12 md:h-14 w-auto"
+            className="h-20 sm:h-24 md:h-28 w-auto"
             style={{ imageRendering: 'crisp-edges' }}
           />
         </div>

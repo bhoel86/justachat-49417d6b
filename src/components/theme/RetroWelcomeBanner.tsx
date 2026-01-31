@@ -19,11 +19,11 @@ export const RetroWelcomeBanner: React.FC<RetroWelcomeBannerProps> = ({
   }
 
   return (
-    <div className="w-full flex justify-center">
+    <div className="w-full flex justify-center mt-4">
       <img 
         src={retroHeader} 
         alt="Justachat - Connect Instantly, Chat Freely" 
-        className="h-10 sm:h-12 md:h-14 w-auto"
+        className="h-20 sm:h-24 md:h-28 w-auto"
         style={{ imageRendering: 'crisp-edges' }}
       />
     </div>
