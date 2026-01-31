@@ -646,12 +646,6 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6 relative">
-      {/* Theme selector in top right */}
-      <div className="absolute top-4 right-4 z-30">
-        <div className="bg-card/80 backdrop-blur-sm rounded-lg border border-border p-1">
-          <ThemeSelector />
-        </div>
-      </div>
 
       {/* Retro floating icons for 80s theme */}
       <RetroFloatingIcons />
@@ -696,6 +690,8 @@ const Auth = () => {
                 <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" fill="currentColor" />
               ) : isMatrix ? (
                 <Terminal className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+              ) : isStPatricks ? (
+                <span className="text-3xl sm:text-4xl">☘️</span>
               ) : (
                 <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               )}
@@ -706,6 +702,8 @@ const Auth = () => {
                 <>💕 Justachat<sup className="text-xs">™</sup> 💕</>
               ) : isMatrix ? (
                 <>JUSTACHAT</>
+              ) : isStPatricks ? (
+                <>☘️ Justachat<sup className="text-xs">™</sup> ☘️</>
               ) : (
                 <>Justachat<sup className="text-xs">™</sup></>
               )}
