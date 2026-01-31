@@ -32,6 +32,35 @@ const floatingIcons = [
   { Icon: Sparkles, bottom: '15%', right: '15%', color: 'text-pink-400', size: 14, rotate: 0 },
 ];
 
+// 80s confetti pieces with neon colors
+const confettiPieces = [
+  // Scattered across the viewport
+  { top: '10%', left: '5%', color: '#FF00FF', shape: 'square', size: 8, delay: 0 },
+  { top: '12%', left: '20%', color: '#00FFFF', shape: 'rect', size: 6, delay: 0.5 },
+  { top: '8%', right: '15%', color: '#FFFF00', shape: 'square', size: 10, delay: 1 },
+  { top: '15%', right: '5%', color: '#FF6B9D', shape: 'rect', size: 7, delay: 0.3 },
+  { top: '20%', left: '30%', color: '#9D4EDD', shape: 'square', size: 6, delay: 0.8 },
+  
+  { top: '25%', right: '25%', color: '#00FFFF', shape: 'square', size: 9, delay: 1.2 },
+  { top: '30%', left: '8%', color: '#FF00FF', shape: 'rect', size: 5, delay: 0.2 },
+  { top: '35%', right: '8%', color: '#FFFF00', shape: 'square', size: 8, delay: 0.7 },
+  { top: '38%', left: '22%', color: '#FF6B9D', shape: 'rect', size: 6, delay: 1.5 },
+  
+  { top: '45%', right: '18%', color: '#9D4EDD', shape: 'square', size: 7, delay: 0.4 },
+  { top: '50%', left: '12%', color: '#00FFFF', shape: 'rect', size: 8, delay: 0.9 },
+  { top: '55%', right: '6%', color: '#FF00FF', shape: 'square', size: 6, delay: 1.1 },
+  { top: '58%', left: '28%', color: '#FFFF00', shape: 'rect', size: 5, delay: 0.6 },
+  
+  { top: '65%', right: '22%', color: '#FF6B9D', shape: 'square', size: 9, delay: 1.3 },
+  { top: '70%', left: '6%', color: '#9D4EDD', shape: 'rect', size: 7, delay: 0.1 },
+  { top: '72%', right: '12%', color: '#00FFFF', shape: 'square', size: 6, delay: 0.8 },
+  { top: '78%', left: '18%', color: '#FF00FF', shape: 'rect', size: 8, delay: 1.4 },
+  
+  { top: '82%', right: '28%', color: '#FFFF00', shape: 'square', size: 5, delay: 0.5 },
+  { top: '85%', left: '25%', color: '#FF6B9D', shape: 'rect', size: 7, delay: 1.0 },
+  { top: '88%', right: '8%', color: '#9D4EDD', shape: 'square', size: 6, delay: 0.3 },
+];
+
 export const RetroFloatingIcons: React.FC = () => {
   const { theme } = useTheme();
 
@@ -42,11 +71,12 @@ export const RetroFloatingIcons: React.FC = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      {/* Floating icons */}
       {floatingIcons.map((item, index) => {
         const { Icon, color, size, rotate, ...position } = item;
         return (
           <div
-            key={index}
+            key={`icon-${index}`}
             className={`absolute ${color} opacity-50`}
             style={{ 
               ...position,
@@ -59,6 +89,50 @@ export const RetroFloatingIcons: React.FC = () => {
           </div>
         );
       })}
+      
+      {/* 80s Confetti pieces */}
+      {confettiPieces.map((piece, index) => {
+        const { color, shape, size, delay, ...position } = piece;
+        const isRect = shape === 'rect';
+        return (
+          <div
+            key={`confetti-${index}`}
+            className="absolute"
+            style={{
+              ...position,
+              width: isRect ? size * 2 : size,
+              height: isRect ? size : size,
+              backgroundColor: color,
+              opacity: 0.6,
+              boxShadow: `0 0 ${size}px ${color}, 0 0 ${size * 2}px ${color}`,
+              transform: `rotate(${45 + index * 15}deg)`,
+              animation: `retroConfettiFall 4s ease-in-out infinite, retroConfettiGlow 2s ease-in-out infinite`,
+              animationDelay: `${delay}s, ${delay}s`,
+            }}
+          />
+        );
+      })}
+      
+      {/* CSS animations */}
+      <style>{`
+        @keyframes retroConfettiFall {
+          0%, 100% {
+            transform: translateY(0) rotate(45deg);
+          }
+          50% {
+            transform: translateY(10px) rotate(60deg);
+          }
+        }
+        
+        @keyframes retroConfettiGlow {
+          0%, 100% {
+            opacity: 0.4;
+          }
+          50% {
+            opacity: 0.8;
+          }
+        }
+      `}</style>
     </div>
   );
 };
