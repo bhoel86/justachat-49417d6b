@@ -212,7 +212,7 @@ const LobbyMirrorRoom = () => {
         </div>
         
         {/* Messages Area - No scrolling, shows latest messages only */}
-        <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col relative">
+        <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate">
           {/* Transparent logo watermark - theme aware */}
           {theme === 'retro80s' ? (
             <RetroWatermark />
