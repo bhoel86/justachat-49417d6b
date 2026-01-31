@@ -471,12 +471,11 @@
   /* Form text colors in Memphis container */
   .theme-retro80s .retro-memphis-container h2 {
     color: #FFD700 !important;
-    text-shadow: 2px 2px 0 #000, 0 0 10px rgba(255, 215, 0, 0.5) !important;
+    text-shadow: 2px 2px 0 #000 !important;
   }
 
   .theme-retro80s .retro-memphis-container p {
     color: #000 !important;
-    text-shadow: none !important;
   }
 
   .theme-retro80s .retro-memphis-container a {
@@ -487,7 +486,6 @@
 
   .theme-retro80s .retro-memphis-container a:hover {
     color: #00FFFF !important;
-    text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
   }
 
   .theme-retro80s .retro-memphis-container label,
