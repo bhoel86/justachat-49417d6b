@@ -1,10 +1,14 @@
 import { Link } from "react-router-dom";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
+import { ValentinesCupid } from "@/components/theme/ValentinesCupid";
 
 const SiteFooter = () => {
   return (
-    <footer className="border-t border-border bg-card/30 py-6">
-      <div className="container mx-auto px-4">
+    <footer className="border-t border-border bg-card/30 py-6 relative overflow-hidden">
+      {/* Animated Cupid for Valentine's theme */}
+      <ValentinesCupid />
+      
+      <div className="container mx-auto px-4 relative z-10">
         <div className="flex items-center justify-center relative">
           {/* Spacer on left to help center */}
           <div className="flex-1" />
