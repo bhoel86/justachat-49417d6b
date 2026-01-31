@@ -38,6 +38,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Fetch global theme from database on mount
   useEffect(() => {
+    let isMounted = true;
+
     const fetchTheme = async () => {
       try {
         const { data, error } = await supabase
@@ -51,21 +53,26 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return;
         }
 
+        if (!isMounted) return;
+
         if (data && isValidTheme(data.value)) {
-          console.log('[Theme] Loaded from DB:', data.value);
-          setThemeState(data.value);
-          applyThemeClass(data.value);
+          const nextTheme: ThemeName = data.value;
+          console.log('[Theme] Loaded from DB:', nextTheme);
+          setThemeState((prev) => {
+            if (prev !== nextTheme) applyThemeClass(nextTheme);
+            return nextTheme;
+          });
         }
       } catch (err) {
         console.warn('[Theme] Error fetching theme:', err);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchTheme();
 
-    // Subscribe to realtime changes so all users see updates instantly
+    // Subscribe to realtime changes so all users see updates instantly (when realtime is available)
     const channel = supabase
       .channel('site-settings-theme')
       .on(
@@ -85,9 +92,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Theme] Realtime status:', status);
+      });
+
+    // VPS-safe fallback: poll occasionally in case websocket/realtime isn't working.
+    // This ensures cross-browser/device sync still happens (just not instant).
+    const pollInterval = window.setInterval(() => {
+      fetchTheme();
+    }, 10_000);
 
     return () => {
+      isMounted = false;
+      window.clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -107,8 +124,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Persist to database (only owners can do this due to RLS)
     const { error } = await supabase
       .from('site_settings')
-      .update({ value: newTheme, updated_at: new Date().toISOString() })
-      .eq('key', 'theme');
+      .upsert(
+        { key: 'theme', value: newTheme, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
 
     if (error) {
       console.error('[Theme] Failed to save to DB:', error.message);
