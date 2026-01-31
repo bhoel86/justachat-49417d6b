@@ -261,15 +261,6 @@ const Auth = () => {
     return () => clearInterval(interval);
   }, [resetEmailSentAt]);
 
-  // Lock body scroll on auth page
-  useEffect(() => {
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-    };
-  }, []);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -654,7 +645,7 @@ const Auth = () => {
   const isMatrix = theme === 'matrix';
 
   return (
-    <div className="h-screen overflow-hidden bg-background flex flex-col relative">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6 relative">
       {/* Theme selector in top right */}
       <div className="absolute top-4 right-4 z-30">
         <div className="bg-card/80 backdrop-blur-sm rounded-lg border border-border p-1">
@@ -694,9 +685,8 @@ const Auth = () => {
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
         </div>
       )}
-      {/* Scrollable main content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center p-4 sm:p-6">
-        <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'mt-36 sm:mt-44' : ''}`}>
+
+      <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'mt-36 sm:mt-44' : ''}`}>
         {/* Big Justachat™ Header - For all themes except Retro (which uses image banner) */}
         {!isRetro && (
           <div className="flex flex-col items-center mb-1">
@@ -1275,11 +1265,9 @@ const Auth = () => {
             </div>
           )}
         </div>
-      </div>
-      </div>
-      
-      {/* Official Footer with Mascots - Fixed at bottom */}
-      <footer className="flex-shrink-0 py-3 px-4 w-full bg-background/80 backdrop-blur-sm z-20">
+        
+        {/* Official Footer with Mascots */}
+        <footer className="mt-8 w-full">
         <div className="flex items-center justify-center gap-4">
           {/* Left mascot - theme aware */}
           <ThemedMascot side="left" className="h-10 sm:h-12" />
@@ -1390,6 +1378,7 @@ const Auth = () => {
           <ThemedMascot side="right" className="h-10 sm:h-12" />
         </div>
       </footer>
+      </div>
     </div>
   );
 };
