@@ -1,0 +1,8 @@
+{
+  "name": "justachat",
+  "version": "1.0.0",
+  "description": "Justachat Desktop - Connect Instantly, Chat Freely",
+  "main": "index.js",
+  "author": "Justachat Team",
+  "license": "MIT"
+}

@@ -4,24 +4,19 @@
   "productName": "Justachat",
   "directories": {
     "output": "electron-dist",
+    "app": "electron",
     "buildResources": "electron/resources"
   },
   "extraMetadata": {
-    "main": "electron/main.js",
     "name": "justachat",
+    "version": "1.0.0",
     "description": "Justachat Desktop - Connect Instantly, Chat Freely",
-    "author": "Justachat Team"
+    "author": "Justachat Team",
+    "main": "index.js"
   },
   "files": [
-    "electron/**/*",
-    "public/jac-favicon.png",
-    "public/jac-favicon-jac.png",
-    "!node_modules",
-    "!src",
-    "!dist",
-    "!*.md",
-    "!*.ts",
-    "!*.tsx"
+    "index.js",
+    "preload.js"
   ],
   "extraResources": [
     {
@@ -60,7 +55,7 @@
     "artifactName": "Justachat-${version}-mac.${ext}"
   },
   "linux": {
-    "target": ["AppImage", "deb"],
+    "target": ["AppImage"],
     "icon": "public/jac-favicon.png",
     "category": "Network;Chat",
     "artifactName": "Justachat-${version}-linux.${ext}"
