@@ -598,7 +598,7 @@ const Home = () => {
                 <img 
                   src={welcomeBanner} 
                   alt="Welcome to Justachat" 
-                  className="w-full max-w-md h-auto object-contain"
+                  className="w-full max-w-md h-auto object-contain rounded-xl border-4 border-violet-500"
                 />
               </div>
             )}
@@ -644,7 +644,7 @@ const Home = () => {
                   <img 
                     src={welcomeBanner} 
                     alt="Welcome to Justachat" 
-                    className="w-full max-w-xl h-auto object-contain cursor-pointer hover:opacity-95 transition-opacity"
+                    className="w-full max-w-xl h-auto object-contain cursor-pointer hover:opacity-95 transition-opacity rounded-xl border-4 border-violet-500"
                     onClick={() => {
                       const generalChannel = channels.find(c => c.name === 'general');
                       if (generalChannel) handleJoinRoom(generalChannel);
