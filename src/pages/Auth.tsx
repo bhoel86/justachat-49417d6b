@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle, Calendar, Users } from "lucide-react";
+import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle, Calendar, Users, Heart } from "lucide-react";
 import { Browser } from '@capacitor/browser';
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { clearAuthStorage } from "@/lib/authStorage";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
+import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -630,6 +631,7 @@ const Auth = () => {
   }
 
   const isRetro = theme === 'retro80s';
+  const isValentines = theme === 'valentines';
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
@@ -640,6 +642,9 @@ const Auth = () => {
 
       {/* Retro floating icons for 80s theme */}
       <RetroFloatingIcons />
+      
+      {/* Valentine's floating hearts */}
+      <ValentinesFloatingHearts />
 
       {/* Full-width retro header banner */}
       {isRetro && (
@@ -662,20 +667,28 @@ const Auth = () => {
       )}
 
       <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'mt-32 sm:mt-36' : ''}`}>
-        {/* Big Justachat™ Header - JAC theme only */}
+        {/* Big Justachat™ Header - Non-retro themes */}
         {!isRetro && (
           <div className="flex flex-col items-center mb-8">
             {/* Icon */}
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl jac-gradient-bg flex items-center justify-center mb-4 shadow-lg">
-              <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+              {isValentines ? (
+                <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" fill="currentColor" />
+              ) : (
+                <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
+              )}
             </div>
             {/* Title */}
             <h1 className="text-3xl sm:text-4xl font-bold text-primary tracking-tight">
-              Justachat<sup className="text-xs">™</sup>
+              {isValentines ? (
+                <>💕 Justachat<sup className="text-xs">™</sup> 💕</>
+              ) : (
+                <>Justachat<sup className="text-xs">™</sup></>
+              )}
             </h1>
             {/* Tagline */}
             <p className="text-muted-foreground text-sm sm:text-base mt-2 tracking-wide">
-              Connect Instantly, Chat Freely
+              {isValentines ? "Spread Love in Every Chat" : "Connect Instantly, Chat Freely"}
             </p>
           </div>
         )}

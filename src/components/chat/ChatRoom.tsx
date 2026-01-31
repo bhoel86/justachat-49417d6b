@@ -40,6 +40,8 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
 import { RetroWatermark } from "@/components/theme/RetroWatermark";
+import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
+import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 
 interface Message {
   id: string;

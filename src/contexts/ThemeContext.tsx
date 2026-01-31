@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useLayoutEffect } from 'react';
 
-export type ThemeName = 'jac' | 'retro80s';
+export type ThemeName = 'jac' | 'retro80s' | 'valentines';
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -13,13 +13,14 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEMES = [
   { id: 'jac' as ThemeName, name: 'OG Theme', description: 'The original Justachat look' },
   { id: 'retro80s' as ThemeName, name: '80s Retro', description: 'Retro Windows 95/98 aesthetic' },
+  { id: 'valentines' as ThemeName, name: "Valentine's", description: 'Romantic pink hearts theme' },
 ];
 
 const getStoredTheme = (): ThemeName => {
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('jac-theme');
-      if (saved === 'jac' || saved === 'retro80s') {
+      if (saved === 'jac' || saved === 'retro80s' || saved === 'valentines') {
         return saved;
       }
     } catch (e) {
@@ -31,7 +32,7 @@ const getStoredTheme = (): ThemeName => {
 
 const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('theme-jac', 'theme-retro80s');
+    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines');
     document.documentElement.classList.add(`theme-${theme}`);
     console.log('[Theme] Applied:', theme, document.documentElement.classList.toString());
   }

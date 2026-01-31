@@ -120,6 +120,61 @@
     --theme-window-shadow: 4px 4px 0px hsl(0 0% 0%);
   }
 
+  /* Valentine's Day Theme */
+  .theme-valentines {
+    --background: 340 30% 8%;
+    --foreground: 340 20% 95%;
+
+    --card: 340 40% 12%;
+    --card-foreground: 340 20% 95%;
+
+    --popover: 340 35% 14%;
+    --popover-foreground: 340 20% 95%;
+
+    --primary: 340 82% 52%;
+    --primary-foreground: 340 20% 98%;
+
+    --secondary: 340 40% 18%;
+    --secondary-foreground: 340 20% 95%;
+
+    --muted: 340 30% 16%;
+    --muted-foreground: 340 15% 55%;
+
+    --accent: 340 90% 65%;
+    --accent-foreground: 340 30% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 340 40% 22%;
+    --input: 340 35% 15%;
+    --ring: 340 82% 52%;
+
+    --radius: 0.75rem;
+
+    /* Custom valentines variables */
+    --jac-gradient: linear-gradient(135deg, hsl(340 82% 52%) 0%, hsl(350 70% 60%) 50%, hsl(340 90% 65%) 100%);
+    --jac-glow: 0 0 40px hsl(340 82% 52% / 0.4), 0 0 80px hsl(340 90% 65% / 0.2);
+    --jac-bubble-user: 340 70% 45%;
+    --jac-bubble-other: 340 40% 18%;
+
+    --sidebar-background: 340 40% 10%;
+    --sidebar-foreground: 340 20% 95%;
+    --sidebar-primary: 340 82% 52%;
+    --sidebar-primary-foreground: 340 20% 98%;
+    --sidebar-accent: 340 90% 65%;
+    --sidebar-accent-foreground: 340 30% 10%;
+    --sidebar-border: 340 40% 22%;
+    --sidebar-ring: 340 82% 52%;
+
+    /* Theme-specific */
+    --theme-font-body: 'Inter', sans-serif;
+    --theme-font-heading: 'Space Grotesk', sans-serif;
+    --theme-border-style: solid;
+    --theme-border-width: 1px;
+    --theme-window-shadow: 0 4px 20px hsl(340 82% 52% / 0.15);
+  }
+
   .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
@@ -278,4 +333,36 @@
 @keyframes retroBlink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+/* Valentine's theme animations */
+@keyframes valentinesFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(var(--rotate, 0deg));
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-10px) rotate(var(--rotate, 0deg));
+    opacity: 0.7;
+  }
+}
+
+@keyframes valentinesPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+/* Valentine's theme specific styles */
+.theme-valentines .jac-gradient-bg {
+  background: linear-gradient(135deg, hsl(340 82% 52%) 0%, hsl(350 70% 60%) 100%);
+}
+
+.theme-valentines .jac-glow {
+  box-shadow: 0 0 30px hsl(340 82% 52% / 0.4), 0 0 60px hsl(340 90% 65% / 0.2);
 }

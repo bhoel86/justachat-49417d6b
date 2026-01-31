@@ -44,6 +44,8 @@ import welcomeBanner from "@/assets/welcome-banner.png";
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
+import { ValentinesWelcomeBanner } from "@/components/theme/ValentinesWelcomeBanner";
+import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface Channel {
@@ -115,6 +117,7 @@ const Home = () => {
   const isMobile = useIsMobile();
   const { theme } = useTheme();
   const isRetro = theme === 'retro80s';
+  const isValentines = theme === 'valentines';
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
   const [roomUserCounts, setRoomUserCounts] = useState<RoomUserCounts>({});
@@ -250,10 +253,14 @@ const Home = () => {
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+              {isValentines ? (
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" fill="currentColor" />
+              ) : (
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+              )}
             </div>
             <h1 className="text-lg sm:text-2xl font-bold brand text-primary">Justachat<sup className="text-[8px] sm:text-xs">™</sup></h1>
-            
+
             {/* Site Navigation Dropdown - moved next to logo */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -600,6 +607,14 @@ const Home = () => {
             <div className={`relative rounded-xl sm:rounded-2xl overflow-hidden mb-4 sm:mb-6 ${isRetro ? '' : 'border border-border'}`}>
               {isRetro ? (
                 <RetroWelcomeBanner 
+                  variant="desktop" 
+                  onJoinClick={() => {
+                    const generalChannel = channels.find(c => c.name === 'general');
+                    if (generalChannel) handleJoinRoom(generalChannel);
+                  }}
+                />
+              ) : isValentines ? (
+                <ValentinesWelcomeBanner 
                   variant="desktop" 
                   onJoinClick={() => {
                     const generalChannel = channels.find(c => c.name === 'general');
