@@ -40,7 +40,7 @@ import loungeBg from "@/assets/rooms/lounge-bg.jpg";
 import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 
 // Banner and footer graphics
-import welcomeBanner from "@/assets/justachat-header-80s.png";
+import welcomeBanner from "@/assets/welcome-banner.png";
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
 import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
