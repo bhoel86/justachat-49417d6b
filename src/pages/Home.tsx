@@ -12,7 +12,7 @@ import {
   Radio, Camera, Rocket
 } from "lucide-react";
 import { toast } from "sonner";
-import { getVersionString } from "@/lib/version";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -673,60 +673,44 @@ const Home = () => {
                   ) : (
                     <>
                       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-1.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
-                        {channels.map((channel) => (
-                          <button
-                            key={channel.id}
-                            onClick={() => handleJoinRoom(channel)}
-                            className={`group relative h-12 sm:h-14 overflow-hidden bg-card transition-all duration-200 active:scale-95 ${
-                              isRetro 
-                                ? 'border-[2px] border-foreground hover:bg-accent' 
-                                : 'rounded-md border border-border hover:border-primary/50 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-0.5'
-                            }`}
-                            style={isRetro ? { boxShadow: '2px 2px 0px black' } : undefined}
-                          >
-                            {/* Background image - hidden in retro mode */}
-                            {!isRetro && roomBackgrounds[channel.name] && (
-                              <div 
-                                className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
-                                style={{ backgroundImage: `url(${roomBackgrounds[channel.name]})` }}
-                              />
-                            )}
-                            
-                            {/* Gradient overlay - hidden in retro */}
-                            {!isRetro && (
-                              <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-20 group-hover:opacity-30 transition-opacity`} />
-                            )}
-                            
-                            {/* Dark overlay for readability - hidden in retro */}
-                            {!isRetro && <div className="absolute inset-0 bg-black/40" />}
-                            
-                            {/* Content - stacked vertically */}
-                            <div className="relative h-full flex flex-col items-center justify-center gap-0.5 px-1.5 py-1">
-                              <div className={`p-1.5 text-white ${
+                        {channels.map((channel) => {
+                          const userCount = (roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name);
+                          return (
+                            <button
+                              key={channel.id}
+                              onClick={() => handleJoinRoom(channel)}
+                              className={`group relative h-8 sm:h-9 overflow-hidden bg-card transition-all duration-200 active:scale-95 ${
                                 isRetro 
-                                  ? 'bg-primary border border-foreground' 
-                                  : `rounded bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} shadow-sm group-hover:scale-105 transition-transform`
-                              }`}>
-                                {roomIcons[channel.name] || <Hash className="w-3.5 h-3.5" />}
+                                  ? 'border-[2px] border-foreground hover:bg-accent' 
+                                  : 'rounded-md border border-border hover:border-primary/50 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-0.5'
+                              }`}
+                              style={isRetro ? { boxShadow: '2px 2px 0px black' } : undefined}
+                            >
+                              {/* Background gradient */}
+                              {!isRetro && (
+                                <div className={`absolute inset-0 bg-gradient-to-r ${roomColors[channel.name] || 'from-primary to-accent'} opacity-30 group-hover:opacity-50 transition-opacity`} />
+                              )}
+                              {!isRetro && <div className="absolute inset-0 bg-black/40" />}
+                              
+                              {/* Content - room name with count */}
+                              <div className="relative h-full flex items-center justify-between px-2">
+                                <h3 className={`truncate ${
+                                  isRetro 
+                                    ? 'font-bold text-[9px] sm:text-[10px] text-foreground uppercase' 
+                                    : 'font-semibold text-[10px] sm:text-xs text-white drop-shadow-lg'
+                                }`}>
+                                  #{formatRoomName(channel.name)}
+                                </h3>
+                                <span className={`text-[9px] sm:text-[10px] font-medium shrink-0 ml-1 ${isRetro ? 'text-foreground/80' : 'text-white/90'}`}>
+                                  ({userCount})
+                                </span>
                               </div>
-                              <h3 className={`text-center leading-tight truncate w-full ${
-                                isRetro 
-                                  ? 'font-bold text-[9px] sm:text-[10px] text-foreground uppercase' 
-                                  : 'font-bold text-[10px] sm:text-xs text-white drop-shadow-lg'
-                              }`}>
-                                #{formatRoomName(channel.name)}
-                              </h3>
-                              {/* User count badge - includes bots */}
-                              <div className={`flex items-center gap-0.5 ${isRetro ? 'text-foreground/80' : 'text-white/90'}`}>
-                                <Users className="w-2.5 h-2.5" />
-                                <span className="text-[8px] sm:text-[9px] font-medium">{(roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name)}</span>
-                              </div>
-                            </div>
 
-                            {/* Hover effect overlay - modern only */}
-                            {!isRetro && <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />}
-                          </button>
-                        ))}
+                              {/* Hover effect overlay - modern only */}
+                              {!isRetro && <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                            </button>
+                          );
+                        })}
                       </div>
                       
                       {/* Voice Chat Section */}
@@ -946,8 +930,6 @@ const Home = () => {
                           >
                             Legal
                           </Link>
-                          <span className="text-xs text-muted-foreground/50">•</span>
-                          <span className="text-xs text-muted-foreground/70 font-mono">{getVersionString()}</span>
                         </div>
                       </div>
                     </div>
