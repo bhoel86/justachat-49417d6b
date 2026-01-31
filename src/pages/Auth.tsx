@@ -676,7 +676,7 @@ const Auth = () => {
 
       {/* Full-width header banner - ONLY for retro theme */}
       {isRetro && (
-        <div className="absolute top-4 left-0 right-0 z-20 flex justify-center px-4">
+        <div className="absolute top-1 left-0 right-0 z-20 flex justify-center px-4">
           <div className="border-4 border-cyan-400 rounded-lg shadow-[0_0_20px_rgba(34,211,238,0.5),inset_0_0_20px_rgba(34,211,238,0.1)] bg-black/50 p-2">
             <img 
               src={headerImg} 
