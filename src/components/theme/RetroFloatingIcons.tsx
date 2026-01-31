@@ -120,10 +120,9 @@ export const RetroFloatingIcons: React.FC = () => {
               opacity: type === 'zigzag' ? 0.7 : 0.5,
               animation: `
                 memphisFloat ${3 + (index % 3)}s ease-in-out infinite,
-                memphisSway ${4 + (index % 2)}s ease-in-out infinite,
-                memphisGlow 3s ease-in-out infinite
+                memphisSway ${4 + (index % 2)}s ease-in-out infinite
               `,
-              animationDelay: `${delay}s, ${delay + 0.5}s, ${delay}s`,
+              animationDelay: `${delay}s, ${delay + 0.5}s`,
             }}
           >
             <MemphisShape type={type} size={size} color={color} rotate={rotate || 0} />
@@ -151,17 +150,6 @@ export const RetroFloatingIcons: React.FC = () => {
           }
           75% {
             transform: translateX(-8px) rotate(-3deg);
-          }
-        }
-        
-        @keyframes memphisGlow {
-          0%, 100% {
-            filter: drop-shadow(0 0 5px currentColor);
-            opacity: 0.45;
-          }
-          50% {
-            filter: drop-shadow(0 0 15px currentColor);
-            opacity: 0.65;
           }
         }
         
