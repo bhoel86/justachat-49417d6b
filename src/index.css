@@ -713,6 +713,36 @@
     color: hsl(0 0% 0%) !important;
   }
 
+  /* Retro 80s footer social icons */
+  .theme-retro80s footer a.rounded-lg {
+    border-radius: 0 !important;
+    background: hsl(175 70% 50%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+    transition: transform 0.1s, box-shadow 0.1s !important;
+  }
+
+  .theme-retro80s footer a.rounded-lg:hover {
+    background: hsl(50 90% 60%) !important;
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 5px 5px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s footer a.rounded-lg svg {
+    color: hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s footer p,
+  .theme-retro80s footer span,
+  .theme-retro80s footer a {
+    font-family: 'VT323', monospace !important;
+    color: hsl(0 0% 20%) !important;
+  }
+
+  .theme-retro80s footer a:hover {
+    color: hsl(175 70% 35%) !important;
+  }
+
   /* Valentine's theme specific overrides */
   .theme-valentines {
     /* Subtle ambient glow on the whole page */
