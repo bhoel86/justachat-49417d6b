@@ -10,10 +10,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getBotsForChannel, CHAT_BOTS, getBotResponseDelay } from "@/lib/chatBots";
 import { useTheme } from "@/contexts/ThemeContext";
-import { RetroWatermark } from "@/components/theme/RetroWatermark";
-import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
-import { StPatricksWatermark } from "@/components/theme/StPatricksWatermark";
-import { MatrixWatermark } from "@/components/theme/MatrixWatermark";
+import { ChatWatermark } from "@/components/theme/ChatWatermark";
 
 interface MirrorMessage {
   id: string;
@@ -226,26 +223,7 @@ const LobbyMirrorRoom = () => {
         {/* Messages Area - Fixed height with overflow hidden, shows latest messages only */}
         <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate z-10">
           {/* Transparent logo watermark - theme aware */}
-          {theme === 'retro80s' ? (
-            <RetroWatermark />
-          ) : theme === 'valentines' ? (
-            <ValentinesWatermark />
-          ) : theme === 'stpatricks' ? (
-            <StPatricksWatermark />
-          ) : theme === 'matrix' ? (
-            <MatrixWatermark />
-          ) : (
-            <div 
-              className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
-              style={{
-                backgroundImage: 'url(/justachat-logo-google-ads.png)',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '300px',
-                opacity: 0.15
-              }}
-            />
-          )}
+          <ChatWatermark />
           
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
