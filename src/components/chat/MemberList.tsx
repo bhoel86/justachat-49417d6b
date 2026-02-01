@@ -892,12 +892,12 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
   return (
     <div 
       className={cn(
-        "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group",
+        "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group min-w-0",
         "hover:bg-secondary/50"
       )}
     >
       {/* Avatar with online indicator */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <button
           onClick={onProfileClick}
           disabled={!onProfileClick}
