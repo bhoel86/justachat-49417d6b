@@ -10,6 +10,7 @@ import { getRoomTheme, getDefaultTopic } from "@/lib/roomConfig";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import jungleHeaderLogo from "@/assets/themes/jungle-header-logo.png";
+import retroHeaderImg from "@/assets/retro-header-80s-cutout.png";
 
 interface ChatHeaderProps {
   onlineCount: number;
@@ -32,6 +33,7 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
   const isValentines = siteTheme === 'valentines';
   const isMatrix = siteTheme === 'matrix';
   const isJungle = siteTheme === 'jungle';
+  const isRetro = siteTheme === 'retro80s';
   
   // Override colors for special site themes
   const effectiveGradient = isJungle
@@ -111,13 +113,24 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
           </div>
         </div>
         
-        {/* Center section - Jungle branding (only for jungle theme) */}
+        {/* Center section - Theme branding */}
         {isJungle && (
           <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:block">
             <img 
               src={jungleHeaderLogo} 
               alt="Justachat Jungle"
               className="h-12 object-contain"
+            />
+          </div>
+        )}
+        
+        {isRetro && (
+          <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:block">
+            <img 
+              src={retroHeaderImg} 
+              alt="Justachat™"
+              className="h-10 object-contain"
+              style={{ filter: 'drop-shadow(2px 2px 0px black)' }}
             />
           </div>
         )}
