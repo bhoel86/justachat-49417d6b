@@ -648,7 +648,7 @@ const Auth = () => {
   const retroHeaderCutout = usePngCutout(isRetro ? retroHeaderImg : undefined);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
+    <div className={`min-h-screen bg-background flex flex-col items-center justify-center relative ${isRetro ? 'p-3' : 'p-6'}`}>
       {/* Theme selector - only visible in Lovable preview */}
       <LoginThemeSelector />
 
@@ -691,13 +691,13 @@ const Auth = () => {
             </p>
           </div>
         ) : isRetro ? (
-          <div className="flex flex-col items-center mb-3">
+          <div className="flex flex-col items-center mb-2">
             <img 
               src={retroHeaderCutout ?? retroHeaderImg} 
               alt="Justachat™" 
-              className="w-full max-w-[280px] sm:max-w-[340px] h-auto object-contain"
+              className="w-full max-w-[220px] sm:max-w-[280px] h-auto object-contain"
             />
-            <p className="text-muted-foreground mt-1 text-xs sm:text-sm tracking-wide">
+            <p className="text-muted-foreground text-[10px] sm:text-xs tracking-wide">
               Totally Radical Chat
             </p>
           </div>
@@ -747,7 +747,7 @@ const Auth = () => {
           </div>
         )}
         {/* Form Card - Compact for retro */}
-        <div className={`bg-card rounded-2xl border border-border shadow-xl ${isRetro ? 'p-4' : 'p-6'}`}>
+        <div className={`bg-card rounded-2xl border border-border shadow-xl ${isRetro ? 'p-3' : 'p-6'}`}>
           {/* Back button for forgot/reset modes */}
           {(mode === "forgot" || mode === "reset") && (
             <button
@@ -764,13 +764,13 @@ const Auth = () => {
             </button>
           )}
           
-          <h2 className={`font-semibold text-foreground mb-1 text-center ${isMatrix ? 'text-2xl font-mono tracking-wide' : 'text-xl'}`}>
+          <h2 className={`font-semibold text-foreground mb-1 text-center ${isRetro ? 'text-base' : isMatrix ? 'text-2xl font-mono tracking-wide' : 'text-xl'}`}>
             {mode === "login" && (isMatrix ? "[ AUTHENTICATE ]" : "Welcome back")}
             {mode === "signup" && (isMatrix ? "[ NEW USER ]" : "Create account")}
             {mode === "forgot" && (isMatrix ? "[ RECOVERY ]" : "Reset password")}
             {mode === "reset" && (isMatrix ? "[ NEW CREDENTIALS ]" : "Set new password")}
           </h2>
-          <p className={`text-muted-foreground text-center mb-6 ${isMatrix ? 'text-base font-mono' : 'text-sm'}`}>
+          <p className={`text-muted-foreground text-center ${isRetro ? 'mb-3 text-xs' : 'mb-6'} ${isMatrix ? 'text-base font-mono' : 'text-sm'}`}>
             {mode === "login" && (isMatrix ? "Enter the system" : "Sign in to continue chatting")}
             {mode === "signup" && (isMatrix ? "Initialize your identity" : "Join the conversation")}
             {mode === "forgot" && (isMatrix ? "Request access recovery" : "Enter your email to receive a reset link")}
@@ -824,7 +824,7 @@ const Auth = () => {
               )}
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className={`${isRetro ? 'space-y-2' : 'space-y-4'}`}>
               {mode === "signup" && (
               <div>
                 <div className="relative">

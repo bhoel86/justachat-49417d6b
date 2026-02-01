@@ -600,6 +600,19 @@
     box-shadow: var(--theme-window-shadow);
   }
 
+  /* Retro compact inputs for login */
+  .theme-retro80s input,
+  .theme-retro80s textarea {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  .theme-retro80s button {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
   /* Valentine's theme specific overrides */
   .theme-valentines {
     /* Subtle ambient glow on the whole page */
