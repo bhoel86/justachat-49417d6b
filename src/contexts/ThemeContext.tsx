@@ -33,9 +33,25 @@ const isValidTheme = (value: string): value is ThemeName => {
 // Session storage key for local preview mode (set by LoginThemeSelector)
 const LOCAL_PREVIEW_KEY = 'jac_local_theme_preview';
 
+// Only treat local preview as active inside Lovable preview hosts.
+// This prevents accidental persistence of preview-only behavior elsewhere.
+const isLovablePreviewHost = () => {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname;
+  return hostname.includes('lovable.app') || hostname.includes('lovableproject.com');
+};
+
+const getLocalPreviewTheme = (): ThemeName | null => {
+  if (typeof sessionStorage === 'undefined') return null;
+  const localPreview = sessionStorage.getItem(LOCAL_PREVIEW_KEY);
+  if (localPreview && isValidTheme(localPreview)) return localPreview;
+  return null;
+};
+
 const isLocalPreviewActive = () => {
   if (typeof sessionStorage === 'undefined') return false;
-  return !!sessionStorage.getItem(LOCAL_PREVIEW_KEY);
+  if (!isLovablePreviewHost()) return false;
+  return !!getLocalPreviewTheme();
 };
 
 const applyThemeClass = (theme: ThemeName) => {
@@ -53,12 +69,8 @@ const applyThemeClass = (theme: ThemeName) => {
 
 // Get initial theme from local preview if active
 const getInitialTheme = (): ThemeName => {
-  if (typeof sessionStorage !== 'undefined') {
-    const localPreview = sessionStorage.getItem(LOCAL_PREVIEW_KEY);
-    if (localPreview && isValidTheme(localPreview)) {
-      return localPreview;
-    }
-  }
+  const localPreview = getLocalPreviewTheme();
+  if (localPreview) return localPreview;
   return 'jac';
 };
 
@@ -86,6 +98,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let isMounted = true;
 
     const fetchTheme = async () => {
+      // If preview-only theme is active, never let DB polling overwrite it.
+      const localPreview = getLocalPreviewTheme();
+      if (localPreview) {
+        if (isMounted) {
+          setThemeState(localPreview);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       // Skip polling if user just changed theme (5 second cooldown)
       const timeSinceUserChange = Date.now() - lastUserChangeRef.current;
       if (timeSinceUserChange < 5000) {
@@ -136,6 +158,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           filter: 'key=eq.theme'
         },
         (payload) => {
+          // If preview-only theme is active, never let realtime overwrite it.
+          if (getLocalPreviewTheme()) {
+            console.log('[Theme] Skipping realtime - local preview active');
+            return;
+          }
+
           // Skip realtime if user just changed theme (same cooldown as polling)
           const timeSinceUserChange = Date.now() - lastUserChangeRef.current;
           if (timeSinceUserChange < 5000) {
