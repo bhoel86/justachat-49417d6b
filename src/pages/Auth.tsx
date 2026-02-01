@@ -19,6 +19,7 @@ import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
+import { HalloweenFloatingElements } from "@/components/theme/HalloweenFloatingElements";
 import { useTheme } from "@/contexts/ThemeContext";
 import headerImg from '@/assets/justachat-header-80s.png';
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
@@ -664,6 +665,9 @@ const Auth = () => {
       
       {/* Matrix falling code */}
       <MatrixFloatingCode />
+      
+      {/* Halloween floating elements */}
+      <HalloweenFloatingElements />
 
       {/* Full-width header banner - ONLY for retro theme */}
       {isRetro && (

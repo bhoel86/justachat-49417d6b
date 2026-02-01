@@ -51,9 +51,11 @@ import { ArcadeWelcomeBannerV2 } from "@/components/theme/ArcadeWelcomeBannerV2"
 import { DieselpunkWelcomeBannerV2 } from "@/components/theme/DieselpunkWelcomeBannerV2";
 import { CyberpunkWelcomeBannerV2 } from "@/components/theme/CyberpunkWelcomeBannerV2";
 import { JungleWelcomeBannerV2 } from "@/components/theme/JungleWelcomeBannerV2";
+import { HalloweenWelcomeBanner } from "@/components/theme/HalloweenWelcomeBanner";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
+import { HalloweenFloatingElements } from "@/components/theme/HalloweenFloatingElements";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -133,6 +135,7 @@ const Home = () => {
   const isDieselpunk = theme === 'dieselpunk';
   const isCyberpunk = theme === 'cyberpunk';
   const isJungle = theme === 'jungle';
+  const isHalloween = theme === 'halloween';
   const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.isElectron === true;
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
@@ -269,6 +272,7 @@ const Home = () => {
       <ValentinesFloatingHearts />
       <StPatricksFloatingIcons />
       <MatrixFloatingCode />
+      <HalloweenFloatingElements />
       {/* Header */}
       <header className="border-b border-border bg-card flex-shrink-0 z-20">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
@@ -575,6 +579,8 @@ const Home = () => {
               <CyberpunkWelcomeBannerV2 variant="mobile" onJoinClick={() => navigate('/chat/general')} />
             ) : isJungle ? (
               <JungleWelcomeBannerV2 variant="mobile" onJoinClick={() => navigate('/chat/general')} />
+            ) : isHalloween ? (
+              <HalloweenWelcomeBanner variant="mobile" onJoinClick={() => navigate('/chat/general')} />
             ) : (
               <OGWelcomeBanner variant="mobile" onJoinClick={() => navigate('/chat/general')} />
             )}
