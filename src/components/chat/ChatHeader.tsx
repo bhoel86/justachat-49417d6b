@@ -114,11 +114,24 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
         {/* Center section - Jungle branding (only for jungle theme) */}
         {isJungle && (
           <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:block">
-            <img 
-              src={jungleHeaderLogo} 
-              alt="Justachat Jungle"
-              className="h-10 object-contain"
-            />
+            <div className="relative px-4 py-1">
+              {/* Vine border decorations */}
+              <span className="absolute -left-2 top-0 text-green-500 text-sm">🌿</span>
+              <span className="absolute -left-1 bottom-0 text-green-600 text-xs rotate-180">🌿</span>
+              <span className="absolute -right-2 top-0 text-green-500 text-sm scale-x-[-1]">🌿</span>
+              <span className="absolute -right-1 bottom-0 text-green-600 text-xs rotate-180 scale-x-[-1]">🌿</span>
+              {/* Corner leaves */}
+              <span className="absolute left-2 -top-1 text-green-400 text-[10px]">🍃</span>
+              <span className="absolute right-2 -top-1 text-green-400 text-[10px] scale-x-[-1]">🍃</span>
+              <span className="absolute left-4 -bottom-1 text-green-500 text-[10px]">🍃</span>
+              <span className="absolute right-4 -bottom-1 text-green-500 text-[10px] scale-x-[-1]">🍃</span>
+              {/* The logo */}
+              <img 
+                src={jungleHeaderLogo} 
+                alt="Justachat Jungle"
+                className="h-10 object-contain"
+              />
+            </div>
           </div>
         )}
         
