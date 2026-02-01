@@ -14,6 +14,7 @@ import { RetroWatermark } from "@/components/theme/RetroWatermark";
 import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
 import { StPatricksWatermark } from "@/components/theme/StPatricksWatermark";
 import { MatrixWatermark } from "@/components/theme/MatrixWatermark";
+import { JungleWatermark } from "@/components/theme/JungleWatermark";
 
 interface MirrorMessage {
   id: string;
@@ -225,6 +226,11 @@ const LobbyMirrorRoom = () => {
             <StPatricksWatermark />
           ) : theme === 'matrix' ? (
             <MatrixWatermark />
+          ) : theme === 'jungle' ? (
+            <JungleWatermark />
+          ) : theme === 'vapor' || theme === 'arcade' || theme === 'dieselpunk' || theme === 'cyberpunk' ? (
+            // 2026 expansion themes suppress default watermark
+            null
           ) : (
             <div 
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
