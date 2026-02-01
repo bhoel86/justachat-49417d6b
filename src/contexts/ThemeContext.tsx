@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useLayoutEffect 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix';
+export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'vapor' | 'arcade' | 'dieselpunk' | 'cyberpunk' | 'jungle';
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -19,15 +19,20 @@ const THEMES = [
   { id: 'valentines' as ThemeName, name: "Valentine's", description: 'Romantic pink hearts theme' },
   { id: 'stpatricks' as ThemeName, name: "St. Patrick's", description: 'Irish shamrocks & gold' },
   { id: 'matrix' as ThemeName, name: 'The Matrix', description: 'Follow the white rabbit' },
+  { id: 'vapor' as ThemeName, name: 'Vaporwave OS', description: '1990s cyber OS aesthetic' },
+  { id: 'arcade' as ThemeName, name: 'Retro Arcade', description: 'Neon arcade cabinet vibes' },
+  { id: 'dieselpunk' as ThemeName, name: 'Dieselpunk', description: 'Medieval steampunk brass' },
+  { id: 'cyberpunk' as ThemeName, name: 'Cyberpunk City', description: 'Neon city glitch effects' },
+  { id: 'jungle' as ThemeName, name: 'Jungle Expedition', description: 'Tropical wildlife adventure' },
 ];
 
 const isValidTheme = (value: string): value is ThemeName => {
-  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix'].includes(value);
+  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix', 'vapor', 'arcade', 'dieselpunk', 'cyberpunk', 'jungle'].includes(value);
 };
 
 const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix');
+    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix', 'theme-vapor', 'theme-arcade', 'theme-dieselpunk', 'theme-cyberpunk', 'theme-jungle');
     document.documentElement.classList.add(`theme-${theme}`);
     console.log('[Theme] Applied:', theme);
   }
