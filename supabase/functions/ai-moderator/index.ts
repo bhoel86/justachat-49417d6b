@@ -265,9 +265,12 @@ serve(async (req) => {
     const { channelName, userMessage, recentMessages, userId, isReturningUser, userTopics, lastMood } = await req.json();
     console.log(`AI Moderator request for channel: ${channelName}, returning: ${isReturningUser}`);
     
+    // Try Lovable AI gateway first, fall back to OpenAI for VPS
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    
+    if (!LOVABLE_API_KEY && !OPENAI_API_KEY) {
+      throw new Error('No AI API key configured (LOVABLE_API_KEY or OPENAI_API_KEY)');
     }
 
     const persona = MODERATOR_PERSONAS[channelName] || MODERATOR_PERSONAS['general'];
@@ -316,19 +319,40 @@ You may occasionally mention this tip naturally in conversation if relevant.${me
       { role: 'user', content: userMessage }
     ];
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages,
-        max_tokens: 150,
-        temperature: 0.9,
-      }),
-    });
+    let response: Response;
+    
+    if (LOVABLE_API_KEY) {
+      // Use Lovable AI gateway (Lovable Cloud)
+      response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-3-flash-preview',
+          messages,
+          max_tokens: 150,
+          temperature: 0.9,
+        }),
+      });
+    } else {
+      // Fallback to OpenAI (VPS)
+      console.log('Using OpenAI fallback for VPS');
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages,
+          max_tokens: 150,
+          temperature: 0.9,
+        }),
+      });
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
