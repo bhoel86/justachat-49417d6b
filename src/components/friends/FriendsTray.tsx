@@ -84,9 +84,19 @@ const FriendsTray = ({
         newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeRef.current.initialWidth - deltaX));
       }
       
+      // Resize from right edge
+      if (isResizing.includes('e')) {
+        newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeRef.current.initialWidth + deltaX));
+      }
+      
       // Resize from top edge (inverted because we're anchored to the bottom)
       if (isResizing.includes('n')) {
         newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeRef.current.initialHeight - deltaY));
+      }
+      
+      // Resize from bottom edge
+      if (isResizing.includes('s')) {
+        newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeRef.current.initialHeight + deltaY));
       }
       
       setSize({ width: newWidth, height: newHeight });
@@ -203,20 +213,39 @@ const FriendsTray = ({
       {/* Resize handles - desktop only */}
       {!isMobile && (
         <>
-          {/* Top edge */}
+          {/* Edge handles */}
           <div 
-            className="absolute -top-1 left-2 right-2 h-2 cursor-n-resize z-10"
+            className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize z-10 hover:bg-primary/20 rounded"
             onMouseDown={(e) => handleResizeStart(e, 'n')}
           />
-          {/* Left edge */}
           <div 
-            className="absolute top-2 -left-1 bottom-2 w-2 cursor-w-resize z-10"
+            className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize z-10 hover:bg-primary/20 rounded"
+            onMouseDown={(e) => handleResizeStart(e, 's')}
+          />
+          <div 
+            className="absolute top-3 -left-1 bottom-3 w-2 cursor-w-resize z-10 hover:bg-primary/20 rounded"
             onMouseDown={(e) => handleResizeStart(e, 'w')}
           />
-          {/* Top-left corner */}
           <div 
-            className="absolute -top-1 -left-1 w-3 h-3 cursor-nw-resize z-20"
+            className="absolute top-3 -right-1 bottom-3 w-2 cursor-e-resize z-10 hover:bg-primary/20 rounded"
+            onMouseDown={(e) => handleResizeStart(e, 'e')}
+          />
+          {/* Corner handles */}
+          <div 
+            className="absolute -top-1 -left-1 w-3 h-3 cursor-nw-resize z-20 hover:bg-primary/30 rounded"
             onMouseDown={(e) => handleResizeStart(e, 'nw')}
+          />
+          <div 
+            className="absolute -top-1 -right-1 w-3 h-3 cursor-ne-resize z-20 hover:bg-primary/30 rounded"
+            onMouseDown={(e) => handleResizeStart(e, 'ne')}
+          />
+          <div 
+            className="absolute -bottom-1 -left-1 w-3 h-3 cursor-sw-resize z-20 hover:bg-primary/30 rounded"
+            onMouseDown={(e) => handleResizeStart(e, 'sw')}
+          />
+          <div 
+            className="absolute -bottom-1 -right-1 w-3 h-3 cursor-se-resize z-20 hover:bg-primary/30 rounded"
+            onMouseDown={(e) => handleResizeStart(e, 'se')}
           />
         </>
       )}
