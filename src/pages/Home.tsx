@@ -160,7 +160,7 @@ const Home = () => {
     if (oauthProcessing) return;
     
     if (!loading && !user) {
-      navigate("/home");
+      navigate("/home", { replace: true });
     }
   }, [user, loading, navigate, oauthProcessing]);
 
@@ -244,8 +244,9 @@ const Home = () => {
       );
     }
 
-    // Redirect will happen via the effect above; return null to avoid flash
-    return null;
+    // Redirect will happen via the effect above; keep a painted background so we
+    // don't show the browser's white default (or a black flash) between routes.
+    return <div className="min-h-screen bg-background" aria-hidden="true" />;
   }
 
   return (
