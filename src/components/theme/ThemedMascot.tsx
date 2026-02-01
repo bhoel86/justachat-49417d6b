@@ -3,6 +3,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Heart, Gift, Sparkles } from 'lucide-react';
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
+import ogMascotLeft from "@/assets/og-mascot-left.png";
+import ogMascotRight from "@/assets/og-mascot-right.png";
 import { StPatricksMascot } from './StPatricksMascot';
 import { MatrixMascot } from './MatrixMascot';
 import { VaporMascot } from './VaporMascot';
@@ -14,8 +16,6 @@ interface ThemedMascotProps {
 
 export const ThemedMascot: React.FC<ThemedMascotProps> = ({ side, className = '' }) => {
   const { theme } = useTheme();
-  
-  console.log('[ThemedMascot] Current theme:', theme, 'Side:', side);
 
   // For Matrix theme, show rabbit mascots
   if (theme === 'matrix') {
@@ -26,15 +26,13 @@ export const ThemedMascot: React.FC<ThemedMascotProps> = ({ side, className = ''
   if (theme === 'vapor') {
     return <VaporMascot side={side} className={className} />;
   }
-  
-  console.log('[ThemedMascot] Current theme:', theme, 'Side:', side);
 
-  // For JAC Modern theme, show the robot mascots
+  // For JAC/OG theme, show new chat bubble mascots
   if (theme === 'jac') {
     return (
       <img 
-        src={side === 'left' ? mascotLeft : mascotRight} 
-        alt="Mascot" 
+        src={side === 'left' ? ogMascotLeft : ogMascotRight} 
+        alt="Chat Mascot" 
         className={`h-14 sm:h-16 w-auto object-contain ${className}`}
       />
     );
