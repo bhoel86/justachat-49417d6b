@@ -454,7 +454,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
 
   if (loading) {
     return (
-      <div className="w-60 bg-card border-l border-border p-4 flex items-center justify-center">
+      <div className="w-64 min-w-[260px] max-w-[280px] flex-shrink-0 bg-card border-l border-border p-4 flex items-center justify-center">
         <div className="h-6 w-6 rounded-full jac-gradient-bg animate-pulse" />
       </div>
     );
@@ -462,7 +462,8 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
 
   return (
     <>
-      <div className="w-64 sm:w-60 bg-card border-l border-border flex flex-col h-full max-h-screen">
+      {/* Members Panel - fixed width with proper constraints */}
+      <div className="w-64 min-w-[260px] max-w-[280px] flex-shrink-0 bg-card border-l border-border flex flex-col h-full max-h-screen overflow-hidden">
         {/* Tab Header - Members | Friends side by side */}
         <div className="flex border-b border-border">
           <button
@@ -777,12 +778,12 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
       <DropdownMenuTrigger asChild>
         <div 
           className={cn(
-            "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors cursor-pointer group",
+            "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors cursor-pointer group w-full overflow-hidden",
             "bg-gradient-to-r from-cyan-500/10 to-primary/10 border border-cyan-500/20 hover:from-cyan-500/20 hover:to-primary/20"
           )}
         >
           {/* Avatar with bot indicator */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <div className={cn(
               "h-8 w-8 rounded-full flex items-center justify-center text-sm",
               "bg-gradient-to-br from-cyan-500/20 to-primary/20"
@@ -794,15 +795,15 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
             </div>
           </div>
 
-          {/* Name and role */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate text-foreground">
+          {/* Name and role - constrained width */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <p className="text-sm font-medium truncate text-foreground max-w-[120px]" title={member.username}>
               {member.username.split(' ').slice(1).join(' ') || member.username}
             </p>
-            <div className="flex items-center gap-1">
-              <Icon className={cn("h-3 w-3", config.color)} />
-              <span className={cn("text-xs", config.color)}>{config.label}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium ml-1">
+            <div className="flex items-center gap-1 overflow-hidden flex-wrap">
+              <Icon className={cn("h-3 w-3 flex-shrink-0", config.color)} />
+              <span className={cn("text-xs truncate", config.color)}>{config.label}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium flex-shrink-0">
                 BOT
               </span>
             </div>
@@ -892,12 +893,12 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
   return (
     <div 
       className={cn(
-        "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group",
+        "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group w-full overflow-hidden",
         "hover:bg-secondary/50"
       )}
     >
       {/* Avatar with online indicator */}
-      <div className="relative">
+      <div className="relative flex-shrink-0">
         <button
           onClick={onProfileClick}
           disabled={!onProfileClick}
@@ -921,33 +922,35 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
         </button>
       </div>
 
-      {/* Name and role */}
-      <div className="flex-1 min-w-0">
+      {/* Name and role - constrained width with proper truncation */}
+      <div className="flex-1 min-w-0 overflow-hidden">
         {isCurrentUser ? (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full max-w-[130px] truncate",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
+            title={member.username}
           >
             {member.username}
-            <span className="text-xs text-muted-foreground ml-1">(you)</span>
+            <span className="text-xs text-muted-foreground ml-1 flex-shrink-0">(you)</span>
           </button>
         ) : (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium truncate text-left hover:text-primary transition-colors cursor-pointer block",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full max-w-[130px] truncate",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
+            title={member.username}
           >
             {member.username}
           </button>
         )}
-        <div className="flex items-center gap-1">
-          <Icon className={cn("h-3 w-3", config.color)} />
-          <span className={cn("text-xs", config.color)}>{config.label}</span>
+        <div className="flex items-center gap-1 overflow-hidden">
+          <Icon className={cn("h-3 w-3 flex-shrink-0", config.color)} />
+          <span className={cn("text-xs truncate", config.color)}>{config.label}</span>
         </div>
         {/* Show IP address for admins/owners viewing non-admin/owner users */}
         {member.ip_address && (
