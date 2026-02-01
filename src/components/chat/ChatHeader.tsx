@@ -9,6 +9,7 @@ import {
 import { getRoomTheme, getDefaultTopic } from "@/lib/roomConfig";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import jungleHeaderLogo from "@/assets/themes/jungle-header-logo.png";
 
 interface ChatHeaderProps {
   onlineCount: number;
@@ -112,32 +113,12 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
         
         {/* Center section - Jungle branding (only for jungle theme) */}
         {isJungle && (
-          <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex items-center gap-1">
-            <span 
-              className="text-lg font-black tracking-tight"
-              style={{
-                background: 'linear-gradient(135deg, #166534 0%, #15803d 50%, #22c55e 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              Justachat™
-            </span>
-            {/* Jungle text with vine decorations */}
-            <span 
-              className="text-sm font-black uppercase tracking-wide relative"
-              style={{
-                background: 'linear-gradient(180deg, #166534 0%, #422006 40%, #78350f 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              {/* Left vine */}
-              <span className="absolute -left-3 top-0 text-green-600 text-xs">🌿</span>
-              Jungle
-              {/* Right vine */}
-              <span className="absolute -right-3 top-0 text-green-600 text-xs">🌿</span>
-            </span>
+          <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:block">
+            <img 
+              src={jungleHeaderLogo} 
+              alt="Justachat Jungle"
+              className="h-10 object-contain"
+            />
           </div>
         )}
         
