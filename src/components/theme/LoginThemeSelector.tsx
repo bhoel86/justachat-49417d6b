@@ -1,5 +1,5 @@
-import React from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
+import React, { useState } from 'react';
+import { useTheme, ThemeName } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,17 +16,33 @@ const isLovablePreview = () => {
   return hostname.includes('lovable.app') || hostname.includes('lovableproject.com');
 };
 
+// Apply theme class locally without database persistence
+const applyLocalTheme = (theme: ThemeName) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.remove(
+      'theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 
+      'theme-matrix', 'theme-vapor', 'theme-arcade', 'theme-dieselpunk', 
+      'theme-cyberpunk', 'theme-jungle'
+    );
+    document.documentElement.classList.add(`theme-${theme}`);
+    console.log('[LoginThemeSelector] Applied local theme:', theme);
+  }
+};
+
 export const LoginThemeSelector: React.FC = () => {
-  const { theme, setTheme, themes } = useTheme();
+  const { theme: globalTheme, themes } = useTheme();
+  const [localTheme, setLocalTheme] = useState<ThemeName>(globalTheme);
 
   // Only render in Lovable preview
   if (!isLovablePreview()) {
     return null;
   }
 
-  const handleSetTheme = (themeId: typeof theme) => {
-    console.log('[LoginThemeSelector] Preview theme:', themeId);
-    setTheme(themeId);
+  const handleSetTheme = (themeId: ThemeName) => {
+    console.log('[LoginThemeSelector] Preview-only theme:', themeId);
+    setLocalTheme(themeId);
+    applyLocalTheme(themeId);
+    // Note: Does NOT persist to database - preview only
   };
 
   return (
@@ -40,12 +56,12 @@ export const LoginThemeSelector: React.FC = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72 p-2">
           <div className="text-sm font-semibold text-muted-foreground mb-2 px-2">
-            Preview Themes (Lovable Only)
+            Preview Themes (Local Only)
           </div>
           <ScrollArea className="h-[300px] pr-2">
             <div className="space-y-1 pr-2">
               {themes.map((t) => {
-                const isActive = theme === t.id;
+                const isActive = localTheme === t.id;
                 return (
                   <div
                     key={t.id}
@@ -81,7 +97,7 @@ export const LoginThemeSelector: React.FC = () => {
             </div>
           </ScrollArea>
           <div className="text-xs text-muted-foreground mt-3 px-2 border-t pt-2">
-            Preview only - won't affect production
+            Preview only – won't affect production
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
