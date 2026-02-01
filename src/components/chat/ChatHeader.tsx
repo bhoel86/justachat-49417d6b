@@ -84,8 +84,8 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
 
   return (
     <header className={cn(
-      "flex flex-col border-b border-border",
-      isJungle ? "bg-gradient-to-r from-green-900/90 to-emerald-900/90" : "bg-card"
+      "flex flex-col border-b",
+      isJungle ? "bg-[#0a1f0a] border-green-900/50" : "bg-card border-border"
     )}>
       <div className="flex items-center justify-between px-3 py-2 relative">
         {/* Left section - channel info */}
@@ -104,7 +104,7 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
               </div>
               {getRoleBadge()}
             </div>
-            <p className={cn("text-[10px]", isJungle ? "text-green-400/70" : "text-muted-foreground")}>
+            <p className={cn("text-[10px]", isJungle ? "text-green-500/70" : "text-muted-foreground")}>
               {isJungle ? "Jungle Expedition" : "Justachat™"}
             </p>
           </div>
@@ -112,25 +112,31 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
         
         {/* Center section - Jungle branding (only for jungle theme) */}
         {isJungle && (
-          <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex items-center gap-2">
+          <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:flex items-center gap-1">
             <span 
               className="text-lg font-black tracking-tight"
               style={{
-                background: 'linear-gradient(135deg, #22c55e 0%, #10b981 50%, #059669 100%)',
+                background: 'linear-gradient(135deg, #166534 0%, #15803d 50%, #22c55e 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                textShadow: '0 2px 8px rgba(34, 197, 94, 0.3)',
               }}
             >
               Justachat™
             </span>
+            {/* Jungle text with vine decorations */}
             <span 
-              className="text-sm font-bold uppercase tracking-[0.15em] text-amber-400"
+              className="text-sm font-black uppercase tracking-wide relative"
               style={{
-                textShadow: '0 1px 4px rgba(251, 191, 36, 0.4)',
+                background: 'linear-gradient(180deg, #166534 0%, #422006 40%, #78350f 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
               }}
             >
+              {/* Left vine */}
+              <span className="absolute -left-3 top-0 text-green-600 text-xs">🌿</span>
               Jungle
+              {/* Right vine */}
+              <span className="absolute -right-3 top-0 text-green-600 text-xs">🌿</span>
             </span>
           </div>
         )}
