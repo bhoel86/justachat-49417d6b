@@ -600,37 +600,83 @@
     box-shadow: var(--theme-window-shadow);
   }
 
+  /* Retro 80s login container text styling */
+  .theme-retro80s .bg-card h2 {
+    color: hsl(175 70% 40%) !important;
+    font-family: 'Press Start 2P', monospace !important;
+    text-shadow: 2px 2px 0px hsl(0 0% 0%);
+  }
+
+  .theme-retro80s .bg-card p,
+  .theme-retro80s .bg-card span {
+    font-family: 'VT323', monospace !important;
+    color: hsl(0 0% 20%) !important;
+  }
+
+  .theme-retro80s .bg-card .text-primary,
+  .theme-retro80s .bg-card a {
+    color: hsl(175 70% 35%) !important;
+    font-family: 'VT323', monospace !important;
+    font-weight: bold;
+  }
+
+  .theme-retro80s .bg-card .text-muted-foreground {
+    color: hsl(0 0% 35%) !important;
+    font-family: 'VT323', monospace !important;
+  }
+
+  .theme-retro80s .bg-card .text-destructive {
+    color: hsl(0 70% 45%) !important;
+    font-family: 'VT323', monospace !important;
+  }
+
   /* Retro compact inputs for login */
   .theme-retro80s input,
   .theme-retro80s textarea {
     padding: 0.5rem 0.75rem !important;
-    font-size: 0.8rem !important;
+    font-size: 1rem !important;
     font-family: 'VT323', monospace !important;
     height: auto !important;
     border-radius: 0 !important;
     background: hsl(0 0% 95%) !important;
+    color: hsl(0 0% 10%) !important;
   }
 
   .theme-retro80s input::placeholder {
     font-family: 'VT323', monospace !important;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    color: hsl(0 0% 50%) !important;
   }
 
   .theme-retro80s button[type="submit"] {
     padding: 0.5rem 0.75rem !important;
-    font-size: 0.7rem !important;
+    font-size: 0.65rem !important;
     font-family: 'Press Start 2P', monospace !important;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    background: hsl(175 70% 50%) !important;
+    color: hsl(0 0% 0%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    box-shadow: 4px 4px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s button[type="submit"]:hover {
+    background: hsl(50 90% 60%) !important;
+  }
+
+  .theme-retro80s button[type="button"] {
+    font-family: 'VT323', monospace !important;
+    font-size: 1rem !important;
   }
 
   .theme-retro80s label {
-    font-size: 0.6rem !important;
+    font-size: 0.55rem !important;
     font-family: 'Press Start 2P', monospace !important;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 0.25rem !important;
+    color: hsl(0 0% 20%) !important;
   }
 
   .theme-retro80s .space-y-4 {
@@ -641,8 +687,28 @@
     gap: 0.35rem !important;
   }
 
-  .theme-retro80s a {
-    font-family: 'VT323', monospace !important;
+  /* Retro divider styling */
+  .theme-retro80s .border-t {
+    border-color: hsl(0 0% 0%) !important;
+    border-width: 2px !important;
+  }
+
+  .theme-retro80s .bg-card span.absolute {
+    background: hsl(270 50% 65%) !important;
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.5rem !important;
+    color: hsl(0 0% 0%) !important;
+  }
+
+  /* Google button retro styling */
+  .theme-retro80s button[type="button"].gap-2 {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.5rem !important;
+    text-transform: uppercase;
+    border: 3px solid hsl(0 0% 0%) !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+    background: hsl(50 90% 60%) !important;
+    color: hsl(0 0% 0%) !important;
   }
 
   /* Valentine's theme specific overrides */
