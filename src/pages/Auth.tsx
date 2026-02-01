@@ -674,7 +674,7 @@ const Auth = () => {
         </div>
       )}
 
-      <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'max-w-sm' : ''}`}>
+      <div className={`relative z-10 w-full animate-slide-up ${isRetro ? 'max-w-[280px]' : 'max-w-md'}`}>
         {/* Big Justachat™ Header - For all themes except Retro and Jungle (which use image banners) */}
         {isJungle ? (
           <div className="flex flex-col items-center mb-4">
