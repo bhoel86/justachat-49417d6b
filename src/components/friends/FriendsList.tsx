@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useFriends, Friend, FriendRequest, BlockedUser } from '@/hooks/useFriends';
 import { cn } from '@/lib/utils';
+import { defaultAvatars } from '@/lib/defaultAvatars';
 
 interface FriendsListProps {
   currentUserId: string;
@@ -13,14 +14,45 @@ interface FriendsListProps {
   onCountsChange?: (counts: { total: number; online: number; pending: number }) => void;
 }
 
+// Test friends for preview mode
+const TEST_FRIENDS: Friend[] = [
+  { id: 'test-1', friendId: 'test-user-1', username: 'CyberPunk2077', avatarUrl: defaultAvatars[0].url, createdAt: new Date() },
+  { id: 'test-2', friendId: 'test-user-2', username: 'NightOwl', avatarUrl: defaultAvatars[1].url, createdAt: new Date() },
+  { id: 'test-3', friendId: 'test-user-3', username: 'PixelQueen', avatarUrl: defaultAvatars[10].url, createdAt: new Date() },
+  { id: 'test-4', friendId: 'test-user-4', username: 'RetroGamer', avatarUrl: defaultAvatars[3].url, createdAt: new Date() },
+  { id: 'test-5', friendId: 'test-user-5', username: 'MidnightCoder', avatarUrl: defaultAvatars[4].url, createdAt: new Date() },
+  { id: 'test-6', friendId: 'test-user-6', username: 'StarGazer', avatarUrl: defaultAvatars[11].url, createdAt: new Date() },
+  { id: 'test-7', friendId: 'test-user-7', username: 'TechNinja', avatarUrl: null, createdAt: new Date() },
+  { id: 'test-8', friendId: 'test-user-8', username: 'CloudSurfer', avatarUrl: defaultAvatars[6].url, createdAt: new Date() },
+];
+
+// Which test friends are "online"
+const TEST_ONLINE_IDS = new Set(['test-user-1', 'test-user-3', 'test-user-5', 'test-user-8']);
+
+const TEST_INCOMING_REQUESTS: FriendRequest[] = [
+  { id: 'req-1', senderId: 'req-sender-1', senderUsername: 'NewFriend', senderAvatarUrl: defaultAvatars[7].url, recipientId: '', recipientUsername: '', recipientAvatarUrl: null, status: 'pending', createdAt: new Date(), isIncoming: true },
+  { id: 'req-2', senderId: 'req-sender-2', senderUsername: 'ChatMaster', senderAvatarUrl: null, recipientId: '', recipientUsername: '', recipientAvatarUrl: null, status: 'pending', createdAt: new Date(), isIncoming: true },
+];
+
+const TEST_BLOCKED: BlockedUser[] = [
+  { id: 'blocked-1', blockedId: 'blocked-user-1', username: 'Troll123', avatarUrl: null, reason: null, createdAt: new Date() },
+];
+
+// Check if we're in Lovable preview mode
+const isPreviewMode = () => {
+  return window.location.hostname.includes('lovable.app') || 
+         window.location.hostname.includes('localhost') ||
+         window.location.hostname === '127.0.0.1';
+};
+
 const FriendsList = ({ currentUserId, onOpenPm, onCountsChange }: FriendsListProps) => {
   const {
-    friends,
-    incomingRequests,
+    friends: realFriends,
+    incomingRequests: realIncoming,
     outgoingRequests,
-    blockedUsers,
+    blockedUsers: realBlocked,
     loading,
-    onlineFriendIds,
+    onlineFriendIds: realOnlineIds,
     acceptFriendRequest,
     declineFriendRequest,
     cancelFriendRequest,
@@ -30,6 +62,15 @@ const FriendsList = ({ currentUserId, onOpenPm, onCountsChange }: FriendsListPro
 
   const [showRequests, setShowRequests] = useState(true);
   const [showBlocked, setShowBlocked] = useState(false);
+
+  // Merge real data with test data in preview mode
+  const inPreview = isPreviewMode();
+  const friends = inPreview ? [...realFriends, ...TEST_FRIENDS] : realFriends;
+  const incomingRequests = inPreview ? [...realIncoming, ...TEST_INCOMING_REQUESTS] : realIncoming;
+  const blockedUsers = inPreview ? [...realBlocked, ...TEST_BLOCKED] : realBlocked;
+  const onlineFriendIds = inPreview 
+    ? new Set([...realOnlineIds, ...TEST_ONLINE_IDS]) 
+    : realOnlineIds;
 
   // Sort friends: online first
   const sortedFriends = [...friends].sort((a, b) => {
