@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useLayoutEffect 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'vapor';
+export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'vapor' | 'arcade' | 'dieselpunk' | 'cyberpunk' | 'jungle';
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -21,15 +21,19 @@ const THEMES = [
   { id: 'stpatricks' as ThemeName, name: "St. Patrick's", description: 'Irish shamrocks & gold' },
   { id: 'matrix' as ThemeName, name: 'The Matrix', description: 'Follow the white rabbit' },
   { id: 'vapor' as ThemeName, name: 'Vaporwave OS', description: '90s cyber operating system' },
+  { id: 'arcade' as ThemeName, name: "Retro 80's Arcade", description: 'Neon arcade cabinet vibes' },
+  { id: 'dieselpunk' as ThemeName, name: 'Medieval Dieselpunk', description: 'Steampunk brass & parchment' },
+  { id: 'cyberpunk' as ThemeName, name: 'Cyberpunk City', description: 'Electric neon metropolis' },
+  { id: 'jungle' as ThemeName, name: 'Jungle Expedition', description: 'Adventure in the wild' },
 ];
 
 const isValidTheme = (value: string): value is ThemeName => {
-  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix', 'vapor'].includes(value);
+  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix', 'vapor', 'arcade', 'dieselpunk', 'cyberpunk', 'jungle'].includes(value);
 };
 
 const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix', 'theme-vapor');
+    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix', 'theme-vapor', 'theme-arcade', 'theme-dieselpunk', 'theme-cyberpunk', 'theme-jungle');
     document.documentElement.classList.add(`theme-${theme}`);
     // Cache in localStorage for instant load on next visit
     try {
