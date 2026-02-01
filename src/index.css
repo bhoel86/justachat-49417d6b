@@ -605,17 +605,31 @@
   .theme-retro80s textarea {
     padding: 0.5rem 0.75rem !important;
     font-size: 0.8rem !important;
+    font-family: 'VT323', monospace !important;
     height: auto !important;
-    border-radius: 0.5rem !important;
+    border-radius: 0 !important;
+    background: hsl(0 0% 95%) !important;
+  }
+
+  .theme-retro80s input::placeholder {
+    font-family: 'VT323', monospace !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .theme-retro80s button[type="submit"] {
     padding: 0.5rem 0.75rem !important;
-    font-size: 0.8rem !important;
+    font-size: 0.7rem !important;
+    font-family: 'Press Start 2P', monospace !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .theme-retro80s label {
-    font-size: 0.7rem !important;
+    font-size: 0.6rem !important;
+    font-family: 'Press Start 2P', monospace !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     margin-bottom: 0.25rem !important;
   }
 
@@ -625,6 +639,10 @@
 
   .theme-retro80s .space-y-2 {
     gap: 0.35rem !important;
+  }
+
+  .theme-retro80s a {
+    font-family: 'VT323', monospace !important;
   }
 
   /* Valentine's theme specific overrides */

@@ -761,11 +761,11 @@ const Auth = () => {
             </button>
           )}
           
-          <h2 className={`font-semibold text-foreground text-center ${isRetro ? 'text-sm mb-0' : 'mb-1'} ${isMatrix ? 'text-2xl font-mono tracking-wide' : 'text-xl'}`}>
-            {mode === "login" && (isMatrix ? "[ AUTHENTICATE ]" : "Welcome back")}
-            {mode === "signup" && (isMatrix ? "[ NEW USER ]" : "Create account")}
-            {mode === "forgot" && (isMatrix ? "[ RECOVERY ]" : "Reset password")}
-            {mode === "reset" && (isMatrix ? "[ NEW CREDENTIALS ]" : "Set new password")}
+          <h2 className={`font-semibold text-foreground text-center ${isRetro ? 'text-xs mb-1 font-["Press_Start_2P"] uppercase tracking-wide' : 'mb-1'} ${isMatrix ? 'text-2xl font-mono tracking-wide' : 'text-xl'}`}>
+            {mode === "login" && (isMatrix ? "[ AUTHENTICATE ]" : isRetro ? "LOG IN" : "Welcome back")}
+            {mode === "signup" && (isMatrix ? "[ NEW USER ]" : isRetro ? "SIGN UP" : "Create account")}
+            {mode === "forgot" && (isMatrix ? "[ RECOVERY ]" : isRetro ? "RESET" : "Reset password")}
+            {mode === "reset" && (isMatrix ? "[ NEW CREDENTIALS ]" : isRetro ? "NEW PASS" : "Set new password")}
           </h2>
           {!isRetro && (
             <p className={`text-muted-foreground text-center mb-6 ${isMatrix ? 'text-base font-mono' : 'text-sm'}`}>
