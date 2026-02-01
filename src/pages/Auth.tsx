@@ -63,11 +63,10 @@ const Auth = () => {
   const captchaRequired =
     mode === "signup" && CAPTCHA_REQUIRED_HOSTS.has(window.location.hostname);
 
-  // Detect if running in Capacitor (Android/iOS app)
+  // Detect if running in Capacitor (Android/iOS app) - must be native, not just web with Capacitor installed
   const isCapacitorApp = typeof window !== 'undefined' && 
-    (window.hasOwnProperty('Capacitor') || 
-     navigator.userAgent.includes('CapacitorApp') ||
-     document.URL.startsWith('capacitor://'));
+    'Capacitor' in window && 
+    (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() === true;
 
   // Handle Google OAuth - uses external browser for Capacitor app
   const handleGoogleSignIn = async (switchAccount = false) => {
