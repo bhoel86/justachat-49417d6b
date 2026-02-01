@@ -19,11 +19,11 @@ import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
-import { RetroLoginHeader } from "@/components/theme/RetroLoginHeader";
 import { useTheme } from "@/contexts/ThemeContext";
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
 import matrixFollowImg from '@/assets/matrix/follow-rabbit.jpg';
 import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
+import retroHeaderImg from '@/assets/themes/retro-header-login-cutout.png';
 import { usePngCutout } from "@/hooks/usePngCutout";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -645,6 +645,7 @@ const Auth = () => {
 
   // The generated PNG sometimes bakes a checkerboard into the pixels; convert to true alpha cutout + trim.
   const jungleHeaderCutout = usePngCutout(isJungle ? jungleHeaderImg : undefined);
+  const retroHeaderCutout = usePngCutout(isRetro ? retroHeaderImg : undefined);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
@@ -691,7 +692,14 @@ const Auth = () => {
           </div>
         ) : isRetro ? (
           <div className="flex flex-col items-center mb-3">
-            <RetroLoginHeader subtitle="Totally Radical Chat" />
+            <img 
+              src={retroHeaderCutout ?? retroHeaderImg} 
+              alt="Justachat™" 
+              className="w-full max-w-[280px] sm:max-w-[340px] h-auto object-contain"
+            />
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm tracking-wide">
+              Totally Radical Chat
+            </p>
           </div>
         ) : (
           <div className="flex flex-col items-center mb-1">
