@@ -451,7 +451,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
 
   if (loading) {
     return (
-      <div className="w-64 min-w-[260px] max-w-[280px] flex-shrink-0 bg-card border-l border-border p-4 flex items-center justify-center">
+      <div className="w-48 min-w-[180px] flex-shrink-0 bg-card border-l border-border p-4 flex items-center justify-center">
         <div className="h-6 w-6 rounded-full jac-gradient-bg animate-pulse" />
       </div>
     );
@@ -460,7 +460,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   return (
     <>
       {/* Members Panel - fixed width with proper constraints */}
-      <div className="w-64 min-w-[260px] max-w-[280px] flex-shrink-0 bg-card border-l border-border flex flex-col h-full max-h-screen overflow-hidden">
+      <div className="w-48 min-w-[180px] flex-shrink-0 bg-card border-l border-border flex flex-col h-full max-h-screen overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-border">
           <Users className="h-4 w-4 text-primary" />
@@ -761,9 +761,9 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
             </div>
           </div>
 
-          {/* Name and role - constrained width */}
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <p className="text-sm font-medium truncate text-foreground max-w-[120px]" title={member.username}>
+          {/* Name and role */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground break-words">
               {member.username.split(' ').slice(1).join(' ') || member.username}
             </p>
             <div className="flex items-center gap-1 overflow-hidden flex-wrap">
@@ -888,28 +888,26 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
         </button>
       </div>
 
-      {/* Name and role - constrained width with proper truncation */}
-      <div className="flex-1 min-w-0 overflow-hidden">
+      {/* Name and role */}
+      <div className="flex-1 min-w-0">
         {isCurrentUser ? (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full max-w-[130px] truncate",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full break-words",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
-            title={member.username}
           >
             {member.username}
-            <span className="text-xs text-muted-foreground ml-1 flex-shrink-0">(you)</span>
+            <span className="text-xs text-muted-foreground ml-1">(you)</span>
           </button>
         ) : (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full max-w-[130px] truncate",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer block w-full break-words",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
-            title={member.username}
           >
             {member.username}
           </button>
