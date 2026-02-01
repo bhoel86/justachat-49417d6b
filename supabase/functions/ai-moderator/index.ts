@@ -319,11 +319,8 @@ You may occasionally mention this tip naturally in conversation if relevant.${me
       { role: 'user', content: userMessage }
     ];
 
-    let response: Response;
-    
-    if (LOVABLE_API_KEY) {
-      // Use Lovable AI gateway (Lovable Cloud)
-      response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const callLovableGateway = () =>
+      fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -336,10 +333,10 @@ You may occasionally mention this tip naturally in conversation if relevant.${me
           temperature: 0.9,
         }),
       });
-    } else {
-      // Fallback to OpenAI (VPS)
-      console.log('Using OpenAI fallback for VPS');
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
+
+    const callOpenAI = () => {
+      console.log('Using OpenAI fallback');
+      return fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
@@ -352,6 +349,20 @@ You may occasionally mention this tip naturally in conversation if relevant.${me
           temperature: 0.9,
         }),
       });
+    };
+
+    // Default: prefer gateway when present (Lovable Cloud), but if it returns auth errors
+    // and an OpenAI key is available, fall back automatically.
+    let response: Response;
+    if (LOVABLE_API_KEY) {
+      response = await callLovableGateway();
+      if (!response.ok && OPENAI_API_KEY && (response.status === 401 || response.status === 403)) {
+        const gatewayErrorText = await response.text();
+        console.error('AI gateway auth error; falling back to OpenAI:', response.status, gatewayErrorText);
+        response = await callOpenAI();
+      }
+    } else {
+      response = await callOpenAI();
     }
 
     if (!response.ok) {
