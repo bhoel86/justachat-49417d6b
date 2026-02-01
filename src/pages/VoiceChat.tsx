@@ -402,7 +402,7 @@ const VoiceChat = () => {
                             </Avatar>
                           </AudioVisualizerRing>
                           <div className="text-center">
-                            <p className="font-medium text-sm truncate max-w-[100px]">
+                            <p className="font-medium text-sm w-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
                               {broadcaster.username}
                             </p>
                             {getRoleBadge(broadcaster.odious)}
@@ -446,17 +446,17 @@ const VoiceChat = () => {
                       <button 
                         className="w-full flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left group"
                       >
-                        <Avatar className="w-8 h-8">
+                        <Avatar className="w-8 h-8 shrink-0">
                           <AvatarImage src={listener.avatarUrl || undefined} />
                           <AvatarFallback className="text-xs bg-primary/20">
                             {listener.username.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{listener.username}</p>
+                          <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{listener.username}</p>
                           {getRoleBadge(listener.odious)}
                         </div>
-                        <MoreVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <MoreVertical className="w-4 h-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     </VideoUserMenu>
                   ))
