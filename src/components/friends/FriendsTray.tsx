@@ -38,6 +38,29 @@ const FriendsTray = ({
     setCounts(newCounts);
   }, []);
 
+  // Click outside to minimize
+  useEffect(() => {
+    if (!isOpen || isMinimized || isMobile) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (trayRef.current && !trayRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setIsMinimized(true);
+        setPosition({ x: 0, y: 0 });
+      }
+    };
+
+    // Delay adding listener to prevent immediate trigger
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, isMinimized, isMobile]);
+
   // Handle dragging the popup window
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
