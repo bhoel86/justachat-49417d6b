@@ -5,12 +5,12 @@ import ChatHeader from "@/components/chat/ChatHeader";
 import MemberList from "@/components/chat/MemberList";
 import MessageBubble from "@/components/chat/MessageBubble";
 import { Button } from "@/components/ui/button";
-import { Users, X, Send, Music, Play, Pause, SkipForward, SkipBack, Volume2, Shuffle, Radio } from "lucide-react";
+import { Users, X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { getBotsForChannel, CHAT_BOTS, getBotResponseDelay } from "@/lib/chatBots";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ChatWatermark } from "@/components/theme/ChatWatermark";
+import RadioPlayerBar from "@/components/chat/RadioPlayerBar";
 
 interface MirrorMessage {
   id: string;
@@ -26,13 +26,11 @@ interface MirrorMessage {
 
 const LobbyMirrorRoom = () => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const { theme } = useTheme();
   const isRetro = theme === 'retro80s';
   const isStPatricks = theme === 'stpatricks';
   const [messages, setMessages] = useState<MirrorMessage[]>([]);
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const pendingRef = useRef<boolean>(false);
 
@@ -144,22 +142,8 @@ const LobbyMirrorRoom = () => {
     };
   }, [addMirrorMessage]);
 
-  // Auto-scroll on new messages
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      const container = messagesEndRef.current.parentElement;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }
-  }, [messages]);
-
   const handleJoinChat = () => {
     navigate('/chat/general');
-  };
-
-  const handleChannelSelect = (channel: { name: string }) => {
-    navigate(`/chat/${channel.name}`);
   };
 
   return (
@@ -224,71 +208,42 @@ const LobbyMirrorRoom = () => {
         <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate z-10 pointer-events-none">
           {/* Transparent logo watermark - theme aware */}
           <ChatWatermark />
-          
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
-              <p>Waiting for chat activity...</p>
-              <p className="text-sm mt-2">Click to join #general and start chatting!</p>
-            </div>
-          ) : (
-            <div className="mt-auto space-y-2 sm:space-y-3">
-              {messages.slice(-4).map((msg) => (
-                <MessageBubble
-                  key={msg.id}
-                  id={msg.id}
-                  message={msg.content}
-                  sender={msg.profile?.username || 'Unknown'}
-                  senderId={msg.user_id}
-                  senderAvatarUrl={msg.profile?.avatar_url}
-                  timestamp={new Date(msg.created_at)}
-                  isOwn={false}
-                  isSystem={false}
-                  isModerator={false}
-                  canDelete={false}
-                />
-              ))}
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        {/* Radio Bar Preview - Matches real chat layout */}
-        <div 
-          className="border-t border-border bg-card/80 backdrop-blur-sm px-2 py-1.5 shrink-0"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center gap-2">
-            {/* Album art placeholder */}
-            <div className="w-10 h-10 rounded bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0">
-              <Radio className="w-5 h-5 text-primary/60" />
-            </div>
-            
-            {/* Song info */}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate text-foreground">JAC Radio</p>
-              <p className="text-[10px] text-muted-foreground truncate">Click to join and listen!</p>
-            </div>
-            
-            {/* Fake progress bar */}
-            <div className="hidden sm:flex items-center gap-2 flex-1 max-w-[200px]">
-              <span className="text-[10px] text-muted-foreground">0:00</span>
-              <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
-                <div className="h-full w-1/3 bg-primary/50 rounded-full" />
+
+          <div className="flex-1 min-h-0 flex flex-col justify-end">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
+                <p>Waiting for chat activity...</p>
+                <p className="text-sm mt-2">Click to join #general and start chatting!</p>
               </div>
-              <span className="text-[10px] text-muted-foreground">3:45</span>
-            </div>
-            
-            {/* Fake controls */}
-            <div className="flex items-center gap-1">
-              <div className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center">
-                <Play className="w-3 h-3 text-muted-foreground" />
+            ) : (
+              <div className="space-y-2 sm:space-y-3">
+                {messages.slice(-4).map((msg) => (
+                  <MessageBubble
+                    key={msg.id}
+                    id={msg.id}
+                    message={msg.content}
+                    sender={msg.profile?.username || 'Unknown'}
+                    senderId={msg.user_id}
+                    senderAvatarUrl={msg.profile?.avatar_url}
+                    timestamp={new Date(msg.created_at)}
+                    isOwn={false}
+                    isSystem={false}
+                    isModerator={false}
+                    canDelete={false}
+                  />
+                ))}
               </div>
-            </div>
+            )}
           </div>
+        </div>
+
+        {/* Radio Bar Preview - Uses the real chat radio UI */}
+        <div className="p-4 bg-card border-t border-border shrink-0 pointer-events-none">
+          <RadioPlayerBar canControlRadio={false} radioListenerCount={0} />
         </div>
         
         {/* Fake Input - Shows join prompt */}
-        <div className="p-2 border-t border-border shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="p-2 border-t border-border shrink-0">
           <div className="flex gap-2">
             <div className="flex-1 bg-input rounded-lg px-3 py-2.5 text-base text-muted-foreground flex items-center justify-between">
               <span>Click to join and start chatting...</span>
