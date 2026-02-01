@@ -1055,3 +1055,270 @@
 .theme-matrix textarea:focus {
   box-shadow: 0 0 10px hsl(120 100% 50% / 0.3), inset 0 0 5px hsl(120 100% 50% / 0.1);
 }
+
+/* ============================================
+   CUSTOM SCROLLBAR STYLES
+   ============================================ */
+
+/* OG Theme (JAC) - Dark teal scrollbars */
+.theme-jac ::-webkit-scrollbar,
+:root ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-jac ::-webkit-scrollbar-track,
+:root ::-webkit-scrollbar-track {
+  background: hsl(222 47% 10%);
+  border-radius: 5px;
+}
+
+.theme-jac ::-webkit-scrollbar-thumb,
+:root ::-webkit-scrollbar-thumb {
+  background: hsl(199 89% 35%);
+  border-radius: 5px;
+  border: 2px solid hsl(222 47% 10%);
+}
+
+.theme-jac ::-webkit-scrollbar-thumb:hover,
+:root ::-webkit-scrollbar-thumb:hover {
+  background: hsl(199 89% 48%);
+}
+
+/* Firefox scrollbar support */
+.theme-jac *,
+:root * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(199 89% 35%) hsl(222 47% 10%);
+}
+
+/* Retro 80s Theme - Chunky black/cyan scrollbars */
+.theme-retro80s ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.theme-retro80s ::-webkit-scrollbar-track {
+  background: hsl(330 70% 75%);
+  border: 2px solid hsl(0 0% 10%);
+}
+
+.theme-retro80s ::-webkit-scrollbar-thumb {
+  background: hsl(175 70% 50%);
+  border: 2px solid hsl(0 0% 10%);
+}
+
+.theme-retro80s ::-webkit-scrollbar-thumb:hover {
+  background: hsl(175 70% 60%);
+}
+
+.theme-retro80s * {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(175 70% 50%) hsl(330 70% 75%);
+}
+
+/* Valentines Theme - Pink romantic scrollbars */
+.theme-valentines ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-valentines ::-webkit-scrollbar-track {
+  background: hsl(340 30% 12%);
+  border-radius: 5px;
+}
+
+.theme-valentines ::-webkit-scrollbar-thumb {
+  background: hsl(340 82% 45%);
+  border-radius: 5px;
+  border: 2px solid hsl(340 30% 12%);
+}
+
+.theme-valentines ::-webkit-scrollbar-thumb:hover {
+  background: hsl(340 82% 52%);
+}
+
+.theme-valentines * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(340 82% 45%) hsl(340 30% 12%);
+}
+
+/* St. Patrick's Theme - Green/gold scrollbars */
+.theme-stpatricks ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-stpatricks ::-webkit-scrollbar-track {
+  background: hsl(140 35% 10%);
+  border-radius: 5px;
+}
+
+.theme-stpatricks ::-webkit-scrollbar-thumb {
+  background: hsl(142 76% 36%);
+  border-radius: 5px;
+  border: 2px solid hsl(140 35% 10%);
+}
+
+.theme-stpatricks ::-webkit-scrollbar-thumb:hover {
+  background: hsl(45 93% 47%);
+}
+
+.theme-stpatricks * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(142 76% 36%) hsl(140 35% 10%);
+}
+
+/* Matrix Theme - Neon green scrollbars */
+.theme-matrix ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.theme-matrix ::-webkit-scrollbar-track {
+  background: hsl(120 100% 2%);
+  border: 1px solid hsl(120 100% 20%);
+}
+
+.theme-matrix ::-webkit-scrollbar-thumb {
+  background: hsl(120 100% 40%);
+  border: 1px solid hsl(120 100% 50%);
+}
+
+.theme-matrix ::-webkit-scrollbar-thumb:hover {
+  background: hsl(120 100% 50%);
+  box-shadow: 0 0 10px hsl(120 100% 50%);
+}
+
+.theme-matrix * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(120 100% 40%) hsl(120 100% 2%);
+}
+
+/* Vaporwave Theme - Purple/teal scrollbars */
+.theme-vapor ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.theme-vapor ::-webkit-scrollbar-track {
+  background: hsl(330 60% 85%);
+  border: 2px solid hsl(260 80% 15%);
+}
+
+.theme-vapor ::-webkit-scrollbar-thumb {
+  background: hsl(280 70% 55%);
+  border: 2px solid hsl(260 80% 15%);
+}
+
+.theme-vapor ::-webkit-scrollbar-thumb:hover {
+  background: hsl(180 70% 65%);
+}
+
+.theme-vapor * {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(280 70% 55%) hsl(330 60% 85%);
+}
+
+/* Arcade Theme - Neon pink scrollbars */
+.theme-arcade ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-arcade ::-webkit-scrollbar-track {
+  background: hsl(260 80% 8%);
+  border: 1px solid hsl(320 100% 60%);
+}
+
+.theme-arcade ::-webkit-scrollbar-thumb {
+  background: hsl(320 100% 50%);
+  border: 1px solid hsl(180 100% 60%);
+}
+
+.theme-arcade ::-webkit-scrollbar-thumb:hover {
+  background: hsl(180 100% 60%);
+  box-shadow: 0 0 10px hsl(180 100% 60%);
+}
+
+.theme-arcade * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(320 100% 50%) hsl(260 80% 8%);
+}
+
+/* Dieselpunk Theme - Bronze/brass scrollbars */
+.theme-dieselpunk ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.theme-dieselpunk ::-webkit-scrollbar-track {
+  background: hsl(35 30% 12%);
+  border: 1px solid hsl(35 60% 30%);
+}
+
+.theme-dieselpunk ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsl(35 80% 45%) 0%, hsl(25 90% 40%) 100%);
+  border: 1px solid hsl(35 60% 30%);
+}
+
+.theme-dieselpunk ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(35 80% 55%) 0%, hsl(25 90% 50%) 100%);
+}
+
+.theme-dieselpunk * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(35 80% 45%) hsl(35 30% 12%);
+}
+
+/* Cyberpunk Theme - Pink/cyan neon scrollbars */
+.theme-cyberpunk ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.theme-cyberpunk ::-webkit-scrollbar-track {
+  background: hsl(270 50% 5%);
+  border: 1px solid hsl(320 80% 45%);
+}
+
+.theme-cyberpunk ::-webkit-scrollbar-thumb {
+  background: hsl(320 100% 55%);
+  border: 1px solid hsl(180 100% 50%);
+}
+
+.theme-cyberpunk ::-webkit-scrollbar-thumb:hover {
+  background: hsl(180 100% 50%);
+  box-shadow: 0 0 10px hsl(180 100% 50%);
+}
+
+.theme-cyberpunk * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(320 100% 55%) hsl(270 50% 5%);
+}
+
+/* Jungle Theme - Earthy green scrollbars */
+.theme-jungle ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-jungle ::-webkit-scrollbar-track {
+  background: hsl(120 30% 10%);
+  border-radius: 5px;
+}
+
+.theme-jungle ::-webkit-scrollbar-thumb {
+  background: hsl(120 50% 35%);
+  border-radius: 5px;
+  border: 2px solid hsl(120 30% 10%);
+}
+
+.theme-jungle ::-webkit-scrollbar-thumb:hover {
+  background: hsl(45 80% 45%);
+}
+
+.theme-jungle * {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(120 50% 35%) hsl(120 30% 10%);
+}
