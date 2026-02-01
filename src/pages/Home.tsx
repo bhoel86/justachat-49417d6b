@@ -42,6 +42,7 @@ import triviaBg from "@/assets/rooms/trivia-bg.jpg";
 // Banner and footer graphics
 import mascotLeft from "@/assets/mascot-left.png";
 import mascotRight from "@/assets/mascot-right.png";
+import retroHeaderImg from "@/assets/themes/retro-header-login-cutout.png";
 import { OGWelcomeBanner } from "@/components/theme/OGWelcomeBanner";
 import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
 import { ValentinesWelcomeBanner } from "@/components/theme/ValentinesWelcomeBanner";
@@ -527,6 +528,17 @@ const Home = () => {
               </DropdownMenu>
             )}
 
+            {/* Retro 80s Banner - Centered in header */}
+            {isRetro && (
+              <div className="flex-1 flex justify-center">
+                <img 
+                  src={retroHeaderImg} 
+                  alt="Justachat™" 
+                  className="h-8 sm:h-10 object-contain"
+                  style={{ filter: 'drop-shadow(2px 2px 0px black)' }}
+                />
+              </div>
+            )}
             
             <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
               <Users className="w-4 h-4" />
