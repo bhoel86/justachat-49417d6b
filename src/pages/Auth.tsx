@@ -23,6 +23,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import headerImg from '@/assets/justachat-header-80s.png';
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
 import matrixFollowImg from '@/assets/matrix/follow-rabbit.jpg';
+import jungleHeaderImg from '@/assets/themes/jungle-header-logo.png';
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -639,6 +640,7 @@ const Auth = () => {
   const isValentines = theme === 'valentines';
   const isStPatricks = theme === 'stpatricks';
   const isMatrix = theme === 'matrix';
+  const isJungle = theme === 'jungle';
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
@@ -668,8 +670,22 @@ const Auth = () => {
       )}
 
       <div className="relative z-10 w-full max-w-md animate-slide-up">
-        {/* Big Justachat™ Header - For all themes except Retro (which uses image banner) */}
-        {!isRetro && (
+        {/* Big Justachat™ Header - For all themes except Retro and Jungle (which use image banners) */}
+        {isJungle ? (
+          <div className="flex flex-col items-center mb-4">
+            <img 
+              src={jungleHeaderImg} 
+              alt="Justachat Jungle" 
+              className="w-full max-w-[320px] sm:max-w-[400px] h-auto object-contain"
+              style={{
+                filter: 'drop-shadow(0 4px 20px hsl(142 50% 30% / 0.4))',
+              }}
+            />
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base tracking-wide">
+              Adventure awaits in every conversation
+            </p>
+          </div>
+        ) : !isRetro && (
           <div className="flex flex-col items-center mb-1">
             {/* Icon */}
             <div className={`w-16 h-16 sm:w-20 sm:h-20 ${isMatrix ? 'rounded-none' : 'rounded-2xl'} jac-gradient-bg flex items-center justify-center mb-2 shadow-lg`}>
