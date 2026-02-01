@@ -12,15 +12,71 @@ type CutoutOptions = {
   neutralMaxDelta?: number; // 0-255
   /** Padding (in pixels) around the trimmed bounds */
   padding?: number;
+
+  /**
+   * Background similarity tolerance used for edge flood-fill removal.
+   * Higher = more aggressive background removal.
+   */
+  bgTolerance?: number; // 0-255 (euclidean distance in RGB)
+
+  /** Size of the corner sample patch (in pixels) used to estimate background color */
+  cornerSampleSize?: number;
 };
 
 const defaultOpts: Required<CutoutOptions> = {
   nearWhiteMin: 232,
   neutralMaxDelta: 10,
   padding: 12,
+  bgTolerance: 34,
+  cornerSampleSize: 10,
 };
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+const distRgb = (r1: number, g1: number, b1: number, r2: number, g2: number, b2: number) => {
+  const dr = r1 - r2;
+  const dg = g1 - g2;
+  const db = b1 - b2;
+  return Math.sqrt(dr * dr + dg * dg + db * db);
+};
+
+const avgCornerPatch = (
+  data: Uint8ClampedArray,
+  w: number,
+  h: number,
+  x0: number,
+  y0: number,
+  size: number
+): { r: number; g: number; b: number } | null => {
+  const x1 = clamp(x0, 0, w - 1);
+  const y1 = clamp(y0, 0, h - 1);
+  const xMax = clamp(x1 + size, 0, w);
+  const yMax = clamp(y1 + size, 0, h);
+
+  let rSum = 0,
+    gSum = 0,
+    bSum = 0,
+    count = 0;
+
+  for (let y = y1; y < yMax; y++) {
+    for (let x = x1; x < xMax; x++) {
+      const i = (y * w + x) * 4;
+      const a = data[i + 3];
+      if (a === 0) continue; // ignore already-transparent pixels
+      rSum += data[i];
+      gSum += data[i + 1];
+      bSum += data[i + 2];
+      count++;
+    }
+  }
+
+  if (!count) return null;
+  return {
+    r: Math.round(rSum / count),
+    g: Math.round(gSum / count),
+    b: Math.round(bSum / count),
+  };
+};
 
 /**
  * Turns a "fake transparent" PNG (checkerboard baked into pixels) into a real cutout:
@@ -66,8 +122,78 @@ export function usePngCutout(src?: string, options?: CutoutOptions) {
       const imageData = ctx.getImageData(0, 0, w, h);
       const data = imageData.data;
 
-      // 1) Remove near-white neutral pixels
+      // 1) Remove a solid-ish background rectangle using an edge flood-fill
+      // (web "cutout" tools typically do something like this).
+      const sampleSize = clamp(opts.cornerSampleSize, 1, 64);
+      const tl = avgCornerPatch(data, w, h, 0, 0, sampleSize);
+      const tr = avgCornerPatch(data, w, h, w - sampleSize, 0, sampleSize);
+      const bl = avgCornerPatch(data, w, h, 0, h - sampleSize, sampleSize);
+      const br = avgCornerPatch(data, w, h, w - sampleSize, h - sampleSize, sampleSize);
+
+      const candidates = [tl, tr, bl, br].filter(Boolean) as Array<{ r: number; g: number; b: number }>;
+      if (candidates.length) {
+        // Pick the most "background-like" candidate by choosing the one
+        // with smallest total distance to the other samples.
+        let best = candidates[0];
+        let bestScore = Number.POSITIVE_INFINITY;
+        for (const c of candidates) {
+          let score = 0;
+          for (const o of candidates) {
+            score += distRgb(c.r, c.g, c.b, o.r, o.g, o.b);
+          }
+          if (score < bestScore) {
+            bestScore = score;
+            best = c;
+          }
+        }
+
+        const tol = clamp(opts.bgTolerance, 0, 255);
+        const visited = new Uint8Array(w * h);
+        const q: number[] = [];
+
+        // Seed flood-fill with the outer border pixels.
+        for (let x = 0; x < w; x++) {
+          q.push(x); // top row
+          q.push((h - 1) * w + x); // bottom row
+        }
+        for (let y = 0; y < h; y++) {
+          q.push(y * w); // left
+          q.push(y * w + (w - 1)); // right
+        }
+
+        while (q.length) {
+          const p = q.pop()!;
+          if (visited[p]) continue;
+          visited[p] = 1;
+
+          const i = p * 4;
+          const a = data[i + 3];
+          if (a === 0) continue; // already transparent
+
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+
+          // Only remove pixels that are sufficiently close to the estimated background.
+          if (distRgb(r, g, b, best.r, best.g, best.b) > tol) continue;
+
+          data[i + 3] = 0;
+
+          const x = p % w;
+          const y = (p / w) | 0;
+
+          if (x > 0) q.push(p - 1);
+          if (x < w - 1) q.push(p + 1);
+          if (y > 0) q.push(p - w);
+          if (y < h - 1) q.push(p + w);
+        }
+      }
+
+      // 2) Remove near-white neutral pixels (cleanup for leftover halos)
       for (let i = 0; i < data.length; i += 4) {
+        const a = data[i + 3];
+        if (a === 0) continue;
+
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
@@ -79,11 +205,11 @@ export function usePngCutout(src?: string, options?: CutoutOptions) {
         const neutral = max - min <= opts.neutralMaxDelta;
 
         if (nearWhite && neutral) {
-          data[i + 3] = 0; // alpha
+          data[i + 3] = 0;
         }
       }
 
-      // 2) Find non-transparent bounds
+      // 3) Find non-transparent bounds
       let minX = w,
         minY = h,
         maxX = -1,
@@ -120,7 +246,7 @@ export function usePngCutout(src?: string, options?: CutoutOptions) {
       // Put alpha-adjusted pixels back
       ctx.putImageData(imageData, 0, 0);
 
-      // 3) Crop to bounds
+      // 4) Crop to bounds
       const outCanvas = document.createElement("canvas");
       outCanvas.width = outW;
       outCanvas.height = outH;
@@ -140,7 +266,14 @@ export function usePngCutout(src?: string, options?: CutoutOptions) {
     return () => {
       cancelled = true;
     };
-  }, [src, options?.nearWhiteMin, options?.neutralMaxDelta, options?.padding]);
+   }, [
+     src,
+     options?.nearWhiteMin,
+     options?.neutralMaxDelta,
+     options?.padding,
+     options?.bgTolerance,
+     options?.cornerSampleSize,
+   ]);
 
   return cutoutSrc;
 }
