@@ -795,14 +795,14 @@ const BotMemberItem = ({ member, moderator, channelName, onPmClick, onBlockClick
           </div>
 
           {/* Name and role */}
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <p className="text-sm font-medium truncate text-foreground max-w-full">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
               {member.username.split(' ').slice(1).join(' ') || member.username}
             </p>
             <div className="flex items-center gap-1">
-              <Icon className={cn("h-3 w-3", config.color)} />
-              <span className={cn("text-xs", config.color)}>{config.label}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium ml-1">
+              <Icon className={cn("h-3 w-3 shrink-0", config.color)} />
+              <span className={cn("text-xs shrink-0", config.color)}>{config.label}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium ml-1 shrink-0">
                 BOT
               </span>
             </div>
@@ -922,26 +922,25 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
       </div>
 
       {/* Name and role */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-w-0">
         {isCurrentUser ? (
-          <div className="flex items-baseline gap-1">
+          <div className="flex items-baseline gap-1 min-w-0">
             <button 
               onClick={onProfileClick}
               className={cn(
-                "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap",
+                "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer truncate min-w-0 flex-1",
                 member.isOnline ? "text-foreground" : "text-muted-foreground"
               )}
-              style={{ maxWidth: 'calc(100% - 2rem)' }}
             >
               {member.username}
             </button>
-            <span className="text-xs text-muted-foreground flex-shrink-0">(you)</span>
+            <span className="text-xs text-muted-foreground shrink-0">(you)</span>
           </div>
         ) : (
           <button 
             onClick={onProfileClick}
             className={cn(
-              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap w-full block",
+              "text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer truncate w-full block",
               member.isOnline ? "text-foreground" : "text-muted-foreground"
             )}
           >
