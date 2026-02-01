@@ -36,8 +36,8 @@ export const ThemeSelector: React.FC = () => {
         <div className="text-sm font-semibold text-muted-foreground mb-2 px-2">
           Global Site Theme
         </div>
-        <ScrollArea className="h-[300px]">
-          <div className="space-y-1 pr-3">
+        <ScrollArea className="h-[300px] pr-2">
+          <div className="space-y-1 pr-2">
             {themes.map((t) => {
               const isActive = theme === t.id;
               return (
