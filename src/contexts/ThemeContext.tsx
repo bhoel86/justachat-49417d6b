@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useLayoutEffect 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'vapor' | 'arcade' | 'dieselpunk' | 'cyberpunk' | 'jungle';
+export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'vapor' | 'arcade' | 'dieselpunk' | 'cyberpunk' | 'jungle' | 'halloween';
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -25,15 +25,16 @@ const THEMES = [
   { id: 'dieselpunk' as ThemeName, name: 'Medieval Dieselpunk', description: 'Steampunk brass & parchment' },
   { id: 'cyberpunk' as ThemeName, name: 'Cyberpunk City', description: 'Electric neon metropolis' },
   { id: 'jungle' as ThemeName, name: 'Jungle Expedition', description: 'Adventure in the wild' },
+  { id: 'halloween' as ThemeName, name: 'Halloween', description: 'Spooky pumpkins & lanterns' },
 ];
 
 const isValidTheme = (value: string): value is ThemeName => {
-  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix', 'vapor', 'arcade', 'dieselpunk', 'cyberpunk', 'jungle'].includes(value);
+  return ['jac', 'retro80s', 'valentines', 'stpatricks', 'matrix', 'vapor', 'arcade', 'dieselpunk', 'cyberpunk', 'jungle', 'halloween'].includes(value);
 };
 
 const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
-    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix', 'theme-vapor', 'theme-arcade', 'theme-dieselpunk', 'theme-cyberpunk', 'theme-jungle');
+    document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix', 'theme-vapor', 'theme-arcade', 'theme-dieselpunk', 'theme-cyberpunk', 'theme-jungle', 'theme-halloween');
     document.documentElement.classList.add(`theme-${theme}`);
     // Cache in localStorage for instant load on next visit
     try {

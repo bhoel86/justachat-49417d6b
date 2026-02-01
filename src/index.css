@@ -572,6 +572,65 @@
     --theme-window-shadow: 0 4px 30px hsl(35 60% 20% / 0.4), 0 0 60px hsl(35 90% 50% / 0.1);
   }
 
+  /* ============================================
+     HALLOWEEN THEME
+     Deep burgundy, warm orange lantern glow,
+     spooky purple shadows, ember effects
+     ============================================ */
+  .theme-halloween {
+    --background: 350 40% 6%;
+    --foreground: 30 90% 90%;
+
+    --card: 350 35% 10%;
+    --card-foreground: 30 90% 90%;
+
+    --popover: 350 38% 12%;
+    --popover-foreground: 30 90% 90%;
+
+    --primary: 25 95% 55%;
+    --primary-foreground: 350 40% 5%;
+
+    --secondary: 350 35% 14%;
+    --secondary-foreground: 30 90% 90%;
+
+    --muted: 350 30% 12%;
+    --muted-foreground: 30 40% 55%;
+
+    --accent: 35 100% 60%;
+    --accent-foreground: 350 40% 5%;
+
+    --destructive: 0 85% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 25 60% 25%;
+    --input: 350 30% 14%;
+    --ring: 25 95% 55%;
+
+    --radius: 0.75rem;
+
+    /* Custom halloween variables */
+    --jac-gradient: linear-gradient(135deg, hsl(25 95% 55%) 0%, hsl(350 50% 30%) 50%, hsl(280 40% 20%) 100%);
+    --jac-glow: 0 0 40px hsl(25 90% 50% / 0.4), 0 0 80px hsl(35 100% 60% / 0.2), 0 0 120px hsl(25 90% 50% / 0.1);
+    --jac-bubble-user: 25 70% 35%;
+    --jac-bubble-other: 350 35% 16%;
+
+    --sidebar-background: 350 35% 8%;
+    --sidebar-foreground: 30 90% 90%;
+    --sidebar-primary: 25 95% 55%;
+    --sidebar-primary-foreground: 350 40% 5%;
+    --sidebar-accent: 35 100% 60%;
+    --sidebar-accent-foreground: 350 40% 5%;
+    --sidebar-border: 25 60% 25%;
+    --sidebar-ring: 25 95% 55%;
+
+    /* Theme-specific */
+    --theme-font-body: 'Inter', sans-serif;
+    --theme-font-heading: 'Space Grotesk', sans-serif;
+    --theme-border-style: solid;
+    --theme-border-width: 1px;
+    --theme-window-shadow: 0 4px 30px hsl(25 90% 50% / 0.25), 0 0 60px hsl(25 90% 50% / 0.1);
+  }
+
   .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
@@ -639,6 +698,25 @@
   .theme-valentines button:hover,
   .theme-valentines .hover\:shadow-lg:hover {
     box-shadow: 0 0 25px hsl(340 82% 52% / 0.2);
+  }
+
+  /* Halloween theme specific overrides */
+  .theme-halloween {
+    /* Warm ambient ember glow on the whole page */
+    background-image: 
+      radial-gradient(ellipse 100% 60% at 50% 0%, hsl(25 90% 50% / 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 40% at 0% 100%, hsl(350 50% 30% / 0.06) 0%, transparent 40%),
+      radial-gradient(ellipse 80% 40% at 100% 100%, hsl(280 40% 20% / 0.06) 0%, transparent 40%);
+  }
+
+  .theme-halloween .card,
+  .theme-halloween .bg-card {
+    box-shadow: 0 0 20px hsl(25 90% 50% / 0.1), var(--theme-window-shadow);
+  }
+
+  .theme-halloween button:hover,
+  .theme-halloween .hover\:shadow-lg:hover {
+    box-shadow: 0 0 25px hsl(25 90% 50% / 0.25);
   }
 }
 
@@ -2253,4 +2331,91 @@
 .theme-jungle .jac-gradient-bg {
   background: linear-gradient(135deg, hsl(100 60% 40%) 0%, hsl(80 50% 30%) 50%, hsl(35 90% 50%) 100%);
   box-shadow: 0 4px 30px hsl(35 90% 50% / 0.3);
+}
+
+/* ============================================
+   HALLOWEEN THEME STYLES
+   ============================================ */
+
+@keyframes halloweenFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes halloweenFlicker {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px hsl(25 90% 50% / 0.6));
+  }
+  25% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 12px hsl(25 90% 50% / 0.8));
+  }
+  50% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 6px hsl(25 90% 50% / 0.5));
+  }
+  75% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 10px hsl(25 90% 50% / 0.7));
+  }
+}
+
+@keyframes halloweenBatFly {
+  0%, 100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-15px) translateX(10px) rotate(5deg);
+  }
+  50% {
+    transform: translateY(-5px) translateX(20px) rotate(-3deg);
+  }
+  75% {
+    transform: translateY(-20px) translateX(5px) rotate(3deg);
+  }
+}
+
+@keyframes halloweenGhostFloat {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.1;
+  }
+  25% {
+    transform: translateY(-20px) translateX(-10px) scale(1.05);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translateY(-10px) translateX(10px) scale(0.95);
+    opacity: 0.12;
+  }
+  75% {
+    transform: translateY(-25px) translateX(-5px) scale(1.02);
+    opacity: 0.08;
+  }
+}
+
+@keyframes halloweenEmberGlow {
+  0%, 100% {
+    box-shadow: 0 0 30px hsl(25 90% 50% / 0.4), 0 0 60px hsl(25 90% 50% / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(25 90% 50% / 0.6), 0 0 80px hsl(25 90% 50% / 0.3);
+  }
+}
+
+.theme-halloween h1,
+.theme-halloween h2,
+.theme-halloween h3,
+.theme-halloween .brand {
+  text-shadow: 2px 2px 4px hsl(350 40% 6%), 0 0 10px hsl(25 90% 50% / 0.2);
+}
+
+.theme-halloween .jac-gradient-bg {
+  background: linear-gradient(135deg, hsl(25 95% 55%) 0%, hsl(350 50% 30%) 50%, hsl(280 40% 20%) 100%);
+  box-shadow: 0 0 40px hsl(25 90% 50% / 0.4);
 }

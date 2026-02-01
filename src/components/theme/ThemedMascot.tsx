@@ -8,6 +8,7 @@ import ogMascotRight from "@/assets/og-mascot-right.png";
 import { StPatricksMascot } from './StPatricksMascot';
 import { MatrixMascot } from './MatrixMascot';
 import { VaporMascot } from './VaporMascot';
+import { HalloweenMascot } from './HalloweenMascot';
 
 interface ThemedMascotProps {
   side: 'left' | 'right';
@@ -20,6 +21,11 @@ export const ThemedMascot: React.FC<ThemedMascotProps> = ({ side, className = ''
   // For Matrix theme, show rabbit mascots
   if (theme === 'matrix') {
     return <MatrixMascot side={side} />;
+  }
+
+  // For Halloween theme, show spooky mascots
+  if (theme === 'halloween') {
+    return <HalloweenMascot side={side} />;
   }
 
   // For Vaporwave theme, show retro computer mascots
