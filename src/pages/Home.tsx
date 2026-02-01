@@ -565,7 +565,7 @@ const Home = () => {
           </div>
           
           {/* Full Chat Mirror - Takes up remaining space */}
-          <div className="flex-1 mx-3 my-3 overflow-hidden">
+          <div className="flex-1 min-h-0 mx-3 my-3 overflow-hidden">
             <LobbyMirrorRoom />
           </div>
         </main>
@@ -802,7 +802,7 @@ const Home = () => {
               </div>
 
               {/* Center - Public Chat Preview */}
-              <div className="flex-1 min-w-0 h-full">
+              <div className="flex-1 min-w-0 min-h-0 h-full overflow-hidden">
                 <LobbyMirrorRoom />
               </div>
             </div>
