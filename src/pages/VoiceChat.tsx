@@ -380,9 +380,7 @@ const VoiceChat = () => {
                       onPmClick={broadcaster.odious !== user.id ? () => openChat(broadcaster.odious, broadcaster.username) : undefined}
                       onSelfProfileUpdated={broadcaster.odious === user.id ? refreshProfile : undefined}
                     >
-                      <div 
-                        className="relative bg-gradient-to-br from-destructive/20 to-orange-500/20 rounded-xl p-4 border border-destructive/30 cursor-pointer hover:border-destructive/50 transition-colors"
-                      >
+                      <div className="relative bg-gradient-to-br from-destructive/20 to-orange-500/20 rounded-xl p-4 border border-destructive/30 cursor-pointer hover:border-destructive/50 transition-colors">
                         <div className="absolute -top-2 -right-2 z-10">
                           <Badge variant="destructive" className="text-[10px]">
                             <Volume2 className="w-3 h-3 mr-1 animate-pulse" />
@@ -397,14 +395,14 @@ const VoiceChat = () => {
                             <Avatar className="w-full h-full">
                               <AvatarImage src={broadcaster.avatarUrl || undefined} />
                               <AvatarFallback className="bg-gradient-to-br from-destructive to-orange-500 text-destructive-foreground text-lg">
-                                {broadcaster.username.charAt(0).toUpperCase()}
+                                {broadcaster.username?.charAt(0)?.toUpperCase() || '?'}
                               </AvatarFallback>
                             </Avatar>
                           </AudioVisualizerRing>
-                          <div className="text-center">
-                            <p className="font-medium text-sm w-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                              {broadcaster.username}
-                            </p>
+                          <div className="text-center w-full px-1">
+                            <span className="block font-medium text-sm text-foreground">
+                              {broadcaster.username || 'Unknown'}
+                            </span>
                             {getRoleBadge(broadcaster.odious)}
                           </div>
                         </div>
@@ -443,21 +441,21 @@ const VoiceChat = () => {
                       onPmClick={listener.odious !== user.id ? () => openChat(listener.odious, listener.username) : undefined}
                       onSelfProfileUpdated={listener.odious === user.id ? refreshProfile : undefined}
                     >
-                      <button 
-                        className="w-full flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-left group"
-                      >
-                        <Avatar className="w-8 h-8 shrink-0">
+                      <div className="w-full flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer group">
+                        <Avatar className="w-8 h-8 flex-shrink-0">
                           <AvatarImage src={listener.avatarUrl || undefined} />
                           <AvatarFallback className="text-xs bg-primary/20">
-                            {listener.username.charAt(0).toUpperCase()}
+                            {listener.username?.charAt(0)?.toUpperCase() || '?'}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap">{listener.username}</p>
+                        <div className="flex-1 overflow-hidden">
+                          <span className="block text-sm font-medium text-foreground truncate">
+                            {listener.username || 'Unknown'}
+                          </span>
                           {getRoleBadge(listener.odious)}
                         </div>
-                        <MoreVertical className="w-4 h-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
+                        <MoreVertical className="w-4 h-4 flex-shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                     </VideoUserMenu>
                   ))
                 )}
