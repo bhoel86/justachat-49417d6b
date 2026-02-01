@@ -62,6 +62,14 @@ const Auth = () => {
   const { toast } = useToast();
   const { theme } = useTheme();
 
+  // Theme detection - must be before hook calls
+  const isRetro = theme === 'retro80s';
+  const isJungle = theme === 'jungle';
+
+  // PNG cutout hooks - MUST be called unconditionally (before any early returns)
+  const jungleHeaderCutout = usePngCutout(isJungle ? jungleHeaderImg : undefined);
+  const retroHeaderCutout = usePngCutout(isRetro ? retroHeaderImg : undefined);
+
   const captchaRequired =
     mode === "signup" && CAPTCHA_REQUIRED_HOSTS.has(window.location.hostname);
 
@@ -637,15 +645,10 @@ const Auth = () => {
     );
   }
 
-  const isRetro = theme === 'retro80s';
+  // Additional theme flags (isRetro and isJungle defined above with hooks)
   const isValentines = theme === 'valentines';
   const isStPatricks = theme === 'stpatricks';
   const isMatrix = theme === 'matrix';
-  const isJungle = theme === 'jungle';
-
-  // The generated PNG sometimes bakes a checkerboard into the pixels; convert to true alpha cutout + trim.
-  const jungleHeaderCutout = usePngCutout(isJungle ? jungleHeaderImg : undefined);
-  const retroHeaderCutout = usePngCutout(isRetro ? retroHeaderImg : undefined);
 
   return (
     <div className={`min-h-screen bg-background flex flex-col items-center justify-center relative ${isRetro ? 'p-3' : 'p-6'}`}>
