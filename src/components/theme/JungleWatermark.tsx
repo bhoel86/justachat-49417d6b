@@ -1,7 +1,7 @@
 import { useTheme } from '@/contexts/ThemeContext';
 
 /**
- * Jungle Expedition watermark - tropical leaves and vines pattern
+ * Jungle Expedition watermark - Justachat™ with jungle styling
  * Only visible for the jungle theme
  */
 export const JungleWatermark = () => {
@@ -14,39 +14,39 @@ export const JungleWatermark = () => {
 
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
-      {/* Jungle styled watermark with tropical elements */}
+      {/* Jungle styled Justachat watermark */}
       <div 
-        className="text-center select-none opacity-[0.08]"
+        className="text-center select-none"
         style={{
-          transform: 'rotate(-15deg) scale(1.2)',
+          transform: 'rotate(-12deg)',
         }}
       >
-        {/* Large tropical leaves pattern */}
-        <div className="relative">
-          {/* Central leaf cluster */}
-          <div className="text-[120px] sm:text-[180px] leading-none text-jungle-primary">
-            🌿
-          </div>
-          {/* Surrounding leaves */}
-          <div className="absolute -top-8 -left-16 text-[60px] sm:text-[80px] rotate-[-30deg] text-jungle-secondary">
-            🍃
-          </div>
-          <div className="absolute -top-4 -right-16 text-[60px] sm:text-[80px] rotate-[30deg] text-jungle-secondary">
-            🍃
-          </div>
-          <div className="absolute -bottom-8 left-0 text-[50px] sm:text-[70px] rotate-[15deg] text-jungle-accent">
-            🌴
-          </div>
-          <div className="absolute -bottom-4 right-4 text-[40px] sm:text-[60px] rotate-[-10deg] text-jungle-accent">
-            🦜
-          </div>
-        </div>
-        {/* Expedition text */}
+        {/* Main title with jungle styling */}
         <div 
-          className="mt-4 text-lg sm:text-2xl font-bold tracking-[0.3em] uppercase text-jungle-primary"
+          className="text-[48px] sm:text-[72px] md:text-[96px] font-black tracking-tight"
+          style={{
+            fontFamily: "'Georgia', serif",
+            color: 'hsl(var(--primary))',
+            opacity: 0.12,
+            textShadow: '4px 4px 0 rgba(0,0,0,0.05)',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          Justachat
+          <span 
+            className="text-[24px] sm:text-[36px] md:text-[48px] align-super"
+            style={{ fontFamily: 'inherit' }}
+          >
+            ™
+          </span>
+        </div>
+        {/* Expedition subtitle */}
+        <div 
+          className="text-[14px] sm:text-[18px] md:text-[24px] font-bold tracking-[0.4em] uppercase mt-1"
           style={{
             fontFamily: "'Courier New', monospace",
-            textShadow: '2px 2px 0 rgba(0,0,0,0.1)',
+            color: 'hsl(var(--accent))',
+            opacity: 0.10,
           }}
         >
           EXPEDITION
