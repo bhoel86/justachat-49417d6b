@@ -669,6 +669,90 @@ const Auth = () => {
 
       {/* Retro banner removed - content below now visible */}
 
+      {/* Memphis geometric background for retro theme */}
+      {isRetro && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Large pink triangle - top left */}
+          <div 
+            className="absolute -top-10 -left-10 w-0 h-0"
+            style={{
+              borderLeft: '120px solid transparent',
+              borderRight: '120px solid transparent',
+              borderBottom: '200px solid hsl(330 90% 55%)',
+              transform: 'rotate(-15deg)',
+              opacity: 0.7,
+            }}
+          />
+          {/* Cyan circle - top right */}
+          <div 
+            className="absolute top-20 -right-16 w-48 h-48 rounded-full"
+            style={{
+              background: 'hsl(185 90% 50%)',
+              border: '4px solid hsl(0 0% 0%)',
+              opacity: 0.6,
+            }}
+          />
+          {/* Yellow triangle - bottom right */}
+          <div 
+            className="absolute -bottom-5 -right-5 w-0 h-0"
+            style={{
+              borderLeft: '150px solid transparent',
+              borderRight: '150px solid transparent',
+              borderTop: '180px solid hsl(50 100% 55%)',
+              transform: 'rotate(20deg)',
+              opacity: 0.7,
+            }}
+          />
+          {/* Purple circle - bottom left */}
+          <div 
+            className="absolute -bottom-20 -left-20 w-56 h-56 rounded-full"
+            style={{
+              background: 'hsl(270 50% 60%)',
+              border: '4px solid hsl(0 0% 0%)',
+              opacity: 0.5,
+            }}
+          />
+          {/* Small cyan triangle - mid left */}
+          <div 
+            className="absolute top-1/2 -left-8 w-0 h-0"
+            style={{
+              borderLeft: '60px solid transparent',
+              borderRight: '60px solid transparent',
+              borderBottom: '100px solid hsl(185 90% 50%)',
+              transform: 'rotate(25deg)',
+              opacity: 0.5,
+            }}
+          />
+          {/* Pink circle - mid right */}
+          <div 
+            className="absolute top-1/3 right-10 w-24 h-24 rounded-full"
+            style={{
+              background: 'hsl(330 90% 60%)',
+              border: '3px solid hsl(0 0% 0%)',
+              opacity: 0.4,
+            }}
+          />
+          {/* Yellow zigzag stripe - top */}
+          <div 
+            className="absolute top-32 left-1/4 w-32 h-6"
+            style={{
+              background: 'repeating-linear-gradient(90deg, hsl(50 100% 55%) 0px, hsl(50 100% 55%) 12px, transparent 12px, transparent 24px)',
+              transform: 'rotate(-10deg)',
+              opacity: 0.7,
+            }}
+          />
+          {/* Dotted pattern - scattered */}
+          <div 
+            className="absolute top-40 right-1/4 w-20 h-20"
+            style={{
+              backgroundImage: 'radial-gradient(circle, hsl(0 0% 0%) 3px, transparent 3px)',
+              backgroundSize: '12px 12px',
+              opacity: 0.3,
+            }}
+          />
+        </div>
+      )}
+
       {/* Animated background - for non-retro themes */}
       {!isRetro && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
