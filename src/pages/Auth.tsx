@@ -658,16 +658,7 @@ const Auth = () => {
       {/* Matrix falling code */}
       <MatrixFloatingCode />
 
-      {/* Full-width header banner - ONLY for retro theme */}
-      {isRetro && (
-        <div className="absolute top-8 left-0 right-0 z-20 flex justify-center px-4">
-          <img 
-            src={headerImg} 
-            alt="Justachat - Connect Instantly, Chat Freely" 
-            className="h-auto w-full max-w-lg sm:max-w-xl md:max-w-2xl"
-          />
-        </div>
-      )}
+      {/* Retro banner removed - content below now visible */}
 
       {/* Animated background - for non-retro themes */}
       {!isRetro && (
@@ -677,7 +668,7 @@ const Auth = () => {
         </div>
       )}
 
-      <div className={`relative z-10 w-full max-w-md animate-slide-up ${isRetro ? 'mt-32 sm:mt-40' : ''}`}>
+      <div className="relative z-10 w-full max-w-md animate-slide-up">
         {/* Big Justachat™ Header - For all themes except Retro (which uses image banner) */}
         {!isRetro && (
           <div className="flex flex-col items-center mb-1">
