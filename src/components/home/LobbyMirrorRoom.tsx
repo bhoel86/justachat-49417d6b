@@ -39,9 +39,9 @@ const LobbyMirrorRoom = () => {
   const lastActivityRef = useRef<number>(Date.now());
   const pendingRef = useRef<boolean>(false);
 
-  // Get simulated bot users for member list
+  // Get simulated bot users for member list - use sim- prefix to match MemberList's expected format
   const simulatedBots = useMemo(() => getBotsForChannel('general'), []);
-  const onlineUserIds = useMemo(() => new Set(simulatedBots.map(b => `bot-${b.id}`)), [simulatedBots]);
+  const onlineUserIds = useMemo(() => new Set(simulatedBots.map(b => `sim-${b.id}`)), [simulatedBots]);
 
   // Add a message to the mirror
   const addMirrorMessage = useCallback((username: string, content: string, avatarUrl?: string | null) => {
@@ -286,12 +286,11 @@ const LobbyMirrorRoom = () => {
         </div>
       </div>
 
-      {/* Member Sidebar - Hidden on mobile unless toggled, wider for lobby */}
+      {/* Member Sidebar - Hidden on mobile unless toggled */}
       <div 
         className={cn(
           "fixed lg:relative inset-y-0 right-0 z-40 transition-transform duration-300 lg:transition-none shrink-0",
-          showMemberSidebar ? "translate-x-0" : "translate-x-full lg:translate-x-0",
-          "[&>div]:!w-52 [&>div]:sm:!w-56"
+          showMemberSidebar ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
         onClick={(e) => e.stopPropagation()}
       >

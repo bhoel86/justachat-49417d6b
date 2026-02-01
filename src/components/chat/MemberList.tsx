@@ -892,7 +892,7 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
   return (
     <div 
       className={cn(
-        "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group min-w-0",
+        "flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors group min-w-0 relative",
         "hover:bg-secondary/50"
       )}
     >
@@ -971,9 +971,9 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
         )}
       </div>
 
-      {/* Action & PM buttons */}
+      {/* Action & PM buttons - absolute positioned to not affect layout */}
       {!isCurrentUser && (
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90 rounded-lg px-1">
           {/* Fun Actions Menu */}
           {onAction && (
             <DropdownMenu>
