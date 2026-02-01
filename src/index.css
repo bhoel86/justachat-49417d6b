@@ -808,6 +808,229 @@
     font-weight: bold;
     cursor: pointer;
   }
+
+  /* ============================================
+     RETRO 80s MEMPHIS LOGIN CONTAINER
+     ============================================ */
+  .retro-login-container {
+    position: relative;
+    background: linear-gradient(
+      135deg,
+      hsl(50 100% 65%) 0%,
+      hsl(50 100% 60%) 50%,
+      hsl(55 100% 65%) 100%
+    );
+    border: 4px solid hsl(0 0% 0%);
+    box-shadow: 
+      6px 6px 0px hsl(0 0% 0%),
+      inset 0 0 0 3px hsl(330 90% 55%);
+    padding: 20px;
+    padding-top: 16px;
+  }
+
+  .retro-login-container::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    border: 2px dashed hsl(185 90% 45%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .retro-login-container > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .retro-login-title {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: hsl(330 90% 40%);
+    text-shadow: 2px 2px 0px hsl(185 90% 50%);
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  /* Memphis zigzag side decorations */
+  .retro-zigzag-left {
+    background: repeating-linear-gradient(
+      0deg,
+      hsl(330 90% 55%) 0px,
+      hsl(330 90% 55%) 4px,
+      hsl(185 90% 50%) 4px,
+      hsl(185 90% 50%) 8px
+    );
+    border: 2px solid hsl(0 0% 0%);
+  }
+
+  .retro-zigzag-right {
+    background: repeating-linear-gradient(
+      0deg,
+      hsl(185 90% 50%) 0px,
+      hsl(185 90% 50%) 4px,
+      hsl(330 90% 55%) 4px,
+      hsl(330 90% 55%) 8px
+    );
+    border: 2px solid hsl(0 0% 0%);
+  }
+
+  /* Retro login input styling */
+  .retro-login-container input {
+    font-family: 'VT323', monospace !important;
+    font-size: 1.25rem;
+    text-align: center;
+    background: hsl(0 0% 100%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+    color: hsl(0 0% 10%);
+    padding-left: 44px;
+  }
+
+  .retro-login-container input::placeholder {
+    font-family: 'VT323', monospace !important;
+    color: hsl(0 0% 50%);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .retro-login-container input:focus {
+    outline: none;
+    border-color: hsl(330 90% 55%) !important;
+    box-shadow: 3px 3px 0px hsl(330 90% 55%), 0 0 0 2px hsl(185 90% 50%) !important;
+  }
+
+  /* Retro login button styling */
+  .retro-login-container button[type="submit"] {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    background: linear-gradient(
+      180deg,
+      hsl(330 90% 60%) 0%,
+      hsl(330 90% 50%) 100%
+    ) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 4px 4px 0px hsl(0 0% 0%) !important;
+    color: hsl(0 0% 100%) !important;
+    transition: transform 0.1s, box-shadow 0.1s !important;
+  }
+
+  .retro-login-container button[type="submit"]:hover:not(:disabled) {
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 6px 6px 0px hsl(0 0% 0%) !important;
+  }
+
+  .retro-login-container button[type="submit"]:active:not(:disabled) {
+    transform: translate(2px, 2px) !important;
+    box-shadow: 2px 2px 0px hsl(0 0% 0%) !important;
+  }
+
+  /* Google button in retro container */
+  .retro-login-container button.gap-2 {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.5rem;
+    text-transform: uppercase;
+    background: hsl(185 90% 50%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+    color: hsl(0 0% 0%) !important;
+    transition: transform 0.1s, box-shadow 0.1s !important;
+  }
+
+  .retro-login-container button.gap-2:hover:not(:disabled) {
+    background: hsl(50 100% 55%) !important;
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 5px 5px 0px hsl(0 0% 0%) !important;
+  }
+
+  /* Retro login links */
+  .retro-login-container a,
+  .retro-login-container button[type="button"]:not(.gap-2) {
+    font-family: 'VT323', monospace !important;
+    color: hsl(330 90% 40%) !important;
+    text-decoration: underline;
+    font-size: 1.1rem;
+  }
+
+  .retro-login-container a:hover,
+  .retro-login-container button[type="button"]:not(.gap-2):hover {
+    color: hsl(185 90% 35%) !important;
+  }
+
+  /* Retro checkbox styling */
+  .retro-login-container input[type="checkbox"] {
+    appearance: none;
+    width: 18px !important;
+    height: 18px !important;
+    background: hsl(0 0% 100%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 2px 2px 0px hsl(0 0% 0%) !important;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .retro-login-container input[type="checkbox"]:checked {
+    background: hsl(185 90% 50%) !important;
+  }
+
+  .retro-login-container input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5rem;
+    color: hsl(0 0% 0%);
+  }
+
+  /* Retro error text */
+  .retro-login-container .text-destructive {
+    font-family: 'VT323', monospace !important;
+    font-size: 1rem;
+    color: hsl(0 80% 45%) !important;
+    text-shadow: 1px 1px 0px hsl(0 0% 0%);
+  }
+
+  /* Retro muted text */
+  .retro-login-container .text-muted-foreground {
+    font-family: 'VT323', monospace !important;
+    font-size: 1rem;
+    color: hsl(0 0% 30%) !important;
+  }
+
+  /* Retro label text */
+  .retro-login-container label span {
+    font-family: 'VT323', monospace !important;
+    font-size: 1rem;
+  }
+
+  /* Retro input icons */
+  .retro-login-container .relative svg {
+    color: hsl(330 90% 45%) !important;
+    z-index: 2;
+  }
+
+  /* Retro alert boxes */
+  .retro-login-container .border-amber-500\/30 {
+    border: 3px solid hsl(45 100% 45%) !important;
+    background: hsl(50 100% 85%) !important;
+    border-radius: 0 !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+  }
+
+  .retro-login-container .text-amber-500 {
+    color: hsl(25 100% 35%) !important;
+    font-family: 'VT323', monospace !important;
+  }
 }
 
 @layer utilities {

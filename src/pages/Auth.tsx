@@ -746,8 +746,22 @@ const Auth = () => {
             )}
           </div>
         )}
-        {/* Form Card - Compact for retro */}
-        <div className={`bg-card rounded-2xl border border-border shadow-xl ${isRetro ? 'p-2 pt-1' : 'p-6'}`}>
+        {/* Form Card - Memphis style for retro, standard for others */}
+        <div className={`relative ${isRetro ? 'retro-login-container' : 'bg-card rounded-2xl border border-border shadow-xl p-6'}`}>
+          {/* Memphis geometric decorations for retro theme */}
+          {isRetro && (
+            <>
+              {/* Corner triangles */}
+              <div className="absolute -top-2 -left-2 w-0 h-0 border-l-[20px] border-l-transparent border-b-[20px] border-b-[hsl(185,90%,50%)] z-10" />
+              <div className="absolute -top-2 -right-2 w-0 h-0 border-r-[20px] border-r-transparent border-b-[20px] border-b-[hsl(50,100%,55%)] z-10" />
+              <div className="absolute -bottom-2 -left-2 w-0 h-0 border-l-[20px] border-l-transparent border-t-[20px] border-t-[hsl(50,100%,55%)] z-10" />
+              <div className="absolute -bottom-2 -right-2 w-0 h-0 border-r-[20px] border-r-transparent border-t-[20px] border-t-[hsl(185,90%,50%)] z-10" />
+              {/* Side zigzag decorations */}
+              <div className="absolute top-1/2 -left-3 -translate-y-1/2 w-3 h-16 retro-zigzag-left" />
+              <div className="absolute top-1/2 -right-3 -translate-y-1/2 w-3 h-16 retro-zigzag-right" />
+            </>
+          )}
+          
           {/* Back button for forgot/reset modes */}
           {(mode === "forgot" || mode === "reset") && (
             <button
@@ -757,18 +771,18 @@ const Auth = () => {
                 setResetEmailSent(false);
                 setErrors({});
               }}
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4"
+              className={`flex items-center gap-1 text-sm transition-colors mb-4 ${isRetro ? 'text-foreground hover:text-accent font-["VT323"] text-base' : 'text-muted-foreground hover:text-primary'}`}
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to login
+              {isRetro ? '< BACK' : 'Back to login'}
             </button>
           )}
           
-          <h2 className={`font-semibold text-foreground text-center ${isRetro ? 'text-xs mb-1 font-["Press_Start_2P"] uppercase tracking-wide' : 'mb-1'} ${isMatrix ? 'text-2xl font-mono tracking-wide' : 'text-xl'}`}>
-            {mode === "login" && (isMatrix ? "[ AUTHENTICATE ]" : isRetro ? "LOG IN" : "Welcome back")}
-            {mode === "signup" && (isMatrix ? "[ NEW USER ]" : isRetro ? "SIGN UP" : "Create account")}
-            {mode === "forgot" && (isMatrix ? "[ RECOVERY ]" : isRetro ? "RESET" : "Reset password")}
-            {mode === "reset" && (isMatrix ? "[ NEW CREDENTIALS ]" : isRetro ? "NEW PASS" : "Set new password")}
+          <h2 className={`font-semibold text-center ${isRetro ? 'retro-login-title' : 'text-foreground mb-1'} ${isMatrix ? 'text-2xl font-mono tracking-wide' : isRetro ? '' : 'text-xl'}`}>
+            {mode === "login" && (isMatrix ? "[ AUTHENTICATE ]" : isRetro ? "★ LOG IN ★" : "Welcome back")}
+            {mode === "signup" && (isMatrix ? "[ NEW USER ]" : isRetro ? "★ SIGN UP ★" : "Create account")}
+            {mode === "forgot" && (isMatrix ? "[ RECOVERY ]" : isRetro ? "★ RESET ★" : "Reset password")}
+            {mode === "reset" && (isMatrix ? "[ NEW CREDENTIALS ]" : isRetro ? "★ NEW PASS ★" : "Set new password")}
           </h2>
           {!isRetro && (
             <p className={`text-muted-foreground text-center mb-6 ${isMatrix ? 'text-base font-mono' : 'text-sm'}`}>
@@ -776,6 +790,14 @@ const Auth = () => {
               {mode === "signup" && (isMatrix ? "Initialize your identity" : "Join the conversation")}
               {mode === "forgot" && (isMatrix ? "Request access recovery" : "Enter your email to receive a reset link")}
               {mode === "reset" && (isMatrix ? "Establish new access codes" : "Enter your new password below")}
+            </p>
+          )}
+          {isRetro && (
+            <p className="text-center text-foreground font-['VT323'] text-lg mb-3 tracking-wide">
+              {mode === "login" && "ENTER YOUR CREDENTIALS"}
+              {mode === "signup" && "JOIN THE PARTY!"}
+              {mode === "forgot" && "ENTER EMAIL FOR RESET"}
+              {mode === "reset" && "SET NEW PASSWORD"}
             </p>
           )}
 
@@ -826,7 +848,7 @@ const Auth = () => {
               )}
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className={`${isRetro ? 'space-y-2' : 'space-y-4'}`}>
+            <form onSubmit={handleSubmit} className={`${isRetro ? 'space-y-3' : 'space-y-4'}`}>
               {mode === "signup" && (
               <div>
                 <div className="relative">
