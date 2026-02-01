@@ -52,6 +52,7 @@ import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIc
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { useTheme } from "@/contexts/ThemeContext";
+import FriendsTray from "@/components/friends/FriendsTray";
 
 interface Channel {
   id: string;
@@ -925,6 +926,14 @@ const Home = () => {
       
       {/* PayPal Donate Modal */}
       <PayPalDonateModal open={showDonateModal} onOpenChange={setShowDonateModal} />
+      
+      {/* Friends Tray - floating minimizable friends list */}
+      {user && (
+        <FriendsTray
+          currentUserId={user.id}
+          onOpenPm={(userId, username) => navigate(`/chat/general?pm=${userId}`)}
+        />
+      )}
     </div>
   );
 };
