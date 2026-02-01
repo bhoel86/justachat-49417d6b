@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
   const [role, setRole] = useState<AppRole | null>(null);
   const [isMinor, setIsMinor] = useState(false);
   const [hasParentConsent, setHasParentConsent] = useState(true);
@@ -41,6 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAdmin = role === 'admin' || role === 'owner';
   const isOwner = role === 'owner';
   const isModerator = role === 'moderator' || role === 'admin' || role === 'owner';
+  
+  // Show loading screen during initial load OR during signout transition
+  const isLoading = loading || signingOut;
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -126,6 +130,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Logout from chat function - call this when leaving chat room
   const logoutFromChat = async () => {
+    // Set signing out state to show loading screen during transition
+    setSigningOut(true);
+    
     // Best-effort sign-out; if it fails, still clear local storage to prevent re-login.
     try {
       await supabase.auth.signOut({ scope: 'local' });
@@ -208,6 +215,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Set signing out state to show loading screen during transition
+    setSigningOut(true);
+    
     // Best-effort sign-out; if it fails, still clear local storage to prevent re-login.
     try {
       await supabase.auth.signOut({ scope: 'local' });
@@ -224,7 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isOwner, isModerator, role, isMinor, hasParentConsent, signUp, signIn, signOut, logoutFromChat, refreshRole }}>
+    <AuthContext.Provider value={{ user, session, loading: isLoading, isAdmin, isOwner, isModerator, role, isMinor, hasParentConsent, signUp, signIn, signOut, logoutFromChat, refreshRole }}>
       {children}
     </AuthContext.Provider>
   );
