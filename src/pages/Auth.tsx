@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { clearAuthStorage } from "@/lib/authStorage";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
+import { LoginThemeSelector } from "@/components/theme/LoginThemeSelector";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
@@ -642,12 +643,8 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
-      {/* Theme selector in top right */}
-      <div className="absolute top-4 right-4 z-30">
-        <div className="bg-card/80 backdrop-blur-sm rounded-lg border border-border p-1">
-          <ThemeSelector />
-        </div>
-      </div>
+      {/* Theme selector - only visible in Lovable preview */}
+      <LoginThemeSelector />
 
       {/* Retro floating icons for 80s theme */}
       <RetroFloatingIcons />
