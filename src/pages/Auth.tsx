@@ -744,7 +744,7 @@ const Auth = () => {
           </div>
         )}
         {/* Form Card - Compact for retro */}
-        <div className={`bg-card rounded-2xl border border-border shadow-xl ${isRetro ? 'p-2' : 'p-6'}`}>
+        <div className={`bg-card rounded-2xl border border-border shadow-xl ${isRetro ? 'p-2 pt-1' : 'p-6'}`}>
           {/* Back button for forgot/reset modes */}
           {(mode === "forgot" || mode === "reset") && (
             <button
