@@ -100,8 +100,8 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
           <div>
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-0.5">
-                <Hash className={cn("h-3.5 w-3.5", effectiveTextColor)} />
-                <h1 className={cn("font-display font-bold text-sm", effectiveTextColor)}>{channelName}</h1>
+                <Hash className={cn("h-3.5 w-3.5", effectiveTextColor, siteTheme === 'retro80s' && 'text-cyan-400')} />
+                <h1 className={cn("font-display font-bold text-sm", effectiveTextColor, siteTheme === 'retro80s' && 'text-cyan-400')}>{channelName}</h1>
               </div>
               {getRoleBadge()}
             </div>

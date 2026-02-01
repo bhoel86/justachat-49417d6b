@@ -654,7 +654,7 @@ const Home = () => {
                             >
                               {/* Background - theme aware */}
                               {isRetro ? (
-                                <div className="absolute inset-0 bg-gradient-to-r from-green-900/50 to-cyan-900/50 group-hover:from-green-800/60 group-hover:to-cyan-800/60 transition-all" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-pink-600/50 to-cyan-500/50 group-hover:from-pink-500/60 group-hover:to-cyan-400/60 transition-all" />
                               ) : isValentines ? (
                                 <>
                                   <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-rose-400 to-pink-500 opacity-40 group-hover:opacity-60 transition-opacity" />
@@ -677,7 +677,7 @@ const Home = () => {
                               <div className="relative h-full flex items-center justify-between px-2">
                                 <h3 className={`truncate ${
                                   isRetro 
-                                    ? 'font-mono font-bold text-xs sm:text-sm text-primary uppercase tracking-wider' 
+                                    ? 'font-mono font-bold text-xs sm:text-sm text-cyan-300 uppercase tracking-wider drop-shadow-[1px_1px_0px_rgba(0,0,0,0.8)]' 
                                     : isValentines
                                       ? 'font-semibold text-xs sm:text-sm text-white drop-shadow-[0_1px_2px_rgba(236,72,153,0.8)]'
                                       : 'font-semibold text-xs sm:text-sm text-white drop-shadow-lg'
@@ -686,7 +686,7 @@ const Home = () => {
                                 </h3>
                                 <span className={`text-xs font-medium shrink-0 ml-1 ${
                                   isRetro 
-                                    ? 'text-primary/80 font-mono' 
+                                    ? 'text-yellow-300 font-mono drop-shadow-[1px_1px_0px_rgba(0,0,0,0.8)]' 
                                     : isValentines 
                                       ? 'text-pink-200'
                                       : 'text-white/90'

@@ -65,7 +65,7 @@
     --theme-window-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   }
 
-  /* 80s Retro Windows Theme */
+  /* 80s Retro Windows Theme - Memphis Design Hot Pink/Cyan/Yellow */
   .theme-retro80s {
     --background: 330 70% 75%;
     --foreground: 0 0% 10%;
@@ -76,8 +76,9 @@
     --popover: 50 80% 70%;
     --popover-foreground: 0 0% 10%;
 
-    --primary: 175 70% 50%;
-    --primary-foreground: 0 0% 10%;
+    /* Hot Pink/Magenta as primary - matches Memphis logo */
+    --primary: 330 90% 55%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 270 50% 65%;
     --secondary-foreground: 0 0% 10%;
@@ -85,7 +86,8 @@
     --muted: 330 50% 80%;
     --muted-foreground: 0 0% 30%;
 
-    --accent: 50 90% 60%;
+    /* Cyan as accent - matches logo accents */
+    --accent: 185 90% 50%;
     --accent-foreground: 0 0% 10%;
 
     --destructive: 0 70% 55%;
@@ -93,24 +95,24 @@
 
     --border: 0 0% 10%;
     --input: 0 0% 95%;
-    --ring: 175 70% 50%;
+    --ring: 330 90% 55%;
 
     --radius: 0;
 
-    /* Custom retro variables */
-    --jac-gradient: linear-gradient(180deg, hsl(175 70% 50%) 0%, hsl(175 70% 40%) 100%);
+    /* Custom retro variables - hot pink to cyan gradient */
+    --jac-gradient: linear-gradient(135deg, hsl(330 90% 55%) 0%, hsl(185 90% 50%) 100%);
     --jac-glow: 3px 3px 0px hsl(0 0% 0%);
-    --jac-bubble-user: 270 50% 65%;
+    --jac-bubble-user: 330 70% 60%;
     --jac-bubble-other: 50 80% 70%;
 
     --sidebar-background: 270 50% 60%;
     --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 175 70% 50%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 50 90% 60%;
+    --sidebar-primary: 330 90% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 185 90% 50%;
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 10%;
-    --sidebar-ring: 175 70% 50%;
+    --sidebar-ring: 330 90% 55%;
 
     /* Theme-specific */
     --theme-font-body: 'VT323', monospace;

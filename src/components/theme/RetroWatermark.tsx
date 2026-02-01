@@ -20,8 +20,8 @@ export const RetroWatermark: React.FC = () => {
           className="font-display text-6xl sm:text-7xl md:text-8xl font-black tracking-tight"
           style={{
             color: 'transparent',
-            WebkitTextStroke: '2px hsl(var(--accent))',
-            textShadow: '4px 4px 0 hsl(var(--primary) / 0.3)',
+            WebkitTextStroke: '2px hsl(185 90% 50%)',
+            textShadow: '4px 4px 0 hsl(330 90% 55% / 0.3)',
           }}
         >
           JUSTACHAT
@@ -29,7 +29,7 @@ export const RetroWatermark: React.FC = () => {
         <div 
           className="font-display text-2xl sm:text-3xl font-bold mt-2 tracking-widest"
           style={{
-            color: 'hsl(var(--accent))',
+            color: 'hsl(50 100% 60%)',
           }}
         >
           ★ 80s VIBES ★
