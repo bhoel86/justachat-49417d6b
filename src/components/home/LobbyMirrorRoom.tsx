@@ -221,7 +221,7 @@ const LobbyMirrorRoom = () => {
         </div>
         
         {/* Messages Area */}
-        <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate z-10">
+        <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate z-10 pointer-events-none">
           {/* Transparent logo watermark - theme aware */}
           <ChatWatermark />
           
@@ -231,8 +231,8 @@ const LobbyMirrorRoom = () => {
               <p className="text-sm mt-2">Click to join #general and start chatting!</p>
             </div>
           ) : (
-            <div className="mt-auto space-y-2 sm:space-y-3 overflow-hidden">
-              {messages.slice(-6).map((msg) => (
+            <div className="mt-auto space-y-2 sm:space-y-3">
+              {messages.slice(-4).map((msg) => (
                 <MessageBubble
                   key={msg.id}
                   id={msg.id}
