@@ -603,14 +603,20 @@
   /* Retro compact inputs for login */
   .theme-retro80s input,
   .theme-retro80s textarea {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
-    font-size: 0.875rem !important;
+    padding-top: 0.375rem !important;
+    padding-bottom: 0.375rem !important;
+    font-size: 0.8rem !important;
   }
 
   .theme-retro80s button {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+    padding-top: 0.375rem !important;
+    padding-bottom: 0.375rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Hide icons in retro inputs to save space */
+  .theme-retro80s input {
+    padding-left: 0.75rem !important;
   }
 
   /* Valentine's theme specific overrides */
