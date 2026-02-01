@@ -191,6 +191,72 @@ export const ThemedMascot: React.FC<ThemedMascotProps> = ({ side, className = ''
     );
   }
 
+  // For Jungle theme, show jungle animal mascots
+  if (theme === 'jungle') {
+    return (
+      <div className={`h-14 sm:h-16 flex items-center justify-center ${className}`}>
+        <div className="relative">
+          {side === 'left' ? (
+            // Left side: Toucan bird
+            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+              {/* Body */}
+              <ellipse cx="26" cy="32" rx="12" ry="14" fill="hsl(0 0% 10%)" />
+              {/* White chest */}
+              <ellipse cx="26" cy="36" rx="7" ry="9" fill="hsl(45 80% 95%)" />
+              {/* Head */}
+              <circle cx="26" cy="18" r="10" fill="hsl(0 0% 10%)" />
+              {/* Eye area white */}
+              <circle cx="30" cy="16" r="4" fill="white" />
+              {/* Eye */}
+              <circle cx="31" cy="16" r="2" fill="hsl(200 80% 30%)" />
+              <circle cx="31.5" cy="15.5" r="0.8" fill="white" />
+              {/* Giant beak */}
+              <path d="M34 18 Q50 15 48 22 Q46 28 34 24 Z" fill="hsl(35 95% 55%)" />
+              <path d="M34 18 Q50 15 48 22" stroke="hsl(15 90% 45%)" strokeWidth="2" fill="none" />
+              <path d="M36 20 Q44 18 43 22" fill="hsl(50 95% 60%)" />
+              {/* Beak tip black */}
+              <circle cx="47" cy="21" r="2" fill="hsl(0 0% 10%)" />
+              {/* Feet */}
+              <path d="M22 44 L18 50 M24 44 L22 50 M26 44 L26 50" stroke="hsl(35 60% 40%)" strokeWidth="2" strokeLinecap="round" />
+              <path d="M30 44 L30 50 M28 44 L26 50 M32 44 L34 50" stroke="hsl(35 60% 40%)" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          ) : (
+            // Right side: Monkey
+            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+              {/* Tail */}
+              <path d="M38 35 Q48 30 46 20 Q44 12 38 15" stroke="hsl(25 50% 35%)" strokeWidth="4" fill="none" strokeLinecap="round" />
+              {/* Body */}
+              <ellipse cx="26" cy="35" rx="10" ry="12" fill="hsl(25 50% 35%)" />
+              {/* Belly */}
+              <ellipse cx="26" cy="38" rx="6" ry="7" fill="hsl(30 60% 75%)" />
+              {/* Head */}
+              <circle cx="26" cy="18" r="11" fill="hsl(25 50% 35%)" />
+              {/* Face */}
+              <ellipse cx="26" cy="20" rx="8" ry="7" fill="hsl(30 60% 75%)" />
+              {/* Ears */}
+              <circle cx="14" cy="16" r="5" fill="hsl(25 50% 35%)" />
+              <circle cx="14" cy="16" r="3" fill="hsl(30 60% 75%)" />
+              <circle cx="38" cy="16" r="5" fill="hsl(25 50% 35%)" />
+              <circle cx="38" cy="16" r="3" fill="hsl(30 60% 75%)" />
+              {/* Eyes */}
+              <circle cx="22" cy="17" r="3" fill="white" />
+              <circle cx="30" cy="17" r="3" fill="white" />
+              <circle cx="22" cy="17" r="1.5" fill="hsl(25 80% 15%)" />
+              <circle cx="30" cy="17" r="1.5" fill="hsl(25 80% 15%)" />
+              {/* Nose */}
+              <ellipse cx="26" cy="22" rx="2" ry="1.5" fill="hsl(25 40% 25%)" />
+              {/* Smile */}
+              <path d="M22 25 Q26 28 30 25" stroke="hsl(25 40% 25%)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+              {/* Arms */}
+              <path d="M16 32 L10 38" stroke="hsl(25 50% 35%)" strokeWidth="4" strokeLinecap="round" />
+              <path d="M36 32 L42 38" stroke="hsl(25 50% 35%)" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // Default fallback
   return (
     <img 
