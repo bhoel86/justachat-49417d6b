@@ -6,6 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Palette, Monitor, Heart, Terminal, Check, Circle, MonitorSmartphone } from 'lucide-react';
 
 // Theme-specific icon component
@@ -79,31 +80,33 @@ export const LoginThemeSelector: React.FC = () => {
         <div className="text-sm font-semibold text-muted-foreground mb-2 px-2">
           Preview Theme
         </div>
-        <div className="space-y-1">
-          {themes.map((t) => {
-            const isActive = theme === t.id;
-            return (
-              <div
-                key={t.id}
-                className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${
-                  isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-accent'
-                }`}
-                onClick={() => handlePreviewTheme(t.id)}
-              >
-                <div className="flex items-center gap-2">
-                  <ThemeIcon theme={t.id} className="h-4 w-4" />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm">{t.name}</span>
-                    <span className="text-xs text-muted-foreground">{t.description}</span>
+        <ScrollArea className="h-[300px]">
+          <div className="space-y-1 pr-3">
+            {themes.map((t) => {
+              const isActive = theme === t.id;
+              return (
+                <div
+                  key={t.id}
+                  className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${
+                    isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-accent'
+                  }`}
+                  onClick={() => handlePreviewTheme(t.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    <ThemeIcon theme={t.id} className="h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm">{t.name}</span>
+                      <span className="text-xs text-muted-foreground">{t.description}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isActive && <Check className="h-4 w-4 text-primary" />}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {isActive && <Check className="h-4 w-4 text-primary" />}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
         <div className="text-xs text-muted-foreground mt-3 px-2 border-t pt-2">
           Theme preview (local only)
         </div>
