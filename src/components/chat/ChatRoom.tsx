@@ -19,6 +19,7 @@ import PrivateChatWindow from "./PrivateChatWindow";
 import BotChatWindow from "./BotChatWindow";
 import PMTray from "./PMTray";
 import BotTray from "./BotTray";
+import FriendsTray from "@/components/friends/FriendsTray";
 import { usePrivateChats } from "@/hooks/usePrivateChats";
 import { useBotChats } from "@/hooks/useBotChats";
 import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
@@ -1471,6 +1472,14 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         onRestore={(chatId) => botChats.restoreChat(chatId)}
         onClose={(chatId) => botChats.closeChat(chatId)}
       />
+
+      {/* Friends Tray - floating minimizable friends list */}
+      {user && (
+        <FriendsTray
+          currentUserId={user.id}
+          onOpenPm={handleOpenPm}
+        />
+      )}
 
       {/* Room Invite Popup */}
       {user && (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, UserPlus, UserX, MessageCircle, Ban, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +10,10 @@ import { cn } from '@/lib/utils';
 interface FriendsListProps {
   currentUserId: string;
   onOpenPm: (userId: string, username: string) => void;
+  onCountsChange?: (counts: { total: number; online: number; pending: number }) => void;
 }
 
-const FriendsList = ({ currentUserId, onOpenPm }: FriendsListProps) => {
+const FriendsList = ({ currentUserId, onOpenPm, onCountsChange }: FriendsListProps) => {
   const {
     friends,
     incomingRequests,
@@ -41,6 +42,15 @@ const FriendsList = ({ currentUserId, onOpenPm }: FriendsListProps) => {
 
   const onlineFriendsCount = friends.filter(f => onlineFriendIds.has(f.friendId)).length;
   const pendingCount = incomingRequests.length;
+
+  // Report counts to parent component
+  useEffect(() => {
+    onCountsChange?.({
+      total: friends.length,
+      online: onlineFriendsCount,
+      pending: pendingCount,
+    });
+  }, [friends.length, onlineFriendsCount, pendingCount, onCountsChange]);
 
   if (loading) {
     return (

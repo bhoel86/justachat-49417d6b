@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe, Eye, EyeOff, Zap, Lock, ServerCrash, UserPlus } from "lucide-react";
+import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe, Eye, EyeOff, Zap, Lock, ServerCrash } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getBotsForChannel } from "@/lib/chatBots";
@@ -22,7 +22,7 @@ import UserAvatar from "@/components/avatar/UserAvatar";
 import ProfileEditModal from "@/components/profile/ProfileEditModal";
 import ProfileViewModal from "@/components/profile/ProfileViewModal";
 import { useRadioOptional } from "@/contexts/RadioContext";
-import FriendsList from "@/components/friends/FriendsList";
+
 
 interface Member {
   user_id: string;
@@ -96,10 +96,7 @@ const roleConfig = {
   },
 };
 
-type SidebarTab = 'members' | 'friends';
-
 const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', onOpenPm, onOpenBotPm, onAction }: MemberListProps) => {
-  const [activeTab, setActiveTab] = useState<SidebarTab>('members');
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
@@ -464,37 +461,14 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
     <>
       {/* Members Panel - fixed width with proper constraints */}
       <div className="w-64 min-w-[260px] max-w-[280px] flex-shrink-0 bg-card border-l border-border flex flex-col h-full max-h-screen overflow-hidden">
-        {/* Tab Header - Members | Friends side by side */}
-        <div className="flex border-b border-border">
-          <button
-            onClick={() => setActiveTab('members')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-medium transition-colors",
-              activeTab === 'members'
-                ? "bg-primary/10 text-primary border-b-2 border-primary"
-                : "text-muted-foreground hover:bg-muted/50"
-            )}
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span>Members</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('friends')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 text-xs font-medium transition-colors",
-              activeTab === 'friends'
-                ? "bg-primary/10 text-primary border-b-2 border-primary"
-                : "text-muted-foreground hover:bg-muted/50"
-            )}
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            <span>Friends</span>
-          </button>
+        {/* Header */}
+        <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-border">
+          <Users className="h-4 w-4 text-primary" />
+          <span className="font-medium text-sm">Members</span>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'members' ? (
-          <div className="flex-1 overflow-y-auto p-2">
+        {/* Members Content */}
+        <div className="flex-1 overflow-y-auto p-2">
             {/* STAFF SECTION - Compact */}
             <div className="mb-2">
               {/* Owner Section */}
@@ -692,15 +666,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
               </div>
             )}
           </div>
-        ) : (
-          <div className="flex-1 overflow-hidden">
-            <FriendsList
-              currentUserId={user?.id || ''}
-              onOpenPm={onOpenPm || (() => {})}
-            />
-          </div>
-        )}
-      </div>
+        </div>
 
       {/* Bot Chat Modal */}
       {botChatTarget && (
