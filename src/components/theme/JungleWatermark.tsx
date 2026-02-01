@@ -40,17 +40,6 @@ export const JungleWatermark = () => {
             ™
           </span>
         </div>
-        {/* Expedition subtitle */}
-        <div 
-          className="text-[14px] sm:text-[18px] md:text-[24px] font-bold tracking-[0.4em] uppercase mt-1"
-          style={{
-            fontFamily: "'Courier New', monospace",
-            color: 'hsl(var(--accent))',
-            opacity: 0.10,
-          }}
-        >
-          EXPEDITION
-        </div>
       </div>
     </div>
   );
