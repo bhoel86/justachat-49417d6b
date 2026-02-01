@@ -244,15 +244,8 @@ const Home = () => {
       );
     }
 
-    // Redirect will happen via the effect above; show a lightweight placeholder meanwhile.
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-xl jac-gradient-bg animate-pulse" />
-          <p className="text-sm text-muted-foreground">Redirecting to login…</p>
-        </div>
-      </div>
-    );
+    // Redirect will happen via the effect above; return null to avoid flash
+    return null;
   }
 
   return (
