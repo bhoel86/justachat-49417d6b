@@ -167,7 +167,7 @@ const LobbyMirrorRoom = () => {
 
   return (
     <div 
-      className="flex h-full bg-background relative overflow-hidden rounded-xl border border-border"
+      className="flex h-full max-h-full bg-background relative overflow-hidden rounded-xl border border-border"
       onClick={handleJoinChat}
       role="button"
       tabIndex={0}
@@ -185,7 +185,7 @@ const LobbyMirrorRoom = () => {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 min-h-0 h-full overflow-hidden">
         {/* Mobile Header Bar */}
         <div className={cn(
           "flex items-center gap-2 px-2 py-2 lg:hidden relative z-20 shrink-0",
