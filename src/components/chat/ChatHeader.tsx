@@ -10,7 +10,6 @@ import { getRoomTheme, getDefaultTopic } from "@/lib/roomConfig";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import jungleHeaderLogo from "@/assets/themes/jungle-header-logo.png";
-import jungleVineFrame from "@/assets/themes/jungle-vine-frame.png";
 
 interface ChatHeaderProps {
   onlineCount: number;
@@ -115,21 +114,11 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
         {/* Center section - Jungle branding (only for jungle theme) */}
         {isJungle && (
           <div className="absolute left-1/2 transform -translate-x-1/2 hidden md:block">
-            <div className="relative">
-              {/* The logo */}
-              <img 
-                src={jungleHeaderLogo} 
-                alt="Justachat Jungle"
-                className="h-10 object-contain"
-              />
-              {/* Vine frame overlay to break up edges */}
-              <img 
-                src={jungleVineFrame} 
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none mix-blend-multiply opacity-80"
-                style={{ transform: 'scale(1.3)' }}
-              />
-            </div>
+            <img 
+              src={jungleHeaderLogo} 
+              alt="Justachat Jungle"
+              className="h-12 object-contain"
+            />
           </div>
         )}
         
