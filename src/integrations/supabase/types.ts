@@ -1557,6 +1557,10 @@ export type Database = {
       }
     }
     Functions: {
+      channel_has_admin_password: {
+        Args: { _channel_id: string }
+        Returns: boolean
+      }
       channel_has_password: { Args: { _channel_id: string }; Returns: boolean }
       cleanup_old_locations: { Args: never; Returns: undefined }
       cleanup_old_login_attempts: { Args: never; Returns: undefined }
