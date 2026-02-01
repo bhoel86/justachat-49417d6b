@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Heart, Sparkles } from 'lucide-react';
+import { Heart, MessageSquare } from 'lucide-react';
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
 
 /**
- * Unified chat watermark component for all themes
- * Displays "Justachat™" branding with theme-specific styling
+ * Chat watermark component - OG theme only
+ * Displays "Justachat™" branding matching the header style
  */
 export const ChatWatermark: React.FC = () => {
   const { theme } = useTheme();
@@ -13,27 +13,32 @@ export const ChatWatermark: React.FC = () => {
   // Common wrapper styles
   const wrapperClasses = "absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden select-none";
 
-  // OG/JAC Theme - Clean logo watermark
+  // OG/JAC Theme - Clean branded watermark matching header
   if (theme === 'jac') {
     return (
       <div className={wrapperClasses}>
         <div 
-          className="text-center"
-          style={{ opacity: 0.08 }}
+          className="flex items-center gap-3"
+          style={{ opacity: 0.06 }}
         >
+          {/* Speech bubble icon */}
           <div 
-            className="font-display text-5xl sm:text-6xl md:text-7xl font-black tracking-tight"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center"
             style={{
-              color: 'hsl(var(--primary))',
-              textShadow: '0 0 40px hsl(var(--primary) / 0.3)',
+              background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))',
             }}
           >
-            Justachat™
+            <MessageSquare className="w-10 h-10 sm:w-12 sm:h-12 text-primary-foreground" />
           </div>
+          
+          {/* Brand text */}
           <div 
-            className="font-display text-lg sm:text-xl font-semibold mt-1 tracking-widest text-muted-foreground"
+            className="font-bold text-5xl sm:text-6xl md:text-7xl tracking-tight"
+            style={{
+              color: 'hsl(var(--foreground))',
+            }}
           >
-            Just Chat.
+            Justachat<sup className="text-lg sm:text-xl">™</sup>
           </div>
         </div>
       </div>
