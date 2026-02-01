@@ -814,32 +814,12 @@
      ============================================ */
   .retro-login-container {
     position: relative;
-    background: 
-      /* Subtle polka dots pattern */
-      radial-gradient(circle at 15% 25%, hsl(330 90% 55% / 0.12) 3px, transparent 3px),
-      radial-gradient(circle at 85% 75%, hsl(185 90% 50% / 0.15) 4px, transparent 4px),
-      radial-gradient(circle at 45% 80%, hsl(270 50% 60% / 0.1) 3px, transparent 3px),
-      radial-gradient(circle at 75% 20%, hsl(330 90% 55% / 0.1) 2px, transparent 2px),
-      radial-gradient(circle at 25% 60%, hsl(185 90% 50% / 0.08) 2px, transparent 2px),
-      /* Tiny triangles scattered */
-      linear-gradient(135deg, hsl(330 90% 55% / 0.08) 2px, transparent 2px),
-      linear-gradient(225deg, hsl(185 90% 50% / 0.08) 2px, transparent 2px),
-      /* Base yellow gradient */
-      linear-gradient(
-        135deg,
-        hsl(50 100% 68%) 0%,
-        hsl(50 100% 62%) 50%,
-        hsl(55 100% 65%) 100%
-      );
-    background-size: 
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      20px 20px,
-      25px 25px,
-      100% 100%;
+    background: linear-gradient(
+      135deg,
+      hsl(50 100% 70%) 0%,
+      hsl(50 100% 65%) 50%,
+      hsl(55 100% 68%) 100%
+    );
     border: 4px solid hsl(0 0% 0%);
     box-shadow: 
       6px 6px 0px hsl(0 0% 0%),
@@ -857,12 +837,12 @@
     left: 10px;
     right: 10px;
     bottom: 10px;
-    border: 2px dashed hsl(185 90% 45% / 0.6);
+    border: 2px dashed hsl(185 90% 40%);
     pointer-events: none;
     z-index: 0;
   }
 
-  /* Decorative corner shapes inside container */
+  /* Memphis decorative shapes inside container */
   .retro-login-container::after {
     content: '';
     position: absolute;
@@ -871,18 +851,50 @@
     right: 0;
     bottom: 0;
     background:
-      /* Top-left small triangle */
-      linear-gradient(135deg, hsl(185 90% 50% / 0.2) 8px, transparent 8px),
-      /* Top-right small triangle */
-      linear-gradient(225deg, hsl(330 90% 55% / 0.2) 8px, transparent 8px),
-      /* Bottom-left small triangle */
-      linear-gradient(45deg, hsl(330 90% 55% / 0.15) 8px, transparent 8px),
-      /* Bottom-right small triangle */
-      linear-gradient(315deg, hsl(185 90% 50% / 0.15) 8px, transparent 8px),
-      /* Subtle confetti-like marks */
-      radial-gradient(ellipse at 30% 40%, hsl(270 50% 60% / 0.08) 1px, transparent 1px),
-      radial-gradient(ellipse at 70% 30%, hsl(50 100% 45% / 0.1) 1px, transparent 1px);
-    background-size: 100% 100%;
+      /* Bold pink circle top-right */
+      radial-gradient(circle at 92% 8%, hsl(330 90% 55% / 0.35) 12px, transparent 12px),
+      /* Cyan circle bottom-left */
+      radial-gradient(circle at 8% 88%, hsl(185 90% 50% / 0.35) 10px, transparent 10px),
+      /* Purple circle mid-left */
+      radial-gradient(circle at 5% 45%, hsl(270 50% 60% / 0.3) 8px, transparent 8px),
+      /* Pink circle bottom-right area */
+      radial-gradient(circle at 88% 70%, hsl(330 90% 60% / 0.25) 6px, transparent 6px),
+      /* Small cyan dots scattered */
+      radial-gradient(circle at 20% 20%, hsl(185 90% 50% / 0.4) 3px, transparent 3px),
+      radial-gradient(circle at 75% 35%, hsl(185 90% 50% / 0.35) 2px, transparent 2px),
+      radial-gradient(circle at 30% 75%, hsl(185 90% 50% / 0.3) 2px, transparent 2px),
+      /* Pink dots */
+      radial-gradient(circle at 60% 15%, hsl(330 90% 55% / 0.35) 2px, transparent 2px),
+      radial-gradient(circle at 85% 50%, hsl(330 90% 55% / 0.3) 2px, transparent 2px),
+      /* Triangle shapes via clipped gradients - top left */
+      linear-gradient(135deg, hsl(185 90% 50% / 0.4) 15px, transparent 15px),
+      /* Triangle bottom right */
+      linear-gradient(315deg, hsl(330 90% 55% / 0.35) 15px, transparent 15px),
+      /* Small zigzag accent line */
+      repeating-linear-gradient(
+        90deg,
+        hsl(270 50% 60% / 0.25) 0px,
+        hsl(270 50% 60% / 0.25) 4px,
+        transparent 4px,
+        transparent 8px
+      );
+    background-size: 
+      100% 100%, 100% 100%, 100% 100%, 100% 100%,
+      100% 100%, 100% 100%, 100% 100%,
+      100% 100%, 100% 100%,
+      100% 100%, 100% 100%,
+      100% 8px;
+    background-position:
+      0 0, 0 0, 0 0, 0 0,
+      0 0, 0 0, 0 0,
+      0 0, 0 0,
+      0 0, 0 0,
+      0 calc(100% - 20px);
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat,
+      no-repeat, no-repeat, no-repeat,
+      no-repeat, no-repeat,
+      no-repeat, no-repeat,
+      repeat-x;
     pointer-events: none;
     z-index: 0;
   }
