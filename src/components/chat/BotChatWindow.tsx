@@ -6,6 +6,23 @@ import { useToast } from "@/hooks/use-toast";
 import { type ModeratorInfo } from "@/lib/roomConfig";
 import EmojiPicker from "./EmojiPicker";
 
+function formatModeratorError(err: unknown): string {
+  const raw =
+    typeof err === 'string'
+      ? err
+      : err && typeof err === 'object' && 'message' in err
+        ? String((err as any).message)
+        : err instanceof Error
+          ? err.message
+          : 'Unknown error';
+
+  const redacted = raw
+    .replace(/sk-[A-Za-z0-9_-]{10,}/g, 'sk-***')
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer ***');
+
+  return redacted.length > 220 ? `${redacted.slice(0, 220)}…` : redacted;
+}
+
 interface BotMessage {
   id: string;
   content: string;
@@ -266,7 +283,7 @@ const BotChatWindow = ({
       toast({
         variant: "destructive",
         title: "Connection error",
-        description: "Couldn't reach the moderator. Try again."
+        description: `Couldn't reach the moderator. ${formatModeratorError(error)}`
       });
     } finally {
       setIsTyping(false);
