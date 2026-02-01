@@ -340,6 +340,238 @@
     --theme-window-shadow: 4px 4px 0px hsl(0 0% 0%);
   }
 
+  /* ============================================
+     RETRO 80's ARCADE THEME
+     Neon pink/magenta, cyan, purple gradients
+     ============================================ */
+  .theme-arcade {
+    --background: 280 60% 8%;
+    --foreground: 300 100% 95%;
+
+    --card: 280 50% 12%;
+    --card-foreground: 300 100% 95%;
+
+    --popover: 280 55% 14%;
+    --popover-foreground: 300 100% 95%;
+
+    --primary: 320 100% 60%;
+    --primary-foreground: 280 60% 5%;
+
+    --secondary: 280 50% 18%;
+    --secondary-foreground: 300 100% 95%;
+
+    --muted: 280 40% 16%;
+    --muted-foreground: 300 40% 60%;
+
+    --accent: 180 100% 50%;
+    --accent-foreground: 280 60% 5%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 320 80% 40%;
+    --input: 280 50% 15%;
+    --ring: 320 100% 60%;
+
+    --radius: 0.5rem;
+
+    /* Custom arcade variables */
+    --jac-gradient: linear-gradient(135deg, hsl(320 100% 60%) 0%, hsl(280 80% 50%) 50%, hsl(180 100% 50%) 100%);
+    --jac-glow: 0 0 30px hsl(320 100% 60% / 0.5), 0 0 60px hsl(180 100% 50% / 0.3);
+    --jac-bubble-user: 320 80% 45%;
+    --jac-bubble-other: 280 50% 20%;
+
+    --sidebar-background: 280 50% 10%;
+    --sidebar-foreground: 300 100% 95%;
+    --sidebar-primary: 320 100% 60%;
+    --sidebar-primary-foreground: 280 60% 5%;
+    --sidebar-accent: 180 100% 50%;
+    --sidebar-accent-foreground: 280 60% 5%;
+    --sidebar-border: 320 80% 40%;
+    --sidebar-ring: 320 100% 60%;
+
+    /* Theme-specific */
+    --theme-font-body: 'VT323', monospace;
+    --theme-font-heading: 'Press Start 2P', monospace;
+    --theme-border-style: solid;
+    --theme-border-width: 2px;
+    --theme-window-shadow: 0 0 20px hsl(320 100% 60% / 0.3), 0 0 40px hsl(180 100% 50% / 0.2);
+  }
+
+  /* ============================================
+     MEDIEVAL DIESELPUNK THEME
+     Warm browns, gold/amber, parchment textures
+     ============================================ */
+  .theme-dieselpunk {
+    --background: 30 30% 10%;
+    --foreground: 40 30% 90%;
+
+    --card: 35 40% 15%;
+    --card-foreground: 40 30% 90%;
+
+    --popover: 30 35% 18%;
+    --popover-foreground: 40 30% 90%;
+
+    --primary: 45 80% 50%;
+    --primary-foreground: 30 30% 10%;
+
+    --secondary: 35 40% 20%;
+    --secondary-foreground: 40 30% 90%;
+
+    --muted: 30 25% 18%;
+    --muted-foreground: 35 20% 55%;
+
+    --accent: 25 90% 45%;
+    --accent-foreground: 30 30% 10%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 50% 30%;
+    --input: 40 40% 85%;
+    --ring: 45 80% 50%;
+
+    --radius: 0.25rem;
+
+    /* Custom dieselpunk variables */
+    --jac-gradient: linear-gradient(135deg, hsl(45 80% 50%) 0%, hsl(30 70% 40%) 50%, hsl(25 90% 45%) 100%);
+    --jac-glow: 0 4px 20px hsl(45 80% 50% / 0.3), inset 0 1px 0 hsl(45 80% 70% / 0.3);
+    --jac-bubble-user: 45 60% 40%;
+    --jac-bubble-other: 35 40% 22%;
+
+    --sidebar-background: 35 40% 12%;
+    --sidebar-foreground: 40 30% 90%;
+    --sidebar-primary: 45 80% 50%;
+    --sidebar-primary-foreground: 30 30% 10%;
+    --sidebar-accent: 25 90% 45%;
+    --sidebar-accent-foreground: 30 30% 10%;
+    --sidebar-border: 35 50% 30%;
+    --sidebar-ring: 45 80% 50%;
+
+    /* Theme-specific */
+    --theme-font-body: 'IBM Plex Mono', serif;
+    --theme-font-heading: 'Space Grotesk', serif;
+    --theme-border-style: solid;
+    --theme-border-width: 2px;
+    --theme-window-shadow: 0 4px 20px hsl(30 40% 10% / 0.5), inset 0 1px 0 hsl(45 80% 60% / 0.1);
+  }
+
+  /* ============================================
+     CYBERPUNK CITY THEME
+     Electric blue, cyan neon, dark backgrounds
+     ============================================ */
+  .theme-cyberpunk {
+    --background: 220 50% 5%;
+    --foreground: 200 100% 90%;
+
+    --card: 220 45% 8%;
+    --card-foreground: 200 100% 90%;
+
+    --popover: 220 50% 10%;
+    --popover-foreground: 200 100% 90%;
+
+    --primary: 200 100% 55%;
+    --primary-foreground: 220 50% 5%;
+
+    --secondary: 220 45% 12%;
+    --secondary-foreground: 200 100% 90%;
+
+    --muted: 220 40% 14%;
+    --muted-foreground: 200 50% 55%;
+
+    --accent: 280 100% 65%;
+    --accent-foreground: 220 50% 5%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 80% 30%;
+    --input: 220 45% 12%;
+    --ring: 200 100% 55%;
+
+    --radius: 0;
+
+    /* Custom cyberpunk variables */
+    --jac-gradient: linear-gradient(135deg, hsl(200 100% 55%) 0%, hsl(220 80% 40%) 50%, hsl(280 100% 65%) 100%);
+    --jac-glow: 0 0 30px hsl(200 100% 55% / 0.6), 0 0 60px hsl(200 100% 55% / 0.3), 0 0 100px hsl(200 100% 55% / 0.1);
+    --jac-bubble-user: 200 80% 35%;
+    --jac-bubble-other: 220 45% 15%;
+
+    --sidebar-background: 220 45% 6%;
+    --sidebar-foreground: 200 100% 90%;
+    --sidebar-primary: 200 100% 55%;
+    --sidebar-primary-foreground: 220 50% 5%;
+    --sidebar-accent: 280 100% 65%;
+    --sidebar-accent-foreground: 220 50% 5%;
+    --sidebar-border: 200 80% 30%;
+    --sidebar-ring: 200 100% 55%;
+
+    /* Theme-specific */
+    --theme-font-body: 'IBM Plex Mono', monospace;
+    --theme-font-heading: 'VT323', monospace;
+    --theme-border-style: solid;
+    --theme-border-width: 1px;
+    --theme-window-shadow: 0 0 30px hsl(200 100% 55% / 0.2), inset 0 0 20px hsl(200 100% 55% / 0.05);
+  }
+
+  /* ============================================
+     JUNGLE EXPEDITION THEME
+     Forest greens, earthy browns, warm lantern glows
+     ============================================ */
+  .theme-jungle {
+    --background: 120 25% 8%;
+    --foreground: 45 40% 90%;
+
+    --card: 120 30% 12%;
+    --card-foreground: 45 40% 90%;
+
+    --popover: 120 28% 14%;
+    --popover-foreground: 45 40% 90%;
+
+    --primary: 100 60% 40%;
+    --primary-foreground: 45 40% 98%;
+
+    --secondary: 120 30% 16%;
+    --secondary-foreground: 45 40% 90%;
+
+    --muted: 120 20% 15%;
+    --muted-foreground: 100 25% 55%;
+
+    --accent: 35 90% 50%;
+    --accent-foreground: 120 25% 8%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 100 40% 25%;
+    --input: 45 30% 88%;
+    --ring: 100 60% 40%;
+
+    --radius: 0.5rem;
+
+    /* Custom jungle variables */
+    --jac-gradient: linear-gradient(135deg, hsl(100 60% 40%) 0%, hsl(80 50% 30%) 50%, hsl(35 90% 50%) 100%);
+    --jac-glow: 0 4px 30px hsl(35 90% 50% / 0.3), 0 0 60px hsl(35 90% 50% / 0.15);
+    --jac-bubble-user: 100 50% 32%;
+    --jac-bubble-other: 120 30% 18%;
+
+    --sidebar-background: 120 30% 10%;
+    --sidebar-foreground: 45 40% 90%;
+    --sidebar-primary: 100 60% 40%;
+    --sidebar-primary-foreground: 45 40% 98%;
+    --sidebar-accent: 35 90% 50%;
+    --sidebar-accent-foreground: 120 25% 8%;
+    --sidebar-border: 100 40% 25%;
+    --sidebar-ring: 100 60% 40%;
+
+    /* Theme-specific */
+    --theme-font-body: 'Inter', sans-serif;
+    --theme-font-heading: 'Space Grotesk', sans-serif;
+    --theme-border-style: solid;
+    --theme-border-width: 2px;
+    --theme-window-shadow: 0 4px 30px hsl(35 60% 20% / 0.4), 0 0 60px hsl(35 90% 50% / 0.1);
+  }
+
   .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
@@ -1759,4 +1991,266 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* ============================================
+   RETRO 80's ARCADE THEME STYLES
+   ============================================ */
+
+@keyframes arcadeFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes arcadeNeonPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(320 100% 60% / 0.5), 0 0 40px hsl(180 100% 50% / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px hsl(320 100% 60% / 0.7), 0 0 60px hsl(180 100% 50% / 0.5);
+  }
+}
+
+@keyframes arcadeFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.9; }
+  75% { opacity: 1; }
+  90% { opacity: 0.95; }
+}
+
+.theme-arcade {
+  background-image: 
+    radial-gradient(ellipse 100% 60% at 50% 0%, hsl(320 100% 60% / 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 50%, hsl(180 100% 50% / 0.05) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 40% at 100% 50%, hsl(280 80% 50% / 0.05) 0%, transparent 40%);
+}
+
+.theme-arcade .card,
+.theme-arcade .bg-card {
+  box-shadow: 0 0 20px hsl(320 100% 60% / 0.15), var(--theme-window-shadow);
+  border: 2px solid hsl(320 100% 60% / 0.4);
+}
+
+.theme-arcade button:hover {
+  box-shadow: 0 0 25px hsl(320 100% 60% / 0.4);
+}
+
+.theme-arcade h1,
+.theme-arcade h2,
+.theme-arcade h3,
+.theme-arcade .brand {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: arcadeFlicker 3s infinite;
+}
+
+.theme-arcade .jac-gradient-bg {
+  background: linear-gradient(135deg, hsl(320 100% 60%) 0%, hsl(280 80% 50%) 50%, hsl(180 100% 50%) 100%);
+  box-shadow: 0 0 30px hsl(320 100% 60% / 0.5);
+}
+
+/* ============================================
+   MEDIEVAL DIESELPUNK THEME STYLES
+   ============================================ */
+
+@keyframes dieselpunkFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes dieselpunkGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px hsl(45 80% 50% / 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px hsl(45 80% 50% / 0.6));
+  }
+}
+
+.theme-dieselpunk {
+  background-image: 
+    radial-gradient(ellipse 100% 60% at 50% 0%, hsl(45 80% 50% / 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, hsl(25 90% 45% / 0.04) 0%, transparent 40%);
+}
+
+.theme-dieselpunk .card,
+.theme-dieselpunk .bg-card {
+  box-shadow: 0 4px 20px hsl(30 40% 10% / 0.4), inset 0 1px 0 hsl(45 80% 60% / 0.1);
+  border: 2px solid hsl(45 80% 50% / 0.3);
+}
+
+.theme-dieselpunk button:hover {
+  box-shadow: 0 4px 25px hsl(45 80% 50% / 0.3);
+}
+
+.theme-dieselpunk h1,
+.theme-dieselpunk h2,
+.theme-dieselpunk h3,
+.theme-dieselpunk .brand {
+  font-family: 'Space Grotesk', serif;
+}
+
+.theme-dieselpunk .jac-gradient-bg {
+  background: linear-gradient(135deg, hsl(45 80% 50%) 0%, hsl(30 70% 40%) 50%, hsl(25 90% 45%) 100%);
+  box-shadow: 0 4px 20px hsl(45 80% 50% / 0.3);
+}
+
+/* ============================================
+   CYBERPUNK CITY THEME STYLES
+   ============================================ */
+
+@keyframes cyberpunkGlitch {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-4px) translateX(1px);
+  }
+  50% {
+    transform: translateY(0) translateX(-1px);
+  }
+  75% {
+    transform: translateY(-2px) translateX(0);
+  }
+}
+
+@keyframes cyberpunkNeonPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(200 100% 55% / 0.5), 0 0 40px hsl(200 100% 55% / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px hsl(200 100% 55% / 0.7), 0 0 60px hsl(200 100% 55% / 0.4);
+  }
+}
+
+@keyframes cyberpunkScan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.theme-cyberpunk {
+  background-image: 
+    radial-gradient(ellipse 100% 60% at 50% 0%, hsl(200 100% 55% / 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, hsl(280 100% 65% / 0.05) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, hsl(200 100% 55% / 0.05) 0%, transparent 40%);
+}
+
+.theme-cyberpunk::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    hsl(200 100% 55% / 0.02) 2px,
+    hsl(200 100% 55% / 0.02) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.theme-cyberpunk .card,
+.theme-cyberpunk .bg-card {
+  box-shadow: 0 0 25px hsl(200 100% 55% / 0.15), inset 0 0 20px hsl(200 100% 55% / 0.03);
+  border: 1px solid hsl(200 100% 55% / 0.4);
+}
+
+.theme-cyberpunk button:hover {
+  box-shadow: 0 0 30px hsl(200 100% 55% / 0.5);
+}
+
+.theme-cyberpunk h1,
+.theme-cyberpunk h2,
+.theme-cyberpunk h3,
+.theme-cyberpunk .brand {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 10px hsl(200 100% 55%), 2px 0 0 hsl(280 100% 65% / 0.3), -2px 0 0 hsl(200 100% 55% / 0.3);
+}
+
+.theme-cyberpunk .jac-gradient-bg {
+  background: linear-gradient(135deg, hsl(200 100% 55%) 0%, hsl(220 80% 40%) 50%, hsl(280 100% 65%) 100%);
+  box-shadow: 0 0 30px hsl(200 100% 55% / 0.5);
+}
+
+/* ============================================
+   JUNGLE EXPEDITION THEME STYLES
+   ============================================ */
+
+@keyframes jungleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes jungleFlicker {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  25% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(0.98);
+  }
+  75% {
+    opacity: 0.95;
+    transform: scale(1.01);
+  }
+}
+
+@keyframes jungleLanternGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(35 90% 50% / 0.4), 0 0 40px hsl(35 90% 50% / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px hsl(35 90% 50% / 0.6), 0 0 60px hsl(35 90% 50% / 0.3);
+  }
+}
+
+.theme-jungle {
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 20% 100%, hsl(100 60% 40% / 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 50% at 80% 100%, hsl(100 60% 40% / 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 50%, hsl(35 90% 50% / 0.05) 0%, transparent 50%);
+}
+
+.theme-jungle .card,
+.theme-jungle .bg-card {
+  box-shadow: 0 4px 25px hsl(35 60% 20% / 0.4), 0 0 40px hsl(35 90% 50% / 0.08);
+  border: 2px solid hsl(100 40% 25% / 0.5);
+}
+
+.theme-jungle button:hover {
+  box-shadow: 0 4px 30px hsl(35 90% 50% / 0.3);
+}
+
+.theme-jungle h1,
+.theme-jungle h2,
+.theme-jungle h3,
+.theme-jungle .brand {
+  text-shadow: 2px 2px 4px hsl(120 30% 8%);
+}
+
+.theme-jungle .jac-gradient-bg {
+  background: linear-gradient(135deg, hsl(100 60% 40%) 0%, hsl(80 50% 30%) 50%, hsl(35 90% 50%) 100%);
+  box-shadow: 0 4px 30px hsl(35 90% 50% / 0.3);
 }
