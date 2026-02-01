@@ -223,8 +223,8 @@ const LobbyMirrorRoom = () => {
           />
         </div>
         
-        {/* Messages Area - No scrolling, shows latest messages only */}
-        <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate z-10">
+        {/* Messages Area - Fixed height with overflow hidden, shows latest messages only */}
+        <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate z-10">
           {/* Transparent logo watermark - theme aware */}
           {theme === 'retro80s' ? (
             <RetroWatermark />
@@ -253,8 +253,8 @@ const LobbyMirrorRoom = () => {
               <p className="text-sm mt-2">Click to join #general and start chatting!</p>
             </div>
           ) : (
-            <div className="mt-auto space-y-2 sm:space-y-3">
-              {messages.map((msg) => (
+            <div className="mt-auto space-y-2 sm:space-y-3 overflow-hidden">
+              {messages.slice(-6).map((msg) => (
                 <MessageBubble
                   key={msg.id}
                   id={msg.id}
