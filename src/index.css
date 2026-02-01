@@ -851,50 +851,45 @@
     right: 0;
     bottom: 0;
     background:
-      /* Bold pink circle top-right */
-      radial-gradient(circle at 92% 8%, hsl(330 90% 55% / 0.35) 12px, transparent 12px),
-      /* Cyan circle bottom-left */
-      radial-gradient(circle at 8% 88%, hsl(185 90% 50% / 0.35) 10px, transparent 10px),
-      /* Purple circle mid-left */
-      radial-gradient(circle at 5% 45%, hsl(270 50% 60% / 0.3) 8px, transparent 8px),
-      /* Pink circle bottom-right area */
-      radial-gradient(circle at 88% 70%, hsl(330 90% 60% / 0.25) 6px, transparent 6px),
-      /* Small cyan dots scattered */
-      radial-gradient(circle at 20% 20%, hsl(185 90% 50% / 0.4) 3px, transparent 3px),
-      radial-gradient(circle at 75% 35%, hsl(185 90% 50% / 0.35) 2px, transparent 2px),
-      radial-gradient(circle at 30% 75%, hsl(185 90% 50% / 0.3) 2px, transparent 2px),
-      /* Pink dots */
-      radial-gradient(circle at 60% 15%, hsl(330 90% 55% / 0.35) 2px, transparent 2px),
-      radial-gradient(circle at 85% 50%, hsl(330 90% 55% / 0.3) 2px, transparent 2px),
-      /* Triangle shapes via clipped gradients - top left */
-      linear-gradient(135deg, hsl(185 90% 50% / 0.4) 15px, transparent 15px),
-      /* Triangle bottom right */
-      linear-gradient(315deg, hsl(330 90% 55% / 0.35) 15px, transparent 15px),
-      /* Small zigzag accent line */
+      /* Large bold circles */
+      radial-gradient(circle at 92% 8%, hsl(330 90% 55% / 0.5) 14px, transparent 14px),
+      radial-gradient(circle at 8% 92%, hsl(185 90% 50% / 0.5) 12px, transparent 12px),
+      radial-gradient(circle at 5% 35%, hsl(270 50% 55% / 0.45) 10px, transparent 10px),
+      radial-gradient(circle at 95% 65%, hsl(330 90% 55% / 0.4) 8px, transparent 8px),
+      /* CENTER AREA - bold shapes */
+      radial-gradient(circle at 50% 25%, hsl(185 90% 45% / 0.45) 8px, transparent 8px),
+      radial-gradient(circle at 40% 50%, hsl(330 90% 55% / 0.4) 6px, transparent 6px),
+      radial-gradient(circle at 60% 55%, hsl(270 50% 55% / 0.45) 7px, transparent 7px),
+      radial-gradient(circle at 50% 75%, hsl(185 90% 50% / 0.4) 5px, transparent 5px),
+      radial-gradient(circle at 35% 35%, hsl(330 90% 55% / 0.35) 4px, transparent 4px),
+      radial-gradient(circle at 65% 40%, hsl(185 90% 50% / 0.4) 4px, transparent 4px),
+      radial-gradient(circle at 45% 65%, hsl(270 50% 55% / 0.35) 4px, transparent 4px),
+      radial-gradient(circle at 55% 45%, hsl(330 90% 55% / 0.3) 3px, transparent 3px),
+      /* Scattered small dots everywhere */
+      radial-gradient(circle at 25% 20%, hsl(185 90% 50% / 0.5) 3px, transparent 3px),
+      radial-gradient(circle at 75% 25%, hsl(330 90% 55% / 0.45) 3px, transparent 3px),
+      radial-gradient(circle at 20% 60%, hsl(270 50% 55% / 0.4) 3px, transparent 3px),
+      radial-gradient(circle at 80% 55%, hsl(185 90% 50% / 0.45) 3px, transparent 3px),
+      radial-gradient(circle at 30% 80%, hsl(330 90% 55% / 0.4) 2px, transparent 2px),
+      radial-gradient(circle at 70% 85%, hsl(185 90% 50% / 0.45) 2px, transparent 2px),
+      radial-gradient(circle at 15% 45%, hsl(330 90% 55% / 0.35) 2px, transparent 2px),
+      radial-gradient(circle at 85% 40%, hsl(270 50% 55% / 0.4) 2px, transparent 2px),
+      /* Corner triangles - bigger and bolder */
+      linear-gradient(135deg, hsl(185 90% 45% / 0.55) 20px, transparent 20px),
+      linear-gradient(315deg, hsl(330 90% 50% / 0.5) 18px, transparent 18px),
+      linear-gradient(45deg, hsl(270 50% 55% / 0.45) 16px, transparent 16px),
+      linear-gradient(225deg, hsl(185 90% 50% / 0.45) 14px, transparent 14px),
+      /* Zigzag stripe near bottom */
       repeating-linear-gradient(
         90deg,
-        hsl(270 50% 60% / 0.25) 0px,
-        hsl(270 50% 60% / 0.25) 4px,
-        transparent 4px,
-        transparent 8px
+        hsl(330 90% 55% / 0.35) 0px,
+        hsl(330 90% 55% / 0.35) 5px,
+        transparent 5px,
+        transparent 10px
       );
-    background-size: 
-      100% 100%, 100% 100%, 100% 100%, 100% 100%,
-      100% 100%, 100% 100%, 100% 100%,
-      100% 100%, 100% 100%,
-      100% 100%, 100% 100%,
-      100% 8px;
-    background-position:
-      0 0, 0 0, 0 0, 0 0,
-      0 0, 0 0, 0 0,
-      0 0, 0 0,
-      0 0, 0 0,
-      0 calc(100% - 20px);
-    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat,
-      no-repeat, no-repeat, no-repeat,
-      no-repeat, no-repeat,
-      no-repeat, no-repeat,
-      repeat-x;
+    background-size: 100% 100%;
+    background-position: 0 0;
+    background-repeat: no-repeat;
     pointer-events: none;
     z-index: 0;
   }
