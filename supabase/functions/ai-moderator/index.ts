@@ -1,9 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 // Famous hackers as AI moderator personalities
@@ -255,10 +254,10 @@ function detectMood(messages: Array<{ content: string }>): string {
   return detectedMood;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -351,14 +350,14 @@ You may occasionally mention this tip naturally in conversation if relevant.${me
       });
     };
 
-    // Default: prefer gateway when present (Lovable Cloud), but if it returns auth errors
-    // and an OpenAI key is available, fall back automatically.
+    // Default: prefer gateway when present (Lovable Cloud), but if it fails and an OpenAI
+    // key is available (VPS), fall back automatically.
     let response: Response;
     if (LOVABLE_API_KEY) {
       response = await callLovableGateway();
-      if (!response.ok && OPENAI_API_KEY && (response.status === 401 || response.status === 403)) {
+      if (!response.ok && OPENAI_API_KEY) {
         const gatewayErrorText = await response.text();
-        console.error('AI gateway auth error; falling back to OpenAI:', response.status, gatewayErrorText);
+        console.error('AI gateway error; falling back to OpenAI:', response.status, gatewayErrorText);
         response = await callOpenAI();
       }
     } else {
