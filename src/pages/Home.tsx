@@ -47,6 +47,10 @@ import { RetroWelcomeBanner } from "@/components/theme/RetroWelcomeBanner";
 import { ValentinesWelcomeBanner } from "@/components/theme/ValentinesWelcomeBanner";
 import { StPatricksWelcomeBanner } from "@/components/theme/StPatricksWelcomeBanner";
 import { MatrixWelcomeBanner } from "@/components/theme/MatrixWelcomeBanner";
+import { ArcadeWelcomeBannerV2 } from "@/components/theme/ArcadeWelcomeBannerV2";
+import { DieselpunkWelcomeBannerV2 } from "@/components/theme/DieselpunkWelcomeBannerV2";
+import { CyberpunkWelcomeBannerV2 } from "@/components/theme/CyberpunkWelcomeBannerV2";
+import { JungleWelcomeBannerV2 } from "@/components/theme/JungleWelcomeBannerV2";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
@@ -125,6 +129,10 @@ const Home = () => {
   const isValentines = theme === 'valentines';
   const isStPatricks = theme === 'stpatricks';
   const isMatrix = theme === 'matrix';
+  const isArcade = theme === 'arcade';
+  const isDieselpunk = theme === 'dieselpunk';
+  const isCyberpunk = theme === 'cyberpunk';
+  const isJungle = theme === 'jungle';
   const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.isElectron === true;
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
@@ -559,6 +567,14 @@ const Home = () => {
               <StPatricksWelcomeBanner />
             ) : isMatrix ? (
               <MatrixWelcomeBanner variant="mobile" />
+            ) : isArcade ? (
+              <ArcadeWelcomeBannerV2 variant="mobile" onJoinClick={() => navigate('/chat/general')} />
+            ) : isDieselpunk ? (
+              <DieselpunkWelcomeBannerV2 variant="mobile" onJoinClick={() => navigate('/chat/general')} />
+            ) : isCyberpunk ? (
+              <CyberpunkWelcomeBannerV2 variant="mobile" onJoinClick={() => navigate('/chat/general')} />
+            ) : isJungle ? (
+              <JungleWelcomeBannerV2 variant="mobile" onJoinClick={() => navigate('/chat/general')} />
             ) : (
               <OGWelcomeBanner variant="mobile" onJoinClick={() => navigate('/chat/general')} />
             )}
