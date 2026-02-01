@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Palette, Check, Circle } from 'lucide-react';
 
 export const ThemeSelector: React.FC = () => {
@@ -35,42 +36,44 @@ export const ThemeSelector: React.FC = () => {
         <div className="text-sm font-semibold text-muted-foreground mb-2 px-2">
           Global Site Theme
         </div>
-        <div className="space-y-1">
-          {themes.map((t) => {
-            const isActive = theme === t.id;
-            return (
-              <div
-                key={t.id}
-                className={`flex items-center justify-between p-2 rounded-md ${
-                  isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-accent'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Circle 
-                    className={`h-3 w-3 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
-                    fill="currentColor"
-                  />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm">{t.name}</span>
-                    <span className="text-xs text-muted-foreground">{t.description}</span>
+        <ScrollArea className="h-[300px]">
+          <div className="space-y-1 pr-3">
+            {themes.map((t) => {
+              const isActive = theme === t.id;
+              return (
+                <div
+                  key={t.id}
+                  className={`flex items-center justify-between p-2 rounded-md ${
+                    isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-accent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Circle 
+                      className={`h-3 w-3 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
+                      fill="currentColor"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm">{t.name}</span>
+                      <span className="text-xs text-muted-foreground">{t.description}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isActive && <Check className="h-4 w-4 text-primary" />}
+                    <Button
+                      size="sm"
+                      variant={isActive ? "secondary" : "default"}
+                      onClick={() => handleSetTheme(t.id)}
+                      disabled={isActive}
+                      className="text-xs h-7 px-3"
+                    >
+                      {isActive ? 'Active' : 'Set'}
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {isActive && <Check className="h-4 w-4 text-primary" />}
-                  <Button
-                    size="sm"
-                    variant={isActive ? "secondary" : "default"}
-                    onClick={() => handleSetTheme(t.id)}
-                    disabled={isActive}
-                    className="text-xs h-7 px-3"
-                  >
-                    {isActive ? 'Active' : 'Set'}
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
         <div className="text-xs text-muted-foreground mt-3 px-2 border-t pt-2">
           Changes apply to all users site-wide
         </div>
