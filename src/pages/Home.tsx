@@ -54,6 +54,7 @@ import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { useTheme } from "@/contexts/ThemeContext";
 import FriendsTray from "@/components/friends/FriendsTray";
+import { usePngCutout } from "@/hooks/usePngCutout";
 
 interface Channel {
   id: string;
@@ -127,6 +128,7 @@ const Home = () => {
   const isValentines = theme === 'valentines';
   const isStPatricks = theme === 'stpatricks';
   const isMatrix = theme === 'matrix';
+  const retroBannerCutout = usePngCutout(retroHeaderImg);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loadingChannels, setLoadingChannels] = useState(true);
   const [roomUserCounts, setRoomUserCounts] = useState<RoomUserCounts>({});
@@ -374,6 +376,19 @@ const Home = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+          {/* Retro 80s Banner - centered between menu and theme selector */}
+          {isRetro && (
+            <div className="flex-1 flex justify-center">
+              <img 
+                src={retroBannerCutout ?? retroHeaderImg} 
+                alt="Justachat 80s" 
+                className="h-8 sm:h-12 object-contain"
+                style={{ filter: 'drop-shadow(2px 2px 0px hsl(0 0% 0%))' }}
+              />
+            </div>
+          )}
+
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Theme Selector */}
             <ThemeSelector />
