@@ -19,12 +19,11 @@ import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
+import { RetroLoginHeader } from "@/components/theme/RetroLoginHeader";
 import { useTheme } from "@/contexts/ThemeContext";
-import headerImg from '@/assets/justachat-header-80s.png';
 import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
 import matrixFollowImg from '@/assets/matrix/follow-rabbit.jpg';
 import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
-import retroLoginHeaderImg from '@/assets/themes/retro-header-login-cutout.png';
 import { usePngCutout } from "@/hooks/usePngCutout";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -646,7 +645,6 @@ const Auth = () => {
 
   // The generated PNG sometimes bakes a checkerboard into the pixels; convert to true alpha cutout + trim.
   const jungleHeaderCutout = usePngCutout(isJungle ? jungleHeaderImg : undefined);
-  const retroHeaderCutout = usePngCutout(isRetro ? retroLoginHeaderImg : undefined);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
@@ -693,17 +691,7 @@ const Auth = () => {
           </div>
         ) : isRetro ? (
           <div className="flex flex-col items-center mb-3">
-            <img 
-              src={retroHeaderCutout ?? retroLoginHeaderImg} 
-              alt="Justachat 80s Retro" 
-              className="w-full max-w-[260px] sm:max-w-[320px] h-auto object-contain"
-              style={{
-                filter: 'drop-shadow(2px 2px 0px black)',
-              }}
-            />
-            <p className="text-muted-foreground mt-1 text-xs sm:text-sm tracking-wide">
-              Totally Radical Chat
-            </p>
+            <RetroLoginHeader subtitle="Totally Radical Chat" />
           </div>
         ) : (
           <div className="flex flex-col items-center mb-1">
