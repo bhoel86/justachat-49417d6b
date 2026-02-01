@@ -11,6 +11,13 @@ interface FriendsTrayProps {
   onOpenPm: (userId: string, username: string) => void;
 }
 
+const MIN_WIDTH = 240;
+const MAX_WIDTH = 400;
+const MIN_HEIGHT = 300;
+const MAX_HEIGHT = 600;
+const DEFAULT_WIDTH = 288;
+const DEFAULT_HEIGHT = 400;
+
 const FriendsTray = ({ 
   currentUserId, 
   onOpenPm, 
@@ -19,9 +26,12 @@ const FriendsTray = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(true);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [size, setSize] = useState({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT });
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState<string | null>(null);
   const [counts, setCounts] = useState({ total: 0, online: 0, pending: 0 });
   const dragRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number } | null>(null);
+  const resizeRef = useRef<{ startX: number; startY: number; initialWidth: number; initialHeight: number } | null>(null);
   const trayRef = useRef<HTMLDivElement>(null);
 
   const handleCountsChange = useCallback((newCounts: { total: number; online: number; pending: number }) => {
@@ -58,6 +68,46 @@ const FriendsTray = ({
     };
   }, [isDragging]);
 
+  // Handle resizing
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !resizeRef.current) return;
+      
+      const deltaX = e.clientX - resizeRef.current.startX;
+      const deltaY = e.clientY - resizeRef.current.startY;
+      
+      let newWidth = resizeRef.current.initialWidth;
+      let newHeight = resizeRef.current.initialHeight;
+      
+      // Resize from left edge (inverted because we're anchored to the right)
+      if (isResizing.includes('w')) {
+        newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeRef.current.initialWidth - deltaX));
+      }
+      
+      // Resize from top edge (inverted because we're anchored to the bottom)
+      if (isResizing.includes('n')) {
+        newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeRef.current.initialHeight - deltaY));
+      }
+      
+      setSize({ width: newWidth, height: newHeight });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(null);
+      resizeRef.current = null;
+    };
+
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -66,6 +116,18 @@ const FriendsTray = ({
       startY: e.clientY,
       initialX: position.x,
       initialY: position.y,
+    };
+  };
+
+  const handleResizeStart = (e: React.MouseEvent, direction: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(direction);
+    resizeRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialWidth: size.width,
+      initialHeight: size.height,
     };
   };
 
@@ -128,14 +190,37 @@ const FriendsTray = ({
       className={cn(
         "fixed z-[998] flex flex-col",
         "bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-2xl",
-        isMobile ? "inset-x-2 bottom-2 max-h-[70vh]" : "w-72 max-h-[400px]"
+        isMobile && "inset-x-2 bottom-2 max-h-[70vh]"
       )}
       style={!isMobile ? { 
         right: 16,
         bottom: 16,
+        width: size.width,
+        height: size.height,
         transform: `translate(${position.x}px, ${position.y}px)`,
       } : undefined}
     >
+      {/* Resize handles - desktop only */}
+      {!isMobile && (
+        <>
+          {/* Top edge */}
+          <div 
+            className="absolute -top-1 left-2 right-2 h-2 cursor-n-resize z-10"
+            onMouseDown={(e) => handleResizeStart(e, 'n')}
+          />
+          {/* Left edge */}
+          <div 
+            className="absolute top-2 -left-1 bottom-2 w-2 cursor-w-resize z-10"
+            onMouseDown={(e) => handleResizeStart(e, 'w')}
+          />
+          {/* Top-left corner */}
+          <div 
+            className="absolute -top-1 -left-1 w-3 h-3 cursor-nw-resize z-20"
+            onMouseDown={(e) => handleResizeStart(e, 'nw')}
+          />
+        </>
+      )}
+
       {/* Header */}
       <div 
         className={cn(
@@ -182,6 +267,18 @@ const FriendsTray = ({
           onCountsChange={handleCountsChange}
         />
       </div>
+
+      {/* Resize indicator in corner */}
+      {!isMobile && (
+        <div 
+          className="absolute top-0 left-0 w-3 h-3 cursor-nw-resize opacity-50 hover:opacity-100 transition-opacity"
+          onMouseDown={(e) => handleResizeStart(e, 'nw')}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" className="text-muted-foreground rotate-180">
+            <path d="M11 1L1 11M7 1L1 7M11 5L5 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+        </div>
+      )}
     </div>
   );
 };
