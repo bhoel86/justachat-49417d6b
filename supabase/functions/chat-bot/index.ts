@@ -1130,21 +1130,23 @@ ${messageContext}
 jump in and say something. pick up on what someones talking about or add to the convo. keep it casual n short`;
     }
 
-    // Use Lovable AI gateway (no API key required)
-    const LOVABLE_AI_URL = "https://ai-gateway.lovable.ai/v1/chat/completions";
+    // Use Lovable AI gateway
+    const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     const response = await fetch(LOVABLE_AI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-nano",  // Fast and efficient for chat
+        model: "google/gemini-2.5-flash-lite",  // Fast and efficient for chat
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_tokens: 60,
+        max_completion_tokens: 60,
         temperature: 0.98,
       }),
     });
