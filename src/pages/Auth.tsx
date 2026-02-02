@@ -1169,7 +1169,7 @@ const Auth = () => {
                       (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
                       (mode === "login" && rateLimitInfo?.locked)
                     }
-                    className="flex-1 py-3 font-mono uppercase tracking-wider text-sm transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 font-mono uppercase tracking-wider text-sm transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-0.5"
                     style={{
                       background: 'linear-gradient(135deg, hsl(0 70% 25% / 0.9), hsl(0 80% 35% / 0.7))',
                       border: '1px solid hsl(0 80% 50% / 0.5)',
@@ -1180,12 +1180,20 @@ const Auth = () => {
                     }}
                   >
                     {isSubmitting ? '...' : (
-                      <>
-                        {mode === "login" && "RED"}
-                        {mode === "signup" && "RED"}
-                        {mode === "forgot" && "SEND"}
-                        {mode === "reset" && "SET"}
-                      </>
+                      <span className="flex flex-col items-center leading-tight">
+                        <span className="text-base font-bold">
+                          {mode === "login" && "RED"}
+                          {mode === "signup" && "RED"}
+                          {mode === "forgot" && "SEND"}
+                          {mode === "reset" && "SET"}
+                        </span>
+                        <span className="text-[10px] opacity-70">
+                          {mode === "login" && "LOGIN"}
+                          {mode === "signup" && "SIGNUP"}
+                          {mode === "forgot" && ""}
+                          {mode === "reset" && ""}
+                        </span>
+                      </span>
                     )}
                   </button>
                   
@@ -1201,7 +1209,7 @@ const Auth = () => {
                       (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
                       (mode === "login" && rateLimitInfo?.locked)
                     }
-                    className="flex-1 py-3 font-mono uppercase tracking-wider text-sm transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 font-mono uppercase tracking-wider text-sm transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-0.5"
                     style={{
                       background: 'linear-gradient(135deg, hsl(210 70% 25% / 0.9), hsl(210 80% 35% / 0.7))',
                       border: '1px solid hsl(210 80% 50% / 0.5)',
@@ -1212,12 +1220,20 @@ const Auth = () => {
                     }}
                   >
                     {isSubmitting ? '...' : (
-                      <>
-                        {mode === "login" && "BLUE"}
-                        {mode === "signup" && "BLUE"}
-                        {mode === "forgot" && "SEND"}
-                        {mode === "reset" && "SET"}
-                      </>
+                      <span className="flex flex-col items-center leading-tight">
+                        <span className="text-base font-bold">
+                          {mode === "login" && "BLUE"}
+                          {mode === "signup" && "BLUE"}
+                          {mode === "forgot" && "SEND"}
+                          {mode === "reset" && "SET"}
+                        </span>
+                        <span className="text-[10px] opacity-70">
+                          {mode === "login" && "LOGIN"}
+                          {mode === "signup" && "SIGNUP"}
+                          {mode === "forgot" && ""}
+                          {mode === "reset" && ""}
+                        </span>
+                      </span>
                     )}
                   </button>
                 </div>
