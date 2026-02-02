@@ -135,7 +135,9 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Optional: on some self-hosted setups this can be missing or mismatched.
+    // We prefer user-scoped storage uploads (RLS-safe) and only fall back to service role if available.
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     // Get auth header and verify user
     const authHeader = req.headers.get("Authorization");
@@ -288,7 +290,9 @@ Deno.serve(async (req) => {
       fileName = `${userId}/${fileName}`;
     }
 
-    // Upload to storage using a server-scoped client to avoid storage RLS failures.
+    // Upload to storage.
+    // Prefer a user-scoped client so it matches storage RLS policies (TO authenticated).
+    // This also avoids false-403s when a VPS service-role key is missing/mismatched.
     // Security is preserved by:
     //  - verifying the caller JWT above
     //  - forcing the object name into the caller's userId folder
@@ -301,14 +305,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseStorage = createClient(supabaseUrl, supabaseServiceRoleKey);
+    // Attempt upload as the authenticated user.
+    // This should succeed when storage policies are scoped to authenticated users.
+    let uploadData: any = null;
+    let uploadError: any = null;
 
-    const { data: uploadData, error: uploadError } = await supabaseStorage.storage
-      .from(bucket)
-      .upload(fileName, uploadBytes, {
+    {
+      const resp = await supabaseUser.storage.from(bucket).upload(fileName, uploadBytes, {
         contentType: uploadType,
         upsert: true,
       });
+      uploadData = resp.data;
+      uploadError = resp.error;
+    }
+
+    // Optional fallback: if VPS storage policies are broken for authenticated users but service role is valid.
+    if (uploadError && supabaseServiceRoleKey) {
+      console.warn("User-scoped storage upload failed; trying service-role fallback", {
+        bucket,
+        fileName,
+        error: uploadError?.message,
+        statusCode: uploadError?.statusCode,
+      });
+
+      const supabaseStorage = createClient(supabaseUrl, supabaseServiceRoleKey);
+      const resp = await supabaseStorage.storage.from(bucket).upload(fileName, uploadBytes, {
+        contentType: uploadType,
+        upsert: true,
+      });
+      uploadData = resp.data;
+      uploadError = resp.error;
+    }
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
@@ -324,6 +351,8 @@ Deno.serve(async (req) => {
             error: "Upload failed",
             message: "Storage permissions blocked this upload (RLS).",
             details: msg,
+            bucket,
+            path: fileName,
           }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -335,10 +364,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabaseStorage.storage
-      .from(bucket)
-      .getPublicUrl(fileName);
+    // Get public URL (no auth required for generating URL)
+    const supabasePublic = createClient(supabaseUrl, supabaseAnonKey);
+    const {
+      data: { publicUrl },
+    } = supabasePublic.storage.from(bucket).getPublicUrl(fileName);
 
     console.log(`Upload successful: ${publicUrl}`);
 
