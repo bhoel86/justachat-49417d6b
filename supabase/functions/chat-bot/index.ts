@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 // Environment detection
@@ -1130,32 +1131,68 @@ ${messageContext}
 jump in and say something. pick up on what someones talking about or add to the convo. keep it casual n short`;
     }
 
-    // Use OpenAI API directly (for VPS deployment)
+    // Prefer Lovable AI gateway (Lovable Cloud). Fall back to OpenAI for VPS/self-hosted.
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY not configured");
+
+    if (!LOVABLE_API_KEY && !OPENAI_API_KEY) {
+      console.error("No AI key configured (LOVABLE_API_KEY or OPENAI_API_KEY)");
       return new Response(JSON.stringify({ error: "AI not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",  // Fast and cost-effective
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 60,
-        temperature: 0.98,
-      }),
-    });
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ];
+
+    const callLovableGateway = () =>
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages,
+          max_tokens: 80,
+          temperature: 0.98,
+        }),
+      });
+
+    const callOpenAI = () =>
+      fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages,
+          max_tokens: 80,
+          temperature: 0.98,
+        }),
+      });
+
+    let response: Response;
+    if (LOVABLE_API_KEY) {
+      response = await callLovableGateway();
+      if (!response.ok && OPENAI_API_KEY) {
+        const gatewayErrorText = await response.text();
+        console.error(
+          "AI gateway error; falling back to OpenAI:",
+          response.status,
+          gatewayErrorText
+        );
+        response = await callOpenAI();
+      }
+    } else {
+      response = await callOpenAI();
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
