@@ -477,20 +477,11 @@ const PrivateChatWindow = ({
               });
             }
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.warn('[PM-CHANNEL] Connection lost, will attempt reconnect');
+            // Important: do NOT manually call subscribe() in a loop here.
+            // The realtime client handles reconnection internally; manual resubscribe can cause
+            // a refresh/reconnect loop (especially on flaky WebSocket/proxy setups).
+            console.warn('[PM-CHANNEL] Connection lost:', status, err ? `Error: ${err.message}` : '');
             setIsConnected(false);
-            
-            // Attempt to resubscribe after a delay
-            setTimeout(async () => {
-              if (isMounted && channelRef.current) {
-                console.log('[PM-CHANNEL] Attempting reconnect...');
-                try {
-                  await channelRef.current.subscribe();
-                } catch (reconnectErr) {
-                  console.error('[PM-CHANNEL] Reconnect failed:', reconnectErr);
-                }
-              }
-            }, 2000);
           }
         });
 
@@ -565,19 +556,8 @@ const PrivateChatWindow = ({
         console.log('[PM-DB-CHANNEL] Status:', status, err ? `Error: ${err.message}` : '');
         
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.warn('[PM-DB-CHANNEL] Connection lost, will attempt reconnect');
-          
-          // Attempt to resubscribe after a delay
-          setTimeout(async () => {
-            if (isMounted) {
-              console.log('[PM-DB-CHANNEL] Attempting reconnect...');
-              try {
-                await dbChannel.subscribe();
-              } catch (reconnectErr) {
-                console.error('[PM-DB-CHANNEL] Reconnect failed:', reconnectErr);
-              }
-            }
-          }, 2000);
+          // Same rationale as above: avoid manual resubscribe loops.
+          console.warn('[PM-DB-CHANNEL] Connection lost:', status, err ? `Error: ${err.message}` : '');
         }
       });
 
