@@ -13,7 +13,7 @@ import {
 import UserAvatar from "@/components/avatar/UserAvatar";
 import FormattedText from "./FormattedText";
 import { useTheme } from "@/contexts/ThemeContext";
-import { getSimulationPill, getPillEmoji } from "@/hooks/useSimulationPill";
+import { getSimulationPill, getPillEmoji, getBotPill } from "@/hooks/useSimulationPill";
 
 interface MessageBubbleProps {
   id: string;
@@ -61,8 +61,13 @@ const MessageBubble = ({
   const { theme } = useTheme();
   const isSimulation = theme === 'matrix';
   
-  // Get pill choice for Simulation theme display
-  const pillEmoji = isSimulation ? getPillEmoji(getSimulationPill()) : '';
+  // Check if this is a bot message
+  const isBot = senderId?.startsWith('bot-') || senderId?.startsWith('sim-');
+  
+  // Get pill choice for Simulation theme display - user's own pill or bot's simulated pill
+  const pillEmoji = isSimulation 
+    ? (isBot && senderId ? getPillEmoji(getBotPill(senderId)) : getPillEmoji(getSimulationPill())) 
+    : '';
   
   // Username dropdown component with 3-dot menu
   const UsernameWithDropdown = ({ username, userId, isOwnMessage, avatarUrl }: { username: string; userId?: string; isOwnMessage: boolean; avatarUrl?: string | null }) => {
@@ -73,9 +78,13 @@ const MessageBubble = ({
     
     return (
       <div className="flex items-center gap-0.5">
-        {/* Pill indicator for Simulation theme */}
-        {pillEmoji && isOwnMessage && (
-          <span className="text-xs mr-0.5" title={getSimulationPill() === 'red' ? 'Red Pill' : 'Blue Pill'}>
+        {/* Pill indicator for Simulation theme - show for own messages OR bot messages */}
+        {pillEmoji && (isOwnMessage || isBot) && (
+          <span className="text-xs mr-0.5" title={
+            isBot 
+              ? `${username} chose the ${getBotPill(userId || '')} pill`
+              : getSimulationPill() === 'red' ? 'Red Pill' : 'Blue Pill'
+          }>
             {pillEmoji}
           </span>
         )}

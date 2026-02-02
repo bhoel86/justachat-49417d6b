@@ -70,3 +70,35 @@ export const getPillEmoji = (pill: PillChoice): string => {
   if (pill === 'blue') return '🔵';
   return '';
 };
+
+// Bot pill storage - persisted in localStorage for consistency
+const BOT_PILLS_KEY = 'simulation_bot_pills';
+
+/**
+ * Get or generate a pill choice for a bot
+ * Bots get a random pill assigned that persists across sessions
+ */
+export const getBotPill = (botId: string): PillChoice => {
+  if (typeof localStorage === 'undefined') {
+    // Fallback: deterministic based on botId
+    return botId.charCodeAt(botId.length - 1) % 2 === 0 ? 'red' : 'blue';
+  }
+  
+  try {
+    const stored = localStorage.getItem(BOT_PILLS_KEY);
+    const botPills: Record<string, PillChoice> = stored ? JSON.parse(stored) : {};
+    
+    if (botPills[botId]) {
+      return botPills[botId];
+    }
+    
+    // Assign random pill to new bot
+    const pill: PillChoice = Math.random() < 0.5 ? 'red' : 'blue';
+    botPills[botId] = pill;
+    localStorage.setItem(BOT_PILLS_KEY, JSON.stringify(botPills));
+    return pill;
+  } catch {
+    // Fallback on error
+    return botId.charCodeAt(botId.length - 1) % 2 === 0 ? 'red' : 'blue';
+  }
+};
