@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
+import matrixAdminBg from "@/assets/matrix/matrix-admin-bg.jpg";
 
 interface NavItem {
   label: string;
@@ -53,6 +55,8 @@ export const AdminSidebar = ({ children }: AdminSidebarProps) => {
   const location = useLocation();
   const { isOwner, isAdmin, isModerator } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const { theme } = useTheme();
+  const isSimulation = theme === 'matrix';
 
   const filteredItems = navItems.filter(item => {
     // Owner sees everything
@@ -67,7 +71,20 @@ export const AdminSidebar = ({ children }: AdminSidebarProps) => {
   });
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex relative">
+      {/* Simulation theme admin background */}
+      {isSimulation && (
+        <div 
+          className="fixed inset-0 pointer-events-none z-0"
+          style={{
+            backgroundImage: `url(${matrixAdminBg})`,
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover',
+            opacity: 0.12,
+          }}
+        />
+      )}
       {/* Sidebar */}
       <aside
         className={cn(
