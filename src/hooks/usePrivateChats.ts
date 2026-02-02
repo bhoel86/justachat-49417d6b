@@ -17,10 +17,9 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
   const [chats, setChats] = useState<PrivateChat[]>([]);
   const [topZIndex, setTopZIndex] = useState(1000);
   const [doNotDisturb, setDoNotDisturb] = useState(false);
-  const listenerSetupRef = useRef(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const dndRef = useRef(doNotDisturb);
 
-  // Keep ref in sync with state for use in async callbacks
   useEffect(() => {
     dndRef.current = doNotDisturb;
   }, [doNotDisturb]);
@@ -28,21 +27,20 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
   const toggleDoNotDisturb = useCallback(() => {
     setDoNotDisturb(prev => {
       const newValue = !prev;
-      toast.info(newValue ? 'Do Not Disturb enabled' : 'Do Not Disturb disabled', {
-        description: newValue 
-          ? 'New messages will appear in your tray' 
-          : 'New messages will open automatically'
-      });
+      toast.info(newValue ? 'Do Not Disturb enabled' : 'Do Not Disturb disabled');
       return newValue;
     });
   }, []);
 
-  // Listen for incoming private messages and auto-open chat windows
+  // Single listener for incoming PMs - subscribe once
   useEffect(() => {
-    if (!currentUserId || listenerSetupRef.current) return;
-    listenerSetupRef.current = true;
+    if (!currentUserId) return;
+    
+    // Only setup once
+    if (channelRef.current) return;
 
-    const channel = supabase.channel(`pm-listener-${currentUserId}`);
+    const channel = supabase.channel(`pm-inbox-${currentUserId}`);
+    channelRef.current = channel;
     
     channel
       .on(
@@ -54,64 +52,53 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
           filter: `recipient_id=eq.${currentUserId}`,
         },
         async (payload) => {
-          const newMessage = payload.new as { sender_id: string; recipient_id: string };
+          const msg = payload.new as { sender_id: string };
+          if (msg.sender_id === currentUserId) return;
           
-          if (newMessage.sender_id === currentUserId) return; // Ignore own messages
-          
-          // Check if we already have a chat open with this sender
+          // Check if chat exists
           setChats(prev => {
-            const existingChat = prev.find(c => c.targetUserId === newMessage.sender_id);
-            
-            if (existingChat) {
-              // Chat exists - if minimized, mark as unread and play sound
-              if (existingChat.isMinimized) {
+            const existing = prev.find(c => c.targetUserId === msg.sender_id);
+            if (existing) {
+              if (existing.isMinimized) {
                 playPMNotificationSound();
                 return prev.map(c => 
-                  c.id === existingChat.id ? { ...c, hasUnread: true } : c
+                  c.id === existing.id ? { ...c, hasUnread: true } : c
                 );
               }
-              return prev; // Chat is already open and active
+              return prev;
             }
             
-            // No existing chat - fetch sender profile and create chat
+            // Fetch sender info and open chat
             (async () => {
-              const { data: senderProfile } = await supabase
+              const { data: profile } = await supabase
                 .from('profiles_public')
                 .select('username')
-                .eq('user_id', newMessage.sender_id)
+                .eq('user_id', msg.sender_id)
                 .maybeSingle();
               
-              const senderUsername = senderProfile?.username || 'Unknown';
-              
-              // Play notification sound
+              const senderUsername = profile?.username || 'Unknown';
               playPMNotificationSound();
               
-              // Calculate position for new window
-              const offset = (prev.length % 5) * 30;
-              const baseX = Math.min(window.innerWidth - 340, 100 + offset);
-              const baseY = Math.min(window.innerHeight - 440, 100 + offset);
-              
-              // Check DND mode - if enabled, create minimized in tray
+              const offset = (chats.length % 5) * 30;
               const isDND = dndRef.current;
               
               const newChat: PrivateChat = {
-                id: `${newMessage.sender_id}-${Date.now()}`,
-                targetUserId: newMessage.sender_id,
+                id: `${msg.sender_id}-${Date.now()}`,
+                targetUserId: msg.sender_id,
                 targetUsername: senderUsername,
-                position: { x: baseX, y: baseY },
-                zIndex: 1001 + prev.length,
-                isMinimized: isDND, // Minimized if DND is on
-                hasUnread: isDND   // Mark as unread if going to tray
+                position: { 
+                  x: Math.min(window.innerWidth - 340, 100 + offset),
+                  y: Math.min(window.innerHeight - 440, 100 + offset)
+                },
+                zIndex: 1001,
+                isMinimized: isDND,
+                hasUnread: isDND
               };
               
-              setChats(current => {
-                // Double-check we haven't added it already
-                if (current.find(c => c.targetUserId === newMessage.sender_id)) {
-                  return current;
-                }
-                return [...current, newChat];
+              setChats(cur => {
+                if (cur.find(c => c.targetUserId === msg.sender_id)) return cur;
+                return [...cur, newChat];
               });
-              setTopZIndex(z => z + 1);
             })();
             
             return prev;
@@ -121,43 +108,40 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
       .subscribe();
 
     return () => {
-      listenerSetupRef.current = false;
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [currentUserId]);
 
   const openChat = useCallback((targetUserId: string, targetUsername: string) => {
-    // Check if chat already exists
-    const existingChat = chats.find(c => c.targetUserId === targetUserId);
-    if (existingChat) {
-      // Restore if minimized and bring to front
-      setChats(prev => prev.map(c => 
-        c.id === existingChat.id 
-          ? { ...c, isMinimized: false, hasUnread: false, zIndex: topZIndex + 1 } 
-          : c
-      ));
-      setTopZIndex(prev => prev + 1);
-      return;
-    }
-
-    // Calculate position - cascade new windows
-    const offset = (chats.length % 5) * 30;
-    const baseX = Math.min(window.innerWidth - 340, 100 + offset);
-    const baseY = Math.min(window.innerHeight - 440, 100 + offset);
-
-    const newChat: PrivateChat = {
-      id: `${targetUserId}-${Date.now()}`,
-      targetUserId,
-      targetUsername,
-      position: { x: baseX, y: baseY },
-      zIndex: topZIndex + 1,
-      isMinimized: false,
-      hasUnread: false
-    };
-
+    setChats(prev => {
+      const existing = prev.find(c => c.targetUserId === targetUserId);
+      if (existing) {
+        return prev.map(c => 
+          c.id === existing.id 
+            ? { ...c, isMinimized: false, hasUnread: false, zIndex: topZIndex + 1 } 
+            : c
+        );
+      }
+      
+      const offset = (prev.length % 5) * 30;
+      return [...prev, {
+        id: `${targetUserId}-${Date.now()}`,
+        targetUserId,
+        targetUsername,
+        position: { 
+          x: Math.min(window.innerWidth - 340, 100 + offset),
+          y: Math.min(window.innerHeight - 440, 100 + offset)
+        },
+        zIndex: topZIndex + 1,
+        isMinimized: false,
+        hasUnread: false
+      }];
+    });
     setTopZIndex(prev => prev + 1);
-    setChats(prev => [...prev, newChat]);
-  }, [chats, topZIndex]);
+  }, [topZIndex]);
 
   const closeChat = useCallback((chatId: string) => {
     setChats(prev => prev.filter(c => c.id !== chatId));
@@ -184,28 +168,18 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
   }, [topZIndex]);
 
   const setUnread = useCallback((chatId: string) => {
-    setChats(prev => {
-      const chat = prev.find(c => c.id === chatId);
-      if (chat?.isMinimized && !chat.hasUnread) {
-        // Play sound when marking as unread (new message while minimized)
-        playPMNotificationSound();
-      }
-      return prev.map(c => 
-        c.id === chatId && c.isMinimized ? { ...c, hasUnread: true } : c
-      );
-    });
+    setChats(prev => prev.map(c => 
+      c.id === chatId && c.isMinimized ? { ...c, hasUnread: true } : c
+    ));
   }, []);
 
   const reorderChats = useCallback((fromIndex: number, toIndex: number) => {
     setChats(prev => {
       const minimized = prev.filter(c => c.isMinimized);
       const active = prev.filter(c => !c.isMinimized);
-      
-      // Reorder minimized chats
       const reordered = [...minimized];
       const [removed] = reordered.splice(fromIndex, 1);
       reordered.splice(toIndex, 0, removed);
-      
       return [...active, ...reordered];
     });
   }, []);
