@@ -818,13 +818,22 @@ const Auth = () => {
         <div 
           className={`relative ${isRetro ? 'retro-login-container' : 'bg-card rounded-2xl border border-border shadow-xl p-6'} ${isMatrix ? 'overflow-hidden' : ''}`}
           style={isMatrix ? {
-            backgroundImage: `url(${matrixLoginBg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
             border: '1px solid hsl(120 100% 50% / 0.3)',
             boxShadow: '0 0 30px hsl(120 100% 50% / 0.2), inset 0 0 60px hsl(0 0% 0% / 0.5)',
           } : undefined}
         >
+          {/* Matrix background with reduced opacity */}
+          {isMatrix && (
+            <div 
+              className="absolute inset-0 z-0"
+              style={{
+                backgroundImage: `url(${matrixLoginBg})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                opacity: 0.3,
+              }}
+            />
+          )}
           {/* Memphis geometric decorations for retro theme */}
           {isRetro && (
             <>
