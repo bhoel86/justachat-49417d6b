@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSimulationPill, PillChoice } from '@/hooks/useSimulationPill';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
+import matrixPillsImg from '@/assets/matrix/matrix-pills.jpg';
 
 interface SimulationPillSelectorProps {
   onComplete?: () => void;
@@ -43,7 +44,15 @@ export const SimulationPillSelector = ({ onComplete }: SimulationPillSelectorPro
         className="flex items-center gap-2 px-3 py-1.5 rounded border border-green-500/30 bg-black/50 hover:bg-green-900/20 transition-colors group"
         title="Click to choose again"
       >
-        <span className="text-lg">{pill === 'red' ? '🔴' : '🔵'}</span>
+        {/* Cropped pill image */}
+        <div 
+          className="w-6 h-4 bg-cover bg-no-repeat rounded-sm"
+          style={{
+            backgroundImage: `url(${matrixPillsImg})`,
+            backgroundPosition: pill === 'red' ? '0% 50%' : '100% 50%',
+            backgroundSize: '200% 100%',
+          }}
+        />
         <span className="text-xs text-green-400/70 font-mono group-hover:text-green-400">
           {pill === 'red' ? 'RED PILL' : 'BLUE PILL'}
         </span>
@@ -75,39 +84,9 @@ export const SimulationPillSelector = ({ onComplete }: SimulationPillSelectorPro
           </p>
         </div>
 
-        {/* Pills */}
+        {/* Pills - using actual image */}
         <div className="flex items-center justify-center gap-8 md:gap-16">
-          {/* Blue Pill */}
-          <button
-            onClick={() => handleSelect('blue')}
-            onMouseEnter={() => setHovering('blue')}
-            onMouseLeave={() => setHovering(null)}
-            className={cn(
-              "relative group transition-all duration-300",
-              selected === 'blue' && "scale-125",
-              selected === 'red' && "opacity-0 scale-75"
-            )}
-          >
-            <div className={cn(
-              "w-16 h-10 md:w-20 md:h-12 rounded-full transition-all duration-300",
-              "bg-gradient-to-br from-blue-400 via-blue-500 to-blue-700",
-              "shadow-lg group-hover:shadow-blue-500/50 group-hover:shadow-xl",
-              hovering === 'blue' && "scale-110",
-              "border-2 border-blue-300/50"
-            )} />
-            <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/30" />
-            
-            {/* Glow effect */}
-            <div className={cn(
-              "absolute -inset-4 rounded-full bg-blue-500/20 blur-xl transition-opacity",
-              hovering === 'blue' ? "opacity-100" : "opacity-0"
-            )} />
-          </button>
-
-          {/* Divider */}
-          <div className="text-green-500/50 font-mono text-2xl">|</div>
-
-          {/* Red Pill */}
+          {/* Red Pill - left side of image */}
           <button
             onClick={() => handleSelect('red')}
             onMouseEnter={() => setHovering('red')}
@@ -118,19 +97,57 @@ export const SimulationPillSelector = ({ onComplete }: SimulationPillSelectorPro
               selected === 'blue' && "opacity-0 scale-75"
             )}
           >
-            <div className={cn(
-              "w-16 h-10 md:w-20 md:h-12 rounded-full transition-all duration-300",
-              "bg-gradient-to-br from-red-400 via-red-500 to-red-700",
-              "shadow-lg group-hover:shadow-red-500/50 group-hover:shadow-xl",
-              hovering === 'red' && "scale-110",
-              "border-2 border-red-300/50"
-            )} />
-            <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/30" />
+            <div 
+              className={cn(
+                "w-20 h-14 md:w-28 md:h-20 bg-cover bg-no-repeat rounded-lg transition-all duration-300",
+                "shadow-lg group-hover:shadow-red-500/50 group-hover:shadow-xl",
+                hovering === 'red' && "scale-110"
+              )}
+              style={{
+                backgroundImage: `url(${matrixPillsImg})`,
+                backgroundPosition: '0% 50%',
+                backgroundSize: '200% 100%',
+              }}
+            />
             
             {/* Glow effect */}
             <div className={cn(
               "absolute -inset-4 rounded-full bg-red-500/20 blur-xl transition-opacity",
               hovering === 'red' ? "opacity-100" : "opacity-0"
+            )} />
+          </button>
+
+          {/* Divider */}
+          <div className="text-green-500/50 font-mono text-2xl">|</div>
+
+          {/* Blue Pill - right side of image */}
+          <button
+            onClick={() => handleSelect('blue')}
+            onMouseEnter={() => setHovering('blue')}
+            onMouseLeave={() => setHovering(null)}
+            className={cn(
+              "relative group transition-all duration-300",
+              selected === 'blue' && "scale-125",
+              selected === 'red' && "opacity-0 scale-75"
+            )}
+          >
+            <div 
+              className={cn(
+                "w-20 h-14 md:w-28 md:h-20 bg-cover bg-no-repeat rounded-lg transition-all duration-300",
+                "shadow-lg group-hover:shadow-blue-500/50 group-hover:shadow-xl",
+                hovering === 'blue' && "scale-110"
+              )}
+              style={{
+                backgroundImage: `url(${matrixPillsImg})`,
+                backgroundPosition: '100% 50%',
+                backgroundSize: '200% 100%',
+              }}
+            />
+            
+            {/* Glow effect */}
+            <div className={cn(
+              "absolute -inset-4 rounded-full bg-blue-500/20 blur-xl transition-opacity",
+              hovering === 'blue' ? "opacity-100" : "opacity-0"
             )} />
           </button>
         </div>

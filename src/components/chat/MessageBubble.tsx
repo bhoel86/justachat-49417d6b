@@ -13,7 +13,8 @@ import {
 import UserAvatar from "@/components/avatar/UserAvatar";
 import FormattedText from "./FormattedText";
 import { useTheme } from "@/contexts/ThemeContext";
-import { getSimulationPill, getPillEmoji, getBotPill } from "@/hooks/useSimulationPill";
+import { getSimulationPill, getPillEmoji, getBotPill, getPillType, PillChoice } from "@/hooks/useSimulationPill";
+import matrixPillsImg from "@/assets/matrix/matrix-pills.jpg";
 
 interface MessageBubbleProps {
   id: string;
@@ -65,28 +66,39 @@ const MessageBubble = ({
   const isBot = senderId?.startsWith('bot-') || senderId?.startsWith('sim-');
   
   // Get pill choice for Simulation theme display - user's own pill or bot's simulated pill
-  const pillEmoji = isSimulation 
-    ? (isBot && senderId ? getPillEmoji(getBotPill(senderId)) : getPillEmoji(getSimulationPill())) 
-    : '';
+  const pillChoice: PillChoice = isSimulation 
+    ? (isBot && senderId ? getBotPill(senderId) : getSimulationPill()) 
+    : null;
+  
+  // Pill image component for Simulation theme
+  const PillIndicator = ({ pill, size = 'sm' }: { pill: PillChoice; size?: 'sm' | 'md' }) => {
+    if (!pill) return null;
+    const sizeClasses = size === 'sm' ? 'w-4 h-3' : 'w-5 h-4';
+    return (
+      <div 
+        className={`${sizeClasses} bg-cover bg-no-repeat rounded-sm shrink-0`}
+        style={{
+          backgroundImage: `url(${matrixPillsImg})`,
+          backgroundPosition: pill === 'red' ? '0% 50%' : '100% 50%',
+          backgroundSize: '200% 100%',
+        }}
+        title={pill === 'red' ? 'Red Pill' : 'Blue Pill'}
+      />
+    );
+  };
   
   // Username dropdown component with 3-dot menu
   const UsernameWithDropdown = ({ username, userId, isOwnMessage, avatarUrl }: { username: string; userId?: string; isOwnMessage: boolean; avatarUrl?: string | null }) => {
     const textColor = isOwnMessage ? "text-primary-foreground/90" : "text-primary";
     const iconColor = isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground";
     
-    if (!userId) return <span className={`text-xs font-medium ${textColor}`}>{pillEmoji && <span className="mr-1">{pillEmoji}</span>}{username}</span>;
+    if (!userId) return <span className={`text-xs font-medium ${textColor} flex items-center gap-1`}>{pillChoice && <PillIndicator pill={pillChoice} />}{username}</span>;
     
     return (
       <div className="flex items-center gap-0.5">
         {/* Pill indicator for Simulation theme - show for own messages OR bot messages */}
-        {pillEmoji && (isOwnMessage || isBot) && (
-          <span className="text-xs mr-0.5" title={
-            isBot 
-              ? `${username} chose the ${getBotPill(userId || '')} pill`
-              : getSimulationPill() === 'red' ? 'Red Pill' : 'Blue Pill'
-          }>
-            {pillEmoji}
-          </span>
+        {pillChoice && (isOwnMessage || isBot) && (
+          <PillIndicator pill={pillChoice} />
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

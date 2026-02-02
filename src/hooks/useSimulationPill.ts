@@ -65,12 +65,21 @@ export const getSimulationPill = (): PillChoice => {
 /**
  * Get the pill emoji for display
  */
+/**
+ * Get the pill emoji for display (legacy - prefer getPillIndicator for images)
+ */
 export const getPillEmoji = (pill: PillChoice): string => {
   if (pill === 'red') return '🔴';
   if (pill === 'blue') return '🔵';
   return '';
 };
 
+/**
+ * Get pill indicator type for image-based display
+ */
+export const getPillType = (pill: PillChoice): 'red' | 'blue' | null => {
+  return pill;
+};
 // Bot pill storage - persisted in localStorage for consistency
 const BOT_PILLS_KEY = 'simulation_bot_pills';
 
