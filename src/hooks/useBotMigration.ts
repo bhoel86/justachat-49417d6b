@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { MIGRATING_BOTS, ChatBot } from '@/lib/chatBots';
 import { supabase } from '@/integrations/supabase/client';
+import { getChatBotFunctionName } from '@/lib/environment';
 
 interface MigratingBotState {
   bot: ChatBot;
@@ -198,7 +199,7 @@ export const useBotMigration = ({
       const randomBotState = botsInRoom[Math.floor(Math.random() * botsInRoom.length)];
       
       try {
-        const { data, error } = await supabase.functions.invoke('chat-bot', {
+        const { data, error } = await supabase.functions.invoke(getChatBotFunctionName(), {
           body: {
             botId: randomBotState.bot.id,
             context: channelName,

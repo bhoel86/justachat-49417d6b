@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Lock, Send, Minus, Shield, Check, CheckCheck, Phone, Video, ImagePlus, Zap, Loader2, Camera, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { getChatBotFunctionName } from "@/lib/environment";
 import { generateSessionKey, encryptMessage, decryptMessage, exportKey, importKey, generateSessionId } from "@/lib/encryption";
 import EmojiPicker from "./EmojiPicker";
 import TextFormatMenu, { TextFormat, encodeFormat } from "./TextFormatMenu";
@@ -565,7 +566,7 @@ const PrivateChatWindow = ({
           content: m.content,
         }));
 
-        const { data, error } = await supabase.functions.invoke('chat-bot', {
+        const { data, error } = await supabase.functions.invoke(getChatBotFunctionName(), {
           body: {
             botId: targetBotId,
             context: 'private-message',

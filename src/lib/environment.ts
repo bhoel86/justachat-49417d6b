@@ -10,6 +10,13 @@ export const isVPS = (): boolean => {
   return !isLovableCloud();
 };
 
+// Chat bot backend function name differs by environment:
+// - Lovable Cloud: chat-bot-cloud (Lovable AI gateway)
+// - VPS/self-hosted: chat-bot (direct OpenAI)
+export const getChatBotFunctionName = (): 'chat-bot-cloud' | 'chat-bot' => {
+  return isLovableCloud() ? 'chat-bot-cloud' : 'chat-bot';
+};
+
 // Get appropriate ICE servers based on environment
 export const getIceServers = (): RTCIceServer[] => {
   const baseServers: RTCIceServer[] = [

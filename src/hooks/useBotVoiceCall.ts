@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CHAT_BOTS, ROOM_BOTS } from '@/lib/chatBots';
-import { isLovableCloud } from '@/lib/environment';
+import { getChatBotFunctionName, isLovableCloud } from '@/lib/environment';
 
 interface BotVoiceCallState {
   status: 'idle' | 'connecting' | 'greeting' | 'listening' | 'responding' | 'ended';
@@ -126,7 +126,7 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
     try {
       conversationHistoryRef.current.push(`User: ${userInput}`);
       
-      const { data, error } = await supabase.functions.invoke('chat-bot', {
+      const { data, error } = await supabase.functions.invoke(getChatBotFunctionName(), {
         body: {
           botId,
           context: 'voice-call',

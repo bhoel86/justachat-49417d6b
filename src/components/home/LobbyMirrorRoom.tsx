@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getBotsForChannel, CHAT_BOTS, getBotResponseDelay } from "@/lib/chatBots";
 import { useTheme } from "@/contexts/ThemeContext";
+import { getChatBotFunctionName } from "@/lib/environment";
 import { RetroWatermark } from "@/components/theme/RetroWatermark";
 import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
 import { StPatricksWatermark } from "@/components/theme/StPatricksWatermark";
@@ -74,7 +75,7 @@ const LobbyMirrorRoom = () => {
         timestamp: m.created_at,
       }));
 
-      const { data, error } = await supabase.functions.invoke('chat-bot', {
+      const { data, error } = await supabase.functions.invoke(getChatBotFunctionName(), {
         body: {
           botId: bot.id,
           context: 'general',
