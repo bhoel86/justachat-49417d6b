@@ -461,7 +461,9 @@ const PrivateChatWindow = ({
             });
           }
         })
-        .subscribe(async (status) => {
+        .subscribe(async (status, err) => {
+          console.log('[PM-CHANNEL] Status:', status, err ? `Error: ${err.message}` : '');
+          
           if (status === 'SUBSCRIBED' && isMounted) {
             setIsConnected(true);
             await channel.track({ userId: currentUserId });
@@ -474,6 +476,21 @@ const PrivateChatWindow = ({
                 payload: { key: exportedKey, userId: currentUserId }
               });
             }
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn('[PM-CHANNEL] Connection lost, will attempt reconnect');
+            setIsConnected(false);
+            
+            // Attempt to resubscribe after a delay
+            setTimeout(async () => {
+              if (isMounted && channelRef.current) {
+                console.log('[PM-CHANNEL] Attempting reconnect...');
+                try {
+                  await channelRef.current.subscribe();
+                } catch (reconnectErr) {
+                  console.error('[PM-CHANNEL] Reconnect failed:', reconnectErr);
+                }
+              }
+            }, 2000);
           }
         });
 
@@ -502,6 +519,8 @@ const PrivateChatWindow = ({
   useEffect(() => {
     if (isTargetBot) return;
     
+    let isMounted = true;
+    
     const dbChannel = supabase.channel(`pm-db-${currentUserId}-${targetUserId}`)
       .on(
         'postgres_changes',
@@ -512,6 +531,7 @@ const PrivateChatWindow = ({
           filter: `recipient_id=eq.${currentUserId}`,
         },
         async (payload) => {
+          if (!isMounted) return;
           const newMsg = payload.new as any;
           
           // Only process messages from this specific conversation
@@ -535,9 +555,28 @@ const PrivateChatWindow = ({
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log('[PM-DB-CHANNEL] Status:', status, err ? `Error: ${err.message}` : '');
+        
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('[PM-DB-CHANNEL] Connection lost, will attempt reconnect');
+          
+          // Attempt to resubscribe after a delay
+          setTimeout(async () => {
+            if (isMounted) {
+              console.log('[PM-DB-CHANNEL] Attempting reconnect...');
+              try {
+                await dbChannel.subscribe();
+              } catch (reconnectErr) {
+                console.error('[PM-DB-CHANNEL] Reconnect failed:', reconnectErr);
+              }
+            }
+          }, 2000);
+        }
+      });
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(dbChannel);
     };
   }, [currentUserId, targetUserId, isTargetBot, targetUsername, onNewMessage]);
