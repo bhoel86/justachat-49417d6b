@@ -8,14 +8,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Palette, Check, Circle } from 'lucide-react';
-import { isLovablePreviewHost } from '@/lib/previewHost';
+import { isPreviewHost } from '@/lib/previewHost';
 
 // Session storage key to mark local preview mode
 const LOCAL_PREVIEW_KEY = 'jac_local_theme_preview';
 
-// Only show in Lovable preview environments
-const isLovablePreview = () => {
-  return isLovablePreviewHost();
+// Only show in preview environments
+const isPreview = () => {
+  return isPreviewHost();
 };
 
 // Apply theme class locally without database persistence
@@ -44,13 +44,13 @@ export const LoginThemeSelector: React.FC = () => {
   // On mount, re-apply the local theme if one was set
   useEffect(() => {
     const stored = sessionStorage.getItem(LOCAL_PREVIEW_KEY);
-    if (stored && isLovablePreview()) {
+    if (stored && isPreview()) {
       applyLocalTheme(stored as ThemeName);
     }
   }, []);
 
-  // Only render in Lovable preview
-  if (!isLovablePreview()) {
+  // Only render in preview
+  if (!isPreview()) {
     return null;
   }
 

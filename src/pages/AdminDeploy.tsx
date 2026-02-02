@@ -242,7 +242,7 @@ export default function AdminDeploy() {
               VPS Deploy Token
             </CardTitle>
             <CardDescription>
-              Token is stored in your browser only - not sent to Lovable Cloud
+              Token is stored in your browser only - not sent to Cloud
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

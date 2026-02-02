@@ -39,7 +39,7 @@ const TEST_BLOCKED: BlockedUser[] = [
   { id: 'blocked-1', blockedId: 'blocked-user-1', username: 'Troll123', avatarUrl: null, reason: null, createdAt: new Date() },
 ];
 
-// Check if we're in Lovable preview mode
+// Check if we're in preview mode
 const isPreviewMode = () => {
   return isPreviewModeHost();
 };

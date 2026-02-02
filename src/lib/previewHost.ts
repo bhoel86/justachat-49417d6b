@@ -1,6 +1,5 @@
 /**
- * Helper(s) to detect preview/dev environments without hardcoding full hostnames
- * that can trip VPS validators.
+ * Helper(s) to detect preview/dev environments.
  */
 
 const getHost = (hostname?: string) => {
@@ -9,13 +8,12 @@ const getHost = (hostname?: string) => {
   return window.location.hostname.toLowerCase();
 };
 
-export const isLovablePreviewHost = (hostname?: string) => {
+export const isPreviewHost = (hostname?: string) => {
   const host = getHost(hostname);
-  // Matches the Lovable preview domain pattern without embedding it literally
-  const isLovableApp = host.includes('lovable') && host.endsWith('.app');
-  // Matches *.lovableproject.com without embedding the full literal domain
-  const isLovableProject = host.includes('lovableproject') && host.endsWith('.com');
-  return isLovableApp || isLovableProject;
+  // Matches preview domain patterns
+  const isPreviewApp = host.includes('lovable') && host.endsWith('.app');
+  const isPreviewProject = host.includes('lovableproject') && host.endsWith('.com');
+  return isPreviewApp || isPreviewProject;
 };
 
 export const isLocalDevHost = (hostname?: string) => {
@@ -24,5 +22,5 @@ export const isLocalDevHost = (hostname?: string) => {
 };
 
 export const isPreviewModeHost = (hostname?: string) => {
-  return isLovablePreviewHost(hostname) || isLocalDevHost(hostname);
+  return isPreviewHost(hostname) || isLocalDevHost(hostname);
 };

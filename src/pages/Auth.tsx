@@ -25,7 +25,7 @@ import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
 import retroHeaderImg from '@/assets/themes/retro-header-login-cutout.png';
 import matrixLoginBg from '@/assets/matrix/login-container-bg.png';
 import { usePngCutout } from "@/hooks/usePngCutout";
-import { isLovablePreviewHost } from "@/lib/previewHost";
+import { isPreviewHost } from "@/lib/previewHost";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -122,8 +122,8 @@ const Auth = () => {
         });
       } else {
         // For web: Use OAuth flow
-        // Detect if on VPS/custom domain vs Lovable preview
-        const isCustomDomain = !isLovablePreviewHost(window.location.hostname);
+        // Detect if on VPS/custom domain vs preview
+        const isCustomDomain = !isPreviewHost(window.location.hostname);
         
         if (isCustomDomain) {
           // Bypass auth-bridge by getting OAuth URL directly for VPS
@@ -131,7 +131,7 @@ const Auth = () => {
             provider: 'google',
             options: {
               redirectTo: `${window.location.origin}/`,
-              skipBrowserRedirect: true, // Critical: prevents Lovable auth-bridge interception
+              skipBrowserRedirect: true, // Prevents auth-bridge interception
               queryParams: {
                 prompt: 'select_account'
               }
@@ -149,7 +149,7 @@ const Auth = () => {
             window.location.href = data.url;
           }
         } else {
-          // For Lovable preview: Use normal OAuth flow
+          // For preview: Use normal OAuth flow
           const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -670,7 +670,7 @@ const Auth = () => {
         />
       )}
       
-      {/* Theme selector - only visible in Lovable preview */}
+      {/* Theme selector - only visible in preview */}
       <LoginThemeSelector />
 
       {/* Retro floating icons for 80s theme */}

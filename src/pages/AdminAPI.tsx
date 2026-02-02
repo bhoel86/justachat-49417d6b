@@ -71,7 +71,7 @@ const AdminAPI = () => {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Project ID</CardTitle>
-              <CardDescription>Your Lovable Cloud project identifier</CardDescription>
+              <CardDescription>Your Cloud project identifier</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">

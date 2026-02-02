@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CHAT_BOTS, ROOM_BOTS } from '@/lib/chatBots';
-import { getChatBotFunctionName, isLovableCloud } from '@/lib/environment';
+import { getChatBotFunctionName, isCloudEnv } from '@/lib/environment';
 
 interface BotVoiceCallState {
   status: 'idle' | 'connecting' | 'greeting' | 'listening' | 'responding' | 'ended';
@@ -113,7 +113,7 @@ export const useBotVoiceCall = ({ botId, botName, onBotMessage }: UseBotVoiceCal
 
   // Get AI response for user input
   const getBotResponse = useCallback(async (userInput: string): Promise<string> => {
-    if (!isLovableCloud()) {
+    if (!isCloudEnv()) {
       // VPS fallback - simple responses
       const fallbackResponses = [
         "That's interesting, tell me more!",

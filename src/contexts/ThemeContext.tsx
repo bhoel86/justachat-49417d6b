@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useLayoutEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { isLovablePreviewHost } from '@/lib/previewHost';
+import { isPreviewHost } from '@/lib/previewHost';
 
 export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'vapor' | 'arcade' | 'dieselpunk' | 'cyberpunk' | 'jungle';
 
@@ -45,7 +45,7 @@ const isLocalPreviewActive = () => {
   if (typeof sessionStorage === 'undefined') return false;
   // Only treat local preview as active inside preview hosts.
   // This prevents accidental persistence of preview-only behavior elsewhere.
-  if (!isLovablePreviewHost()) return false;
+  if (!isPreviewHost()) return false;
   return !!getLocalPreviewTheme();
 };
 

@@ -1,20 +1,20 @@
 // Environment detection utilities
 
-// Check if running on Lovable Cloud (*.supabase.co) vs VPS (self-hosted)
-export const isLovableCloud = (): boolean => {
+// Check if running on Cloud (*.supabase.co) vs VPS (self-hosted)
+export const isCloudEnv = (): boolean => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
   return supabaseUrl.includes('supabase.co');
 };
 
 export const isVPS = (): boolean => {
-  return !isLovableCloud();
+  return !isCloudEnv();
 };
 
 // Chat bot backend function name differs by environment:
-// - Lovable Cloud: chat-bot-cloud (Lovable AI gateway)
+// - Cloud: chat-bot-cloud (AI gateway)
 // - VPS/self-hosted: chat-bot (direct OpenAI)
 export const getChatBotFunctionName = (): 'chat-bot-cloud' | 'chat-bot' => {
-  return isLovableCloud() ? 'chat-bot-cloud' : 'chat-bot';
+  return isCloudEnv() ? 'chat-bot-cloud' : 'chat-bot';
 };
 
 // Get appropriate ICE servers based on environment
@@ -59,7 +59,7 @@ export const getSiteDomain = (): string => {
 // Log environment info for debugging
 export const logEnvironment = (): void => {
   console.log('[Environment]', {
-    isLovableCloud: isLovableCloud(),
+    isCloud: isCloudEnv(),
     isVPS: isVPS(),
     supabaseUrl: import.meta.env.VITE_SUPABASE_URL?.substring(0, 30) + '...',
     origin: window.location.origin,
