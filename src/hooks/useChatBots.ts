@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CHAT_BOTS, ChatBot, getBotResponseDelay, getRandomTopic } from '@/lib/chatBots';
+import { getChatBotFunctionName } from '@/lib/environment';
 
 interface Message {
   id: string;
@@ -97,7 +98,12 @@ export const useChatBots = ({
     pendingResponseRef.current = true;
 
     try {
-      const { data, error } = await supabase.functions.invoke('chat-bot-cloud', {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+
+      const { data, error } = await supabase.functions.invoke(getChatBotFunctionName(), {
+        headers,
         body: {
           botId: bot.id,
           context: channelName,

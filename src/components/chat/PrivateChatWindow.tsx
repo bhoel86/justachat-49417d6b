@@ -130,6 +130,12 @@ const PrivateChatWindow = ({
   const sendButtonRef = useRef<HTMLButtonElement>(null);
   const { toast } = useToast();
 
+  const getFunctionAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+  }, []);
+
   // Check if target user is a bot
   const targetBotId = getBotIdFromUserId(targetUserId);
   const isTargetBot = !!targetBotId;
@@ -243,7 +249,9 @@ const PrivateChatWindow = ({
   // Helper function to decrypt a message from DB using server-side decryption
   const decryptDbMessage = async (msg: any): Promise<PrivateMessage | null> => {
     try {
+      const headers = await getFunctionAuthHeaders();
       const { data, error } = await supabase.functions.invoke('decrypt-pm', {
+        headers,
         body: {
           messageId: msg.id,
           encrypted_content: msg.encrypted_content,
@@ -536,7 +544,9 @@ const PrivateChatWindow = ({
 
   const monitorMessage = useCallback(async (content: string, senderId: string, senderName: string) => {
     try {
+      const headers = await getFunctionAuthHeaders();
       await supabase.functions.invoke('pm-monitor', {
+        headers,
         body: {
           content,
           senderId,
@@ -549,7 +559,7 @@ const PrivateChatWindow = ({
     } catch (error) {
       console.error('Monitor error:', error);
     }
-  }, [targetUserId, targetUsername, sessionId]);
+  }, [getFunctionAuthHeaders, targetUserId, targetUsername, sessionId]);
 
   // Generate bot response for PM
   const generateBotResponse = useCallback(async (userMessage: string) => {
@@ -566,7 +576,9 @@ const PrivateChatWindow = ({
           content: m.content,
         }));
 
+        const headers = await getFunctionAuthHeaders();
         const { data, error } = await supabase.functions.invoke(getChatBotFunctionName(), {
+          headers,
           body: {
             botId: targetBotId,
             context: 'private-message',
@@ -602,7 +614,7 @@ const PrivateChatWindow = ({
         setIsBotTyping(false);
       }
     }, delay);
-  }, [targetBotId, messages, currentUsername, targetUsername, targetUserId, onNewMessage]);
+  }, [targetBotId, messages, currentUsername, targetUsername, targetUserId, onNewMessage, getFunctionAuthHeaders]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -665,7 +677,9 @@ const PrivateChatWindow = ({
       // Store via server-side encryption (no hardcoded key)
       const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
       if (!isSimulatedRecipient) {
+          const headers = await getFunctionAuthHeaders();
         const { data: storeResult, error: storeError } = await supabase.functions.invoke('encrypt-pm', {
+            headers,
           body: {
             message: finalMessage,
             recipient_id: targetUserId
@@ -783,7 +797,9 @@ const PrivateChatWindow = ({
       // Store via server-side encryption (no hardcoded key)
       const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
       if (!isSimulatedRecipient) {
+         const headers = await getFunctionAuthHeaders();
         const { error: storeError } = await supabase.functions.invoke('encrypt-pm', {
+           headers,
           body: {
             message: finalMessage,
             recipient_id: targetUserId
@@ -949,7 +965,9 @@ const PrivateChatWindow = ({
       // Store via server-side encryption (no hardcoded key)
       const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
       if (!isSimulatedRecipient) {
+         const headers = await getFunctionAuthHeaders();
         const { error: storeError } = await supabase.functions.invoke('encrypt-pm', {
+           headers,
           body: {
             message: finalMessage,
             recipient_id: targetUserId
