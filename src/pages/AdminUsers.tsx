@@ -35,8 +35,10 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 interface UserRecord {
   user_id: string;
   username: string;
+  email?: string;
   role: 'owner' | 'admin' | 'moderator' | 'user';
   created_at: string;
+  last_sign_in_at?: string;
 }
 
 const roleConfig = {
@@ -89,27 +91,16 @@ const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data: profiles } = await supabaseUntyped
-        .from('profiles')
-        .select('user_id, username, created_at');
+      // Use the admin-list-users edge function to get emails
+      const { data, error } = await supabase.functions.invoke('admin-list-users');
+      
+      if (error) {
+        console.error('Error fetching users:', error);
+        toast.error('Failed to load users');
+        return;
+      }
 
-      const { data: roles } = await supabaseUntyped
-        .from('user_roles')
-        .select('user_id, role');
-
-      const roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]));
-
-      const userList = profiles?.map((p: { user_id: string; username: string; created_at: string }) => ({
-        user_id: p.user_id,
-        username: p.username,
-        role: (roleMap.get(p.user_id) || 'user') as UserRecord['role'],
-        created_at: p.created_at,
-      })) || [];
-
-      // Sort by role priority
-      const rolePriority = { owner: 0, admin: 1, moderator: 2, user: 3 };
-      userList.sort((a: UserRecord, b: UserRecord) => rolePriority[a.role] - rolePriority[b.role]);
-
+      const userList = (data?.users || []) as UserRecord[];
       setUsers(userList);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -280,6 +271,11 @@ const AdminUsers = () => {
                                   <Badge variant="outline" className="text-xs">You</Badge>
                                 )}
                               </div>
+                              {u.email && (
+                                <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                  {u.email}
+                                </div>
+                              )}
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Icon className={`h-3 w-3 ${config.color}`} />
                                 <span className={config.color}>{config.label}</span>

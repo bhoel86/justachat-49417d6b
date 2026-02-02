@@ -100,6 +100,8 @@ log_info "Stage 6: Syncing edge functions..."
 if [ -d "$FUNCTIONS_DIR" ]; then
   # List of edge functions to sync
   FUNCTIONS=(
+    "admin-list-users"
+    "admin-reset-password"
     "ai-moderator"
     "art-curator"
     "audit-log"
@@ -107,6 +109,7 @@ if [ -d "$FUNCTIONS_DIR" ]; then
     "check-rate-limit"
     "decrypt-pm"
     "delete-account"
+    "donation-notify"
     "encrypt-pm"
     "execute-moderation"
     "geolocate"
@@ -119,8 +122,6 @@ if [ -d "$FUNCTIONS_DIR" ]; then
     "translate-message"
     "upload-image"
     "verify-captcha"
-    "admin-reset-password"
-    "donation-notify"
     "vps-test"
   )
 
