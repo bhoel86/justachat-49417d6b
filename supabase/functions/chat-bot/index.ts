@@ -1131,8 +1131,8 @@ ${messageContext}
 jump in and say something. pick up on what someones talking about or add to the convo. keep it casual n short`;
     }
 
-    // Use OpenAI API ONLY (for VPS/self-hosted deployment)
-    // For Lovable Cloud, use the chat-bot-cloud function instead
+    // Use OpenAI API ONLY (this is the VPS/self-hosted version)
+    // Cloud deployments use a separate function with different gateway
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
       console.error("OPENAI_API_KEY not configured");
