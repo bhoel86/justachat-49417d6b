@@ -24,7 +24,7 @@ import ProfileViewModal from "@/components/profile/ProfileViewModal";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getSimulationPill, getPillEmoji } from "@/hooks/useSimulationPill";
-
+import matrixMembersBg from "@/assets/matrix/matrix-members-bg.webp";
 
 interface Member {
   user_id: string;
@@ -110,6 +110,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   const radio = useRadioOptional();
   const { theme } = useTheme();
   const isRetro = theme === 'retro80s';
+  const isSimulation = theme === 'matrix';
 
   // Get current user's username and avatar
   const [currentUsername, setCurrentUsername] = useState('');
@@ -468,12 +469,26 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
     <>
       {/* Members Panel - fixed width with proper constraints */}
       <div className={cn(
-        "w-48 min-w-[180px] flex-shrink-0 bg-card border-l border-border flex flex-col h-full max-h-screen overflow-hidden",
+        "w-48 min-w-[180px] flex-shrink-0 bg-card border-l border-border flex flex-col h-full max-h-screen overflow-hidden relative isolate",
         isRetro && "retro-member-list"
       )}>
-        {/* Header */}
+        {/* Simulation theme background */}
+        {isSimulation && (
+          <div 
+            className="absolute inset-0 pointer-events-none -z-10"
+            style={{
+              backgroundImage: `url(${matrixMembersBg})`,
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'cover',
+              opacity: 0.15,
+            }}
+          />
+        )}
+        
+        {/* Header - solid background to prevent bleed-through */}
         <div className={cn(
-          "flex items-center gap-1.5 px-3 py-2.5 border-b border-border",
+          "flex items-center gap-1.5 px-3 py-2.5 border-b border-border bg-card relative z-10",
           isRetro && "retro-member-header"
         )}>
           <Users className="h-4 w-4 text-primary" />
