@@ -575,10 +575,9 @@ const Auth = () => {
           // Reset rate limit on successful login
           await resetRateLimit(email.toLowerCase());
           
-          // Email login = Blue Pill (staying in the simulation / internal auth)
-          if (isMatrixTheme) {
-            setPill('blue');
-            setActivePill('blue');
+          // Show pill transition for Matrix theme (uses activePill set by button click)
+          if (isMatrixTheme && activePill) {
+            setPill(activePill);
             setShowPillTransition(true);
             // Delay navigation to show pill transition
             return; // onComplete will handle navigation
@@ -1233,7 +1232,7 @@ const Auth = () => {
                   {/* Red Pill Side (Email/Password) */}
                   <button
                     type="submit"
-                    onClick={() => setPill('red')}
+                    onClick={() => { setPill('red'); setActivePill('red'); }}
                     disabled={
                       isSubmitting ||
                       (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
@@ -1267,7 +1266,7 @@ const Auth = () => {
                   {/* Blue Pill Side (Email) */}
                   <button
                     type="submit"
-                    onClick={() => setPill('blue')}
+                    onClick={() => { setPill('blue'); setActivePill('blue'); }}
                     disabled={
                       isSubmitting ||
                       (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
