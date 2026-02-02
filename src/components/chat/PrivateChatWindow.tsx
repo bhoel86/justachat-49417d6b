@@ -653,8 +653,9 @@ const PrivateChatWindow = ({
       console.log('[PM-SEND] Empty message, ignoring');
       return;
     }
-    if (!currentKey || !channelRef.current) {
-      console.log('[PM-SEND] Missing key or channel', { hasKey: !!currentKey, hasChannel: !!channelRef.current });
+    // Allow sending if channel is connected even without P2P key (will use server-side encryption)
+    if (!channelRef.current) {
+      console.log('[PM-SEND] No channel connected yet');
       return;
     }
     
@@ -672,14 +673,12 @@ const PrivateChatWindow = ({
     const msgId = `${Date.now()}-${Math.random()}`;
     
     try {
-      const encrypted = await encryptMessage(finalMessage, currentKey);
-      
-      // Store via server-side encryption (no hardcoded key)
+      // Store via server-side encryption FIRST (critical path)
       const isSimulatedRecipient = typeof targetUserId === 'string' && targetUserId.startsWith('sim-');
       if (!isSimulatedRecipient) {
-          const headers = await getFunctionAuthHeaders();
+        const headers = await getFunctionAuthHeaders();
         const { data: storeResult, error: storeError } = await supabase.functions.invoke('encrypt-pm', {
-            headers,
+          headers,
           body: {
             message: finalMessage,
             recipient_id: targetUserId
@@ -690,50 +689,54 @@ const PrivateChatWindow = ({
           console.error('[PM-SEND] Failed to store message in DB:', storeError || storeResult?.error);
           toast({
             variant: "destructive",
-            title: "Message not saved",
-            description: "Message sent but not saved to history"
+            title: "Message failed",
+            description: storeError?.message || storeResult?.error || "Could not send message"
           });
+          return; // Don't add to local state if DB storage failed
         } else {
           console.log('[PM-SEND] Message stored in DB successfully');
         }
       }
       
-    // CRITICAL: Mark as sent BEFORE adding to state to prevent race conditions
-    sentMessageIdsRef.current.add(msgId);
-      
-    // Add message locally FIRST (before broadcast to prevent race conditions)
-    setMessages(prev => {
-      // Content-based dedup to prevent flicker with DB listener
-      const isDuplicate = prev.some(m => 
-        m.content === finalMessage && 
-        m.senderId === currentUserId && 
-        Math.abs(new Date(m.timestamp).getTime() - Date.now()) < 5000
-      );
-      if (isDuplicate || prev.some(m => m.id === msgId)) return prev;
-      
-      return [...prev, {
-        id: msgId,
-        content: finalMessage,
-        senderId: currentUserId,
-        senderName: currentUsername,
-        timestamp: new Date(),
-        isOwn: true
-      }];
-    });
-    
-    // Then broadcast to other party
-    channelRef.current.send({
-        type: 'broadcast',
-        event: 'message',
-        payload: {
+      // CRITICAL: Mark as sent BEFORE adding to state to prevent race conditions
+      sentMessageIdsRef.current.add(msgId);
+        
+      // Add message locally FIRST (before broadcast to prevent race conditions)
+      setMessages(prev => {
+        // Content-based dedup to prevent flicker with DB listener
+        const isDuplicate = prev.some(m => 
+          m.content === finalMessage && 
+          m.senderId === currentUserId && 
+          Math.abs(new Date(m.timestamp).getTime() - Date.now()) < 5000
+        );
+        if (isDuplicate || prev.some(m => m.id === msgId)) return prev;
+        
+        return [...prev, {
           id: msgId,
-          encrypted,
+          content: finalMessage,
           senderId: currentUserId,
           senderName: currentUsername,
-          timestamp: new Date().toISOString(),
-          sessionId
-        }
+          timestamp: new Date(),
+          isOwn: true
+        }];
       });
+      
+      // Broadcast to other party if P2P key available (optional enhancement, DB is source of truth)
+      if (currentKey && channelRef.current) {
+        const encrypted = await encryptMessage(finalMessage, currentKey);
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'message',
+          payload: {
+            id: msgId,
+            encrypted,
+            senderId: currentUserId,
+            senderName: currentUsername,
+            timestamp: new Date().toISOString(),
+            sessionId
+          }
+        });
+      }
 
       monitorMessage(finalMessage, currentUserId, currentUsername);
       setMessage('');
@@ -751,7 +754,7 @@ const PrivateChatWindow = ({
       toast({
         variant: "destructive",
         title: "Send failed",
-        description: "Could not encrypt and send message."
+        description: error instanceof Error ? error.message : "Could not send message."
       });
     } finally {
       // Reset send lock after a brief delay
@@ -1349,16 +1352,16 @@ const PrivateChatWindow = ({
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             placeholder="Message..."
-            disabled={!isConnected || isUploading}
+            disabled={isUploading}
             className="flex-1 bg-input rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50 min-w-0"
           />
           <Button
             ref={sendButtonRef}
             onClick={handleSendClick}
-            disabled={!message.trim() || !isConnected || isUploading}
+            disabled={!message.trim() || isUploading}
             variant="jac"
             size="icon"
-           className="h-8 w-8 rounded-lg shrink-0 touch-manipulation"
+            className="h-8 w-8 rounded-lg shrink-0 touch-manipulation"
             aria-label="Send message"
           >
             <Send className="h-3.5 w-3.5" />
