@@ -32,9 +32,9 @@ export const MatrixMascot = ({ side }: { side: 'left' | 'right' }) => {
       <img
         src={imageSrc}
         alt={side === 'left' ? 'Matrix Rabbit Left' : 'Matrix Rabbit Right'}
-        className="h-12 sm:h-14 w-auto object-contain"
+        className="h-12 sm:h-14 w-auto object-contain opacity-75"
         style={{
-          filter: 'drop-shadow(0 0 10px hsl(120 100% 50% / 0.6))',
+          filter: 'drop-shadow(0 0 12px hsl(120 100% 50% / 0.7))',
         }}
       />
     </div>
