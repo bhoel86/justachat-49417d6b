@@ -1230,14 +1230,13 @@ const Auth = () => {
               {/* Matrix theme: Split Red/Blue pill button */}
               {isMatrix ? (
                 <div className="flex w-full overflow-hidden rounded-full">
-                  {/* Red Pill Side */}
+                  {/* Red Pill Side (Google) */}
                   <button
-                    type="submit"
-                    onClick={() => setPill('red')}
+                    type="button"
+                    onClick={() => handleGoogleSignIn(false)}
                     disabled={
                       isSubmitting ||
-                      (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
-                      (mode === "login" && rateLimitInfo?.locked)
+                      (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken)))
                     }
                     className="flex-1 py-2 font-mono uppercase tracking-wider text-sm transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center"
                     style={{
@@ -1253,26 +1252,18 @@ const Auth = () => {
                   >
                     {isSubmitting ? '...' : (
                       <span className="flex flex-col items-center leading-tight">
-                        <span className="text-base font-bold">
-                          {mode === "login" && "RED"}
-                          {mode === "signup" && "RED"}
-                          {mode === "forgot" && "SEND"}
-                          {mode === "reset" && "SET"}
-                        </span>
+                        <span className="text-base font-bold">RED</span>
                         <span className="text-[10px] opacity-70">
-                          {mode === "login" && "LOGIN"}
-                          {mode === "signup" && "SIGNUP"}
-                          {mode === "forgot" && ""}
-                          {mode === "reset" && ""}
+                          {mode === "signup" ? "SIGNUP" : "LOGIN"}
                         </span>
                       </span>
                     )}
                   </button>
-                  
+
                   {/* Divider */}
                   <div className="w-px bg-gradient-to-b from-red-500/50 via-white/20 to-blue-500/50" />
-                  
-                  {/* Blue Pill Side */}
+
+                  {/* Blue Pill Side (Email) */}
                   <button
                     type="submit"
                     onClick={() => setPill('blue')}
@@ -1295,17 +1286,9 @@ const Auth = () => {
                   >
                     {isSubmitting ? '...' : (
                       <span className="flex flex-col items-center leading-tight">
-                        <span className="text-base font-bold">
-                          {mode === "login" && "BLUE"}
-                          {mode === "signup" && "BLUE"}
-                          {mode === "forgot" && "SEND"}
-                          {mode === "reset" && "SET"}
-                        </span>
+                        <span className="text-base font-bold">BLUE</span>
                         <span className="text-[10px] opacity-70">
-                          {mode === "login" && "LOGIN"}
-                          {mode === "signup" && "SIGNUP"}
-                          {mode === "forgot" && ""}
-                          {mode === "reset" && ""}
+                          {mode === "signup" ? "SIGNUP" : "LOGIN"}
                         </span>
                       </span>
                     )}
@@ -1340,7 +1323,7 @@ const Auth = () => {
           )}
 
           {/* Google Sign-In - show for login and signup modes (works on both web and app) */}
-          {(mode === "login" || mode === "signup") && (
+          {!isMatrix && (mode === "login" || mode === "signup") && (
             <div className="mt-4">
               <div className="relative flex items-center justify-center my-4">
                 <div className={`border-t w-full ${isMatrix ? 'border-primary/30' : 'border-border'}`} />
