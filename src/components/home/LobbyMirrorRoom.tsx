@@ -169,7 +169,10 @@ const LobbyMirrorRoom = () => {
 
   return (
     <div 
-      className="flex h-full bg-background relative overflow-hidden rounded-xl border border-border"
+      className={cn(
+        "flex h-full relative overflow-hidden",
+        isRetro ? "retro-lobby-mirror" : "bg-background rounded-xl border border-border"
+      )}
       onClick={handleJoinChat}
       role="button"
       tabIndex={0}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import FriendsList from "./FriendsList";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface FriendsTrayProps {
   currentUserId: string;
@@ -18,6 +19,8 @@ const FriendsTray = ({
   onOpenPm, 
 }: FriendsTrayProps) => {
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
+  const isRetro = theme === 'retro80s';
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(true);
   const [sizeMode, setSizeMode] = useState<SizeMode>('normal');
@@ -174,24 +177,28 @@ const FriendsTray = ({
         <button
           onClick={handleToggle}
           className={cn(
-            "relative flex items-center gap-2 px-4 py-2 rounded-t-lg border border-b-0",
-            "bg-card/95 backdrop-blur-sm shadow-lg transition-all hover:bg-muted",
-            "border-border hover:border-primary/50"
+            "relative flex items-center gap-2 px-4 py-2 border border-b-0 transition-all",
+            isRetro 
+              ? "retro-friends-tray bg-[hsl(50_100%_70%)] border-[3px] border-black border-b-0 rounded-none shadow-[3px_0_0_black,-3px_0_0_black]"
+              : "bg-card/95 backdrop-blur-sm shadow-lg rounded-t-lg border-border hover:bg-muted hover:border-primary/50"
           )}
         >
-          <Users className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">Friends</span>
+          <Users className={cn("h-4 w-4", isRetro ? "text-[hsl(330_90%_45%)]" : "text-primary")} />
+          <span className={cn("text-sm font-medium", isRetro ? "font-['VT323'] text-base text-black" : "")}>Friends</span>
           {counts.total > 0 && (
-            <Badge variant="secondary" className="text-xs px-1.5 py-0">
+            <Badge variant="secondary" className={cn("text-xs px-1.5 py-0", isRetro ? "border-2 border-black rounded-none bg-[hsl(185_90%_55%)] text-black" : "")}>
               {counts.online}/{counts.total}
             </Badge>
           )}
           {counts.pending > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold animate-pulse">
+            <span className={cn(
+              "absolute -top-1 -right-1 h-4 w-4 text-[10px] flex items-center justify-center font-bold animate-pulse",
+              isRetro ? "bg-[hsl(330_90%_55%)] text-white border border-black rounded-none" : "rounded-full bg-destructive text-destructive-foreground"
+            )}>
               {counts.pending}
             </span>
           )}
-          <ChevronUp className="h-3 w-3 text-muted-foreground ml-1" />
+          <ChevronUp className={cn("h-3 w-3 ml-1", isRetro ? "text-black" : "text-muted-foreground")} />
         </button>
       </div>
     );
@@ -203,7 +210,9 @@ const FriendsTray = ({
       ref={trayRef}
       className={cn(
         "fixed z-[998] flex flex-col",
-        "bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-2xl",
+        isRetro 
+          ? "retro-friends-tray" 
+          : "bg-card/95 backdrop-blur-sm border border-border rounded-lg shadow-2xl",
         isMobile && "inset-x-2 bottom-2 max-h-[70vh]"
       )}
       style={!isMobile ? getSizeStyles() : undefined}
@@ -211,18 +220,21 @@ const FriendsTray = ({
       {/* Header */}
       <div 
         className={cn(
-          "flex items-center gap-2 px-3 py-2 border-b border-border rounded-t-lg bg-muted/50",
+          "flex items-center gap-2 px-3 py-2 border-b",
+          isRetro 
+            ? "retro-friends-header bg-[hsl(330_90%_55%)] border-black border-b-2" 
+            : "border-border rounded-t-lg bg-muted/50",
           !isMobile && sizeMode === 'normal' && "cursor-grab active:cursor-grabbing"
         )}
         onMouseDown={!isMobile ? handleMouseDown : undefined}
       >
         {!isMobile && sizeMode === 'normal' && (
-          <GripHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+          <GripHorizontal className={cn("h-4 w-4 shrink-0", isRetro ? "text-white" : "text-muted-foreground")} />
         )}
-        <Users className="h-4 w-4 text-primary shrink-0" />
-        <span className="font-medium text-sm flex-1">Friends</span>
+        <Users className={cn("h-4 w-4 shrink-0", isRetro ? "text-white" : "text-primary")} />
+        <span className={cn("font-medium text-sm flex-1", isRetro ? "font-['Press_Start_2P'] text-[0.5rem] text-white uppercase" : "")}>Friends</span>
         {counts.pending > 0 && (
-          <Badge variant="destructive" className="text-xs px-1.5 py-0">
+          <Badge variant="destructive" className={cn("text-xs px-1.5 py-0", isRetro ? "border-2 border-black rounded-none" : "")}>
             {counts.pending} new
           </Badge>
         )}

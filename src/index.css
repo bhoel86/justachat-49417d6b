@@ -1101,6 +1101,168 @@
     font-family: 'VT323', monospace !important;
   }
 
+  /* ============================================
+     RETRO 80s LOBBY/HOME PAGE STYLING
+     Match middle content to header/footer
+     ============================================ */
+
+  /* Chat rooms sidebar container - yellow Memphis style */
+  .theme-retro80s .retro-lobby-sidebar {
+    background: hsl(50 100% 70%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    box-shadow: 5px 5px 0px hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    position: relative;
+  }
+
+  /* Memphis pattern overlay for sidebar */
+  .theme-retro80s .retro-lobby-sidebar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 90% 10%, hsl(330 90% 55% / 0.35) 8px, transparent 8px),
+      radial-gradient(circle at 10% 90%, hsl(185 90% 50% / 0.35) 6px, transparent 6px),
+      radial-gradient(circle at 85% 85%, hsl(270 50% 55% / 0.3) 5px, transparent 5px),
+      radial-gradient(circle at 15% 15%, hsl(185 90% 50% / 0.25) 4px, transparent 4px),
+      radial-gradient(circle at 50% 50%, hsl(330 90% 55% / 0.2) 3px, transparent 3px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .theme-retro80s .retro-lobby-sidebar > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Chat Rooms heading styling */
+  .theme-retro80s .retro-lobby-heading {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.6rem !important;
+    color: hsl(330 90% 45%) !important;
+    text-shadow: 2px 2px 0px hsl(185 90% 50%) !important;
+    text-transform: uppercase !important;
+  }
+
+  .theme-retro80s .retro-lobby-subtext {
+    font-family: 'VT323', monospace !important;
+    font-size: 0.85rem !important;
+    color: hsl(0 0% 30%) !important;
+  }
+
+  /* Lobby Mirror Room container */
+  .theme-retro80s .retro-lobby-mirror {
+    background: hsl(50 100% 70%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    box-shadow: 5px 5px 0px hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    position: relative;
+  }
+
+  /* Memphis dots pattern for lobby mirror */
+  .theme-retro80s .retro-lobby-mirror::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 5% 20%, hsl(330 90% 55% / 0.3) 6px, transparent 6px),
+      radial-gradient(circle at 95% 80%, hsl(185 90% 50% / 0.3) 5px, transparent 5px),
+      radial-gradient(circle at 92% 15%, hsl(270 50% 55% / 0.25) 4px, transparent 4px),
+      radial-gradient(circle at 8% 85%, hsl(330 90% 55% / 0.25) 4px, transparent 4px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .theme-retro80s .retro-lobby-mirror > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Voice/Video/Games/Dating feature link cards */
+  .theme-retro80s .retro-feature-link {
+    background: hsl(50 100% 72%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    box-shadow: 2px 2px 0px hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s .retro-feature-link:hover {
+    background: hsl(185 90% 60%) !important;
+    transform: translate(-1px, -1px) !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s .retro-feature-link .retro-feature-icon {
+    background: hsl(330 90% 55%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s .retro-feature-link h3 {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.5rem !important;
+    color: hsl(0 0% 0%) !important;
+    text-transform: uppercase !important;
+  }
+
+  .theme-retro80s .retro-feature-link span {
+    font-family: 'VT323', monospace !important;
+    font-size: 0.8rem !important;
+    color: hsl(0 0% 30%) !important;
+  }
+
+  /* Friends Tray retro styling */
+  .theme-retro80s .retro-friends-tray {
+    background: hsl(50 100% 70%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    box-shadow: 4px 4px 0px hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s .retro-friends-tray .retro-friends-header {
+    background: hsl(330 90% 55%) !important;
+    border-bottom: 2px solid hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s .retro-friends-tray .retro-friends-header span {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.5rem !important;
+    color: hsl(0 0% 100%) !important;
+  }
+
+  /* Room cards enhanced styling */
+  .theme-retro80s .retro-room-card {
+    background: hsl(185 90% 55%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s .retro-room-card:hover {
+    background: hsl(50 100% 65%) !important;
+    transform: translate(-1px, -1px) !important;
+    box-shadow: 4px 4px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s .retro-room-card h3 {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.45rem !important;
+    color: hsl(0 0% 0%) !important;
+    text-transform: uppercase !important;
+  }
+
+  .theme-retro80s .retro-room-card .room-count {
+    font-family: 'VT323', monospace !important;
+    font-size: 0.9rem !important;
+    color: hsl(330 90% 45%) !important;
+  }
+
+  /* Welcome header text in lobby */
+  .theme-retro80s .retro-welcome-text {
+    font-family: 'VT323', monospace !important;
+    color: hsl(330 90% 45%) !important;
+  }
+
   /* Valentine's theme specific overrides */
   .theme-valentines {
     /* Subtle ambient glow on the whole page */
