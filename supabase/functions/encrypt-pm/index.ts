@@ -60,17 +60,19 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Verify user is authenticated
+    // Verify user is authenticated (signing-keys compatible)
     const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !userData?.user) {
-      console.error('Auth error:', authError);
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error('Auth error:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const userId = claimsData.claims.sub;
 
     // Parse request body
     const { message, recipient_id } = await req.json();
@@ -104,7 +106,7 @@ Deno.serve(async (req) => {
     const { data: insertData, error: dbError } = await serviceClient
       .from('private_messages')
       .insert({
-        sender_id: userData.user.id,
+        sender_id: userId,
         recipient_id: recipient_id,
         encrypted_content: ciphertext,
         iv: iv
@@ -120,7 +122,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`PM stored: ${userData.user.id} -> ${recipient_id}`);
+    console.log(`PM stored: ${userId} -> ${recipient_id}`);
 
     return new Response(
       JSON.stringify({ 

@@ -62,11 +62,11 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Verify user is admin or owner
+    // Verify user is authenticated (signing-keys compatible)
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getUser(token);
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     
-    if (claimsError || !claimsData?.user) {
+    if (claimsError || !claimsData?.claims?.sub) {
       console.error('Auth error:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       );
     }
 
-  const userId = claimsData.user.id;
+  const userId = claimsData.claims.sub;
 
   // Create service client for lookups
   const serviceClient = createClient(
