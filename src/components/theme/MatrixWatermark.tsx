@@ -14,20 +14,19 @@ export const MatrixWatermark = () => {
     <div 
       className="absolute inset-0 pointer-events-none overflow-hidden z-0"
     >
-      {/* Subtle Matrix figure background */}
+      {/* Matrix figure background - more visible */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${simulationBg})`,
-          opacity: 0.08,
-          filter: 'blur(1px)',
+          opacity: 0.25,
         }}
       />
-      {/* Gradient overlay to fade edges */}
+      {/* Lighter gradient overlay */}
       <div 
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 20%, hsl(var(--background)) 80%)',
+          background: 'radial-gradient(ellipse at center, transparent 40%, hsl(var(--background)) 90%)',
         }}
       />
     </div>
