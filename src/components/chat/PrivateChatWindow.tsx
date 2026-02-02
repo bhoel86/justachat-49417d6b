@@ -89,6 +89,36 @@ const PrivateChatWindow = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Track processed message IDs to prevent duplicates
+  const processedIdsRef = useRef<Set<string>>(new Set());
+  const pendingDecryptsRef = useRef<Set<string>>(new Set());
+
+  // Decrypt a single message - memoized helper
+  const decryptMessage = useCallback(async (
+    msg: { id: string; encrypted_content: string; iv: string; sender_id: string; created_at: string },
+    token: string | undefined
+  ): Promise<PrivateMessage | null> => {
+    try {
+      const resp = await supabase.functions.invoke('decrypt-pm', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: { messageId: msg.id, encrypted_content: msg.encrypted_content, iv: msg.iv }
+      });
+      if (resp.data?.success) {
+        return {
+          id: msg.id,
+          content: resp.data.decrypted_content,
+          senderId: msg.sender_id,
+          senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
+          timestamp: new Date(msg.created_at),
+          isOwn: msg.sender_id === currentUserId
+        };
+      }
+    } catch (e) {
+      console.error('Decrypt error:', e);
+    }
+    return null;
+  }, [currentUserId, currentUsername, targetUsername]);
+
   // Load history + subscribe to new messages
   useEffect(() => {
     if (hasLoadedRef.current || isBot) {
@@ -97,8 +127,7 @@ const PrivateChatWindow = ({
     }
     hasLoadedRef.current = true;
 
-    const loadAndSubscribe = async () => {
-      // Load history
+    const loadHistory = async () => {
       try {
         const { data } = await supabase
           .from('private_messages')
@@ -111,38 +140,28 @@ const PrivateChatWindow = ({
           const { data: sessionData } = await supabase.auth.getSession();
           const token = sessionData.session?.access_token;
           
-          const decrypted: PrivateMessage[] = [];
-          for (const msg of data) {
-            try {
-              const resp = await supabase.functions.invoke('decrypt-pm', {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
-                body: { messageId: msg.id, encrypted_content: msg.encrypted_content, iv: msg.iv }
-              });
-              if (resp.data?.success) {
-                decrypted.push({
-                  id: msg.id,
-                  content: resp.data.decrypted_content,
-                  senderId: msg.sender_id,
-                  senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
-                  timestamp: new Date(msg.created_at),
-                  isOwn: msg.sender_id === currentUserId
-                });
-              }
-            } catch (e) {
-              console.error('Decrypt error:', e);
-            }
-          }
+          // Decrypt all messages in parallel for speed
+          const decryptPromises = data.map(msg => {
+            processedIdsRef.current.add(msg.id);
+            return decryptMessage(msg, token);
+          });
+          
+          const results = await Promise.all(decryptPromises);
+          const decrypted = results.filter((m): m is PrivateMessage => m !== null);
           setMessages(decrypted);
         }
       } catch (e) {
         console.error('Load history error:', e);
       }
+    };
 
-      // Subscribe to new messages via DB changes only (no realtime broadcast complexity)
-      const channelName = `pm-window-${[currentUserId, targetUserId].sort().join('-')}`;
+    // Subscribe to new incoming messages - simple filter on recipient only
+    const setupSubscription = () => {
+      const channelName = `pm-conv-${[currentUserId, targetUserId].sort().join('-')}-${Date.now()}`;
       const channel = supabase.channel(channelName);
       channelRef.current = channel;
 
+      // Subscribe to messages where current user is recipient (incoming)
       channel
         .on(
           'postgres_changes',
@@ -150,59 +169,92 @@ const PrivateChatWindow = ({
             event: 'INSERT',
             schema: 'public',
             table: 'private_messages',
-            filter: `or(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))`
+            filter: `recipient_id=eq.${currentUserId}`
           },
           async (payload) => {
             const msg = payload.new as any;
             
-            // Skip if we already have this message
-            setMessages(prev => {
-              if (prev.some(m => m.id === msg.id)) return prev;
+            // Only process messages from this conversation partner
+            if (msg.sender_id !== targetUserId) return;
+            
+            // Skip if already processed or being processed
+            if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) return;
+            pendingDecryptsRef.current.add(msg.id);
+            
+            try {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const token = sessionData.session?.access_token;
+              const decrypted = await decryptMessage(msg, token);
               
-              // Decrypt and add
-              (async () => {
-                try {
-                  const { data: sessionData } = await supabase.auth.getSession();
-                  const token = sessionData.session?.access_token;
-                  
-                  const resp = await supabase.functions.invoke('decrypt-pm', {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
-                    body: { messageId: msg.id, encrypted_content: msg.encrypted_content, iv: msg.iv }
-                  });
-                  
-                  if (resp.data?.success) {
-                    setMessages(cur => {
-                      if (cur.some(m => m.id === msg.id)) return cur;
-                      return [...cur, {
-                        id: msg.id,
-                        content: resp.data.decrypted_content,
-                        senderId: msg.sender_id,
-                        senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
-                        timestamp: new Date(msg.created_at),
-                        isOwn: msg.sender_id === currentUserId
-                      }];
-                    });
-                    if (msg.sender_id !== currentUserId) {
-                      onNewMessage?.();
-                    }
-                  }
-                } catch (e) {
-                  console.error('Decrypt new msg error:', e);
-                }
-              })();
+              if (decrypted) {
+                processedIdsRef.current.add(msg.id);
+                setMessages(cur => {
+                  // Final dedup check
+                  if (cur.some(m => m.id === msg.id)) return cur;
+                  // Insert in correct position by timestamp
+                  const newMessages = [...cur, decrypted].sort(
+                    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+                  );
+                  return newMessages;
+                });
+                onNewMessage?.();
+              }
+            } finally {
+              pendingDecryptsRef.current.delete(msg.id);
+            }
+          }
+        )
+        // Also subscribe to own sent messages (for multi-device sync)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'private_messages',
+            filter: `sender_id=eq.${currentUserId}`
+          },
+          async (payload) => {
+            const msg = payload.new as any;
+            
+            // Only process messages to this conversation partner
+            if (msg.recipient_id !== targetUserId) return;
+            
+            // Skip if already processed
+            if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) return;
+            pendingDecryptsRef.current.add(msg.id);
+            
+            try {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const token = sessionData.session?.access_token;
+              const decrypted = await decryptMessage(msg, token);
               
-              return prev;
-            });
+              if (decrypted) {
+                processedIdsRef.current.add(msg.id);
+                setMessages(cur => {
+                  if (cur.some(m => m.id === msg.id)) return cur;
+                  const newMessages = [...cur, decrypted].sort(
+                    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+                  );
+                  return newMessages;
+                });
+              }
+            } finally {
+              pendingDecryptsRef.current.delete(msg.id);
+            }
           }
         )
         .subscribe((status) => {
+          console.log(`PM subscription ${channelName}: ${status}`);
           if (status === 'SUBSCRIBED') {
             setIsConnected(true);
           }
         });
     };
 
-    loadAndSubscribe();
+    // Load history first, then subscribe
+    loadHistory().then(() => {
+      setupSubscription();
+    });
 
     return () => {
       if (channelRef.current) {
@@ -210,7 +262,7 @@ const PrivateChatWindow = ({
         channelRef.current = null;
       }
     };
-  }, [currentUserId, targetUserId, currentUsername, targetUsername, isBot, onNewMessage]);
+  }, [currentUserId, targetUserId, isBot, onNewMessage, decryptMessage]);
 
   // Drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
