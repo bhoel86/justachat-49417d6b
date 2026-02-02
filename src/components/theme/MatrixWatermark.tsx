@@ -1,9 +1,9 @@
 import { useTheme } from "@/contexts/ThemeContext";
-import matrixRabbitImg from '@/assets/matrix/ascii-rabbit.png';
+import simulationBg from '@/assets/matrix/simulation-bg.jpg';
 
 /**
- * Matrix watermark - ASCII rabbit hidden in matrix code
- * Subtly visible in chat backgrounds
+ * Matrix/Simulation watermark - subtle background imagery
+ * Shows the iconic Matrix figure behind chat content
  */
 export const MatrixWatermark = () => {
   const { theme } = useTheme();
@@ -12,17 +12,22 @@ export const MatrixWatermark = () => {
 
   return (
     <div 
-      className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0"
-      style={{ opacity: 0.15 }}
+      className="absolute inset-0 pointer-events-none overflow-hidden z-0"
     >
-      {/* Main rabbit image - larger and more visible */}
-      <img
-        src={matrixRabbitImg}
-        alt=""
-        className="w-72 h-72 sm:w-96 sm:h-96 object-contain"
+      {/* Subtle Matrix figure background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          filter: 'drop-shadow(0 0 40px hsl(120 100% 50% / 0.4))',
-          animation: 'matrixRabbitFloat 10s ease-in-out infinite',
+          backgroundImage: `url(${simulationBg})`,
+          opacity: 0.08,
+          filter: 'blur(1px)',
+        }}
+      />
+      {/* Gradient overlay to fade edges */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 20%, hsl(var(--background)) 80%)',
         }}
       />
     </div>
