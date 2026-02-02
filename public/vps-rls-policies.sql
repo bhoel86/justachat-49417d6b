@@ -7,6 +7,8 @@
 CREATE POLICY "Users can view own roles" ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admins can view all roles" ON public.user_roles FOR SELECT USING (has_role(auth.uid(), 'admin'));
 CREATE POLICY "Owners can view all roles" ON public.user_roles FOR SELECT USING (is_owner(auth.uid()));
+-- Allow all authenticated users to see owner/admin/moderator roles (staff visibility in member list)
+CREATE POLICY "Authenticated users can view staff roles" ON public.user_roles FOR SELECT TO authenticated USING (role IN ('owner'::public.app_role, 'admin'::public.app_role, 'moderator'::public.app_role));
 CREATE POLICY "Owners can insert roles" ON public.user_roles FOR INSERT WITH CHECK (is_owner(auth.uid()) AND role <> 'owner');
 CREATE POLICY "Owners can update roles" ON public.user_roles FOR UPDATE USING (is_owner(auth.uid()) AND role <> 'owner') WITH CHECK (is_owner(auth.uid()) AND role <> 'owner');
 CREATE POLICY "Admins can insert non-admin roles" ON public.user_roles FOR INSERT WITH CHECK (has_role(auth.uid(), 'admin') AND role IN ('user', 'moderator'));
