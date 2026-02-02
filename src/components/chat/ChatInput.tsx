@@ -17,6 +17,8 @@ import { useInputHistory } from "@/hooks/useInputHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { compressImage } from "@/lib/imageCompression";
+import { useTheme } from "@/contexts/ThemeContext";
+import matrixInputBg from "@/assets/matrix/matrix-input-bg.jpg";
 
 // Volume control component with click-to-open persistent slider
 const VolumeControl = ({ volume, setVolume }: { volume: number; setVolume: (v: number) => void }) => {
@@ -133,6 +135,8 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { addToHistory, navigateHistory, resetHistoryNavigation } = useInputHistory();
+  const { theme } = useTheme();
+  const isSimulation = theme === 'matrix';
 
   // Detect @mention and /command typing
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -480,7 +484,17 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-4 bg-card border-t border-border">
+    <form onSubmit={handleSubmit} className="relative flex flex-col gap-2 p-4 bg-card border-t border-border overflow-hidden isolate">
+      {/* Simulation theme background */}
+      {isSimulation && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat pointer-events-none -z-10"
+          style={{
+            backgroundImage: `url(${matrixInputBg})`,
+            opacity: 0.15,
+          }}
+        />
+      )}
       {/* Radio Player GUI */}
       {radio && (
         <div className="flex items-center gap-3 px-3 py-2 bg-secondary/50 rounded-lg">
