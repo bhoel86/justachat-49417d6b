@@ -407,7 +407,7 @@ const PrivateChatWindow = ({
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-3 py-2 bg-primary/10 border-b border-border cursor-move select-none"
+        className="flex items-center justify-between px-3 py-2 bg-primary/10 border-b border-border cursor-move select-none shrink-0"
         onMouseDown={handleMouseDown}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -466,7 +466,7 @@ const PrivateChatWindow = ({
       )}
 
       {/* Input */}
-      <div className="flex items-center gap-2 p-2 border-t border-border bg-muted/20">
+      <div className="flex items-center gap-2 p-2 border-t border-border bg-muted/20 shrink-0">
         <EmojiPicker 
           onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)}
           onGifSelect={(url) => {
