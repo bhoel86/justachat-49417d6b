@@ -1,329 +1,125 @@
 
+# Match Lobby Content to 80s Retro Header & Footer
 
-# VPS Update and Bot Admin UI Connection Plan
+## Current State
+The lobby header and footer already have proper 80s Retro Memphis styling with:
+- Yellow backgrounds (`hsl(50 100% 70%)`)
+- Bold 3px black borders with offset shadows
+- Press Start 2P and VT323 fonts
+- Pink, cyan, yellow color palette
 
-## Summary
-This plan will:
-1. Pull the latest code to VPS (including watermark changes)
-2. Fix the Edge Runtime module import issues (`?t=` query strings and absolute paths)
-3. Initialize the `bot_settings` table so the admin UI can control the already-working bots
-4. Sync edge functions to the VPS volume
+However, the **middle content area** (chat rooms sidebar, lobby mirror room, main container) still uses default card styling and doesn't match.
 
----
+## What Needs to Match
 
-## Current Situation
+### 1. Chat Rooms Sidebar Container (Left Panel)
+**Current**: Purple card with basic border
+**Target**: Yellow background matching header, with Memphis patterns and bold borders
 
-**What's Working:**
-- Bots are chatting in rooms (Edge Function `chat-bot` is functional)
-- Bot personalities and responses are working via OpenAI
-- The admin UI exists at `/admin/bots`
+### 2. "Chat Rooms" Heading
+**Current**: Basic styling with emoji
+**Target**: Press Start 2P font, pink with cyan shadow, proper retro styling
 
-**What's NOT Working:**
-- Admin UI can't control the bots because `bot_settings` table is empty on VPS
-- Edge runtime may have `ERR_MODULE_NOT_FOUND` errors due to `?t=` cache-busting on file imports
-- Router write-path needs to use absolute paths
+### 3. Room Cards in Grid
+**Current**: Cyan with basic styling
+**Target**: More vibrant Memphis colors, bolder shadows, better hover effects
 
----
+### 4. Voice/Video/Games/Dating Cards
+**Current**: Basic retro styling
+**Target**: Enhanced with Memphis patterns, proper icon containers
 
-## Phase 1: VPS Update Script
+### 5. Lobby Mirror Room Container
+**Current**: Default card styling
+**Target**: Yellow background with Memphis pattern overlay, bold black borders
 
-A single script that:
-1. Pulls latest code from Git
-2. Rebuilds the frontend with watermark changes
-3. Initializes `bot_settings` table if empty
-4. Fixes edge runtime router to use absolute paths (no `?t=` query)
-5. Syncs edge functions to the volume
-6. Restarts containers
+### 6. Main Content Background
+**Current**: Memphis radial gradients (partial)
+**Target**: Enhanced to better match header/footer yellow palette
 
-### Script: `fix-bots-and-sync.sh`
+## Technical Changes
 
-```bash
-#!/bin/bash
-# JustAChat VPS - Fix Bots + Sync All Updates
-# Pulls latest, rebuilds frontend, fixes edge runtime, initializes bot_settings
+### File: `src/index.css`
 
-set -euo pipefail
+Add targeted CSS rules in the retro80s section to style lobby-specific elements:
 
-echo "============================================"
-echo "JUSTACHAT VPS - BOT FIX & FULL SYNC"
-echo "============================================"
+```css
+/* ============================================
+   RETRO 80s LOBBY/HOME PAGE STYLING
+   ============================================ */
 
-# Directories
-APP_DIR="/var/www/justachat"
-DOCKER_DIR="$HOME/supabase/docker"
-FUNCTIONS_DIR="$DOCKER_DIR/volumes/functions"
-
-# 1. Pull latest code
-echo ""
-echo "[1/6] Pulling latest code..."
-cd "$APP_DIR"
-git pull
-
-# 2. Rebuild frontend
-echo ""
-echo "[2/6] Rebuilding frontend..."
-rm -rf dist node_modules/.vite .vite 2>/dev/null || true
-npm run build
-
-# 3. Initialize bot_settings if empty
-echo ""
-echo "[3/6] Initializing bot_settings table..."
-cd "$DOCKER_DIR"
-source .env
-
-# Get all room names from config
-ROOM_NAMES='["general","music","games","technology","movies-tv","sports","politics","dating","adults","help","lounge","trivia"]'
-
-# Check if bot_settings exists
-SETTINGS_CHECK=$(curl -s "http://127.0.0.1:8000/rest/v1/bot_settings?select=id&limit=1" \
-  -H "apikey: $ANON_KEY" \
-  -H "Authorization: Bearer $ANON_KEY")
-
-if [ "$SETTINGS_CHECK" = "[]" ]; then
-  echo "Creating default bot_settings..."
-  curl -s -X POST "http://127.0.0.1:8000/rest/v1/bot_settings" \
-    -H "apikey: $SERVICE_ROLE_KEY" \
-    -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-    -H "Content-Type: application/json" \
-    -H "Prefer: return=representation" \
-    -d "{
-      \"enabled\": true,
-      \"allowed_channels\": $ROOM_NAMES,
-      \"chat_speed\": 5,
-      \"moderator_bots_enabled\": true
-    }"
-  echo ""
-  echo "✓ bot_settings initialized"
-else
-  echo "✓ bot_settings already exists"
-fi
-
-# 4. Fix edge runtime router (no ?t= query strings)
-echo ""
-echo "[4/6] Fixing edge runtime router..."
-mkdir -p "$FUNCTIONS_DIR/main"
-
-cat > "$FUNCTIONS_DIR/main/index.ts" << 'ROUTER'
-// Edge-runtime main service router (VPS)
-// Uses absolute paths without ?t= cache-busting
-
-type Handler = (req: Request) => Response | Promise<Response>;
-const handlers = new Map<string, Handler>();
-
-async function loadHandler(functionName: string): Promise<Handler> {
-  const cached = handlers.get(functionName);
-  if (cached) return cached;
-
-  const originalServe = (Deno as unknown as { serve: unknown }).serve;
-  let captured: Handler | null = null;
-
-  (Deno as unknown as { serve: unknown }).serve = (optionsOrHandler: unknown, maybeHandler?: unknown) => {
-    const handler = (typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler) as Handler | undefined;
-    if (!handler) throw new Error("Router: could not capture handler");
-    captured = handler;
-    return { finished: Promise.resolve(), shutdown() {} } as unknown;
-  };
-
-  try {
-    // Use absolute file path - NO ?t= query string
-    const absolutePath = `/home/deno/functions/${functionName}/index.ts`;
-    await import(`file://${absolutePath}`);
-  } finally {
-    (Deno as unknown as { serve: unknown }).serve = originalServe;
-  }
-
-  if (!captured) throw new Error(`Router: function '${functionName}' did not call serve()`);
-  handlers.set(functionName, captured);
-  return captured;
+/* Lobby main container background */
+.theme-retro80s main.container {
+  background: transparent !important;
 }
 
-Deno.serve(async (req: Request) => {
-  const url = new URL(req.url);
-  const path = url.pathname;
+/* Chat rooms sidebar container */
+.theme-retro80s .bg-secondary {
+  background: hsl(50 100% 72%) !important;
+}
 
-  if (path === "/" || path === "/health") {
-    return new Response(JSON.stringify({ healthy: true, router: "main-v2" }), {
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+/* Lobby panels - yellow Memphis style */
+.theme-retro80s .bg-card\/50 {
+  background: hsl(50 100% 70%) !important;
+  border: 3px solid hsl(0 0% 0%) !important;
+  box-shadow: 5px 5px 0px hsl(0 0% 0%) !important;
+}
 
-  const match = path.match(/^\/([a-zA-Z0-9_-]+)/);
-  if (!match) {
-    return new Response(JSON.stringify({ error: "Invalid path" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+/* Room card buttons in lobby */
+.theme-retro80s button.bg-card {
+  background: hsl(185 90% 55%) !important;
+}
 
-  const functionName = match[1];
+/* Lobby mirror room container */
+.theme-retro80s .rounded-xl.border {
+  border-radius: 0 !important;
+  border: 3px solid hsl(0 0% 0%) !important;
+  box-shadow: 5px 5px 0px hsl(0 0% 0%) !important;
+}
 
-  try {
-    const handler = await loadHandler(functionName);
-    const proxiedUrl = new URL(req.url);
-    proxiedUrl.pathname = proxiedUrl.pathname.replace(new RegExp(`^\\/${functionName}`), "") || "/";
-    return await handler(new Request(proxiedUrl.toString(), req.clone()));
-  } catch (err) {
-    console.error(`Router error for ${functionName}:`, err);
-    return new Response(JSON.stringify({ error: "Function not found", function: functionName }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-});
-ROUTER
+/* Welcome back text */
+.theme-retro80s header .text-muted-foreground {
+  font-family: 'VT323', monospace !important;
+  color: hsl(330 90% 45%) !important;
+}
 
-echo "✓ Router written with absolute paths (no ?t=)"
-
-# 5. Sync edge functions from repo
-echo ""
-echo "[5/6] Syncing edge functions from repo..."
-for func in "$APP_DIR/supabase/functions"/*; do
-  name="$(basename "$func")"
-  if [ -d "$func" ] && [ "$name" != "_shared" ]; then
-    rm -rf "$FUNCTIONS_DIR/$name"
-    cp -r "$func" "$FUNCTIONS_DIR/"
-    echo "  ✓ Synced: $name"
-  fi
-done
-
-# 6. Fix ownership and restart
-echo ""
-echo "[6/6] Fixing ownership and restarting edge functions..."
-sudo chown -R 1000:1000 "$FUNCTIONS_DIR"
-cd "$DOCKER_DIR"
-sudo docker compose restart functions
-
-echo ""
-echo "============================================"
-echo "✓ ALL DONE!"
-echo ""
-echo "Test bots: bash $APP_DIR/public/vps-deploy/diagnose-bots.sh"
-echo "Admin UI:  https://justachat.net/admin/bots"
-echo "============================================"
-```
-
----
-
-## Phase 2: What Gets Fixed
-
-### Issue 1: Edge Runtime `ERR_MODULE_NOT_FOUND`
-**Cause:** The router was using `?t=` timestamps on `file://` imports:
-```typescript
-// OLD (broken)
-await import(`file:///home/deno/functions/main/${functionName}/index.ts?t=${Date.now()}`);
-```
-
-**Fix:** Use clean absolute paths:
-```typescript
-// NEW (fixed)
-const absolutePath = `/home/deno/functions/${functionName}/index.ts`;
-await import(`file://${absolutePath}`);
-```
-
-### Issue 2: Bot Admin UI Not Controlling Bots
-**Cause:** `bot_settings` table is empty on VPS
-
-**Fix:** Script inserts default row:
-```json
-{
-  "enabled": true,
-  "allowed_channels": ["general", "music", "games", ...all rooms],
-  "chat_speed": 5,
-  "moderator_bots_enabled": true
+/* Friends tray retro styling */
+.theme-retro80s .fixed.bottom-0 button,
+.theme-retro80s [class*="FriendsTray"] {
+  border-radius: 0 !important;
+  border: 2px solid hsl(0 0% 0%) !important;
+  background: hsl(50 100% 70%) !important;
+  box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
 }
 ```
 
-### Issue 3: Frontend Updates (Watermark)
-**Fix:** Clean build that removes Vite cache:
-```bash
-rm -rf dist node_modules/.vite .vite
-npm run build
-```
+### File: `src/pages/Home.tsx`
 
----
+Update inline conditional classes for lobby elements to enhance retro styling:
 
-## Phase 3: How Admin UI Connects to Bots
+1. **Chat rooms container** (line ~604-608): Change from purple secondary to yellow
+2. **Room heading** (line ~610): Enhance with text shadow
+3. **Voice/Video/Games links** (lines ~716-823): Add Memphis pattern backgrounds
+4. **Main content wrapper**: Ensure proper Memphis background
 
-The flow is already implemented in code:
+## Changes Summary
 
-1. **AdminBots.tsx** reads/writes `bot_settings` table
-2. **useChatBots.ts** hook subscribes to `bot_settings` changes via Realtime
-3. When admin toggles switches, the hook sees the change and adjusts bot behavior:
-   - `enabled` - Master on/off
-   - `allowed_channels` - Which rooms bots appear in
-   - `chat_speed` - Response delay
-   - `moderator_bots_enabled` - Moderator bot override
+| Element | Before | After |
+|---------|--------|-------|
+| Rooms sidebar | Purple bg-secondary | Yellow Memphis container |
+| Section headings | Basic uppercase | Press Start 2P + cyan shadow |
+| Room cards | Basic cyan | Vibrant with chunky shadows |
+| Feature links | Basic border | Yellow bg with Memphis dots |
+| Lobby mirror | Default card | Yellow Memphis panel |
+| Text elements | Default | VT323 with themed colors |
 
-```typescript
-// useChatBots.ts already has this logic:
-const botsEnabled = enabled && 
-  botSettings?.enabled === true && 
-  botSettings?.allowed_channels?.includes(channelName);
-```
+## Implementation Approach
 
----
+1. Add new CSS rules to `src/index.css` targeting lobby-specific elements within `.theme-retro80s`
+2. Update `src/pages/Home.tsx` to use yellow background for the rooms container instead of purple when retro theme is active
+3. Enhance section headings with text shadows
+4. Style the feature link cards (Voice, Cams, Games, Dating) with Memphis backgrounds
 
-## Execution Steps for User
-
-1. **SSH to VPS as `unix` user**
-
-2. **Create and run the script:**
-   ```bash
-   cd /var/www/justachat
-   cat > /tmp/fix-bots-and-sync.sh << 'SCRIPT'
-   [paste script content]
-   SCRIPT
-   bash /tmp/fix-bots-and-sync.sh
-   ```
-
-3. **Verify bots work:**
-   ```bash
-   bash /var/www/justachat/public/vps-deploy/diagnose-bots.sh
-   ```
-
-4. **Test admin panel:**
-   - Go to https://justachat.net/admin/bots
-   - Toggle the master switch
-   - Observe bots stop/start responding in chat
-
----
-
-## Files to Create/Update
-
-| Action | File | Purpose |
-|--------|------|---------|
-| Create | `public/vps-deploy/fix-bots-and-sync.sh` | Master sync script |
-| Update | VPS `main/index.ts` | Fixed router (no `?t=`) |
-| Insert | VPS `bot_settings` table | Default configuration row |
-
----
-
-## Technical Details
-
-### Router Path Fix
-The key change removes the cache-busting timestamp:
-
-```diff
-- const fileUrl = new URL(`file:///home/deno/functions/main/${functionName}/index.ts`);
-- await import(fileUrl.href);
-+ const absolutePath = `/home/deno/functions/${functionName}/index.ts`;
-+ await import(`file://${absolutePath}`);
-```
-
-### Database Query for bot_settings
-```sql
-INSERT INTO bot_settings (enabled, allowed_channels, chat_speed, moderator_bots_enabled)
-VALUES (true, ARRAY['general','music','games','technology','movies-tv','sports','politics','dating','adults','help','lounge','trivia'], 5, true);
-```
-
-### Realtime Subscription (already in useChatBots.ts)
-```typescript
-const channel = supabase
-  .channel('bot-settings-changes')
-  .on('postgres_changes', 
-    { event: 'UPDATE', schema: 'public', table: 'bot_settings' },
-    (payload) => setBotSettings(payload.new as BotSettings)
-  )
-  .subscribe();
-```
-
+## Scope
+- Only affects `.theme-retro80s` class
+- Zero impact on other themes
+- Focused on lobby/home page elements
