@@ -28,7 +28,6 @@ import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
 import RoomSettingsModal from "./RoomSettingsModal";
 import RoomPasswordModal from "./RoomPasswordModal";
 import ArtDisplay from "./ArtDisplay";
-import MinorRestrictionBanner from "./MinorRestrictionBanner";
 import RoomInvitePopup, { sendRoomInvite } from "./RoomInvitePopup";
 import { useRadioOptional } from "@/contexts/RadioContext";
 import { parseCommand, executeCommand, isCommand, CommandContext } from "@/lib/commands";
@@ -69,7 +68,7 @@ interface ChatRoomProps {
 }
 
 const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
-  const { user, isAdmin, isOwner, role, refreshRole, isMinor, hasParentConsent } = useAuth();
+  const { user, isAdmin, isOwner, role, refreshRole } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<{ username: string; avatarUrl?: string | null }[]>([]);
@@ -131,18 +130,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   // Friends system with popup callback
   const friends = useFriends(user?.id || '', handleFriendRequestReceived);
   
-  // Minor restriction check helper
-  const canAccessPrivateMessaging = !isMinor || hasParentConsent;
   
   const handleOpenPm = (userId: string, targetUsername: string) => {
-    if (!canAccessPrivateMessaging) {
-      toast({
-        variant: "destructive",
-        title: "Feature Restricted",
-        description: "Private messaging requires parental consent for users under 18. Please ask your parent/guardian to verify their email.",
-      });
-      return;
-    }
     privateChats.openChat(userId, targetUsername);
   };
   
@@ -182,17 +171,6 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     if (!initialChannelName) return;
     
     const loadInitialChannel = async () => {
-      // Check if minor without consent is trying to join adult channel
-      if (isMinor && !hasParentConsent && isAdultChannel(initialChannelName)) {
-        toast({
-          variant: "destructive",
-          title: "Access Restricted",
-          description: "Adult chat rooms require parental consent for users under 18. Please ask your parent/guardian to verify their email.",
-        });
-        navigate('/chat/general');
-        return;
-      }
-      
       const { data } = await supabaseUntyped
         .from('channels')
         .select('*')
@@ -213,7 +191,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
     
     loadInitialChannel();
-  }, [initialChannelName, navigate, toast, isMinor, hasParentConsent]);
+  }, [initialChannelName, navigate, toast]);
 
   // Fetch user profile and language preference
   useEffect(() => {
@@ -780,16 +758,6 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   }, [currentChannel, messages, addModeratorMessage]);
 
   const handleChannelSelect = async (channel: Channel) => {
-    // Check if minor without consent is trying to join adult channel
-    if (isMinor && !hasParentConsent && isAdultChannel(channel.name)) {
-      toast({
-        variant: "destructive",
-        title: "Access Restricted",
-        description: "Adult chat rooms require parental consent for users under 18. Please ask your parent/guardian to verify their email.",
-      });
-      return;
-    }
-    
     // Check if room has a password and user is not room owner
     if (channel.created_by !== user?.id && !isAdmin && !isOwner) {
       // Use secure server-side function to check if room has password
@@ -1290,11 +1258,6 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
             onToggleDND={privateChats.toggleDoNotDisturb}
           />
         </div>
-
-        {/* Minor Restriction Banner */}
-        {isMinor && !hasParentConsent && (
-          <MinorRestrictionBanner parentEmail={parentEmail} />
-        )}
         
         <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-col relative">
           {/* Transparent logo watermark - theme aware */}

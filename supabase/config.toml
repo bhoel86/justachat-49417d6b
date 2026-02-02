@@ -51,12 +51,6 @@ verify_jwt = false
 [functions.send-auth-email]
 verify_jwt = false
 
-[functions.send-parent-consent]
-verify_jwt = false
-
-[functions.verify-parent-consent]
-verify_jwt = false
-
 [functions.gif-search]
 verify_jwt = false
 

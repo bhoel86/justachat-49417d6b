@@ -23,9 +23,7 @@ import AdminMutes from "./pages/AdminMutes";
 import AdminSupport from "./pages/AdminSupport";
 import AdminBots from "./pages/AdminBots";
 import AdminKlines from "./pages/AdminKlines";
-import AdminMinors from "./pages/AdminMinors";
 import AdminDeploy from "./pages/AdminDeploy";
-import VerifyConsent from "./pages/VerifyConsent";
 import Help from "./pages/Help";
 import DownloadProxy from "./pages/DownloadProxy";
 import ClientDownload from "./pages/ClientDownload";
@@ -71,10 +69,8 @@ const App = () => (
                 <Route path="/admin/support" element={<AdminSupport />} />
                 <Route path="/admin/bots" element={<AdminBots />} />
                 <Route path="/admin/klines" element={<AdminKlines />} />
-                <Route path="/admin/minors" element={<AdminMinors />} />
                 <Route path="/admin/deploy" element={<AdminDeploy />} />
                 <Route path="/help" element={<Help />} />
-                <Route path="/verify-consent" element={<VerifyConsent />} />
                 <Route path="/download-proxy" element={<DownloadProxy />} />
                 <Route path="/downloads" element={<ClientDownload />} />
                 <Route path="/mirc" element={<MircConnect />} />

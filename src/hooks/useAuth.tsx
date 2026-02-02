@@ -19,9 +19,7 @@ interface AuthContextType {
   isOwner: boolean;
   isModerator: boolean;
   role: AppRole | null;
-  isMinor: boolean;
-  hasParentConsent: boolean;
-  signUp: (email: string, password: string, username: string, age: number, parentEmail?: string) => Promise<{ error: Error | null; data: { user: User | null } | null }>;
+  signUp: (email: string, password: string, username: string, age: number) => Promise<{ error: Error | null; data: { user: User | null } | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   logoutFromChat: () => Promise<void>;
@@ -36,8 +34,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [isMinor, setIsMinor] = useState(false);
-  const [hasParentConsent, setHasParentConsent] = useState(true);
 
   const isAdmin = role === 'admin' || role === 'owner';
   const isOwner = role === 'owner';
@@ -59,12 +55,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           setTimeout(() => {
             checkUserRole(session.user.id);
-            checkMinorStatus(session.user.id);
           }, 0);
         } else {
           setRole(null);
-          setIsMinor(false);
-          setHasParentConsent(true);
         }
 
         // Clear URL hash after OAuth callback is processed (VPS fix)
@@ -96,12 +89,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (error) {
               console.error('[Auth] Failed to set session from OAuth hash:', error);
             } else if (data.session) {
-              console.log('[Auth] Session established from OAuth hash (manual setSession)');
+            console.log('[Auth] Session established from OAuth hash (manual setSession)');
               setSession(data.session);
               setUser(data.session.user);
               setLoading(false);
               checkUserRole(data.session.user.id);
-              checkMinorStatus(data.session.user.id);
             }
           } else {
             console.warn('[Auth] OAuth hash missing access_token or refresh_token');
@@ -120,7 +112,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (session?.user) {
           checkUserRole(session.user.id);
-          checkMinorStatus(session.user.id);
         }
       });
     }
@@ -144,8 +135,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setUser(null);
     setRole(null);
-    setIsMinor(false);
-    setHasParentConsent(true);
     // Redirect to auth page
     window.location.href = '/home';
   };
@@ -164,28 +153,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const checkMinorStatus = async (userId: string) => {
-    const { data } = await supabaseUntyped
-      .from('profiles')
-      .select('is_minor, parent_consent_verified')
-      .eq('user_id', userId)
-      .single();
-    
-    if (data) {
-      setIsMinor(data.is_minor || false);
-      setHasParentConsent(data.parent_consent_verified || !data.is_minor);
-    }
-  };
-
   // Public method to refresh role (e.g., after /oper command)
   const refreshRole = async () => {
     if (user) {
       await checkUserRole(user.id);
-      await checkMinorStatus(user.id);
     }
   };
 
-  const signUp = async (email: string, password: string, username: string, age: number, parentEmail?: string) => {
+  const signUp = async (email: string, password: string, username: string, age: number) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -195,9 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: redirectUrl,
         data: {
           username,
-          age,
-          parent_email: parentEmail || null,
-          is_minor: age < 18
+          age
         }
       }
     });
@@ -229,12 +202,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setUser(null);
     setRole(null);
-    setIsMinor(false);
-    setHasParentConsent(true);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading: isLoading, isAdmin, isOwner, isModerator, role, isMinor, hasParentConsent, signUp, signIn, signOut, logoutFromChat, refreshRole }}>
+    <AuthContext.Provider value={{ user, session, loading: isLoading, isAdmin, isOwner, isModerator, role, signUp, signIn, signOut, logoutFromChat, refreshRole }}>
       {children}
     </AuthContext.Provider>
   );

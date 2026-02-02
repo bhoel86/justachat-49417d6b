@@ -29,8 +29,7 @@ import { usePngCutout } from "@/hooks/usePngCutout";
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 const usernameSchema = z.string().min(2, "Username must be at least 2 characters").max(20, "Username must be less than 20 characters");
-const ageSchema = z.number().min(13, "You must be at least 13 years old").max(120, "Please enter a valid age");
-const parentEmailSchema = z.string().email("Please enter a valid parent/guardian email");
+const ageSchema = z.number().min(18, "You must be at least 18 years old to sign up").max(120, "Please enter a valid age");
 
 type AuthMode = "login" | "signup" | "forgot" | "reset";
 
@@ -46,12 +45,12 @@ const Auth = () => {
   const [newPassword, setNewPassword] = useState("");
   const [username, setUsername] = useState("");
   const [age, setAge] = useState("");
-  const [parentEmail, setParentEmail] = useState("");
+  
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
   const [captchaDebugInfo, setCaptchaDebugInfo] = useState<Record<string, unknown> | null>(null);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string; age?: string; parentEmail?: string; terms?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; captcha?: string; age?: string; terms?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [resetEmailSentAt, setResetEmailSentAt] = useState<number | null>(null);
@@ -346,20 +345,6 @@ const Auth = () => {
         }
       }
       
-      // If minor (13-17), require parent/guardian email from someone 21+
-      const parsedAge = parseInt(age, 10);
-      if (!isNaN(parsedAge) && parsedAge >= 13 && parsedAge < 18) {
-        if (!parentEmail) {
-          newErrors.parentEmail = "Parent/guardian email is required for users under 18";
-        } else {
-          const parentEmailResult = parentEmailSchema.safeParse(parentEmail);
-          if (!parentEmailResult.success) {
-            newErrors.parentEmail = parentEmailResult.error.errors[0].message;
-          } else if (parentEmail.toLowerCase() === email.toLowerCase()) {
-            newErrors.parentEmail = "Parent/guardian email must be different from your email";
-          }
-        }
-      }
       
       // Require agreement to terms
       if (!agreedToTerms) {
@@ -614,8 +599,7 @@ const Auth = () => {
         }
         
         const parsedAge = parseInt(age, 10);
-        const isMinor = parsedAge >= 13 && parsedAge < 18;
-        const { error, data } = await signUp(email, password, username, parsedAge, isMinor ? parentEmail : undefined);
+        const { error } = await signUp(email, password, username, parsedAge);
         if (error) {
           if (error.message.includes("already registered")) {
             toast({
@@ -635,34 +619,10 @@ const Auth = () => {
           // Store email for auto-fill on login
           const signupEmail = email;
           
-          // If minor, send parent consent email
-          if (isMinor && parentEmail && data?.user?.id) {
-            try {
-              await supabase.functions.invoke("send-parent-consent", {
-                body: {
-                  userId: data.user.id,
-                  parentEmail: parentEmail,
-                  minorUsername: username,
-                  minorAge: parsedAge,
-                },
-              });
-              toast({
-                title: "Account Created!",
-                description: "A consent email has been sent to your parent/guardian. Please sign in to continue."
-              });
-            } catch (emailError) {
-              console.error("Failed to send parent consent email:", emailError);
-              toast({
-                title: "Account Created",
-                description: "Your account was created. Please sign in to continue."
-              });
-            }
-          } else {
-            toast({
-              title: "Welcome to Justachat™!",
-              description: "Your account has been created. Please sign in to continue."
-            });
-          }
+          toast({
+            title: "Welcome to Justachat™!",
+            description: "Your account has been created. Please sign in to continue."
+          });
           
           // Switch to login mode and auto-fill email
           setMode("login");
@@ -670,7 +630,6 @@ const Auth = () => {
           setPassword("");
           setUsername("");
           setAge("");
-          setParentEmail("");
           setAgreedToTerms(false);
           setErrors({});
         }
@@ -1036,41 +995,6 @@ const Auth = () => {
                   {errors.age && (
                     <p className="text-destructive text-xs mt-1">{errors.age}</p>
                   )}
-                  {age && parseInt(age, 10) >= 13 && parseInt(age, 10) < 18 && (
-                    <p className="text-amber-500 text-xs mt-1 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      Parental consent required for users under 18
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Parent/Guardian Email - show for minors during signup */}
-              {mode === "signup" && age && parseInt(age, 10) >= 13 && parseInt(age, 10) < 18 && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 space-y-3">
-                  <div className="flex items-center gap-2 text-amber-500 text-sm font-medium">
-                    <Users className="h-4 w-4" />
-                    Parent/Guardian Consent Required
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Users under 18 must have a parent or guardian (21+) provide their email to consent to account creation.
-                  </p>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <input
-                      type="email"
-                      value={parentEmail}
-                      onChange={(e) => {
-                        setParentEmail(e.target.value);
-                        setErrors(prev => ({ ...prev, parentEmail: undefined }));
-                      }}
-                      placeholder="Parent/Guardian Email (21+)"
-                      className="w-full bg-input rounded-xl pl-11 pr-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                    />
-                  </div>
-                  {errors.parentEmail && (
-                    <p className="text-destructive text-xs">{errors.parentEmail}</p>
-                  )}
                 </div>
               )}
 
@@ -1401,7 +1325,6 @@ const Auth = () => {
                   setErrors({});
                   setCaptchaToken(null);
                   setAge("");
-                  setParentEmail("");
                   setAgreedToTerms(false);
                 }}
                 className="text-muted-foreground hover:text-primary transition-colors"
