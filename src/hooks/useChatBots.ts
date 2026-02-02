@@ -97,7 +97,7 @@ export const useChatBots = ({
     pendingResponseRef.current = true;
 
     try {
-      const { data, error } = await supabase.functions.invoke('chat-bot', {
+      const { data, error } = await supabase.functions.invoke('chat-bot-cloud', {
         body: {
           botId: bot.id,
           context: channelName,

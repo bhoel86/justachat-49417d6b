@@ -66,3 +66,6 @@ verify_jwt = false
 
 [functions.vps-deploy]
 verify_jwt = false
+
+[functions.chat-bot-cloud]
+verify_jwt = false
