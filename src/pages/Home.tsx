@@ -51,6 +51,7 @@ import { MatrixWelcomeBanner } from "@/components/theme/MatrixWelcomeBanner";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
+import { SimulationPillSelector } from "@/components/theme/SimulationPillSelector";
 import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { useTheme } from "@/contexts/ThemeContext";
 import FriendsTray from "@/components/friends/FriendsTray";
@@ -253,6 +254,9 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
+      {/* Simulation Pill Selector for Matrix theme */}
+      {isMatrix && <SimulationPillSelector />}
+      
       {/* Floating theme decorations */}
       <ValentinesFloatingHearts />
       <StPatricksFloatingIcons />
