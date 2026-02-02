@@ -1230,13 +1230,14 @@ const Auth = () => {
               {/* Matrix theme: Split Red/Blue pill button */}
               {isMatrix ? (
                 <div className="flex w-full overflow-hidden rounded-full">
-                  {/* Red Pill Side (Google) */}
+                  {/* Red Pill Side (Email/Password) */}
                   <button
-                    type="button"
-                    onClick={() => handleGoogleSignIn(false)}
+                    type="submit"
+                    onClick={() => setPill('red')}
                     disabled={
                       isSubmitting ||
-                      (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken)))
+                      (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
+                      (mode === "login" && rateLimitInfo?.locked)
                     }
                     className="flex-1 py-2 font-mono uppercase tracking-wider text-sm transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center"
                     style={{
@@ -1323,7 +1324,7 @@ const Auth = () => {
           )}
 
           {/* Google Sign-In - show for login and signup modes (works on both web and app) */}
-          {!isMatrix && (mode === "login" || mode === "signup") && (
+          {(mode === "login" || mode === "signup") && (
             <div className="mt-4">
               <div className="relative flex items-center justify-center my-4">
                 <div className={`border-t w-full ${isMatrix ? 'border-primary/30' : 'border-border'}`} />
