@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Prevent duplicate React instances which can cause "unreachable code" warnings
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "@supabase/supabase-js"],
   },
   build: {
     rollupOptions: {
