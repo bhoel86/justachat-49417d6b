@@ -12,17 +12,17 @@ export const MatrixWatermark = () => {
 
   return (
     <div 
-      className="fixed inset-0 pointer-events-none overflow-hidden z-0"
+      className="fixed inset-0 top-14 pointer-events-none overflow-hidden z-0"
     >
-      {/* Matrix figure background - more visible */}
+      {/* Matrix figure background */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${simulationBg})`,
-          opacity: 0.25,
+          opacity: 0.12,
         }}
       />
-      {/* Lighter gradient overlay */}
+      {/* Gradient overlay */}
       <div 
         className="absolute inset-0"
         style={{
