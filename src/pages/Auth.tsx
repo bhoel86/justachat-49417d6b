@@ -23,6 +23,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useSimulationPill } from "@/hooks/useSimulationPill";
 import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
 import retroHeaderImg from '@/assets/themes/retro-header-login-cutout.png';
+import matrixLoginBg from '@/assets/matrix/login-container-bg.png';
 import { usePngCutout } from "@/hooks/usePngCutout";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -814,7 +815,16 @@ const Auth = () => {
           </div>
         )}
         {/* Form Card - Memphis style for retro, standard for others */}
-        <div className={`relative ${isRetro ? 'retro-login-container' : 'bg-card rounded-2xl border border-border shadow-xl p-6'}`}>
+        <div 
+          className={`relative ${isRetro ? 'retro-login-container' : 'bg-card rounded-2xl border border-border shadow-xl p-6'} ${isMatrix ? 'overflow-hidden' : ''}`}
+          style={isMatrix ? {
+            backgroundImage: `url(${matrixLoginBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            border: '1px solid hsl(120 100% 50% / 0.3)',
+            boxShadow: '0 0 30px hsl(120 100% 50% / 0.2), inset 0 0 60px hsl(0 0% 0% / 0.5)',
+          } : undefined}
+        >
           {/* Memphis geometric decorations for retro theme */}
           {isRetro && (
             <>
