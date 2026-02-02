@@ -365,18 +365,23 @@ const PrivateChatWindow = ({
       return;
     }
 
-    // For real users - encrypt and save via edge function
+     // For real users - encrypt and save via backend function
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
       const resp = await supabase.functions.invoke('encrypt-pm', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: { content, recipientId: targetUserId }
+         // Keep payload aligned with backend expectations (and VPS router)
+         body: { message: content, recipient_id: targetUserId }
       });
 
-      if (!resp.data?.success) {
-        throw new Error(resp.data?.error || 'Encryption failed');
+       if (resp.error) {
+         throw new Error(resp.error.message || 'Encryption failed');
+       }
+
+       if (!resp.data?.success) {
+         throw new Error(resp.data?.error || 'Encryption failed');
       }
 
       // Message will appear via postgres_changes subscription

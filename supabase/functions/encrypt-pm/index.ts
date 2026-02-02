@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -67,19 +67,21 @@ Deno.serve(async (req) => {
     if (claimsError || !claimsData?.claims?.sub) {
       console.error('Auth error:', claimsError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const userId = claimsData.claims.sub;
 
-    // Parse request body
-    const { message, recipient_id } = await req.json();
+     // Parse request body (accept both old + new payload shapes)
+     const body = await req.json().catch(() => ({} as Record<string, unknown>));
+     const message = (body as any).message ?? (body as any).content;
+     const recipient_id = (body as any).recipient_id ?? (body as any).recipientId;
 
-    if (!message || !recipient_id) {
+     if (!message || !recipient_id) {
       return new Response(
-        JSON.stringify({ error: 'Missing message or recipient_id' }),
+         JSON.stringify({ success: false, error: 'Missing message or recipient_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -89,13 +91,13 @@ Deno.serve(async (req) => {
     if (!masterKey) {
       console.error('PM_MASTER_KEY not configured');
       return new Response(
-        JSON.stringify({ error: 'Encryption service not configured' }),
+         JSON.stringify({ success: false, error: 'Encryption service not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Encrypt the message server-side
-    const { ciphertext, iv } = await encryptMessage(message, masterKey);
+     const { ciphertext, iv } = await encryptMessage(String(message), masterKey);
 
     // Store in database using service role
     const serviceClient = createClient(
@@ -116,8 +118,8 @@ Deno.serve(async (req) => {
 
     if (dbError) {
       console.error('Database error:', dbError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to store message' }),
+       return new Response(
+         JSON.stringify({ success: false, error: 'Failed to store message' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -139,7 +141,7 @@ Deno.serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     console.error('Encrypt PM error:', error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ success: false, error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
