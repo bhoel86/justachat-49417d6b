@@ -634,17 +634,20 @@ const PrivateChatWindow = ({
       return;
     }
     
-    isSendingRef.current = true;
-    
     const currentKey = sessionKeyRef.current || sessionKey;
     
     // Images now auto-send on selection, so handleSend is only for text messages
-    if (!message.trim()) return;
-    if (!currentKey || !channelRef.current) {
-      console.log('[PM-SEND] Missing key or channel', { hasKey: !!currentKey, hasChannel: !!channelRef.current });
-      isSendingRef.current = false;
+    if (!message.trim()) {
+      console.log('[PM-SEND] Empty message, ignoring');
       return;
     }
+    if (!currentKey || !channelRef.current) {
+      console.log('[PM-SEND] Missing key or channel', { hasKey: !!currentKey, hasChannel: !!channelRef.current });
+      return;
+    }
+    
+    // Only set sending lock AFTER validation passes
+    isSendingRef.current = true;
 
     // Apply text formatting if set
     let finalMessage = message.trim();
