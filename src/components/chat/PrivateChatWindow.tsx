@@ -232,15 +232,27 @@ const PrivateChatWindow = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
+        const maxX = Math.max(0, window.innerWidth - size.width);
+        const maxY = Math.max(0, window.innerHeight - size.height);
         setPosition({
-          x: Math.max(0, Math.min(window.innerWidth - size.width, e.clientX - dragOffset.x)),
-          y: Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffset.y))
+          x: Math.max(0, Math.min(maxX, e.clientX - dragOffset.x)),
+          y: Math.max(0, Math.min(maxY, e.clientY - dragOffset.y))
         });
       }
       if (isResizing) {
+        // Prevent resizing beyond viewport so the input (Send) area can't be pushed off-screen.
+        const maxWidthInViewport = Math.max(MIN_WIDTH, window.innerWidth - position.x);
+        const maxHeightInViewport = Math.max(MIN_HEIGHT, window.innerHeight - position.y);
+
         setSize({
-          width: Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, resizeStart.width + e.clientX - resizeStart.x)),
-          height: Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStart.height + e.clientY - resizeStart.y))
+          width: Math.max(
+            MIN_WIDTH,
+            Math.min(MAX_WIDTH, maxWidthInViewport, resizeStart.width + e.clientX - resizeStart.x)
+          ),
+          height: Math.max(
+            MIN_HEIGHT,
+            Math.min(MAX_HEIGHT, maxHeightInViewport, resizeStart.height + e.clientY - resizeStart.y)
+          )
         });
       }
     };
@@ -259,7 +271,7 @@ const PrivateChatWindow = ({
       document.removeEventListener('mouseup', handleMouseUp);
       document.body.style.userSelect = '';
     };
-  }, [isDragging, isResizing, dragOffset, resizeStart, size.width]);
+  }, [isDragging, isResizing, dragOffset, resizeStart, position.x, position.y, size.width, size.height]);
 
   // Image handling
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
