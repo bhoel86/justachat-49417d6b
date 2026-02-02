@@ -383,10 +383,24 @@ const PrivateChatWindow = ({
         headers: { Authorization: `Bearer ${token}` },
         body: formData
       });
+      
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        console.error('Upload failed:', resp.status, errorData);
+        throw new Error(errorData?.error || errorData?.message || `Upload failed (${resp.status})`);
+      }
+      
       const data = await resp.json();
-      return data?.url || null;
+      console.log('Upload response:', data);
+      
+      if (!data?.url) {
+        throw new Error('No URL returned from upload');
+      }
+      
+      return data.url;
     } catch (e) {
-      toast({ variant: "destructive", title: "Upload failed" });
+      console.error('Image upload error:', e);
+      toast({ variant: "destructive", title: "Upload failed", description: e instanceof Error ? e.message : "Could not upload image" });
       return null;
     } finally {
       setIsUploading(false);
@@ -401,7 +415,15 @@ const PrivateChatWindow = ({
     let imageUrl: string | null = null;
     if (attachedImage) {
       imageUrl = await uploadImage();
-      clearImage();
+      // Only clear image if upload succeeded
+      if (imageUrl) {
+        clearImage();
+      } else if (!text) {
+        // If upload failed and there's no text, don't send empty message
+        toast({ variant: "destructive", title: "Image upload failed", description: "Please try again" });
+        return;
+      }
+      // If upload failed but there's text, continue sending just the text
     }
 
     const content = imageUrl ? (text ? `${text} [img:${imageUrl}]` : `[img:${imageUrl}]`) : text;
