@@ -8,15 +8,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Palette, Check, Circle } from 'lucide-react';
+import { isLovablePreviewHost } from '@/lib/previewHost';
 
 // Session storage key to mark local preview mode
 const LOCAL_PREVIEW_KEY = 'jac_local_theme_preview';
 
 // Only show in Lovable preview environments
 const isLovablePreview = () => {
-  if (typeof window === 'undefined') return false;
-  const hostname = window.location.hostname;
-  return hostname.includes('lovable.app') || hostname.includes('lovableproject.com');
+  return isLovablePreviewHost();
 };
 
 // Apply theme class locally without database persistence

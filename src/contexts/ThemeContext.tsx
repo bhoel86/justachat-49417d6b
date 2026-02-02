@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useLayoutEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { isLovablePreviewHost } from '@/lib/previewHost';
 
 export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matrix' | 'vapor' | 'arcade' | 'dieselpunk' | 'cyberpunk' | 'jungle';
 
@@ -33,14 +34,6 @@ const isValidTheme = (value: string): value is ThemeName => {
 // Session storage key for local preview mode (set by LoginThemeSelector)
 const LOCAL_PREVIEW_KEY = 'jac_local_theme_preview';
 
-// Only treat local preview as active inside Lovable preview hosts.
-// This prevents accidental persistence of preview-only behavior elsewhere.
-const isLovablePreviewHost = () => {
-  if (typeof window === 'undefined') return false;
-  const hostname = window.location.hostname;
-  return hostname.includes('lovable.app') || hostname.includes('lovableproject.com');
-};
-
 const getLocalPreviewTheme = (): ThemeName | null => {
   if (typeof sessionStorage === 'undefined') return null;
   const localPreview = sessionStorage.getItem(LOCAL_PREVIEW_KEY);
@@ -50,6 +43,8 @@ const getLocalPreviewTheme = (): ThemeName | null => {
 
 const isLocalPreviewActive = () => {
   if (typeof sessionStorage === 'undefined') return false;
+  // Only treat local preview as active inside preview hosts.
+  // This prevents accidental persistence of preview-only behavior elsewhere.
   if (!isLovablePreviewHost()) return false;
   return !!getLocalPreviewTheme();
 };
