@@ -107,9 +107,10 @@ async function fetchFromArtInstituteChicago(): Promise<ArtPiece[]> {
 
 // Generate AI commentary about the artwork
 async function generateArtCommentary(piece: ArtPiece): Promise<string> {
-  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
+  // Environment-aware: Use OpenAI on VPS
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
   
-  if (!lovableApiKey) {
+  if (!OPENAI_API_KEY) {
     // Fallback to template-based commentary
     return generateTemplateCommentary(piece)
   }
@@ -125,14 +126,14 @@ Medium: ${piece.medium || 'Unknown'}
 
 Share an interesting observation or fact about this piece, its technique, historical context, or the artist. Ask a thought-provoking question to engage viewers.`
 
-    const response = await fetch('https://api.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 200,
       }),

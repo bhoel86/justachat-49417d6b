@@ -42,6 +42,7 @@ WHITELIST_FILES=(
   "src/pages/CookiePolicy.tsx"       # Documentation link to Supabase privacy policy
   "src/pages/Legal.tsx"              # Documentation links
   "public/vps-deploy/"               # VPS deploy scripts reference patterns to detect
+  "chat-bot-cloud"                   # Cloud-only function, VPS uses chat-bot instead
 )
 
 echo -e "${YELLOW}[1/4] Scanning for Lovable Cloud patterns...${NC}"
@@ -58,6 +59,7 @@ for pattern in "${LOVABLE_PATTERNS[@]}"; do
     grep -v "CookiePolicy.tsx" | \
     grep -v "Legal.tsx" | \
     grep -v "vps-deploy" | \
+    grep -v "chat-bot-cloud" | \
     head -20 || true)
   
   if [ -n "$matches" ]; then
