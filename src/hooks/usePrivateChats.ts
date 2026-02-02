@@ -32,6 +32,14 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     });
   }, []);
 
+  // Track which sender IDs already have open chats
+  const openChatSendersRef = useRef<Set<string>>(new Set());
+
+  // Keep openChatSendersRef in sync with chats state
+  useEffect(() => {
+    openChatSendersRef.current = new Set(chats.map(c => c.targetUserId));
+  }, [chats]);
+
   // Single listener for incoming PMs - subscribe once
   useEffect(() => {
     if (!currentUserId) return;
@@ -39,7 +47,8 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     // Only setup once
     if (channelRef.current) return;
 
-    const channel = supabase.channel(`pm-inbox-${currentUserId}`);
+    const channelName = `pm-inbox-${currentUserId}-${Date.now()}`;
+    const channel = supabase.channel(channelName);
     channelRef.current = channel;
     
     channel
@@ -55,21 +64,21 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
           const msg = payload.new as { sender_id: string };
           if (msg.sender_id === currentUserId) return;
           
-          // Check if chat exists
-          setChats(prev => {
-            const existing = prev.find(c => c.targetUserId === msg.sender_id);
-            if (existing) {
-              if (existing.isMinimized) {
+          // Check if we already have a chat open with this sender
+          const hasExistingChat = openChatSendersRef.current.has(msg.sender_id);
+          
+          if (hasExistingChat) {
+            // Just mark as unread if minimized
+            setChats(prev => prev.map(c => {
+              if (c.targetUserId === msg.sender_id && c.isMinimized) {
                 playPMNotificationSound();
-                return prev.map(c => 
-                  c.id === existing.id ? { ...c, hasUnread: true } : c
-                );
+                return { ...c, hasUnread: true };
               }
-              return prev;
-            }
-            
-            // Fetch sender info and open chat
-            (async () => {
+              return c;
+            }));
+          } else {
+            // New conversation - fetch sender info and open chat
+            try {
               const { data: profile } = await supabase
                 .from('profiles_public')
                 .select('username')
@@ -77,10 +86,11 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
                 .maybeSingle();
               
               const senderUsername = profile?.username || 'Unknown';
+              const isDND = dndRef.current;
+              
               playPMNotificationSound();
               
-              const offset = (chats.length % 5) * 30;
-              const isDND = dndRef.current;
+              const offset = (openChatSendersRef.current.size % 5) * 30;
               
               const newChat: PrivateChat = {
                 id: `${msg.sender_id}-${Date.now()}`,
@@ -96,16 +106,19 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
               };
               
               setChats(cur => {
+                // Final check to prevent duplicates
                 if (cur.find(c => c.targetUserId === msg.sender_id)) return cur;
                 return [...cur, newChat];
               });
-            })();
-            
-            return prev;
-          });
+            } catch (e) {
+              console.error('Failed to open PM from new sender:', e);
+            }
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`PM inbox subscription: ${status}`);
+      });
 
     return () => {
       if (channelRef.current) {
