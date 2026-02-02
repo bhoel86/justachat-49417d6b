@@ -13,7 +13,7 @@ export const RetroWatermark: React.FC = () => {
   }
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+    <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-[1] overflow-hidden">
       {/* Memphis-style Justachat logo watermark */}
       <div 
         className="select-none"
