@@ -22,6 +22,7 @@ import UserAvatar from "@/components/avatar/UserAvatar";
 import ProfileEditModal from "@/components/profile/ProfileEditModal";
 import ProfileViewModal from "@/components/profile/ProfileViewModal";
 import { useRadioOptional } from "@/contexts/RadioContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 
 interface Member {
@@ -106,6 +107,8 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
   const radio = useRadioOptional();
+  const { theme } = useTheme();
+  const isRetro = theme === 'retro80s';
 
   // Get current user's username and avatar
   const [currentUsername, setCurrentUsername] = useState('');
@@ -451,7 +454,10 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
 
   if (loading) {
     return (
-      <div className="w-48 min-w-[180px] flex-shrink-0 bg-card border-l border-border p-4 flex items-center justify-center">
+      <div className={cn(
+        "w-48 min-w-[180px] flex-shrink-0 bg-card border-l border-border p-4 flex items-center justify-center",
+        isRetro && "retro-member-list"
+      )}>
         <div className="h-6 w-6 rounded-full jac-gradient-bg animate-pulse" />
       </div>
     );
@@ -460,9 +466,15 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   return (
     <>
       {/* Members Panel - fixed width with proper constraints */}
-      <div className="w-48 min-w-[180px] flex-shrink-0 bg-card border-l border-border flex flex-col h-full max-h-screen overflow-hidden">
+      <div className={cn(
+        "w-48 min-w-[180px] flex-shrink-0 bg-card border-l border-border flex flex-col h-full max-h-screen overflow-hidden",
+        isRetro && "retro-member-list"
+      )}>
         {/* Header */}
-        <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-border">
+        <div className={cn(
+          "flex items-center gap-1.5 px-3 py-2.5 border-b border-border",
+          isRetro && "retro-member-header"
+        )}>
           <Users className="h-4 w-4 text-primary" />
           <span className="font-medium text-sm">Members</span>
         </div>
