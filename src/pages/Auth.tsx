@@ -20,6 +20,7 @@ import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingH
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useSimulationPill } from "@/hooks/useSimulationPill";
 import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
 import retroHeaderImg from '@/assets/themes/retro-header-login-cutout.png';
 import { usePngCutout } from "@/hooks/usePngCutout";
@@ -59,6 +60,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme } = useTheme();
+  const { setPill } = useSimulationPill();
 
   // Theme detection - must be before hook calls
   const isRetro = theme === 'retro80s';
@@ -1155,33 +1157,95 @@ const Auth = () => {
                 </p>
               )}
 
-              <Button
-                type="submit"
-                variant={isMatrix ? "outline" : "jac"}
-                size="lg"
-                className={`w-full ${isMatrix ? 'font-mono uppercase tracking-wider border-primary/50 hover:border-primary hover:bg-primary/10' : ''}`}
-                style={isMatrix ? {
-                  boxShadow: '0 0 20px hsl(120 100% 50% / 0.3)',
-                  textShadow: '0 0 10px hsl(120 100% 50% / 0.6)',
-                } : undefined}
-                disabled={
-                  isSubmitting ||
-                  (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
-                  (mode === "login" && rateLimitInfo?.locked)
-                }
-              >
-                {isSubmitting ? (
-                  <span className="animate-pulse">{isMatrix ? '...' : 'Please wait...'}</span>
-                ) : (
-                  <>
-                    {mode === "login" && (isMatrix ? "ENTER" : "Sign In")}
-                    {mode === "signup" && (isMatrix ? "CREATE" : "Create Account")}
-                    {mode === "forgot" && (isMatrix ? "SEND" : "Send Reset Link")}
-                    {mode === "reset" && (isMatrix ? "UPDATE" : "Update Password")}
-                    {!isMatrix && <ArrowRight className="h-5 w-5 ml-1" />}
-                  </>
-                )}
-              </Button>
+              {/* Matrix theme: Split Red/Blue pill button */}
+              {isMatrix ? (
+                <div className="flex w-full overflow-hidden rounded-lg">
+                  {/* Red Pill Side */}
+                  <button
+                    type="submit"
+                    onClick={() => setPill('red')}
+                    disabled={
+                      isSubmitting ||
+                      (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
+                      (mode === "login" && rateLimitInfo?.locked)
+                    }
+                    className="flex-1 py-3 font-mono uppercase tracking-wider text-sm transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: 'linear-gradient(135deg, hsl(0 70% 25% / 0.9), hsl(0 80% 35% / 0.7))',
+                      border: '1px solid hsl(0 80% 50% / 0.5)',
+                      borderRight: 'none',
+                      boxShadow: 'inset 0 0 20px hsl(0 80% 50% / 0.3), 0 0 15px hsl(0 80% 50% / 0.2)',
+                      color: 'hsl(0 80% 70%)',
+                      textShadow: '0 0 10px hsl(0 80% 50% / 0.8)',
+                    }}
+                  >
+                    {isSubmitting ? '...' : (
+                      <>
+                        {mode === "login" && "RED"}
+                        {mode === "signup" && "RED"}
+                        {mode === "forgot" && "SEND"}
+                        {mode === "reset" && "SET"}
+                      </>
+                    )}
+                  </button>
+                  
+                  {/* Divider */}
+                  <div className="w-px bg-gradient-to-b from-red-500/50 via-white/20 to-blue-500/50" />
+                  
+                  {/* Blue Pill Side */}
+                  <button
+                    type="submit"
+                    onClick={() => setPill('blue')}
+                    disabled={
+                      isSubmitting ||
+                      (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
+                      (mode === "login" && rateLimitInfo?.locked)
+                    }
+                    className="flex-1 py-3 font-mono uppercase tracking-wider text-sm transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: 'linear-gradient(135deg, hsl(210 70% 25% / 0.9), hsl(210 80% 35% / 0.7))',
+                      border: '1px solid hsl(210 80% 50% / 0.5)',
+                      borderLeft: 'none',
+                      boxShadow: 'inset 0 0 20px hsl(210 80% 50% / 0.3), 0 0 15px hsl(210 80% 50% / 0.2)',
+                      color: 'hsl(210 80% 70%)',
+                      textShadow: '0 0 10px hsl(210 80% 50% / 0.8)',
+                    }}
+                  >
+                    {isSubmitting ? '...' : (
+                      <>
+                        {mode === "login" && "BLUE"}
+                        {mode === "signup" && "BLUE"}
+                        {mode === "forgot" && "SEND"}
+                        {mode === "reset" && "SET"}
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="submit"
+                  variant="jac"
+                  size="lg"
+                  className="w-full"
+                  disabled={
+                    isSubmitting ||
+                    (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
+                    (mode === "login" && rateLimitInfo?.locked)
+                  }
+                >
+                  {isSubmitting ? (
+                    <span className="animate-pulse">Please wait...</span>
+                  ) : (
+                    <>
+                      {mode === "login" && "Sign In"}
+                      {mode === "signup" && "Create Account"}
+                      {mode === "forgot" && "Send Reset Link"}
+                      {mode === "reset" && "Update Password"}
+                      <ArrowRight className="h-5 w-5 ml-1" />
+                    </>
+                  )}
+                </Button>
+              )}
             </form>
           )}
 
