@@ -19,9 +19,9 @@ import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
-import { SimulationPillSelector } from "@/components/theme/SimulationPillSelector";
+import { PillTransitionOverlay } from "@/components/theme/PillTransitionOverlay";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useSimulationPill } from "@/hooks/useSimulationPill";
+import { useSimulationPill, PillChoice } from "@/hooks/useSimulationPill";
 import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
 import retroHeaderImg from '@/assets/themes/retro-header-login-cutout.png';
 import matrixLoginBg from '@/assets/matrix/login-container-bg.png';
@@ -63,6 +63,11 @@ const Auth = () => {
   const { toast } = useToast();
   const { theme } = useTheme();
   const { setPill } = useSimulationPill();
+  
+  // Pill transition state for Matrix theme
+  const [showPillTransition, setShowPillTransition] = useState(false);
+  const [activePill, setActivePill] = useState<PillChoice>(null);
+  const [pendingGoogleSignIn, setPendingGoogleSignIn] = useState<boolean | null>(null);
 
   // Theme detection - must be before hook calls
   const isRetro = theme === 'retro80s';
@@ -79,9 +84,12 @@ const Auth = () => {
   const isCapacitorApp = typeof window !== 'undefined' && 
     'Capacitor' in window && 
     (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() === true;
+  
+  // Detect Matrix theme here for pill logic
+  const isMatrixTheme = theme === 'matrix';
 
-  // Handle Google OAuth - uses external browser for Capacitor app
-  const handleGoogleSignIn = async (switchAccount = false) => {
+  // Execute the actual Google OAuth (called after pill transition on Matrix theme)
+  const executeGoogleSignIn = async (switchAccount: boolean) => {
     try {
       if (switchAccount) {
         try {
@@ -164,6 +172,19 @@ const Auth = () => {
         title: "Sign-In Error",
         description: "Failed to open Google sign-in. Please try again."
       });
+    }
+  };
+
+  // Handle Google OAuth - shows pill transition on Matrix theme, then proceeds
+  const handleGoogleSignIn = (switchAccount = false) => {
+    // Google = Red Pill (entering the real world / external provider)
+    if (isMatrixTheme) {
+      setPill('red');
+      setActivePill('red');
+      setShowPillTransition(true);
+      setPendingGoogleSignIn(switchAccount);
+    } else {
+      executeGoogleSignIn(switchAccount);
     }
   };
 
@@ -549,6 +570,13 @@ const Auth = () => {
         } else {
           // Reset rate limit on successful login
           await resetRateLimit(email.toLowerCase());
+          
+          // Email login = Blue Pill (staying in the simulation / internal auth)
+          if (isMatrixTheme) {
+            setPill('blue');
+            setActivePill('blue');
+            setShowPillTransition(true);
+          }
         }
       } else if (mode === "signup") {
         // Verify CAPTCHA on server (official domains only)
@@ -654,8 +682,21 @@ const Auth = () => {
 
   return (
     <div className={`min-h-screen bg-background flex flex-col items-center justify-center relative ${isRetro ? 'p-3' : 'p-6'}`}>
-      {/* Simulation Pill Selector - fullscreen overlay for Matrix theme (component handles its own visibility) */}
-      {isMatrix && <SimulationPillSelector />}
+      {/* Pill Transition Overlay - shown when login initiated on Matrix theme */}
+      {isMatrix && (
+        <PillTransitionOverlay 
+          pill={activePill} 
+          show={showPillTransition}
+          onComplete={() => {
+            setShowPillTransition(false);
+            // Execute the pending Google sign-in if any
+            if (pendingGoogleSignIn !== null) {
+              executeGoogleSignIn(pendingGoogleSignIn);
+              setPendingGoogleSignIn(null);
+            }
+          }}
+        />
+      )}
       
       {/* Theme selector - only visible in Lovable preview */}
       <LoginThemeSelector />

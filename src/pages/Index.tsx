@@ -5,10 +5,12 @@ import ChatRoom from "@/components/chat/ChatRoom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
-import { SimulationPillSelector } from "@/components/theme/SimulationPillSelector";
+import { useSimulationPill } from "@/hooks/useSimulationPill";
+import { PillTransitionOverlay } from "@/components/theme/PillTransitionOverlay";
 
 const LAST_CHANNEL_KEY = 'jac-last-channel';
 const GOOGLE_WELCOME_SHOWN_KEY = 'jac-google-welcome-shown';
+const PILL_ENTRY_SHOWN_KEY = 'jac-pill-entry-shown';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -16,10 +18,12 @@ const Index = () => {
   const { channelName } = useParams<{ channelName: string }>();
   const googleWelcomeShownRef = useRef(false);
   const { theme } = useTheme();
+  const { pill } = useSimulationPill();
   const isMatrix = theme === 'matrix';
   
-  // Track if the pill transition is complete
-  const [pillTransitionComplete, setPillTransitionComplete] = useState(false);
+  // Track if the pill transition is complete (shown briefly on chat entry)
+  const [showEntryTransition, setShowEntryTransition] = useState(false);
+  const [entryTransitionDone, setEntryTransitionDone] = useState(false);
 
   // OAuth callback processing guard (VPS)
   const [oauthProcessing, setOauthProcessing] = useState(() =>
@@ -106,6 +110,20 @@ const Index = () => {
     }
   }, [user, loading, navigate, oauthProcessing]);
 
+  // Show brief pill transition on Matrix theme when entering chat (once per session)
+  useEffect(() => {
+    if (!user || !isMatrix || !pill || entryTransitionDone) return;
+    
+    // Check if we've already shown the entry transition this session
+    const alreadyShown = sessionStorage.getItem(PILL_ENTRY_SHOWN_KEY);
+    if (!alreadyShown) {
+      setShowEntryTransition(true);
+      sessionStorage.setItem(PILL_ENTRY_SHOWN_KEY, 'true');
+    } else {
+      setEntryTransitionDone(true);
+    }
+  }, [user, isMatrix, pill, entryTransitionDone]);
+
   if (loading || !channelName) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -129,13 +147,23 @@ const Index = () => {
     return null;
   }
 
-  // For Matrix theme: show pill transition first, then chat
-  if (isMatrix && !pillTransitionComplete) {
+  // For Matrix theme: show brief pill transition on entry
+  if (isMatrix && showEntryTransition && pill) {
     return (
-      <SimulationPillSelector 
-        showTransition={true} 
-        onComplete={() => setPillTransitionComplete(true)} 
-      />
+      <>
+        <PillTransitionOverlay 
+          pill={pill} 
+          show={true} 
+          onComplete={() => {
+            setShowEntryTransition(false);
+            setEntryTransitionDone(true);
+          }} 
+        />
+        {/* Render chat behind the overlay so it's ready when transition ends */}
+        <div className="opacity-0">
+          <ChatRoom initialChannelName={channelName} />
+        </div>
+      </>
     );
   }
 
