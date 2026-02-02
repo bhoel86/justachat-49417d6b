@@ -42,22 +42,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Show loading screen during initial load OR during signout transition
   const isLoading = loading || signingOut;
 
+  // Separate initial load from ongoing auth changes to prevent race conditions
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let isMounted = true;
+    let isInitialLoad = true;
+
+    // Role check function that can optionally control loading state
+    const fetchRole = async (userId: string, controlLoading: boolean) => {
+      try {
+        const { data } = await supabaseUntyped
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .single();
+        
+        if (isMounted) {
+          setRole(data?.role as AppRole ?? 'user');
+        }
+      } catch {
+        if (isMounted) setRole('user');
+      } finally {
+        // Only set loading false after role is fetched (prevents flicker)
+        if (controlLoading && isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Listener for ONGOING auth changes (does NOT control loading)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('[Auth] State change:', event, session?.user?.email);
+        if (!isMounted) return;
+        
+        console.log('[Auth] State change:', event, session?.user?.email, isInitialLoad ? '(initial)' : '(ongoing)');
+        
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
 
-        // Defer role check with setTimeout to prevent deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            checkUserRole(session.user.id);
-          }, 0);
-        } else {
-          setRole(null);
+        // For ongoing changes (not initial load), fire and forget role check
+        if (!isInitialLoad) {
+          if (session?.user) {
+            fetchRole(session.user.id, false); // Don't control loading
+          } else {
+            setRole(null);
+          }
         }
 
         // Clear URL hash after OAuth callback is processed (VPS fix)
@@ -68,17 +96,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Handle OAuth callback hash explicitly (VPS self-hosted fix)
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token')) {
-      console.log('[Auth] Detected OAuth callback hash, setting session from URL...');
-      // Some self-hosted + proxy setups don't reliably auto-ingest the hash.
-      // So we explicitly parse it and call setSession(), which will trigger SIGNED_IN.
-      const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
+    // INITIAL load - controls loading state, waits for role before setting loading=false
+    const initializeAuth = async () => {
+      // Handle OAuth callback hash explicitly (VPS self-hosted fix)
+      const hash = window.location.hash;
+      
+      if (hash && hash.includes('access_token')) {
+        console.log('[Auth] Detected OAuth callback hash, setting session from URL...');
+        const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
 
-      (async () => {
         try {
           if (accessToken && refreshToken) {
             const { data, error } = await supabase.auth.setSession({
@@ -88,35 +116,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             if (error) {
               console.error('[Auth] Failed to set session from OAuth hash:', error);
-            } else if (data.session) {
-            console.log('[Auth] Session established from OAuth hash (manual setSession)');
+              if (isMounted) setLoading(false);
+            } else if (data.session && isMounted) {
+              console.log('[Auth] Session established from OAuth hash');
               setSession(data.session);
               setUser(data.session.user);
-              setLoading(false);
-              checkUserRole(data.session.user.id);
+              await fetchRole(data.session.user.id, true); // Awaits role, then sets loading=false
             }
           } else {
-            console.warn('[Auth] OAuth hash missing access_token or refresh_token');
+            console.warn('[Auth] OAuth hash missing tokens');
+            if (isMounted) setLoading(false);
           }
         } finally {
-          // Always clear the hash to avoid leaking tokens and to prevent re-processing on refresh.
           window.history.replaceState(null, '', window.location.pathname);
         }
-      })();
-    } else {
-      // No OAuth callback, check for existing session
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      } else {
+        // No OAuth callback, check for existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
 
         if (session?.user) {
-          checkUserRole(session.user.id);
+          await fetchRole(session.user.id, true); // Awaits role, then sets loading=false
+        } else {
+          setLoading(false);
         }
-      });
-    }
+      }
+      
+      // Mark initial load as complete
+      isInitialLoad = false;
+    };
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Logout from chat function - call this when leaving chat room
@@ -139,24 +178,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     window.location.href = '/home';
   };
 
-  const checkUserRole = async (userId: string) => {
-    const { data } = await supabaseUntyped
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
-    
-    if (data) {
-      setRole(data.role as AppRole);
-    } else {
-      setRole('user');
-    }
-  };
-
-  // Public method to refresh role (e.g., after /oper command)
   const refreshRole = async () => {
     if (user) {
-      await checkUserRole(user.id);
+      const { data } = await supabaseUntyped
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+      
+      setRole(data?.role as AppRole ?? 'user');
     }
   };
 
