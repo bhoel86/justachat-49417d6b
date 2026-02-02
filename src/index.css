@@ -1363,7 +1363,7 @@
   .theme-retro80s .retro-member-list .retro-member-header span {
     font-family: 'Press Start 2P', monospace !important;
     font-size: 0.45rem !important;
-    color: hsl(0 0% 100%) !important;
+    color: hsl(50 100% 70%) !important;
     text-shadow: 1px 1px 0px hsl(0 0% 0%) !important;
   }
 
@@ -1371,73 +1371,89 @@
     color: hsl(50 100% 70%) !important;
   }
 
-  /* Section headers */
-  .theme-retro80s .retro-member-list .retro-section-header {
+  /* ALL usernames in member list - VT323 font, black text */
+  .theme-retro80s .retro-member-list span {
+    font-family: 'VT323', monospace !important;
+    color: hsl(0 0% 0%) !important;
+  }
+
+  /* Section headers - Owner, Admins, Mods, Users labels */
+  .theme-retro80s .retro-member-list p {
     font-family: 'Press Start 2P', monospace !important;
     font-size: 0.35rem !important;
-    background: hsl(185 90% 50%) !important;
-    padding: 2px 4px !important;
-    border: 1px solid hsl(0 0% 0%) !important;
-    color: hsl(0 0% 0%) !important;
+    text-shadow: 1px 1px 0px hsl(0 0% 100% / 0.5) !important;
   }
 
-  /* Section border lines */
-  .theme-retro80s .retro-member-list .retro-section-border {
-    border-color: hsl(0 0% 0% / 0.3) !important;
+  /* Owner section - golden yellow */
+  .theme-retro80s .retro-member-list .text-amber-400 {
+    color: hsl(45 100% 40%) !important;
+  }
+  .theme-retro80s .retro-member-list .text-amber-400 svg {
+    color: hsl(45 100% 40%) !important;
+    filter: drop-shadow(0 0 2px hsl(45 100% 50%)) !important;
+  }
+  .theme-retro80s .retro-member-list .border-amber-500\/40 {
+    border-color: hsl(45 100% 40% / 0.6) !important;
   }
 
-  /* Member item rows */
-  .theme-retro80s .retro-member-list .retro-member-item {
-    background: hsl(50 100% 75% / 0.5) !important;
-    border: 1px solid hsl(0 0% 0% / 0.2) !important;
-    border-radius: 0 !important;
-    transition: all 0.15s ease !important;
-  }
-
-  .theme-retro80s .retro-member-list .retro-member-item:hover {
-    background: hsl(185 90% 60% / 0.5) !important;
-    transform: translateX(-1px) !important;
-    border-color: hsl(0 0% 0% / 0.4) !important;
-  }
-
-  /* Username text in member list */
-  .theme-retro80s .retro-member-list .retro-member-name {
-    font-family: 'VT323', monospace !important;
-    font-size: 0.95rem !important;
-    color: hsl(0 0% 0%) !important;
-  }
-
-  /* Role badges */
-  .theme-retro80s .retro-member-list .retro-role-owner {
-    color: hsl(45 100% 45%) !important;
-    text-shadow: 0 0 3px hsl(45 100% 50%) !important;
-  }
-
-  .theme-retro80s .retro-member-list .retro-role-admin {
-    color: hsl(0 80% 50%) !important;
-  }
-
-  .theme-retro80s .retro-member-list .retro-role-mod {
+  /* Admin section - hot pink */
+  .theme-retro80s .retro-member-list .text-red-400 {
     color: hsl(330 90% 50%) !important;
   }
+  .theme-retro80s .retro-member-list .text-red-400 svg {
+    color: hsl(330 90% 50%) !important;
+  }
+  .theme-retro80s .retro-member-list .border-red-500\/40 {
+    border-color: hsl(330 90% 50% / 0.6) !important;
+  }
 
-  /* Bot moderator styling */
-  .theme-retro80s .retro-member-list .retro-bot-item {
+  /* Moderator section - cyan */
+  .theme-retro80s .retro-member-list .text-primary {
+    color: hsl(185 90% 40%) !important;
+  }
+  .theme-retro80s .retro-member-list .text-primary svg {
+    color: hsl(185 90% 40%) !important;
+  }
+
+  /* Users section - purple */
+  .theme-retro80s .retro-member-list .text-muted-foreground {
+    color: hsl(270 50% 40%) !important;
+  }
+
+  /* Bot section - cyan with dashed border */
+  .theme-retro80s .retro-member-list .text-cyan-400 {
+    color: hsl(185 90% 35%) !important;
+  }
+  .theme-retro80s .retro-member-list .text-cyan-400 svg {
+    color: hsl(185 90% 35%) !important;
+  }
+  .theme-retro80s .retro-member-list .border-cyan-500\/40 {
+    border-color: hsl(185 90% 40% / 0.6) !important;
+    border-style: dashed !important;
+  }
+
+  /* Online indicator dots */
+  .theme-retro80s .retro-member-list .bg-green-500 {
+    background: hsl(185 90% 45%) !important;
+    border: 1px solid hsl(0 0% 0%) !important;
+  }
+
+  /* Dropdown trigger buttons */
+  .theme-retro80s .retro-member-list button {
+    border-radius: 0 !important;
+  }
+  .theme-retro80s .retro-member-list button:hover {
     background: hsl(185 90% 55% / 0.4) !important;
-    border: 1px dashed hsl(0 0% 0% / 0.3) !important;
+  }
+  .theme-retro80s .retro-member-list button svg {
+    color: hsl(0 0% 0%) !important;
   }
 
-  /* Offline users section */
-  .theme-retro80s .retro-member-list .retro-offline-toggle {
+  /* Offline toggle button */
+  .theme-retro80s .retro-member-list .text-xs.text-muted-foreground {
     font-family: 'VT323', monospace !important;
-    font-size: 0.85rem !important;
-    color: hsl(0 0% 40%) !important;
-    border: 1px solid hsl(0 0% 0% / 0.2) !important;
-    background: hsl(50 100% 72% / 0.5) !important;
-  }
-
-  .theme-retro80s .retro-member-list .retro-offline-toggle:hover {
-    background: hsl(50 100% 65% / 0.7) !important;
+    font-size: 0.9rem !important;
+    color: hsl(0 0% 35%) !important;
   }
 
   /* Valentine's theme specific overrides */
