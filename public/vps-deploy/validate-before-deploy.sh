@@ -36,9 +36,30 @@ LOVABLE_PATTERNS=(
 )
 
 # Check for Lovable Cloud patterns in source files
+# WHITELIST: Files that legitimately reference cloud patterns for detection/documentation
+WHITELIST_FILES=(
+  "src/lib/environment.ts"           # Environment detection logic - needs to check for supabase.co
+  "src/pages/CookiePolicy.tsx"       # Documentation link to Supabase privacy policy
+  "src/pages/Legal.tsx"              # Documentation links
+  "public/vps-deploy/"               # VPS deploy scripts reference patterns to detect
+)
+
 echo -e "${YELLOW}[1/4] Scanning for Lovable Cloud patterns...${NC}"
 for pattern in "${LOVABLE_PATTERNS[@]}"; do
-  matches=$(grep -r "$pattern" "$DEPLOY_DIR/src" "$DEPLOY_DIR/supabase/functions" 2>/dev/null | grep -v node_modules | grep -v ".git" | head -20 || true)
+  # Build grep exclude pattern for whitelisted files
+  EXCLUDE_ARGS=""
+  for wl in "${WHITELIST_FILES[@]}"; do
+    EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude-dir=node_modules --exclude-dir=.git"
+  done
+  
+  matches=$(grep -r "$pattern" "$DEPLOY_DIR/src" "$DEPLOY_DIR/supabase/functions" 2>/dev/null | \
+    grep -v node_modules | grep -v ".git" | \
+    grep -v "environment.ts" | \
+    grep -v "CookiePolicy.tsx" | \
+    grep -v "Legal.tsx" | \
+    grep -v "vps-deploy" | \
+    head -20 || true)
+  
   if [ -n "$matches" ]; then
     echo -e "${RED}❌ Found Lovable Cloud pattern: $pattern${NC}"
     echo "$matches" | head -5
