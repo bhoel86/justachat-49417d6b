@@ -449,14 +449,17 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
     }));
   }, [channelName]);
 
+  // Staff should always be visible (even if they appear offline due to Ghost Mode / presence filtering)
+  const visibleOwners = members.filter(m => m.role === 'owner');
+  const visibleAdmins = members.filter(m => m.role === 'admin');
+
   // Group online members by role
   const allOnlineMembers = [...members.filter(m => m.isOnline), ...simulatedUsers];
-  const onlineOwners = allOnlineMembers.filter(m => m.role === 'owner');
-  const onlineAdmins = allOnlineMembers.filter(m => m.role === 'admin');
   const onlineModerators = allOnlineMembers.filter(m => m.role === 'moderator');
   const onlineUsers = allOnlineMembers.filter(m => m.role === 'user');
   
-  const offlineMembers = members.filter(m => !m.isOnline);
+  // Avoid duplicating staff in the offline toggle since they already render in the staff section
+  const offlineMembers = members.filter(m => !m.isOnline && m.role !== 'owner' && m.role !== 'admin');
 
   if (loading) {
     return (
@@ -504,14 +507,14 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
             {/* STAFF SECTION - Compact */}
             <div className="mb-2">
               {/* Owner Section */}
-              {onlineOwners.length > 0 && (
+              {visibleOwners.length > 0 && (
                 <div className="mb-1">
                   <p className="text-[10px] font-medium text-amber-400 uppercase px-1 mb-0.5 flex items-center gap-1">
                     <Crown className="h-2.5 w-2.5" />
                     Owner
                   </p>
                   <div className="space-y-0.5 pl-2 border-l border-amber-500/40">
-                    {onlineOwners.map((member) => (
+                    {visibleOwners.map((member) => (
                       <MemberItem 
                         key={member.user_id} 
                         member={member} 
@@ -538,14 +541,14 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
               )}
 
               {/* Admin Section */}
-              {onlineAdmins.length > 0 && (
+              {visibleAdmins.length > 0 && (
                 <div className="mb-1">
                   <p className="text-[10px] font-medium text-red-400 uppercase px-1 mb-0.5 flex items-center gap-1">
                     <ShieldCheck className="h-2.5 w-2.5" />
-                    Admins — {onlineAdmins.length}
+                    Admins — {visibleAdmins.length}
                   </p>
                   <div className="space-y-0.5 pl-2 border-l border-red-500/40">
-                    {onlineAdmins.map((member) => (
+                    {visibleAdmins.map((member) => (
                       <MemberItem 
                         key={member.user_id} 
                         member={member} 
