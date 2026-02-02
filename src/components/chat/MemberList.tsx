@@ -162,27 +162,30 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
       const roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]) || []);
       
       const memberList: Member[] = profiles
-        // Filter out ghost mode users unless they are the current user or viewer is admin/owner
+        // Filter out ghost mode users unless they are the current user, viewer is admin/owner, OR the user is an owner/admin (always visible)
         .filter((p: { user_id: string; ghost_mode?: boolean }) => {
           // Always show current user
           if (p.user_id === user?.id) return true;
-          // Admins and owners can see ghost users
+          // Admins and owners viewing can see all ghost users
           if (isAdmin || isOwner) return true;
-          // Hide ghost mode users from regular users
+          // Get the target user's role - owners/admins are ALWAYS visible even with ghost mode
+          const targetRole = roleMap.get(p.user_id);
+          if (targetRole === 'owner' || targetRole === 'admin') return true;
+          // Hide ghost mode users from regular users (only non-staff)
           return !p.ghost_mode;
         })
         .map((p: { user_id: string; username: string; avatar_url: string | null; bio: string | null; ghost_mode?: boolean }) => {
           const memberRole = (roleMap.get(p.user_id) || 'user') as Member['role'];
           // Only include IP for non-admin/owner users
           const showIp = (isAdmin || isOwner) && memberRole !== 'admin' && memberRole !== 'owner';
+          // Ghost mode: regular users see ghost users as offline, EXCEPT owners/admins are always shown as-is
+          const targetIsStaff = memberRole === 'owner' || memberRole === 'admin';
+          const shouldAppearOffline = p.ghost_mode && p.user_id !== user?.id && !isAdmin && !isOwner && !targetIsStaff;
           return {
             user_id: p.user_id,
             username: p.username,
             role: memberRole,
-            // Ghost mode users appear offline to non-admin viewers (even if online)
-            isOnline: p.ghost_mode && p.user_id !== user?.id && !isAdmin && !isOwner 
-              ? false 
-              : onlineUserIds.has(p.user_id),
+            isOnline: shouldAppearOffline ? false : onlineUserIds.has(p.user_id),
             avatar_url: p.avatar_url,
             bio: p.bio,
             ip_address: showIp ? locationMap.get(p.user_id) || null : null,
