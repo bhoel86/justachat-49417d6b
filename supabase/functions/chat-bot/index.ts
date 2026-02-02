@@ -1131,68 +1131,33 @@ ${messageContext}
 jump in and say something. pick up on what someones talking about or add to the convo. keep it casual n short`;
     }
 
-    // Prefer Lovable AI gateway (Lovable Cloud). Fall back to OpenAI for VPS/self-hosted.
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    // Use OpenAI API ONLY (for VPS/self-hosted deployment)
+    // For Lovable Cloud, use the chat-bot-cloud function instead
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-
-    if (!LOVABLE_API_KEY && !OPENAI_API_KEY) {
-      console.error("No AI key configured (LOVABLE_API_KEY or OPENAI_API_KEY)");
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const messages = [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ];
-
-    const callLovableGateway = () =>
-      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages,
-          max_tokens: 80,
-          temperature: 0.98,
-        }),
-      });
-
-    const callOpenAI = () =>
-      fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages,
-          max_tokens: 80,
-          temperature: 0.98,
-        }),
-      });
-
-    let response: Response;
-    if (LOVABLE_API_KEY) {
-      response = await callLovableGateway();
-      if (!response.ok && OPENAI_API_KEY) {
-        const gatewayErrorText = await response.text();
-        console.error(
-          "AI gateway error; falling back to OpenAI:",
-          response.status,
-          gatewayErrorText
-        );
-        response = await callOpenAI();
-      }
-    } else {
-      response = await callOpenAI();
-    }
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 80,
+        temperature: 0.98,
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
