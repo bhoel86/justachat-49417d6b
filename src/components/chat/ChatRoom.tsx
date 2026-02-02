@@ -351,11 +351,12 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${currentChannel.id}` },
         async (payload) => {
           const newMessage = payload.new as Message;
-          const { data: profile } = await supabaseUntyped
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('user_id', newMessage.user_id)
-            .single();
+           const { data: profile } = await supabaseUntyped
+             // Use public view so regular users can resolve other users' usernames/avatars
+             .from('profiles_public')
+             .select('username, avatar_url')
+             .eq('user_id', newMessage.user_id)
+             .single();
           setMessages(prev => [...prev, { ...newMessage, profile: profile || undefined }]);
           
           // Broadcast to lobby mirror if this is #general
@@ -420,8 +421,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         
         // Fetch usernames for online users
         if (onlineIds.size > 0) {
-          const { data: profiles } = await supabase
-            .from('profiles')
+          const { data: profiles } = await supabaseUntyped
+            // Use public view so regular users can see who is online
+            .from('profiles_public')
             .select('username')
             .in('user_id', Array.from(onlineIds));
           if (profiles) {
