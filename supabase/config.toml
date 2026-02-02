@@ -42,7 +42,6 @@ verify_jwt = false
 [functions.upload-image]
 verify_jwt = false
 
-
 [functions.donation-notify]
 verify_jwt = false
 
@@ -68,4 +67,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.chat-bot-cloud]
+verify_jwt = false
+
+[functions.execute-moderation]
 verify_jwt = false
