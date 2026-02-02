@@ -36,6 +36,9 @@ type AuthMode = "login" | "signup" | "forgot" | "reset";
 
 const CAPTCHA_REQUIRED_HOSTS = new Set(["justachat.net", "www.justachat.net"]);
 
+import { PillTransitionOverlay } from "@/components/theme/PillTransitionOverlay";
+import type { PillChoice } from "@/hooks/useSimulationPill";
+
 const Auth = () => {
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -56,6 +59,10 @@ const Auth = () => {
   const [resendCountdown, setResendCountdown] = useState(30);
   const [rateLimitInfo, setRateLimitInfo] = useState<{ locked: boolean; message?: string; remainingAttempts?: number } | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  
+  // Matrix pill transition state - show overlay before navigating
+  const [showPillTransition, setShowPillTransition] = useState(false);
+  const [activePill, setActivePill] = useState<PillChoice>(null);
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -169,15 +176,20 @@ const Auth = () => {
     }
   };
 
-  // Handle Google OAuth - sets pill and proceeds (transition shown on return in Index.tsx)
+  // Handle Google OAuth - show pill transition then proceed
   const handleGoogleSignIn = (switchAccount = false) => {
     // Google = Red Pill (entering the real world / external provider)
     if (isMatrixTheme) {
       setPill('red');
-      // Mark that we just initiated a login so Index.tsx knows to show transition
-      sessionStorage.setItem('jac-pill-login-pending', 'true');
+      setActivePill('red');
+      setShowPillTransition(true);
+      // Delay OAuth to show pill transition, then proceed
+      setTimeout(() => {
+        executeGoogleSignIn(switchAccount);
+      }, 2500);
+    } else {
+      executeGoogleSignIn(switchAccount);
     }
-    executeGoogleSignIn(switchAccount);
   };
 
   // Check if current user is owner (for debug mode)
@@ -566,8 +578,10 @@ const Auth = () => {
           // Email login = Blue Pill (staying in the simulation / internal auth)
           if (isMatrixTheme) {
             setPill('blue');
-            // Mark that we just logged in so Index.tsx knows to show transition
-            sessionStorage.setItem('jac-pill-login-pending', 'true');
+            setActivePill('blue');
+            setShowPillTransition(true);
+            // Delay navigation to show pill transition
+            return; // onComplete will handle navigation
           }
         }
       } else if (mode === "signup") {
@@ -674,6 +688,22 @@ const Auth = () => {
 
   return (
     <div className={`min-h-screen bg-background flex flex-col items-center justify-center relative ${isRetro ? 'p-3' : 'p-6'}`}>
+      {/* Matrix pill transition overlay */}
+      {showPillTransition && activePill && (
+        <PillTransitionOverlay 
+          pill={activePill} 
+          show={showPillTransition} 
+          onComplete={() => {
+            setShowPillTransition(false);
+            // Navigate after transition completes (for email login)
+            // Google OAuth will have already redirected
+            if (user) {
+              navigate('/');
+            }
+          }} 
+        />
+      )}
+      
       {/* Theme selector - only visible in Lovable preview */}
       <LoginThemeSelector />
 
