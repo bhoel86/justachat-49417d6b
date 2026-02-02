@@ -25,6 +25,7 @@ import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
 import retroHeaderImg from '@/assets/themes/retro-header-login-cutout.png';
 import matrixLoginBg from '@/assets/matrix/login-container-bg.png';
 import { usePngCutout } from "@/hooks/usePngCutout";
+import { isLovablePreviewHost } from "@/lib/previewHost";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -122,8 +123,7 @@ const Auth = () => {
       } else {
         // For web: Use OAuth flow
         // Detect if on VPS/custom domain vs Lovable preview
-        const isCustomDomain = !window.location.hostname.includes('lovable.app') &&
-                               !window.location.hostname.includes('lovableproject.com');
+        const isCustomDomain = !isLovablePreviewHost(window.location.hostname);
         
         if (isCustomDomain) {
           // Bypass auth-bridge by getting OAuth URL directly for VPS
