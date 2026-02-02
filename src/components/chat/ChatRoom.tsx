@@ -20,8 +20,10 @@ import BotChatWindow from "./BotChatWindow";
 import PMTray from "./PMTray";
 import BotTray from "./BotTray";
 import FriendsTray from "@/components/friends/FriendsTray";
+import FriendRequestPopup from "@/components/friends/FriendRequestPopup";
 import { usePrivateChats } from "@/hooks/usePrivateChats";
 import { useBotChats } from "@/hooks/useBotChats";
+import { useFriends, FriendRequestCallback } from "@/hooks/useFriends";
 import LanguageSettingsModal from "@/components/profile/LanguageSettingsModal";
 import RoomSettingsModal from "./RoomSettingsModal";
 import RoomPasswordModal from "./RoomPasswordModal";
@@ -112,6 +114,22 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   
   // Bot chats system (draggable windows for moderator bots)
   const botChats = useBotChats();
+  
+  // Friend request popup state
+  const [friendRequestPopup, setFriendRequestPopup] = useState<{
+    id: string;
+    senderId: string;
+    senderUsername: string;
+    senderAvatarUrl: string | null;
+  } | null>(null);
+  
+  // Handle friend request received - show popup
+  const handleFriendRequestReceived = useCallback<FriendRequestCallback>((request) => {
+    setFriendRequestPopup(request);
+  }, []);
+  
+  // Friends system with popup callback
+  const friends = useFriends(user?.id || '', handleFriendRequestReceived);
   
   // Minor restriction check helper
   const canAccessPrivateMessaging = !isMinor || hasParentConsent;
@@ -1484,6 +1502,18 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         <FriendsTray
           currentUserId={user.id}
           onOpenPm={handleOpenPm}
+        />
+      )}
+      
+      {/* Friend Request Popup - modal with accept/decline */}
+      {friendRequestPopup && (
+        <FriendRequestPopup
+          senderUsername={friendRequestPopup.senderUsername}
+          senderAvatarUrl={friendRequestPopup.senderAvatarUrl}
+          requestId={friendRequestPopup.id}
+          onAccept={friends.acceptFriendRequest}
+          onDecline={friends.declineFriendRequest}
+          onClose={() => setFriendRequestPopup(null)}
         />
       )}
 

@@ -1,6 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { playPMNotificationSound } from '@/lib/notificationSound';
+
+// Callback type for friend request popup
+export type FriendRequestCallback = (request: {
+  id: string;
+  senderId: string;
+  senderUsername: string;
+  senderAvatarUrl: string | null;
+}) => void;
 
 export interface Friend {
   id: string;
@@ -32,12 +41,18 @@ export interface BlockedUser {
   createdAt: Date;
 }
 
-export const useFriends = (currentUserId: string) => {
+export const useFriends = (currentUserId: string, onFriendRequestReceived?: FriendRequestCallback) => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [onlineFriendIds, setOnlineFriendIds] = useState<Set<string>>(new Set());
+  const onFriendRequestReceivedRef = useRef(onFriendRequestReceived);
+  
+  // Keep ref in sync
+  useEffect(() => {
+    onFriendRequestReceivedRef.current = onFriendRequestReceived;
+  }, [onFriendRequestReceived]);
 
   // Fetch friends list
   const fetchFriends = useCallback(async () => {
@@ -477,21 +492,37 @@ export const useFriends = (currentUserId: string) => {
       }, async (payload) => {
         fetchPendingRequests();
         
-        // Show toast notification for new incoming friend requests
-        const newRequest = payload.new as { sender_id: string; recipient_id: string; status: string };
+        // Handle new incoming friend requests with popup and sound
+        const newRequest = payload.new as { id: string; sender_id: string; recipient_id: string; status: string };
         if (newRequest.recipient_id === currentUserId && newRequest.status === 'pending') {
           // Fetch sender's profile to get their username (using public view)
           const { data: senderProfile } = await supabase
             .from('profiles_public')
-            .select('username')
+            .select('username, avatar_url')
             .eq('user_id', newRequest.sender_id)
             .maybeSingle();
           
           const senderName = senderProfile?.username || 'Someone';
-          toast.info(`${senderName} sent you a friend request!`, {
-            description: 'Check your Friends tab to respond',
-            duration: 5000,
-          });
+          const senderAvatar = senderProfile?.avatar_url || null;
+          
+          // Play notification sound
+          playPMNotificationSound();
+          
+          // If callback is provided, trigger popup
+          if (onFriendRequestReceivedRef.current) {
+            onFriendRequestReceivedRef.current({
+              id: newRequest.id,
+              senderId: newRequest.sender_id,
+              senderUsername: senderName,
+              senderAvatarUrl: senderAvatar,
+            });
+          } else {
+            // Fallback to toast if no popup handler
+            toast.info(`${senderName} sent you a friend request!`, {
+              description: 'Check your Friends tab to respond',
+              duration: 5000,
+            });
+          }
         }
       })
       .on('postgres_changes', {
