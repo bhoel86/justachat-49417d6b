@@ -19,6 +19,7 @@ import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
+import { SimulationPillSelector } from "@/components/theme/SimulationPillSelector";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useSimulationPill } from "@/hooks/useSimulationPill";
 import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
@@ -653,6 +654,9 @@ const Auth = () => {
 
   return (
     <div className={`min-h-screen bg-background flex flex-col items-center justify-center relative ${isRetro ? 'p-3' : 'p-6'}`}>
+      {/* Simulation Pill Selector - fullscreen overlay for Matrix theme (component handles its own visibility) */}
+      {isMatrix && <SimulationPillSelector />}
+      
       {/* Theme selector - only visible in Lovable preview */}
       <LoginThemeSelector />
 

@@ -21,9 +21,13 @@ export const SimulationPillSelector = ({ onComplete }: SimulationPillSelectorPro
   const [selected, setSelected] = useState<PillChoice>(null);
   const [animating, setAnimating] = useState(false);
   const [showChoiceImage, setShowChoiceImage] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
-  // Only show for Simulation theme and if no pill chosen yet
+  // Only show for Simulation theme
   if (theme !== 'matrix') return null;
+  
+  // If fully completed (after image shown), don't render anything
+  if (completed) return null;
 
   const handleSelect = (choice: PillChoice) => {
     if (animating || !choice) return;
@@ -31,22 +35,23 @@ export const SimulationPillSelector = ({ onComplete }: SimulationPillSelectorPro
     setSelected(choice);
     setAnimating(true);
     
-    // First phase: fade out the selector
+    // First phase: fade out the selector (800ms), then show the pill choice image
     setTimeout(() => {
       setShowChoiceImage(true);
     }, 800);
     
-    // Second phase: show the choice image, then complete
+    // Second phase: after showing the image for ~3 seconds, save and complete
     setTimeout(() => {
       setPill(choice);
-      setAnimating(false);
       setShowChoiceImage(false);
+      setAnimating(false);
+      setCompleted(true);
       onComplete?.();
-    }, 3500);
+    }, 4000);
   };
 
-  // If already has pill, show current choice indicator (can be clicked to change)
-  if (hasPill && !animating) {
+  // If already has pill (from previous session) and not in the middle of animation, show indicator
+  if (hasPill && !animating && !showChoiceImage) {
     return (
       <button
         onClick={() => setPill(null)} // Reset to allow re-selection
@@ -76,9 +81,9 @@ export const SimulationPillSelector = ({ onComplete }: SimulationPillSelectorPro
         <img
           src={selected === 'red' ? redPillChoiceImg : bluePillChoiceImg}
           alt={selected === 'red' ? 'You chose the red pill' : 'You chose the blue pill'}
-          className="w-full h-full object-cover animate-fade-in"
+          className="w-full h-full object-cover"
           style={{
-            animation: 'pillChoiceFadeIn 0.5s ease-out forwards, pillChoiceFadeOut 0.5s ease-in 2s forwards',
+            animation: 'pillChoiceFadeIn 0.5s ease-out forwards',
           }}
         />
         {/* CRT scanline effect overlay */}
@@ -88,27 +93,25 @@ export const SimulationPillSelector = ({ onComplete }: SimulationPillSelectorPro
             background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)'
           }}
         />
+        {/* Add keyframes */}
+        <style>{`
+          @keyframes pillChoiceFadeIn {
+            from { opacity: 0; transform: scale(1.05); }
+            to { opacity: 1; transform: scale(1); }
+          }
+        `}</style>
       </div>
     );
   }
+  
+  // If hasPill is already set (returning user), don't show the selector
+  if (hasPill) return null;
 
   return (
     <>
-      {/* Add keyframes for pill choice animation */}
-      <style>{`
-        @keyframes pillChoiceFadeIn {
-          from { opacity: 0; transform: scale(1.1); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes pillChoiceFadeOut {
-          from { opacity: 1; }
-          to { opacity: 0; }
-        }
-      `}</style>
-      
       <div className={cn(
         "fixed inset-0 z-[100] flex items-center justify-center bg-black/95 transition-opacity duration-500",
-        animating && !showChoiceImage && "opacity-0 pointer-events-none"
+        animating && "opacity-0 pointer-events-none"
       )}>
         {/* CRT scanline effect */}
         <div 
@@ -229,6 +232,7 @@ export const SimulationPillSelector = ({ onComplete }: SimulationPillSelectorPro
             <button
               onClick={() => {
                 setPill('blue'); // Default to blue if skipped
+                setCompleted(true);
                 onComplete?.();
               }}
               className="text-green-500/30 hover:text-green-500/60 font-mono text-xs transition-colors"
