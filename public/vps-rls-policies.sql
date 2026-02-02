@@ -261,6 +261,15 @@ CREATE POLICY "Users can upload their own avatar" ON storage.objects FOR INSERT 
 CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 CREATE POLICY "Users can delete their own avatar" ON storage.objects FOR DELETE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+-- IMPORTANT (VPS): allow the service role to bypass per-user folder restrictions.
+-- Without this, server-side uploads using the service-role key can still be blocked by RLS because auth.uid() is NULL.
+CREATE POLICY "Service role can manage avatars"
+ON storage.objects
+FOR ALL
+TO service_role
+USING (bucket_id = 'avatars')
+WITH CHECK (bucket_id = 'avatars');
+
 -- ============================================
 -- REALTIME PUBLICATION
 -- ============================================
