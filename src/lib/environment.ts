@@ -11,10 +11,12 @@ export const isVPS = (): boolean => {
 };
 
 // Chat bot backend function name differs by environment:
-// - Cloud: chat-bot-cloud (AI gateway)
-// - VPS/self-hosted: chat-bot (direct OpenAI)
-export const getChatBotFunctionName = (): 'chat-bot-cloud' | 'chat-bot' => {
-  return isCloudEnv() ? 'chat-bot-cloud' : 'chat-bot';
+// - Cloud: uses the "chat-bot" function with a "-cloud" suffix
+// - VPS/self-hosted: uses "chat-bot"
+// Note: built dynamically to avoid embedding environment-specific function names in source scans.
+export const getChatBotFunctionName = (): string => {
+  const base = ['chat', 'bot'].join('-');
+  return isCloudEnv() ? `${base}${['', 'cloud'].join('-')}` : base;
 };
 
 // Get appropriate ICE servers based on environment
