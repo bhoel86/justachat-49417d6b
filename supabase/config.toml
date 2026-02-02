@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.execute-moderation]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

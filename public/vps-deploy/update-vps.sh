@@ -106,6 +106,7 @@ if [ -d "$FUNCTIONS_DIR" ]; then
     "chat-bot"
     "check-rate-limit"
     "decrypt-pm"
+    "delete-account"
     "encrypt-pm"
     "execute-moderation"
     "geolocate"
