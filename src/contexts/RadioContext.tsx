@@ -113,6 +113,19 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   });
   const progressInterval = useRef<number | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
+
+  const safeGetPlayerTimes = useCallback(() => {
+    const p = playerRef.current as Partial<YTPlayer> | null;
+    if (!p) return { currentTime: 0, duration: 0 };
+
+    const currentTime = typeof p.getCurrentTime === 'function' ? (p.getCurrentTime() ?? 0) : 0;
+    const duration = typeof p.getDuration === 'function' ? (p.getDuration() ?? 0) : 0;
+
+    return {
+      currentTime: Number.isFinite(currentTime) ? currentTime : 0,
+      duration: Number.isFinite(duration) ? duration : 0,
+    };
+  }, []);
   
   // Track broken videos for this session (don't persist - give them another chance next session)
   const brokenVideosRef = useRef<Set<string>>(new Set());
@@ -213,6 +226,12 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
   }, [isEnabled, currentSong]);
 
   const initPlayer = useCallback(() => {
+    // Clear any existing progress interval before swapping players
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+      progressInterval.current = null;
+    }
+
     // Cleanup existing player
     if (playerRef.current) {
       try {
@@ -220,6 +239,8 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       } catch (e) {
         console.log('Error destroying player:', e);
       }
+      // Ensure we don't keep a stale reference
+      playerRef.current = null;
     }
 
     if (!ytWindow.YT?.Player || !currentSong) return;
@@ -262,6 +283,9 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
       },
       events: {
         onReady: (event: { target: YTPlayer }) => {
+          // Use the event target as the canonical player instance
+          playerRef.current = event.target;
+
           event.target.setVolume(volume);
           event.target.playVideo();
           setIsPlaying(true);
@@ -271,9 +295,15 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
             clearInterval(progressInterval.current);
           }
           progressInterval.current = window.setInterval(() => {
-            if (playerRef.current) {
-              setCurrentTime(playerRef.current.getCurrentTime() || 0);
-              setDuration(playerRef.current.getDuration() || 0);
+            try {
+              const { currentTime, duration } = safeGetPlayerTimes();
+              setCurrentTime(currentTime);
+              setDuration(duration);
+            } catch (e) {
+              // If the player is in a weird transient state (destroyed/recreated), don't crash the app.
+              // This prevents: "getCurrentTime is not a function"
+              // eslint-disable-next-line no-console
+              console.log('Radio: progress tick error', e);
             }
           }, 500);
         },
@@ -309,7 +339,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
         },
       },
     });
-  }, [currentSong, volume]);
+  }, [currentSong, safeGetPlayerTimes, volume]);
   
   // Skip to next non-broken song
   const skipBroken = useCallback(() => {
