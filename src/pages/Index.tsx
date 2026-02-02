@@ -10,7 +10,7 @@ import { PillTransitionOverlay } from "@/components/theme/PillTransitionOverlay"
 
 const LAST_CHANNEL_KEY = 'jac-last-channel';
 const GOOGLE_WELCOME_SHOWN_KEY = 'jac-google-welcome-shown';
-const PILL_ENTRY_SHOWN_KEY = 'jac-pill-entry-shown';
+const PILL_LOGIN_PENDING_KEY = 'jac-pill-login-pending';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -110,16 +110,18 @@ const Index = () => {
     }
   }, [user, loading, navigate, oauthProcessing]);
 
-  // Show brief pill transition on Matrix theme when entering chat (once per session)
+  // Show pill transition on Matrix theme when entering chat after login
   useEffect(() => {
     if (!user || !isMatrix || !pill || entryTransitionDone) return;
     
-    // Check if we've already shown the entry transition this session
-    const alreadyShown = sessionStorage.getItem(PILL_ENTRY_SHOWN_KEY);
-    if (!alreadyShown) {
+    // Check if we just logged in (set by Auth.tsx)
+    const loginPending = sessionStorage.getItem(PILL_LOGIN_PENDING_KEY);
+    if (loginPending) {
       setShowEntryTransition(true);
-      sessionStorage.setItem(PILL_ENTRY_SHOWN_KEY, 'true');
+      // Clear the flag so it doesn't show again on refresh
+      sessionStorage.removeItem(PILL_LOGIN_PENDING_KEY);
     } else {
+      // No pending login, skip transition
       setEntryTransitionDone(true);
     }
   }, [user, isMatrix, pill, entryTransitionDone]);

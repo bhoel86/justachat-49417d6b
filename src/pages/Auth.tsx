@@ -19,9 +19,8 @@ import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
-import { PillTransitionOverlay } from "@/components/theme/PillTransitionOverlay";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useSimulationPill, PillChoice } from "@/hooks/useSimulationPill";
+import { useSimulationPill } from "@/hooks/useSimulationPill";
 import jungleHeaderImg from '@/assets/themes/jungle-header-logo-cutout.png';
 import retroHeaderImg from '@/assets/themes/retro-header-login-cutout.png';
 import matrixLoginBg from '@/assets/matrix/login-container-bg.png';
@@ -63,11 +62,6 @@ const Auth = () => {
   const { toast } = useToast();
   const { theme } = useTheme();
   const { setPill } = useSimulationPill();
-  
-  // Pill transition state for Matrix theme
-  const [showPillTransition, setShowPillTransition] = useState(false);
-  const [activePill, setActivePill] = useState<PillChoice>(null);
-  const [pendingGoogleSignIn, setPendingGoogleSignIn] = useState<boolean | null>(null);
 
   // Theme detection - must be before hook calls
   const isRetro = theme === 'retro80s';
@@ -175,17 +169,15 @@ const Auth = () => {
     }
   };
 
-  // Handle Google OAuth - shows pill transition on Matrix theme, then proceeds
+  // Handle Google OAuth - sets pill and proceeds (transition shown on return in Index.tsx)
   const handleGoogleSignIn = (switchAccount = false) => {
     // Google = Red Pill (entering the real world / external provider)
     if (isMatrixTheme) {
       setPill('red');
-      setActivePill('red');
-      setShowPillTransition(true);
-      setPendingGoogleSignIn(switchAccount);
-    } else {
-      executeGoogleSignIn(switchAccount);
+      // Mark that we just initiated a login so Index.tsx knows to show transition
+      sessionStorage.setItem('jac-pill-login-pending', 'true');
     }
+    executeGoogleSignIn(switchAccount);
   };
 
   // Check if current user is owner (for debug mode)
@@ -574,8 +566,8 @@ const Auth = () => {
           // Email login = Blue Pill (staying in the simulation / internal auth)
           if (isMatrixTheme) {
             setPill('blue');
-            setActivePill('blue');
-            setShowPillTransition(true);
+            // Mark that we just logged in so Index.tsx knows to show transition
+            sessionStorage.setItem('jac-pill-login-pending', 'true');
           }
         }
       } else if (mode === "signup") {
@@ -682,22 +674,6 @@ const Auth = () => {
 
   return (
     <div className={`min-h-screen bg-background flex flex-col items-center justify-center relative ${isRetro ? 'p-3' : 'p-6'}`}>
-      {/* Pill Transition Overlay - shown when login initiated on Matrix theme */}
-      {isMatrix && (
-        <PillTransitionOverlay 
-          pill={activePill} 
-          show={showPillTransition}
-          onComplete={() => {
-            setShowPillTransition(false);
-            // Execute the pending Google sign-in if any
-            if (pendingGoogleSignIn !== null) {
-              executeGoogleSignIn(pendingGoogleSignIn);
-              setPendingGoogleSignIn(null);
-            }
-          }}
-        />
-      )}
-      
       {/* Theme selector - only visible in Lovable preview */}
       <LoginThemeSelector />
 

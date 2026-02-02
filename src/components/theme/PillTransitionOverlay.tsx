@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { PillChoice } from '@/hooks/useSimulationPill';
 import redPillChoiceImg from '@/assets/matrix/red-pill-choice.png';
 import bluePillChoiceImg from '@/assets/matrix/blue-pill-choice.png';
@@ -14,12 +14,16 @@ interface PillTransitionOverlayProps {
  * Shows at reduced opacity for lore/mystery effect
  */
 export const PillTransitionOverlay = ({ pill, show, onComplete }: PillTransitionOverlayProps) => {
-  const [visible, setVisible] = useState(false);
   const [fading, setFading] = useState(false);
+  const hasStartedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  
+  // Keep onComplete ref updated
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
-    if (show && pill) {
-      setVisible(true);
+    if (show && pill && !hasStartedRef.current) {
+      hasStartedRef.current = true;
       setFading(false);
       
       // Start fading after 2 seconds
@@ -29,8 +33,7 @@ export const PillTransitionOverlay = ({ pill, show, onComplete }: PillTransition
       
       // Complete after fade animation (2.5s total)
       const completeTimer = setTimeout(() => {
-        setVisible(false);
-        onComplete?.();
+        onCompleteRef.current?.();
       }, 2500);
       
       return () => {
@@ -38,9 +41,16 @@ export const PillTransitionOverlay = ({ pill, show, onComplete }: PillTransition
         clearTimeout(completeTimer);
       };
     }
-  }, [show, pill, onComplete]);
+    
+    // Reset when show becomes false
+    if (!show) {
+      hasStartedRef.current = false;
+      setFading(false);
+    }
+  }, [show, pill]);
 
-  if (!visible || !pill) return null;
+  // Render immediately when show is true - no internal state delay
+  if (!show || !pill) return null;
 
   return (
     <div 
