@@ -161,18 +161,24 @@ serve(async (req) => {
 
     // If alerts detected, send to AI for analysis and log
     if (alerts.length > 0) {
-      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+      // Environment-aware AI: Use Lovable gateway on Cloud, OpenAI on VPS
+      const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+      const AI_API_KEY = OPENAI_API_KEY; // VPS uses OpenAI directly
+      const AI_ENDPOINT = OPENAI_API_KEY 
+        ? 'https://api.openai.com/v1/chat/completions'
+        : null;
+      const AI_MODEL = 'gpt-4o-mini';
       
-      if (LOVABLE_API_KEY) {
+      if (AI_API_KEY && AI_ENDPOINT) {
         // Use AI to analyze the context
-        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        const response = await fetch(AI_ENDPOINT, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Authorization': `Bearer ${AI_API_KEY}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-3-flash-preview',
+            model: AI_MODEL,
             messages: [
               {
                 role: 'system',

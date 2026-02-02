@@ -36,23 +36,24 @@ function checkRateLimit(userId: string): { allowed: boolean; remaining: number; 
 }
 
 async function checkForNudity(imageBase64: string): Promise<{ safe: boolean; reason?: string }> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  // Environment-aware AI: Use OpenAI on VPS (supports vision)
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   
-  if (!LOVABLE_API_KEY) {
-    console.error("LOVABLE_API_KEY not configured");
+  if (!OPENAI_API_KEY) {
+    console.warn("No AI key configured for image moderation - allowing upload");
     // Fail open but log - in production you might want to fail closed
     return { safe: true };
   }
 
   try {
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "user",
