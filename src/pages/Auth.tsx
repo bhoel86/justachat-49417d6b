@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { MessageCircle, Mail, Lock, User, ArrowRight, ShieldCheck, ArrowLeft, AlertTriangle, Calendar, Users, Heart, Terminal } from "lucide-react";
 import { Browser } from '@capacitor/browser';
@@ -63,6 +63,9 @@ const Auth = () => {
   // Matrix pill transition state - show overlay before navigating
   const [showPillTransition, setShowPillTransition] = useState(false);
   const [activePill, setActivePill] = useState<PillChoice>(null);
+  // IMPORTANT: useRef so the clicked pill is available synchronously during submit
+  // (setState may not be updated yet when handleSubmit reads it)
+  const pillSubmitChoiceRef = useRef<PillChoice>(null);
   
   const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -575,9 +578,14 @@ const Auth = () => {
           // Reset rate limit on successful login
           await resetRateLimit(email.toLowerCase());
           
-          // Show pill transition for Matrix theme (uses activePill set by button click)
-          if (isMatrixTheme && activePill) {
-            setPill(activePill);
+          // Show pill transition for Matrix theme ONLY when user clicked a pill half
+          // (prevents showing the overlay for Enter-key submits)
+          const clickedPill = pillSubmitChoiceRef.current;
+          pillSubmitChoiceRef.current = null;
+
+          if (isMatrixTheme && clickedPill) {
+            setPill(clickedPill);
+            setActivePill(clickedPill);
             setShowPillTransition(true);
             // Delay navigation to show pill transition
             return; // onComplete will handle navigation
@@ -1232,7 +1240,11 @@ const Auth = () => {
                   {/* Red Pill Side (Email/Password) */}
                   <button
                     type="submit"
-                    onClick={() => { setPill('red'); setActivePill('red'); }}
+                    onClick={() => {
+                      pillSubmitChoiceRef.current = 'red';
+                      setPill('red');
+                      setActivePill('red');
+                    }}
                     disabled={
                       isSubmitting ||
                       (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
@@ -1266,7 +1278,11 @@ const Auth = () => {
                   {/* Blue Pill Side (Email) */}
                   <button
                     type="submit"
-                    onClick={() => { setPill('blue'); setActivePill('blue'); }}
+                    onClick={() => {
+                      pillSubmitChoiceRef.current = 'blue';
+                      setPill('blue');
+                      setActivePill('blue');
+                    }}
                     disabled={
                       isSubmitting ||
                       (mode === "signup" && (!agreedToTerms || (captchaRequired && !captchaToken))) ||
