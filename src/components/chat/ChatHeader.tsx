@@ -32,41 +32,53 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
   const isValentines = siteTheme === 'valentines';
   const isMatrix = siteTheme === 'matrix';
   const isJungle = siteTheme === 'jungle';
+  const isRetro = siteTheme === 'retro80s';
   
   // Override colors for special site themes
-  const effectiveGradient = isJungle
-    ? 'from-green-600 to-emerald-700'
-    : isMatrix
-      ? 'from-green-500 to-green-700'
-      : isStPatricks 
-        ? 'from-emerald-500 to-green-600' 
-        : isValentines 
-          ? 'from-pink-500 to-rose-500'
-          : roomTheme.gradient;
+  const effectiveGradient = isRetro
+    ? 'from-pink-500 to-cyan-400'
+    : isJungle
+      ? 'from-green-600 to-emerald-700'
+      : isMatrix
+        ? 'from-green-500 to-green-700'
+        : isStPatricks 
+          ? 'from-emerald-500 to-green-600' 
+          : isValentines 
+            ? 'from-pink-500 to-rose-500'
+            : roomTheme.gradient;
   
-  const effectiveTextColor = isJungle
-    ? 'text-green-500'
-    : isMatrix
-      ? 'text-green-400'
-      : isStPatricks 
-        ? 'text-emerald-400' 
-        : isValentines 
-          ? 'text-pink-400'
-          : roomTheme.textColor;
+  const effectiveTextColor = isRetro
+    ? 'text-cyan-400'
+    : isJungle
+      ? 'text-green-500'
+      : isMatrix
+        ? 'text-green-400'
+        : isStPatricks 
+          ? 'text-emerald-400' 
+          : isValentines 
+            ? 'text-pink-400'
+            : roomTheme.textColor;
   
-  const effectiveBgColor = isJungle
-    ? 'bg-green-600/20'
-    : isMatrix
-      ? 'bg-green-500/20'
-      : isStPatricks 
-        ? 'bg-emerald-500/20' 
-        : isValentines 
-          ? 'bg-pink-500/20'
-          : roomTheme.bgColor;
+  const effectiveBgColor = isRetro
+    ? 'bg-yellow-400/30'
+    : isJungle
+      ? 'bg-green-600/20'
+      : isMatrix
+        ? 'bg-green-500/20'
+        : isStPatricks 
+          ? 'bg-emerald-500/20' 
+          : isValentines 
+            ? 'bg-pink-500/20'
+            : roomTheme.bgColor;
+
   const getRoleBadge = () => {
     if (role === 'owner') {
       return (
-        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-400 text-[10px] font-medium">
+        <span className={`flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium ${
+          isRetro 
+            ? 'bg-yellow-400 text-black border-2 border-black' 
+            : 'rounded-full bg-amber-400/20 text-amber-400'
+        }`}>
           <Crown className="h-2.5 w-2.5" />
           Owner
         </span>
@@ -74,7 +86,11 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
     }
     if (role === 'admin') {
       return (
-        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-400/20 text-red-400 text-[10px] font-medium">
+        <span className={`flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium ${
+          isRetro 
+            ? 'bg-pink-500 text-white border-2 border-black' 
+            : 'rounded-full bg-red-400/20 text-red-400'
+        }`}>
           <ShieldCheck className="h-2.5 w-2.5" />
           Admin
         </span>
@@ -86,7 +102,11 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
   return (
     <header className={cn(
       "flex flex-col border-b",
-      isJungle ? "bg-[#0a1f0a] border-green-900/50" : "bg-card border-border"
+      isRetro 
+        ? "bg-[hsl(50_100%_70%)] border-black border-b-[3px]" 
+        : isJungle 
+          ? "bg-[#0a1f0a] border-green-900/50" 
+          : "bg-card border-border"
     )}>
       <div className="flex items-center justify-between px-3 py-2 relative">
         {/* Left section - channel info */}

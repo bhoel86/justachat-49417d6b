@@ -718,7 +718,7 @@
   /* Retro 80s footer social icons */
   .theme-retro80s footer a.rounded-lg {
     border-radius: 0 !important;
-    background: hsl(175 70% 50%) !important;
+    background: hsl(185 90% 50%) !important;
     border: 3px solid hsl(0 0% 0%) !important;
     box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
     transition: transform 0.1s, box-shadow 0.1s !important;
@@ -735,14 +735,370 @@
   }
 
   .theme-retro80s footer p,
-  .theme-retro80s footer span,
+  .theme-retro80s footer span {
+    font-family: 'VT323', monospace !important;
+    color: hsl(0 0% 20%) !important;
+  }
+  
   .theme-retro80s footer a {
+    font-family: 'VT323', monospace !important;
+    color: hsl(330 90% 40%) !important;
+  }
+
+  .theme-retro80s footer a:hover {
+    color: hsl(185 90% 35%) !important;
+  }
+
+  /* ============================================
+     RETRO 80s MEMPHIS GLOBAL STYLING
+     ============================================ */
+
+  /* Header styling */
+  .theme-retro80s header {
+    background: hsl(50 100% 70%) !important;
+    border-bottom: 3px solid hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s header h1.brand {
+    color: hsl(330 90% 50%) !important;
+    text-shadow: 2px 2px 0px hsl(185 90% 50%) !important;
+    font-family: 'Press Start 2P', monospace !important;
+  }
+
+  .theme-retro80s header h1.brand sup {
+    color: hsl(185 90% 40%) !important;
+  }
+
+  /* Dropdown menus - Memphis style */
+  .theme-retro80s [data-radix-popper-content-wrapper] [role="menu"],
+  .theme-retro80s [data-radix-popper-content-wrapper] [role="listbox"] {
+    background: hsl(50 100% 75%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 4px 4px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s [role="menuitem"],
+  .theme-retro80s [role="option"] {
+    font-family: 'VT323', monospace !important;
+    font-size: 1.1rem !important;
+    color: hsl(0 0% 10%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s [role="menuitem"]:hover,
+  .theme-retro80s [role="menuitem"]:focus,
+  .theme-retro80s [role="option"]:hover {
+    background: hsl(185 90% 50%) !important;
+    color: hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s [role="menuitem"] svg {
+    color: hsl(330 90% 50%) !important;
+  }
+
+  .theme-retro80s [role="menuitem"] p,
+  .theme-retro80s [role="menuitem"] span {
+    font-family: 'VT323', monospace !important;
+  }
+
+  .theme-retro80s [data-radix-collection-item] {
+    border-radius: 0 !important;
+  }
+
+  /* Dropdown labels/separators */
+  .theme-retro80s [role="group"] > div:first-child,
+  .theme-retro80s .text-muted-foreground {
+    font-family: 'VT323', monospace !important;
+    color: hsl(330 90% 40%) !important;
+  }
+
+  .theme-retro80s [role="separator"] {
+    background: hsl(0 0% 0%) !important;
+    height: 2px !important;
+  }
+
+  /* Popover and dialog styling */
+  .theme-retro80s [role="dialog"] {
+    background: hsl(50 100% 75%) !important;
+    border: 4px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 6px 6px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s [role="dialog"] h2,
+  .theme-retro80s [role="dialog"] h3 {
+    font-family: 'Press Start 2P', monospace !important;
+    color: hsl(330 90% 45%) !important;
+    text-shadow: 2px 2px 0px hsl(185 90% 50%) !important;
+  }
+
+  .theme-retro80s [role="dialog"] p,
+  .theme-retro80s [role="dialog"] span,
+  .theme-retro80s [role="dialog"] label {
     font-family: 'VT323', monospace !important;
     color: hsl(0 0% 20%) !important;
   }
 
-  .theme-retro80s footer a:hover {
-    color: hsl(175 70% 35%) !important;
+  /* Select/combobox trigger buttons */
+  .theme-retro80s button[role="combobox"],
+  .theme-retro80s [data-slot="trigger"] {
+    background: hsl(0 0% 95%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 2px 2px 0px hsl(0 0% 0%) !important;
+    font-family: 'VT323', monospace !important;
+    color: hsl(0 0% 10%) !important;
+  }
+
+  /* Cards and containers */
+  .theme-retro80s .bg-card,
+  .theme-retro80s .card {
+    background: hsl(270 50% 70%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 4px 4px 0px hsl(0 0% 0%) !important;
+  }
+
+  /* Chat area specific styling */
+  .theme-retro80s .bg-card\/50 {
+    background: hsl(270 50% 70% / 0.85) !important;
+  }
+
+  /* Message bubbles - Memphis colors */
+  .theme-retro80s .bg-jac-bubble-user {
+    background: hsl(330 80% 60%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 2px 2px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s .bg-jac-bubble-other {
+    background: hsl(50 100% 70%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 2px 2px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s .bg-jac-bubble-user p,
+  .theme-retro80s .bg-jac-bubble-user span {
+    color: hsl(0 0% 100%) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 1.1rem !important;
+  }
+
+  .theme-retro80s .bg-jac-bubble-other p,
+  .theme-retro80s .bg-jac-bubble-other span {
+    color: hsl(0 0% 10%) !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 1.1rem !important;
+  }
+
+  /* Chat input area */
+  .theme-retro80s .chat-input-container,
+  .theme-retro80s form:has(textarea),
+  .theme-retro80s form:has(input[type="text"]) {
+    background: hsl(185 90% 70%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s textarea,
+  .theme-retro80s input[type="text"] {
+    background: hsl(0 0% 100%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    font-family: 'VT323', monospace !important;
+    font-size: 1.2rem !important;
+    color: hsl(0 0% 10%) !important;
+    box-shadow: inset 2px 2px 0px hsl(0 0% 80%) !important;
+  }
+
+  /* Sidebar channel list */
+  .theme-retro80s .bg-sidebar {
+    background: hsl(270 50% 65%) !important;
+    border-right: 3px solid hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s [role="listitem"],
+  .theme-retro80s .channel-item {
+    font-family: 'VT323', monospace !important;
+    border: 2px solid transparent !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s [role="listitem"]:hover,
+  .theme-retro80s .channel-item:hover {
+    background: hsl(185 90% 50%) !important;
+    border-color: hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s [role="listitem"][data-active="true"],
+  .theme-retro80s .channel-item.active {
+    background: hsl(330 90% 55%) !important;
+    border-color: hsl(0 0% 0%) !important;
+    color: hsl(0 0% 100%) !important;
+  }
+
+  /* Member list styling */
+  .theme-retro80s .member-list {
+    background: hsl(50 100% 75%) !important;
+    border-left: 3px solid hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s .member-item {
+    font-family: 'VT323', monospace !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s .member-item:hover {
+    background: hsl(185 90% 60%) !important;
+  }
+
+  /* Badge styling */
+  .theme-retro80s .badge,
+  .theme-retro80s [class*="Badge"] {
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 0.5rem !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 1px 1px 0px hsl(0 0% 0%) !important;
+  }
+
+  /* Tabs styling */
+  .theme-retro80s [role="tablist"] {
+    background: hsl(270 50% 60%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s [role="tab"] {
+    font-family: 'VT323', monospace !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  .theme-retro80s [role="tab"][data-state="active"] {
+    background: hsl(185 90% 50%) !important;
+    color: hsl(0 0% 0%) !important;
+    box-shadow: inset 0 -2px 0 hsl(0 0% 0%) !important;
+  }
+
+  /* Alert and toast styling */
+  .theme-retro80s [role="alert"] {
+    background: hsl(50 100% 80%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+    font-family: 'VT323', monospace !important;
+  }
+
+  /* Tooltip styling */
+  .theme-retro80s [role="tooltip"] {
+    background: hsl(0 0% 10%) !important;
+    border: 2px solid hsl(185 90% 50%) !important;
+    border-radius: 0 !important;
+    font-family: 'VT323', monospace !important;
+    color: hsl(185 90% 60%) !important;
+  }
+
+  /* Switch/toggle styling */
+  .theme-retro80s [role="switch"] {
+    background: hsl(0 0% 80%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s [role="switch"][data-state="checked"] {
+    background: hsl(185 90% 50%) !important;
+  }
+
+  /* Progress bar */
+  .theme-retro80s [role="progressbar"] {
+    background: hsl(0 0% 80%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  .theme-retro80s [role="progressbar"] > div {
+    background: hsl(330 90% 55%) !important;
+    border-radius: 0 !important;
+  }
+
+  /* Avatar styling */
+  .theme-retro80s .avatar,
+  .theme-retro80s [class*="Avatar"] {
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  /* Skeleton loading */
+  .theme-retro80s .animate-pulse {
+    background: hsl(270 50% 75%) !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  /* Floating action buttons */
+  .theme-retro80s .fixed button {
+    border-radius: 0 !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+  }
+
+  /* Sheet/drawer panels */
+  .theme-retro80s [data-vaul-drawer] {
+    background: hsl(50 100% 75%) !important;
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+  }
+
+  /* Icon buttons in header/toolbar */
+  .theme-retro80s header button {
+    border-radius: 0 !important;
+    border: 2px solid hsl(0 0% 0%) !important;
+    background: hsl(185 90% 55%) !important;
+    box-shadow: 2px 2px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s header button:hover {
+    background: hsl(50 90% 60%) !important;
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+  }
+
+  .theme-retro80s header button svg {
+    color: hsl(0 0% 0%) !important;
+  }
+
+  /* Main page background pattern */
+  .theme-retro80s main {
+    background: 
+      radial-gradient(circle at 10% 20%, hsl(330 90% 55% / 0.15) 0%, transparent 20%),
+      radial-gradient(circle at 90% 80%, hsl(185 90% 50% / 0.15) 0%, transparent 20%),
+      radial-gradient(circle at 50% 50%, hsl(270 50% 60% / 0.1) 0%, transparent 30%),
+      hsl(330 70% 75%);
+  }
+
+  /* Room cards in home page */
+  .theme-retro80s .room-card {
+    border: 3px solid hsl(0 0% 0%) !important;
+    border-radius: 0 !important;
+    box-shadow: 3px 3px 0px hsl(0 0% 0%) !important;
+  }
+
+  /* Accent text colors */
+  .theme-retro80s .text-primary {
+    color: hsl(330 90% 50%) !important;
+  }
+
+  .theme-retro80s .text-accent {
+    color: hsl(185 90% 45%) !important;
+  }
+
+  .theme-retro80s .text-muted-foreground {
+    color: hsl(0 0% 35%) !important;
+    font-family: 'VT323', monospace !important;
   }
 
   /* Valentine's theme specific overrides */
