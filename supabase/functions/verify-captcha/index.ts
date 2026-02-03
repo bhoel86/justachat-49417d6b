@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -32,7 +31,8 @@ async function isOwner(authHeader: string | null): Promise<boolean> {
   }
 }
 
-serve(async (req) => {
+// IMPORTANT (VPS router compatibility): this function must call Deno.serve() at module top-level.
+Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

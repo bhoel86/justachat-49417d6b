@@ -1,5 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -847,7 +845,8 @@ async function generateBotPhoto(appearance: string, botName: string, apiKey: str
   }
 }
 
-serve(async (req) => {
+// IMPORTANT (VPS router compatibility): this function must call Deno.serve() at module top-level.
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
