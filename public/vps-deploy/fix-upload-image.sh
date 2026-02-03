@@ -23,8 +23,24 @@ mkdir -p "$(dirname "$TARGET")"
 # Copy the repo's known-good implementation (supports multipart/form-data uploads)
 cp -f "$SOURCE" "$TARGET"
 
+# Sanity check: ensure we didn't accidentally install a JSON-only handler
+if ! grep -q "multipart/form-data" "$TARGET"; then
+  echo "❌ Sanity check failed: installed function does not mention multipart/form-data" >&2
+  echo "   This would cause JSON parse errors when the client uploads with FormData." >&2
+  exit 1
+fi
+
+if ! grep -q "req.formData" "$TARGET"; then
+  echo "❌ Sanity check failed: installed function does not call req.formData()" >&2
+  echo "   This would cause JSON parse errors when the client uploads with FormData." >&2
+  exit 1
+fi
+
 echo "✅ File written: $TARGET"
 echo "📊 Line count: $(wc -l < "$TARGET")"
+
+echo "🔎 Installed handler markers:"
+grep -n "multipart/form-data\|req\.formData" "$TARGET" | head -n 20
 
 # Restart functions container
 cd /home/unix/supabase/docker
