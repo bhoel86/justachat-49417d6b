@@ -364,11 +364,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get public URL (no auth required for generating URL)
+    // Get public URL
+    // On VPS, SUPABASE_URL is internal (http://kong:8000) so we need to use the public domain
     const supabasePublic = createClient(supabaseUrl, supabaseAnonKey);
     const {
-      data: { publicUrl },
+      data: { publicUrl: rawPublicUrl },
     } = supabasePublic.storage.from(bucket).getPublicUrl(fileName);
+
+    // VPS fix: Replace internal kong URL with public domain
+    let publicUrl = rawPublicUrl;
+    if (rawPublicUrl.includes("kong:8000")) {
+      // VPS environment - use public domain
+      const vpsPublicUrl = Deno.env.get("VPS_PUBLIC_URL") || "https://justachat.net";
+      publicUrl = rawPublicUrl.replace(/https?:\/\/kong:8000/, vpsPublicUrl);
+      console.log(`VPS URL fix: ${rawPublicUrl} -> ${publicUrl}`);
+    }
 
     console.log(`Upload successful: ${publicUrl}`);
 
