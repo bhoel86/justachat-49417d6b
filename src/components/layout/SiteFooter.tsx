@@ -93,7 +93,14 @@ const SiteFooter = () => {
                     ? 'font-["Press_Start_2P"] text-[8px] text-black' 
                     : 'text-muted-foreground'
                 }`}>
-                  © {new Date().getFullYear()} <span className={isRetro ? 'text-[hsl(330_90%_45%)]' : ''}>Justachat™</span> All rights reserved.
+                  <span className={isRetro ? 'text-[hsl(330_90%_45%)]' : ''}>Justachat™</span> Est. Jan 22, 2026 · 1:03 PM · © Unix
+                </p>
+                <p className={`text-xs mt-0.5 ${
+                  isRetro 
+                    ? 'font-["Press_Start_2P"] text-[6px] text-black/70' 
+                    : 'text-muted-foreground/70'
+                }`}>
+                  Proprietary software. All rights reserved.
                 </p>
                 <div className="flex items-center justify-center gap-2">
                   <a 
