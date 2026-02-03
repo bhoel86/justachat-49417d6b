@@ -111,22 +111,60 @@ const extractImage = (text: string): { hasImage: boolean; imageUrl: string | nul
   return { hasImage: false, imageUrl: null, textContent: text };
 };
 
+// VPS/storage URL normalization helper.
+// Fixes images that accidentally reference internal hosts (kong/localhost) or http URLs on an https site.
+const normalizeChatImageUrl = (rawUrl: string): string => {
+  try {
+    // Guard for non-browser environments
+    if (typeof window === "undefined") return rawUrl;
+
+    // Fast path for common internal host patterns
+    if (rawUrl.includes("kong:8000") || rawUrl.includes("localhost:8000") || rawUrl.includes("127.0.0.1:8000")) {
+      return rawUrl
+        .replace(/https?:\/\/kong:8000/g, window.location.origin)
+        .replace(/https?:\/\/localhost:8000/g, window.location.origin)
+        .replace(/https?:\/\/127\.0\.0\.1:8000/g, window.location.origin);
+    }
+
+    const url = new URL(rawUrl);
+    const origin = window.location.origin;
+    const currentHost = window.location.hostname;
+
+    // If we somehow got an internal host (from a backend/service URL), map to the current site.
+    if (["kong", "localhost", "127.0.0.1"].includes(url.hostname)) {
+      return `${origin}${url.pathname}${url.search}${url.hash}`;
+    }
+
+    // Mixed-content fix: http image on an https site (same host) => upgrade.
+    if (window.location.protocol === "https:" && url.protocol === "http:" && url.hostname === currentHost) {
+      url.protocol = "https:";
+      return url.toString();
+    }
+
+    return rawUrl;
+  } catch {
+    return rawUrl;
+  }
+};
+
 const ImagePreview = ({ url }: { url: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const normalizedUrl = normalizeChatImageUrl(url);
   
   if (hasError) {
     return (
       <div className="max-w-[200px] p-2 bg-destructive/10 border border-destructive/20 rounded-lg text-xs text-destructive mt-1">
         <span className="font-medium">Image failed to load</span>
         <a 
-          href={url} 
+          href={normalizedUrl} 
           target="_blank" 
           rel="noopener noreferrer"
           className="block truncate text-muted-foreground hover:underline mt-1"
         >
-          {url.substring(0, 50)}...
+          {normalizedUrl.substring(0, 50)}...
         </a>
       </div>
     );
@@ -140,13 +178,13 @@ const ImagePreview = ({ url }: { url: string }) => {
             <div className="absolute inset-0 bg-muted animate-pulse rounded-lg" />
           )}
           <img
-            src={url}
+            src={normalizedUrl}
             alt="Chat image"
             className="max-w-[150px] sm:max-w-[200px] max-h-24 sm:max-h-32 rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-contain"
             onClick={() => setIsOpen(true)}
             onLoad={() => setIsLoading(false)}
             onError={() => {
-              console.error("Image failed to load:", url);
+              console.error("Image failed to load:", { original: url, normalized: normalizedUrl });
               setHasError(true);
               setIsLoading(false);
             }}
@@ -155,7 +193,7 @@ const ImagePreview = ({ url }: { url: string }) => {
       </DialogTrigger>
       <DialogContent className="max-w-4xl p-0 bg-transparent border-none">
         <img
-          src={url}
+          src={normalizedUrl}
           alt="Chat image full size"
           className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
         />

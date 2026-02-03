@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Trash2, Terminal, MessageSquareLock, Ban, Flag, Info, User, MoreVertical, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -269,22 +268,8 @@ const MessageBubble = ({
               </button>
             )}
           </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <img
-                src={imageUrl}
-                alt="Chat image"
-                className="max-w-[200px] sm:max-w-[280px] max-h-40 sm:max-h-56 rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-contain"
-              />
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl p-0 bg-transparent border-none">
-              <img
-                src={imageUrl}
-                alt="Chat image full size"
-                className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
-              />
-            </DialogContent>
-          </Dialog>
+          {/* Reuse FormattedText's image renderer so we get consistent loading/error UI (incl. URL on failure) */}
+          <FormattedText text={`[img:${imageUrl}]`} />
         </div>
       </div>
     );
