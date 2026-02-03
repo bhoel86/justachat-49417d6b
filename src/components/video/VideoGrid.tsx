@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useMemo } from 'react';
 import VideoTile from './VideoTile';
 import { Badge } from '@/components/ui/badge';

@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useTheme, ThemeName } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';

@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

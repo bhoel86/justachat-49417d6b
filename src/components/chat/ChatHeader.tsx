@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useState, useEffect } from "react";
 import { MessagesSquare, Users, LogOut, Crown, ShieldCheck, Info, Hash, Globe, Bell, BellOff, Eye, EyeOff } from "lucide-react";
 import { useAuth, supabaseUntyped } from "@/hooks/useAuth";

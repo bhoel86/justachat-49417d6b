@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Hash, Plus, Lock, Home, MoreVertical, Trash2, EyeOff, Eye, Palette, Sparkles, Settings, Heart } from "lucide-react";

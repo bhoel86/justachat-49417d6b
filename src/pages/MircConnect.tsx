@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { Link } from "react-router-dom";
 import { ArrowLeft, Server, Lock, Hash, User, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";

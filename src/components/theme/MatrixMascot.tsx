@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useTheme } from "@/contexts/ThemeContext";
 import matrixMascotLeft from '@/assets/matrix/matrix-mascot-left.png';
 import matrixMascotRight from '@/assets/matrix/matrix-mascot-right.png';

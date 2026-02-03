@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Send, Minus, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";

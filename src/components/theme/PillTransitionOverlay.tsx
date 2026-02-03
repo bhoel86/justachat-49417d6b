@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useEffect, useState, useRef } from 'react';
 import { PillChoice } from '@/hooks/useSimulationPill';
 import redPillChoiceImg from '@/assets/matrix/red-pill-choice.png';

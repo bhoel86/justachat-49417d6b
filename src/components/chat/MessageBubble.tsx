@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useState } from "react";
 import { Trash2, Terminal, MessageSquareLock, Ban, Flag, Info, User, MoreVertical, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";

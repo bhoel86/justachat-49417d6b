@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Smile, Search, Loader2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";

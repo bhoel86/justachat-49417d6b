@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { MUSIC_LIBRARY, getAllSongs, getAlbumArt, type Song } from '@/lib/musicLibrary';
 

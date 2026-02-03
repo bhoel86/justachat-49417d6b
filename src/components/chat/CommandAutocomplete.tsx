@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 

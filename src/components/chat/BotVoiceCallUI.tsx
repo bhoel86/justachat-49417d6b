@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useState } from 'react';
 import { Phone, PhoneOff, Mic, Volume2, User, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
