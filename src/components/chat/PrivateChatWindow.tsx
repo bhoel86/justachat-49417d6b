@@ -378,6 +378,9 @@ const PrivateChatWindow = ({
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("Not signed in");
 
+      // Required for VPS gateway routing (matches ChatInput upload behavior)
+      const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       const formData = new FormData();
       formData.append("file", attachedImage);
       formData.append("bucket", "avatars");
@@ -385,7 +388,10 @@ const PrivateChatWindow = ({
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(apikey ? { apikey } : {}),
+        },
         body: formData
       });
       
