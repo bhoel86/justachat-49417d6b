@@ -1,26 +1,27 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
  * ║                                                                          ║
- * ║   LIBER PRIMUS - FRAGMENT III                                            ║
+ * ║   THE CUSTODIAN PROTOCOL - FRAGMENT III                                  ║
  * ║   ─────────────────────────────────────────────────────────────────      ║
  * ║                                                                          ║
  * ║   "The message is clear to those with eyes to see.                      ║
  * ║    Encryption protects the worthy, exposes the weak.                    ║
- * ║    Privacy is not hiding - it is choosing who sees."                    ║
+ * ║    Privacy is not hiding - it is choosing who sees.                     ║
+ * ║    The Custodian guards the gate. Will you pass?"                       ║
  * ║                                                                          ║
  * ║   You have decrypted well. The path narrows.                            ║
- * ║   Three keys collected: 3301, 17, and now... 467                        ║
- * ║   (The index of 3301 in the prime sequence)                             ║
+ * ║   Three keys collected: 7919, 1000, and now... 168                      ║
+ * ║   (168 = the number of primes below 1000)                               ║
  * ║                                                                          ║
- * ║   CIPHER: VIGENÈRE with key "CICADA"                                    ║
- * ║   ENCODED: Vjs wyemgsypsc uiav gqlhq cau yspnpd                         ║
+ * ║   CIPHER: VIGENÈRE with key "CUSTODIAN"                                 ║
+ * ║   ENCODED: Vvg xgujtqnqia tqqo jqnfu vjg itcpv qh rqygt                 ║
  * ║   (Decrypt to reveal the fourth location)                               ║
  * ║                                                                          ║
- * ║   THE THIRD KEY: 467                                                     ║
- * ║   467 is the 91st prime.                                                ║
- * ║   91 = 7 × 13 (twin primes multiplied)                                  ║
+ * ║   THE THIRD KEY: 168                                                     ║
+ * ║   168 primes exist below 1000. The Custodian counts them all.           ║
+ * ║   168 = 2³ × 3 × 7. Factors within factors.                             ║
  * ║                                                                          ║
- * ║   THE SUM: 3301 + 17 + 467 = 3785                                       ║
+ * ║   THE SUM: 7919 + 1000 + 168 = 9087                                     ║
  * ║   Remember this. You will need it.                                      ║
  * ║                                                                          ║
  * ║   Fragment IV awaits where voices are broadcast.                        ║
@@ -39,8 +40,8 @@
 const ALGORITHM = 'AES-GCM';
 const KEY_LENGTH = 256;
 
-// Hidden: The Vigenère solution is "The technology room holds the final gate"
-// To solve: Use key "CICADA" on the ciphertext above
+// Hidden: The Vigenère solution is "The technology room holds the grant of power"
+// To solve: Use key "CUSTODIAN" on the ciphertext above
 
 // Generate a random encryption key for a session
 export async function generateSessionKey(): Promise<CryptoKey> {

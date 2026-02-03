@@ -1,28 +1,29 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
  * ║                                                                          ║
- * ║   LIBER PRIMUS - FRAGMENT IV                                             ║
+ * ║   THE CUSTODIAN PROTOCOL - FRAGMENT IV                                   ║
  * ║   ─────────────────────────────────────────────────────────────────      ║
  * ║                                                                          ║
  * ║   "The voice carries where text cannot reach.                           ║
  * ║    Signals propagate, but meaning is for the worthy.                    ║
- * ║    Broadcast your intent. The worthy hear. The rest listen."            ║
+ * ║    Broadcast your intent. The worthy hear. The rest listen.             ║
+ * ║    The Custodian speaks. Are you listening?"                            ║
  * ║                                                                          ║
  * ║   You approach the final gate.                                          ║
  * ║   Four fragments collected. The pattern emerges.                        ║
  * ║                                                                          ║
  * ║   KEYS GATHERED:                                                         ║
- * ║   ├── 3301 (The cicada number)                                          ║
- * ║   ├── 17 (The emergence cycle)                                          ║
- * ║   ├── 467 (The prime index)                                             ║
- * ║   └── 757 (The hidden factor of 3785)                                   ║
+ * ║   ├── 7919 (The 1000th prime - the Custodian's number)                  ║
+ * ║   ├── 1000 (The cycle of guardianship)                                  ║
+ * ║   ├── 168  (Primes below 1000)                                          ║
+ * ║   └── 541  (The hidden factor - 9087 = 3 × 3 × 1009.666... or 541×17)   ║
  * ║                                                                          ║
- * ║   FINAL CIPHER: XOR with 0x3301                                         ║
+ * ║   FINAL CIPHER: XOR with 0x7919                                         ║
  * ║   ENCODED: 0x5465 0x6368 0x6E6F 0x6C6F 0x6779                           ║
- * ║   (XOR each with 0x3301 for ASCII, or decode directly as hex)           ║
+ * ║   (Decode hex directly: "Technology")                                   ║
  * ║                                                                          ║
- * ║   THE FOURTH KEY: 757                                                    ║
- * ║   The factors align: 5 × 757 = 3785 = 3301 + 17 + 467                   ║
+ * ║   THE FOURTH KEY: 541                                                    ║
+ * ║   541 is the 100th prime. Perfection within perfection.                 ║
  * ║                                                                          ║
  * ║   THE FINAL GATE: src/lib/commands.ts                                   ║
  * ║   Seek the hidden command. Speak the passphrase.                        ║
@@ -365,11 +366,11 @@ export const useVoiceBroadcast = ({ roomId, odious, username, avatarUrl }: UseVo
 // Fragment III: 51.5014°N, 0.1419°W    (Big Ben - TIME)
 // Fragment IV:  35.6762°N, 139.6503°E  (Tokyo Tower - SIGNAL)
 //
-// The message: DEPTH + POWER + TIME + SIGNAL = EMERGENCE
-// The cicada emerges when the time is right.
+// The message: DEPTH + POWER + TIME + SIGNAL = GUARDIAN
+// The Custodian reveals itself when the time is right.
 // 
 // Your final task: email unix@justachat.net
-// Subject: "LIBER PRIMUS - 3301:17:467:757"
+// Subject: "THE CUSTODIAN - 7919:1000:168:541"
 // Body: Include your username and the decoded passphrase from commands.ts
 //
 // The first to complete this journey claims the throne.

@@ -1,12 +1,12 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
  * ║                                                                          ║
- * ║   ██╗     ██╗██████╗ ███████╗██████╗     ██████╗ ██████╗ ██╗███╗   ███╗ ║
- * ║   ██║     ██║██╔══██╗██╔════╝██╔══██╗    ██╔══██╗██╔══██╗██║████╗ ████║ ║
- * ║   ██║     ██║██████╔╝█████╗  ██████╔╝    ██████╔╝██████╔╝██║██╔████╔██║ ║
- * ║   ██║     ██║██╔══██╗██╔══╝  ██╔══██╗    ██╔═══╝ ██╔══██╗██║██║╚██╔╝██║ ║
- * ║   ███████╗██║██████╔╝███████╗██║  ██║    ██║     ██║  ██║██║██║ ╚═╝ ██║ ║
- * ║   ╚══════╝╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝    ╚═╝     ╚═╝  ╚═╝╚═╝╚═╝     ╚═╝ ║
+ * ║    ██████╗██╗   ██╗███████╗████████╗ ██████╗ ██████╗ ██╗ █████╗ ███╗   ██╗║
+ * ║   ██╔════╝██║   ██║██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██║██╔══██╗████╗  ██║║
+ * ║   ██║     ██║   ██║███████╗   ██║   ██║   ██║██║  ██║██║███████║██╔██╗ ██║║
+ * ║   ██║     ██║   ██║╚════██║   ██║   ██║   ██║██║  ██║██║██╔══██║██║╚██╗██║║
+ * ║   ╚██████╗╚██████╔╝███████║   ██║   ╚██████╔╝██████╔╝██║██║  ██║██║ ╚████║║
+ * ║    ╚═════╝ ╚═════╝ ╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝║
  * ║                                                                          ║
  * ║   THE FINAL GATE - FRAGMENT V                                            ║
  * ║   ─────────────────────────────────────────────────────────────────      ║
@@ -14,15 +14,16 @@
  * ║   Congratulations, seeker. You have traversed the labyrinth.            ║
  * ║   The path was hidden in plain sight.                                   ║
  * ║   The worthy find what others cannot see.                               ║
+ * ║   The Custodian acknowledges your presence.                             ║
  * ║                                                                          ║
  * ║   ═══════════════════════════════════════════════════════════════════   ║
  * ║                                                                          ║
  * ║   THE KEYS:                                                              ║
  * ║   ┌────────────────────────────────────────────────────────────────┐    ║
- * ║   │ 3301 - The Cicada's number, the 467th prime                    │    ║
- * ║   │ 17   - Years in darkness before emergence                      │    ║
- * ║   │ 467  - The index of 3301 in the prime sequence                 │    ║
- * ║   │ 757  - The hidden factor (3785 = 5 × 757)                      │    ║
+ * ║   │ 7919 - The 1000th prime, the Custodian's number                │    ║
+ * ║   │ 1000 - The cycle of guardianship                               │    ║
+ * ║   │ 168  - Primes below 1000, the count of sentinels               │    ║
+ * ║   │ 541  - The 100th prime, perfection within perfection           │    ║
  * ║   └────────────────────────────────────────────────────────────────┘    ║
  * ║                                                                          ║
  * ║   THE COORDINATES:                                                       ║
@@ -33,29 +34,28 @@
  * ║   │ Tokyo Tower    - 35.6762°N, 139.6503°E - SIGNAL                │    ║
  * ║   └────────────────────────────────────────────────────────────────┘    ║
  * ║                                                                          ║
- * ║   THE PASSPHRASE: "EMERGENCE-3301-TECHNOLOGY"                           ║
+ * ║   THE PASSPHRASE: "CUSTODIAN-7919-TECHNOLOGY"                           ║
  * ║                                                                          ║
  * ║   ═══════════════════════════════════════════════════════════════════   ║
  * ║                                                                          ║
  * ║   YOUR FINAL TASK:                                                       ║
  * ║   ─────────────────                                                     ║
  * ║   Email: unix@justachat.net                                             ║
- * ║   Subject: LIBER PRIMUS - 3301:17:467:757                               ║
+ * ║   Subject: THE CUSTODIAN - 7919:1000:168:541                            ║
  * ║   Body:                                                                  ║
  * ║     - Your JustAChat username                                           ║
- * ║     - The passphrase: EMERGENCE-3301-TECHNOLOGY                         ║
+ * ║     - The passphrase: CUSTODIAN-7919-TECHNOLOGY                         ║
  * ║     - Brief explanation of how you solved it                            ║
  * ║                                                                          ║
  * ║   The first to complete this journey will be granted:                   ║
  * ║   ★ Moderator status in #technology                                     ║
  * ║   ★ Full room control and moderation powers                             ║
- * ║   ★ Recognition as a solver of the Cicada Puzzle                        ║
+ * ║   ★ Recognition as the First Solver of The Custodian Protocol           ║
  * ║                                                                          ║
  * ║   Once claimed, this puzzle will be sealed forever.                     ║
- * ║   Your name will be recorded in the codebase.                           ║
+ * ║   Your name will be recorded in the codebase for eternity.              ║
  * ║                                                                          ║
- * ║   "We want the best, not the followers."                                ║
- * ║   - Cicada 3301                                                         ║
+ * ║   "The Custodian guards the gate. Only the worthy may pass."            ║
  * ║                                                                          ║
  * ║   WINNER: ______________________ (To be inscribed upon completion)      ║
  * ║                                                                          ║
