@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import * as React from "react";
 
 const MOBILE_BREAKPOINT = 768;

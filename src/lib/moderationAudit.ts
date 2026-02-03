@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { supabase } from '@/integrations/supabase/client';
 
 type ModerationAction = 

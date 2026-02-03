@@ -1,4 +1,9 @@
 /**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
+/**
  * Client-side image compression and resizing utility.
  * Downscales images to a max dimension and compresses to reduce upload size.
  */

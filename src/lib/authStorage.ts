@@ -1,4 +1,9 @@
 /**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
+/**
  * Force-clear the Supabase auth token from browser storage.
  *
  * Why: In some environments, calling auth.signOut() can return 403 session_not_found,

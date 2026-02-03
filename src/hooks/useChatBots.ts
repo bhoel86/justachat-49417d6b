@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CHAT_BOTS, ChatBot, getBotResponseDelay, getRandomTopic } from '@/lib/chatBots';

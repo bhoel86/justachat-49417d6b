@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { Link } from "react-router-dom";
 import { Scale, Shield, FileText, AlertTriangle, ArrowLeft, DollarSign, Globe, Database, UserCheck, Eye, Ban, Gavel, Server, Copyright, Link2, Users, Mail, CloudOff, ScrollText, MapPin, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";

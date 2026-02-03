@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MessageSquare, ArrowLeft, Heart, Users, Zap, Shield, Lock, Eye, Clock } from "lucide-react";

@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 // Environment detection utilities
 
 // Check if running on Cloud (*.supabase.co) vs VPS (self-hosted)

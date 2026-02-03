@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 // SV-Agent Services - IRC-style NickServ, ChanServ, BotServ, Network Stats
 import { supabaseUntyped } from '@/hooks/useAuth';
 

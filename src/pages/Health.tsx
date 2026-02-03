@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { APP_VERSION, APP_BUILD_DATE, APP_CODENAME } from "@/lib/version";
 
 const Health = () => {

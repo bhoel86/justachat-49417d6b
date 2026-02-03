@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 // JAC mIRC 2026 Theme Generator
 // Creates a complete mIRC customization package with 1-click updater
 

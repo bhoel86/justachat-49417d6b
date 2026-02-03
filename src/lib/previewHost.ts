@@ -1,4 +1,9 @@
 /**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
+/**
  * Helper(s) to detect preview/dev environments.
  */
 

@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 // Default avatar configurations using DiceBear API for consistent, attractive avatars
 // Using "avataaars" style which provides diverse, friendly cartoon avatars
 

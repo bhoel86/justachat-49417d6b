@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { playPMNotificationSound } from '@/lib/notificationSound';
 import { supabase } from '@/integrations/supabase/client';

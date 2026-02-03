@@ -1,4 +1,9 @@
 /**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
+/**
  * Justachat™ Version Configuration
  * 
  * VPS Launch = v1.0 (first production release)

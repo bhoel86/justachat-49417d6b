@@ -1,3 +1,8 @@
+/**
+ * ╔═ JustAChat™ ══════════════════════ Since 2026 ═══ © Unix ═╗
+ * ╚═ Proprietary software. All rights reserved. ══════════════╝
+ */
+
 import { Link } from "react-router-dom";
 import { Cookie, ArrowLeft, Shield, Settings, BarChart3, Lock, Clock, ToggleRight, Globe, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
