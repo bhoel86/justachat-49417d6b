@@ -136,6 +136,39 @@ const SiteFooter = () => {
                     Privacy
                   </Link>
                   <span className={`text-xs ${isRetro ? 'text-black/50' : 'text-muted-foreground/50'}`}>•</span>
+                  <Link 
+                    to="/about" 
+                    className={`text-xs transition-colors ${
+                      isRetro 
+                        ? 'font-["VT323"] text-base text-[hsl(185_90%_35%)] hover:text-[hsl(330_90%_45%)]' 
+                        : 'text-muted-foreground hover:text-primary'
+                    }`}
+                  >
+                    About
+                  </Link>
+                  <span className={`text-xs ${isRetro ? 'text-black/50' : 'text-muted-foreground/50'}`}>•</span>
+                  <Link 
+                    to="/features" 
+                    className={`text-xs transition-colors ${
+                      isRetro 
+                        ? 'font-["VT323"] text-base text-[hsl(185_90%_35%)] hover:text-[hsl(330_90%_45%)]' 
+                        : 'text-muted-foreground hover:text-primary'
+                    }`}
+                  >
+                    Features
+                  </Link>
+                  <span className={`text-xs ${isRetro ? 'text-black/50' : 'text-muted-foreground/50'}`}>•</span>
+                  <Link 
+                    to="/faq" 
+                    className={`text-xs transition-colors ${
+                      isRetro 
+                        ? 'font-["VT323"] text-base text-[hsl(185_90%_35%)] hover:text-[hsl(330_90%_45%)]' 
+                        : 'text-muted-foreground hover:text-primary'
+                    }`}
+                  >
+                    FAQ
+                  </Link>
+                  <span className={`text-xs ${isRetro ? 'text-black/50' : 'text-muted-foreground/50'}`}>•</span>
                   <span className={`text-xs font-mono ${isRetro ? 'text-[hsl(330_90%_50%)]' : 'text-muted-foreground/70'}`}>JAC</span>
                 </div>
               </div>
