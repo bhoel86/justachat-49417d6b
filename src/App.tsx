@@ -43,6 +43,9 @@ import CookiePolicy from "./pages/CookiePolicy";
 import CommunityGuidelines from "./pages/CommunityGuidelines";
 import NotFound from "./pages/NotFound";
 import Health from "./pages/Health";
+import About from "./pages/About";
+import Features from "./pages/Features";
+import FAQ from "./pages/FAQ";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +91,9 @@ const App = () => (
                 <Route path="/cookies" element={<CookiePolicy />} />
                 <Route path="/guidelines" element={<CommunityGuidelines />} />
                 <Route path="/health" element={<Health />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/faq" element={<FAQ />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

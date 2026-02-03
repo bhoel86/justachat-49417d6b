@@ -1,3 +1,6 @@
+# JustAChat™ SEO Configuration
+# https://justachat.net
+
 User-agent: Googlebot
 Allow: /
 
@@ -12,3 +15,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemap
+Sitemap: https://justachat.net/sitemap.xml
