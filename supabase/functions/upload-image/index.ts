@@ -372,20 +372,20 @@ Deno.serve(async (req) => {
     } = supabasePublic.storage.from(bucket).getPublicUrl(fileName);
 
     // VPS fix: Replace internal kong URL with public domain
-    let publicUrl = rawPublicUrl;
+    let finalUrl = rawPublicUrl;
     if (rawPublicUrl.includes("kong:8000")) {
       // VPS environment - use public domain
       const vpsPublicUrl = Deno.env.get("VPS_PUBLIC_URL") || "https://justachat.net";
-      publicUrl = rawPublicUrl.replace(/https?:\/\/kong:8000/, vpsPublicUrl);
-      console.log(`VPS URL fix: ${rawPublicUrl} -> ${publicUrl}`);
+      finalUrl = rawPublicUrl.replace(/https?:\/\/kong:8000/, vpsPublicUrl);
+      console.log(`VPS URL fix: ${rawPublicUrl} -> ${finalUrl}`);
     }
 
-    console.log(`Upload successful: ${publicUrl}`);
+    console.log(`Upload successful: ${finalUrl}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        url: publicUrl,
+        url: finalUrl,
         path: fileName,
         remaining: rateLimit.remaining
       }),
