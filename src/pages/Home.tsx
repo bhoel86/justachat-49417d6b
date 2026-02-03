@@ -14,7 +14,7 @@ import {
   Dumbbell, Cpu, Heart, Coffee, HelpCircle, Hash, Settings, FileText,
   Ban, Key, MapPin, UserCog, ChevronDown, Mail, VolumeX, Menu, 
   Download, Terminal, LifeBuoy, MessageCircle, Server, Bot, RefreshCw, Unlock, BookOpen,
-  Radio, Camera, Rocket
+  Radio, Camera, Rocket, Info, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -308,6 +308,36 @@ const Home = () => {
                 <DropdownMenuSeparator />
                 
                 {/* About Section */}
+                <DropdownMenuItem asChild>
+                  <Link to="/about" className="flex items-center gap-2 cursor-pointer">
+                    <Info className="w-4 h-4 text-blue-500" />
+                    <div>
+                      <span>About Us</span>
+                      <p className="text-xs text-muted-foreground">Learn about Justachat</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem asChild>
+                  <Link to="/features" className="flex items-center gap-2 cursor-pointer">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <div>
+                      <span>Features</span>
+                      <p className="text-xs text-muted-foreground">Explore what we offer</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem asChild>
+                  <Link to="/faq" className="flex items-center gap-2 cursor-pointer">
+                    <HelpCircle className="w-4 h-4 text-cyan-500" />
+                    <div>
+                      <span>FAQ</span>
+                      <p className="text-xs text-muted-foreground">Common questions answered</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                
                 <DropdownMenuItem asChild>
                   <Link to="/ethos" className="flex items-center gap-2 cursor-pointer">
                     <BookOpen className="w-4 h-4 text-primary" />
