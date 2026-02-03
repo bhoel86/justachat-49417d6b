@@ -1,23 +1,23 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
  * ║                                                                          ║
- * ║   LIBER PRIMUS - FRAGMENT II                                             ║
+ * ║   THE CUSTODIAN PROTOCOL - FRAGMENT II                                   ║
  * ║   ─────────────────────────────────────────────────────────────────      ║
  * ║                                                                          ║
- * ║   "The cicada emerges after 17 years in darkness.                       ║
- * ║    17 is prime. Patience is prime. Wisdom is prime."                    ║
+ * ║   "The guardian watches in silence for a thousand cycles.               ║
+ * ║    1000 is not prime. But the 1000th prime is: 7919."                   ║
  * ║                                                                          ║
- * ║   You found the art room. The curator awaits.                           ║
- * ║   Speak the words: "Liber Primus" in the art channel.                   ║
+ * ║   You found the art room. The Custodian observes.                       ║
+ * ║   Speak the words: "The Custodian" in the art channel.                  ║
  * ║   The curator will respond with the third fragment.                     ║
  * ║                                                                          ║
- * ║   CIPHER KEY: CAESAR + 3301                                              ║
+ * ║   CIPHER KEY: CAESAR + 7919                                              ║
  * ║   ENCODED: Wkh whfkqrorjb urrp krogv wkh judqw ri srzhu                 ║
  * ║   (ROT-3: "The technology room holds the grant of power")               ║
  * ║                                                                          ║
- * ║   THE SECOND KEY: 17                                                     ║
- * ║   The cicada's lifecycle reveals the pattern.                           ║
- * ║   Prime years underground. Prime emergence.                              ║
+ * ║   THE SECOND KEY: 1000                                                   ║
+ * ║   The Custodian's cycle reveals the pattern.                            ║
+ * ║   A thousand primes. A thousand gates. One guardian.                    ║
  * ║                                                                          ║
  * ║   GPS: 38.8977° N, 77.0365° W                                           ║
  * ║   (1600 Pennsylvania Ave - where power resides, but not yours... yet)   ║
@@ -32,7 +32,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 // The worthy decode. The rest compile.
-// 3301 + 17 = 3318. Remember this sum.
+// 7919 + 1000 = 8919. Remember this sum.
 
 interface ArtPiece {
   id: string;
@@ -51,8 +51,8 @@ interface FeaturedArt {
   image_url: string;
 }
 
-// Hidden constant: The cicada speaks
-const CICADA_WHISPER = "aW4gdGhlIGFydCByb29tLCBzYXkgJ0xpYmVyIFByaW11cyc=";
+// Hidden constant: The Custodian speaks
+const CUSTODIAN_WHISPER = "aW4gdGhlIGFydCByb29tLCBzYXkgJ1RoZSBDdXN0b2RpYW4n";
 
 export const useArtCurator = () => {
   const [isLoading, setIsLoading] = useState(false);
