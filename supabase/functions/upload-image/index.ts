@@ -1,15 +1,26 @@
+/**
+ * JustAChat™ Image Upload Edge Function
+ * Works with both Lovable Cloud and VPS (self-hosted Supabase with Kong)
+ * 
+ * Key features:
+ * - Rate limiting (5 uploads/minute per user)
+ * - AI content moderation (optional, requires OPENAI_API_KEY)
+ * - Multipart form-data support
+ * - VPS URL mapping (kong:8000 -> public domain)
+ * - Service role fallback for RLS bypass
+ */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bucket, x-path, x-file-name, x-file-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 // Rate limiting: max 5 uploads per minute per user
 const MAX_UPLOADS_PER_MINUTE = 5;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-
-// In-memory rate limit store (resets on function cold start)
 const uploadRateLimits = new Map<string, { count: number; windowStart: number }>();
 
 function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetIn: number } {
@@ -17,7 +28,6 @@ function checkRateLimit(userId: string): { allowed: boolean; remaining: number; 
   const userLimit = uploadRateLimits.get(userId);
   
   if (!userLimit || now - userLimit.windowStart > RATE_LIMIT_WINDOW_MS) {
-    // New window
     uploadRateLimits.set(userId, { count: 1, windowStart: now });
     return { allowed: true, remaining: MAX_UPLOADS_PER_MINUTE - 1, resetIn: RATE_LIMIT_WINDOW_MS };
   }
@@ -36,12 +46,10 @@ function checkRateLimit(userId: string): { allowed: boolean; remaining: number; 
 }
 
 async function checkForNudity(imageBase64: string): Promise<{ safe: boolean; reason?: string }> {
-  // Environment-aware AI: Use OpenAI on VPS (supports vision)
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   
   if (!OPENAI_API_KEY) {
-    console.warn("No AI key configured for image moderation - allowing upload");
-    // Fail open but log - in production you might want to fail closed
+    console.log("No OPENAI_API_KEY configured - skipping AI moderation");
     return { safe: true };
   }
 
@@ -60,14 +68,9 @@ async function checkForNudity(imageBase64: string): Promise<{ safe: boolean; rea
             content: [
               {
                 type: "text",
-                text: `Analyze this image for content moderation. Respond with ONLY a JSON object in this exact format:
-{"safe": true} if the image is appropriate
-{"safe": false, "reason": "brief reason"} if the image contains:
-- Nudity or sexually explicit content
-- Genitalia, bare breasts, or explicit body parts
-- Sexual acts or suggestive poses
-
-Be strict about nudity detection. Artistic nudity, partial nudity, and suggestive content should all be flagged as unsafe.`
+                text: `Analyze this image for content moderation. Respond with ONLY a JSON object:
+{"safe": true} if appropriate
+{"safe": false, "reason": "brief reason"} if it contains nudity, explicit content, or inappropriate material.`
               },
               {
                 type: "image_url",
@@ -84,10 +87,8 @@ Be strict about nudity detection. Artistic nudity, partial nudity, and suggestiv
 
     if (!response.ok) {
       console.error("AI moderation request failed:", response.status);
-      // Fail open on AI quota/service errors - allow upload but log for review
-      // 402 = quota exceeded, 429 = rate limited, 5xx = server error
+      // Fail open on service errors
       if (response.status === 402 || response.status === 429 || response.status >= 500) {
-        console.warn("AI moderation unavailable, allowing upload with manual review flag");
         return { safe: true };
       }
       return { safe: false, reason: "Content moderation temporarily unavailable" };
@@ -98,22 +99,16 @@ Be strict about nudity detection. Artistic nudity, partial nudity, and suggestiv
     
     console.log("AI moderation response:", content);
     
-    // Parse the JSON response
     try {
-      // Extract JSON from response (handle markdown code blocks)
       const jsonMatch = content.match(/\{[\s\S]*?\}/);
       if (jsonMatch) {
         const result = JSON.parse(jsonMatch[0]);
-        return { 
-          safe: result.safe === true, 
-          reason: result.reason 
-        };
+        return { safe: result.safe === true, reason: result.reason };
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", parseError);
     }
     
-    // If we can't parse, check for keywords
     const lowerContent = content.toLowerCase();
     if (lowerContent.includes('"safe": false') || lowerContent.includes("nudity") || 
         lowerContent.includes("explicit") || lowerContent.includes("inappropriate")) {
@@ -123,33 +118,74 @@ Be strict about nudity detection. Artistic nudity, partial nudity, and suggestiv
     return { safe: true };
   } catch (error) {
     console.error("AI moderation error:", error);
-    return { safe: false, reason: "Content moderation error" };
+    return { safe: true }; // Fail open
   }
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+/**
+ * Map internal Docker URLs to public VPS domain
+ * Kong internally uses http://kong:8000 but we need https://justachat.net
+ */
+function mapToPublicUrl(internalUrl: string): string {
+  // Get public URL from environment or default
+  const publicUrl = Deno.env.get("VPS_PUBLIC_URL") || Deno.env.get("SITE_URL") || "https://justachat.net";
+  
+  // Replace internal Docker URLs with public domain
+  let finalUrl = internalUrl;
+  
+  // Common internal patterns
+  const internalPatterns = [
+    /https?:\/\/kong:8000/gi,
+    /https?:\/\/localhost:8000/gi,
+    /https?:\/\/127\.0\.0\.1:8000/gi,
+    /https?:\/\/supabase-kong:8000/gi,
+  ];
+  
+  for (const pattern of internalPatterns) {
+    if (pattern.test(finalUrl)) {
+      finalUrl = finalUrl.replace(pattern, publicUrl);
+      console.log(`URL mapped: ${internalUrl} -> ${finalUrl}`);
+      break;
+    }
   }
+  
+  // Also fix http -> https if needed
+  if (finalUrl.startsWith("http://justachat.net")) {
+    finalUrl = finalUrl.replace("http://", "https://");
+  }
+  
+  return finalUrl;
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  console.log("=== Upload Image Request ===");
+  console.log("Method:", req.method);
+  console.log("Content-Type:", req.headers.get("content-type"));
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    // Optional: on some self-hosted setups this can be missing or mismatched.
-    // We prefer user-scoped storage uploads (RLS-safe) and only fall back to service role if available.
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    // Get auth header and verify user
+    console.log("SUPABASE_URL:", supabaseUrl);
+    console.log("Has Service Role Key:", !!supabaseServiceRoleKey);
+
+    // Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error("No Authorization header");
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Unauthorized", message: "No authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Use a user-scoped client for JWT verification / user identity.
-    // VPS uses getUser() instead of getClaims() for compatibility
+    // Create user-scoped client for auth verification
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -164,6 +200,8 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("Authenticated user:", userId);
 
     // Check rate limit
     const rateLimit = checkRateLimit(userId);
@@ -187,18 +225,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse upload payload.
-    // Supports:
-    //  1) multipart/form-data with field "file" (legacy)
-    //  2) raw binary body (Blob/File) with metadata in headers (preferred)
-    const contentTypeHeader = req.headers.get("content-type") || "";
-    let uploadName = "upload";
-    let uploadType = "application/octet-stream";
+    // Parse upload - support both multipart/form-data and raw binary
+    const contentType = req.headers.get("content-type") || "";
     let uploadBytes: ArrayBuffer;
+    let uploadName = "upload.jpg";
+    let uploadType = "image/jpeg";
     let bucket = "avatars";
     let requestedPath: string | undefined;
 
-    if (contentTypeHeader.includes("multipart/form-data")) {
+    if (contentType.includes("multipart/form-data")) {
+      console.log("Parsing multipart/form-data...");
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       bucket = (formData.get("bucket") as string) || bucket;
@@ -214,19 +250,22 @@ Deno.serve(async (req) => {
       uploadName = file.name || uploadName;
       uploadType = file.type || uploadType;
       uploadBytes = await file.arrayBuffer();
+      console.log(`Received file: ${uploadName} (${uploadBytes.byteLength} bytes, type: ${uploadType})`);
     } else {
+      // Raw binary with headers
       bucket = req.headers.get("x-bucket") || bucket;
       requestedPath = req.headers.get("x-path") || undefined;
       uploadName = req.headers.get("x-file-name") || uploadName;
-      uploadType = req.headers.get("x-file-type") || req.headers.get("content-type") || uploadType;
+      uploadType = req.headers.get("x-file-type") || contentType || uploadType;
       uploadBytes = await req.arrayBuffer();
 
       if (!uploadBytes || uploadBytes.byteLength === 0) {
         return new Response(
-          JSON.stringify({ error: "No file provided" }),
+          JSON.stringify({ error: "No file data provided" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+      console.log(`Received raw binary: ${uploadBytes.byteLength} bytes`);
     }
 
     // Validate file type
@@ -247,9 +286,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Processing upload for user ${userId}: ${uploadName} (${uploadBytes.byteLength} bytes)`);
-
-    // Convert bytes to base64 for AI analysis
+    // AI content moderation (if key available)
     const uint8Array = new Uint8Array(uploadBytes);
     let binary = "";
     const chunkSize = 8192;
@@ -260,7 +297,6 @@ Deno.serve(async (req) => {
     const base64 = btoa(binary);
     const imageBase64 = `data:${uploadType};base64,${base64}`;
 
-    // AI nudity screening
     console.log("Running AI content moderation...");
     const moderationResult = await checkForNudity(imageBase64);
     
@@ -269,34 +305,22 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Content policy violation", 
-          message: moderationResult.reason || "Image contains inappropriate content and cannot be uploaded."
+          message: moderationResult.reason || "Image contains inappropriate content"
         }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    console.log("Image passed moderation");
 
-    console.log("Image passed content moderation");
-
-    // Generate file path
+    // Generate secure file path (force into user's folder)
     const fileExt = uploadName.split(".").pop() || "jpg";
-
-    // Security: force uploads into the caller's folder to avoid overwriting other users' files.
-    const cleanedRequestedPath = requestedPath
-      ? requestedPath.replace(/^\/+/, "").replace(/\.\./g, "")
-      : undefined;
-
-    let fileName = cleanedRequestedPath || `${userId}/${crypto.randomUUID()}.${fileExt}`;
+    const cleanPath = requestedPath?.replace(/^\/+/, "").replace(/\.\./g, "") || undefined;
+    let fileName = cleanPath || `${userId}/${crypto.randomUUID()}.${fileExt}`;
     if (!fileName.startsWith(`${userId}/`)) {
       fileName = `${userId}/${fileName}`;
     }
 
-    // Upload to storage.
-    // Prefer a user-scoped client so it matches storage RLS policies (TO authenticated).
-    // This also avoids false-403s when a VPS service-role key is missing/mismatched.
-    // Security is preserved by:
-    //  - verifying the caller JWT above
-    //  - forcing the object name into the caller's userId folder
-    //  - limiting bucket to an allowlist
+    // Validate bucket
     const allowedBuckets = new Set(["avatars", "chat-images"]);
     if (!allowedBuckets.has(bucket)) {
       return new Response(
@@ -305,52 +329,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Attempt upload as the authenticated user.
-    // This should succeed when storage policies are scoped to authenticated users.
+    console.log(`Uploading to bucket: ${bucket}, path: ${fileName}`);
+
+    // Try upload with user token first (respects RLS)
     let uploadData: any = null;
     let uploadError: any = null;
 
-    {
-      const resp = await supabaseUser.storage.from(bucket).upload(fileName, uploadBytes, {
-        contentType: uploadType,
-        upsert: true,
-      });
-      uploadData = resp.data;
-      uploadError = resp.error;
-    }
+    const userUpload = await supabaseUser.storage.from(bucket).upload(fileName, uploadBytes, {
+      contentType: uploadType,
+      upsert: true,
+    });
+    uploadData = userUpload.data;
+    uploadError = userUpload.error;
 
-    // Optional fallback: if VPS storage policies are broken for authenticated users but service role is valid.
+    // Fallback to service role if user upload fails
     if (uploadError && supabaseServiceRoleKey) {
-      console.warn("User-scoped storage upload failed; trying service-role fallback", {
-        bucket,
-        fileName,
-        error: uploadError?.message,
-        statusCode: uploadError?.statusCode,
-      });
-
-      const supabaseStorage = createClient(supabaseUrl, supabaseServiceRoleKey);
-      const resp = await supabaseStorage.storage.from(bucket).upload(fileName, uploadBytes, {
+      console.warn("User upload failed, trying service role:", uploadError.message);
+      
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+      const adminUpload = await supabaseAdmin.storage.from(bucket).upload(fileName, uploadBytes, {
         contentType: uploadType,
         upsert: true,
       });
-      uploadData = resp.data;
-      uploadError = resp.error;
+      uploadData = adminUpload.data;
+      uploadError = adminUpload.error;
     }
 
     if (uploadError) {
-      console.error("Upload error:", uploadError);
-
-      const msg = (uploadError as any)?.message || "Upload failed";
-      if (
-        msg.includes("row-level security") ||
-        msg.includes("violates row-level security") ||
-        msg.includes("new row violates row-level security")
-      ) {
+      console.error("Upload failed:", uploadError);
+      
+      const errorMsg = uploadError.message || "Upload failed";
+      if (errorMsg.includes("row-level security") || errorMsg.includes("violates row-level security")) {
         return new Response(
           JSON.stringify({
             error: "Upload failed",
-            message: "Storage permissions blocked this upload (RLS).",
-            details: msg,
+            message: "Storage permissions blocked this upload (RLS)",
+            details: errorMsg,
             bucket,
             path: fileName,
           }),
@@ -359,34 +373,27 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ error: "Upload failed", details: msg }),
+        JSON.stringify({ error: "Upload failed", details: errorMsg }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get public URL
-    // On VPS, SUPABASE_URL is internal (http://kong:8000) so we need to use the public domain
-    const supabasePublic = createClient(supabaseUrl, supabaseAnonKey);
-    const {
-      data: { publicUrl: rawPublicUrl },
-    } = supabasePublic.storage.from(bucket).getPublicUrl(fileName);
+    console.log("Upload successful, generating public URL...");
 
-    // VPS fix: Replace internal kong URL with public domain
-    let finalUrl = rawPublicUrl;
-    if (rawPublicUrl.includes("kong:8000")) {
-      // VPS environment - use public domain
-      const vpsPublicUrl = Deno.env.get("VPS_PUBLIC_URL") || "https://justachat.net";
-      finalUrl = rawPublicUrl.replace(/https?:\/\/kong:8000/, vpsPublicUrl);
-      console.log(`VPS URL fix: ${rawPublicUrl} -> ${finalUrl}`);
-    }
+    // Get public URL and map to public domain
+    const { data: urlData } = supabaseUser.storage.from(bucket).getPublicUrl(fileName);
+    const rawPublicUrl = urlData?.publicUrl || "";
+    const finalUrl = mapToPublicUrl(rawPublicUrl);
 
-    console.log(`Upload successful: ${finalUrl}`);
+    console.log("Raw URL:", rawPublicUrl);
+    console.log("Final URL:", finalUrl);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         url: finalUrl,
         path: fileName,
+        bucket,
         remaining: rateLimit.remaining
       }),
       { 
@@ -400,7 +407,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Upload error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", details: String(error) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
