@@ -422,13 +422,13 @@ const Home = () => {
                 {/* Contact Section */}
                 <DropdownMenuItem asChild>
                   <a 
-                    href="mailto:support@justachat.com" 
+                    href="mailto:support@justachat.net" 
                     className="flex items-center gap-2 cursor-pointer"
                   >
                     <Mail className="w-4 h-4 text-blue-500" />
                     <div>
                       <span>Email Support</span>
-                      <p className="text-xs text-muted-foreground">support@justachat.com</p>
+                      <p className="text-xs text-muted-foreground">support@justachat.net</p>
                     </div>
                   </a>
                 </DropdownMenuItem>

@@ -185,7 +185,7 @@ const MircConnect = () => {
             </div>
             <div className="bg-white border border-[#808080] p-3">
               <p className="font-bold text-sm text-[#800000]">Need Help?</p>
-              <p className="text-sm text-gray-700">Join <strong>#help</strong> in the web client or email <a href="mailto:support@justachat.com" className="text-[#0000ff] underline">support@justachat.com</a></p>
+              <p className="text-sm text-gray-700">Join <strong>#help</strong> in the web client or email <a href="mailto:support@justachat.net" className="text-[#0000ff] underline">support@justachat.net</a></p>
             </div>
           </div>
         </div>
