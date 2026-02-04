@@ -10,23 +10,41 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel
-} from '@/components/ui/dropdown-menu';
 import FormattedText from '@/components/chat/FormattedText';
 import VideoUserMenu from '@/components/video/VideoUserMenu';
 import EmojiPicker from '@/components/chat/EmojiPicker';
 import { 
-  Send, MessageSquare, Zap, ImagePlus, X, Loader2,
+  Send, MessageSquare, ImagePlus, X, Loader2,
   Crown, Shield, Star
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { compressImage } from '@/lib/imageCompression';
+
+// VPS/storage URL normalization helper (same as FormattedText)
+const normalizeChatImageUrl = (rawUrl: string): string => {
+  try {
+    if (typeof window === "undefined") return rawUrl;
+    if (rawUrl.includes("kong:8000") || rawUrl.includes("localhost:8000") || rawUrl.includes("127.0.0.1:8000")) {
+      return rawUrl
+        .replace(/https?:\/\/kong:8000/g, window.location.origin)
+        .replace(/https?:\/\/localhost:8000/g, window.location.origin)
+        .replace(/https?:\/\/127\.0\.0\.1:8000/g, window.location.origin);
+    }
+    const url = new URL(rawUrl);
+    const origin = window.location.origin;
+    const currentHost = window.location.hostname;
+    if (["kong", "localhost", "127.0.0.1"].includes(url.hostname)) {
+      return `${origin}${url.pathname}${url.search}${url.hash}`;
+    }
+    if (window.location.protocol === "https:" && url.protocol === "http:" && url.hostname === currentHost) {
+      url.protocol = "https:";
+      return url.toString();
+    }
+    return rawUrl;
+  } catch {
+    return rawUrl;
+  }
+};
 
 // IRC-style actions
 const USER_ACTIONS = {
@@ -338,7 +356,7 @@ const VideoChatBar = ({ roomId, odious, username, avatarUrl, currentUserRole, on
               const isImageOnly = !!imgMatch;
               
               if (isImageOnly && imgMatch) {
-                const imageUrl = imgMatch[1];
+                const imageUrl = normalizeChatImageUrl(imgMatch[1]);
                 return (
                   <div key={msg.id} className="flex items-start gap-1.5 group">
                     <Avatar className="w-5 h-5 shrink-0">
