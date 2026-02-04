@@ -393,6 +393,28 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
   }, [currentChannel]);
 
+  // Subscribe to bot message broadcasts for current channel
+  // This ensures ALL clients in the room see the same bot messages
+  useEffect(() => {
+    if (!currentChannel) return;
+
+    const botChannel = supabase
+      .channel(`room:${currentChannel.id}:bots`)
+      .on('broadcast', { event: 'bot-message' }, (payload) => {
+        const botMessage = payload.payload as Message;
+        // Deduplicate - only add if not already present
+        setMessages(prev => {
+          if (prev.some(m => m.id === botMessage.id)) return prev;
+          return [...prev, botMessage];
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(botChannel);
+    };
+  }, [currentChannel]);
+
   // Track which users are listening to radio
   const [listeningUsers, setListeningUsers] = useState<Map<string, { title: string; artist: string }>>(new Map());
 
@@ -558,13 +580,15 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   const artCurator = useArtCurator();
 
   // Function to add simulated user messages (they look like real users)
-  // Also broadcasts to lobby mirror if in #general
+  // Broadcasts to room channel so ALL clients in the room see the same bot messages
   const addBotMessage = useCallback((content: string, botUsername: string, avatarUrl?: string) => {
     if (!currentChannel?.id) return;
+    
+    const messageId = `bot-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const userMsg: Message = {
-      id: `sim-${Date.now()}-${Math.random()}`,
+      id: messageId,
       content,
-      user_id: `sim-${botUsername}`,
+      user_id: `bot-${botUsername}`,
       channel_id: currentChannel.id,
       created_at: new Date().toISOString(),
       profile: { 
@@ -572,7 +596,13 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         avatar_url: avatarUrl || null
       }
     };
-    setMessages(prev => [...prev, userMsg]);
+    
+    // Broadcast to ALL clients in this room via realtime
+    supabase.channel(`room:${currentChannel.id}:bots`).send({
+      type: 'broadcast',
+      event: 'bot-message',
+      payload: userMsg
+    });
     
     // Broadcast to lobby mirror if this is #general
     if (currentChannel.name === 'general') {
