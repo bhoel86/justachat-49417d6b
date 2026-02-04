@@ -314,8 +314,17 @@ Deno.serve(async (req) => {
 
     // Generate secure file path (force into user's folder)
     const fileExt = uploadName.split(".").pop() || "jpg";
-    const cleanPath = requestedPath?.replace(/^\/+/, "").replace(/\.\./g, "") || undefined;
-    let fileName = cleanPath || `${userId}/${crypto.randomUUID()}.${fileExt}`;
+    let cleanPath = requestedPath?.replace(/^\/+/, "").replace(/\.\./g, "") || undefined;
+    
+    // Strip bucket prefix if frontend accidentally included it (e.g., "chat-images/timestamp-file.jpg")
+    if (cleanPath && cleanPath.startsWith(`${bucket}/`)) {
+      cleanPath = cleanPath.slice(bucket.length + 1);
+      console.log(`Stripped bucket prefix from path: ${requestedPath} -> ${cleanPath}`);
+    }
+    
+    let fileName = cleanPath || `${crypto.randomUUID()}.${fileExt}`;
+    
+    // Force file into user's folder for security
     if (!fileName.startsWith(`${userId}/`)) {
       fileName = `${userId}/${fileName}`;
     }
