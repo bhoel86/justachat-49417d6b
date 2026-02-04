@@ -396,34 +396,44 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   // Track which users are listening to radio
   const [listeningUsers, setListeningUsers] = useState<Map<string, { title: string; artist: string }>>(new Map());
 
-  // Track presence
+  // Presence channel is room-scoped; keep refs so we can update track payload without recreating channels
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const presenceReadyRef = useRef(false);
+
+  // Track presence PER ROOM (fixes users appearing online in all rooms)
   useEffect(() => {
-    // Don't track presence until user is loaded
-    if (!user?.id) return;
-    
-    const presenceChannel = supabase.channel('online-users', {
-      config: { presence: { key: user.id } }
+    if (!user?.id || !currentChannel?.id) return;
+
+    // Ensure we don't keep an old room channel around when switching rooms
+    if (presenceChannelRef.current) {
+      supabase.removeChannel(presenceChannelRef.current);
+      presenceChannelRef.current = null;
+      presenceReadyRef.current = false;
+    }
+
+    const presenceChannel = supabase.channel(`room:${currentChannel.id}:presence`, {
+      config: { presence: { key: user.id } },
     });
+
+    presenceChannelRef.current = presenceChannel;
 
     presenceChannel
       .on('presence', { event: 'sync' }, async () => {
         const state = presenceChannel.presenceState();
         const onlineIds = new Set<string>();
         const listening = new Map<string, { title: string; artist: string }>();
-        
+
         Object.values(state).forEach((presences: any[]) => {
           presences.forEach((presence: { user_id?: string; nowPlaying?: { title: string; artist: string } }) => {
-            if (presence.user_id) {
-              onlineIds.add(presence.user_id);
-              if (presence.nowPlaying) {
-                listening.set(presence.user_id, presence.nowPlaying);
-              }
-            }
+            if (!presence.user_id) return;
+            onlineIds.add(presence.user_id);
+            if (presence.nowPlaying) listening.set(presence.user_id, presence.nowPlaying);
           });
         });
+
         setOnlineUserIds(onlineIds);
         setListeningUsers(listening);
-        
+
         // Fetch usernames for online users
         if (onlineIds.size > 0) {
           const { data: profiles } = await supabaseUntyped
@@ -431,40 +441,47 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
             .from('profiles_public')
             .select('username')
             .in('user_id', Array.from(onlineIds));
-          if (profiles) {
-            setOnlineUsers(profiles.map(p => ({ username: p.username })));
-          }
+
+          setOnlineUsers((profiles || []).map((p: { username: string }) => ({ username: p.username })));
         } else {
           setOnlineUsers([]);
         }
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED' && user?.id) {
-          const nowPlaying = radio?.isPlaying && radio?.currentSong 
-            ? { title: radio.currentSong.title, artist: radio.currentSong.artist }
-            : undefined;
-          await presenceChannel.track({ user_id: user.id, nowPlaying });
-        }
+        if (status !== 'SUBSCRIBED') return;
+        presenceReadyRef.current = true;
+
+        const nowPlaying = radio?.isPlaying && radio?.currentSong
+          ? { title: radio.currentSong.title, artist: radio.currentSong.artist }
+          : undefined;
+
+        await presenceChannel.track({ user_id: user.id, nowPlaying });
       });
 
     return () => {
+      // Only clear refs if this is the active channel
+      if (presenceChannelRef.current === presenceChannel) {
+        presenceChannelRef.current = null;
+        presenceReadyRef.current = false;
+      }
       supabase.removeChannel(presenceChannel);
+      setOnlineUserIds(new Set());
+      setListeningUsers(new Map());
+      setOnlineUsers([]);
     };
-  }, [user?.id]);
+  }, [user?.id, currentChannel?.id]);
 
-  // Update presence when radio state changes
+  // Update presence payload (nowPlaying) without creating extra channels
   useEffect(() => {
     if (!user?.id) return;
-    
-    const updatePresence = async () => {
-      const presenceChannel = supabase.channel('online-users');
-      const nowPlaying = radio?.isPlaying && radio?.currentSong 
-        ? { title: radio.currentSong.title, artist: radio.currentSong.artist }
-        : undefined;
-      await presenceChannel.track({ user_id: user.id, nowPlaying });
-    };
-    
-    updatePresence();
+    const ch = presenceChannelRef.current;
+    if (!ch || !presenceReadyRef.current) return;
+
+    const nowPlaying = radio?.isPlaying && radio?.currentSong
+      ? { title: radio.currentSong.title, artist: radio.currentSong.artist }
+      : undefined;
+
+    ch.track({ user_id: user.id, nowPlaying });
   }, [user?.id, radio?.isPlaying, radio?.currentSong?.videoId]);
 
   const addSystemMessage = useCallback((content: string, channelId?: string) => {
