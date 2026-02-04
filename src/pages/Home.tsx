@@ -29,6 +29,7 @@ import {
 import LobbyMirrorRoom from "@/components/home/LobbyMirrorRoom";
 import PayPalDonateModal from "@/components/home/PayPalDonateModal";
 import { getRoomBotCount } from "@/lib/chatBots";
+import { supabaseUntyped } from "@/hooks/useAuth";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 // Room background images
 import generalBg from "@/assets/rooms/general-bg.jpg";
@@ -139,7 +140,8 @@ const Home = () => {
   const [loadingChannels, setLoadingChannels] = useState(true);
   const [roomUserCounts, setRoomUserCounts] = useState<RoomUserCounts>({});
   const [showDonateModal, setShowDonateModal] = useState(false);
-  
+  const [botsGloballyEnabled, setBotsGloballyEnabled] = useState(false);
+  const [botsAllowedChannels, setBotsAllowedChannels] = useState<string[]>([]);
 
   // OAuth callback processing guard (VPS):
   // IMPORTANT: must be reactive (not module-level), otherwise it can get stuck "true"
@@ -171,6 +173,36 @@ const Home = () => {
       navigate("/home", { replace: true });
     }
   }, [user, loading, navigate, oauthProcessing]);
+
+  // Fetch bot settings for room counts
+  useEffect(() => {
+    const fetchBotSettings = async () => {
+      const { data } = await supabaseUntyped
+        .from('bot_settings')
+        .select('enabled, allowed_channels')
+        .limit(1)
+        .single();
+      if (data) {
+        setBotsGloballyEnabled(data.enabled ?? false);
+        setBotsAllowedChannels(data.allowed_channels ?? []);
+      }
+    };
+    fetchBotSettings();
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('home-bot-settings')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bot_settings' }, (payload) => {
+        const newData = payload.new as { enabled?: boolean; allowed_channels?: string[] };
+        setBotsGloballyEnabled(newData.enabled ?? false);
+        setBotsAllowedChannels(newData.allowed_channels ?? []);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchChannels = async () => {
@@ -689,7 +721,8 @@ const Home = () => {
                     <>
                       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-1.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
                         {channels.map((channel) => {
-                          const userCount = (roomUserCounts[channel.id] || 0) + getRoomBotCount(channel.name);
+                          const botsEnabledForChannel = botsGloballyEnabled && botsAllowedChannels.includes(channel.name);
+                          const userCount = (roomUserCounts[channel.id] || 0) + (botsEnabledForChannel ? getRoomBotCount(channel.name) : 0);
                           return (
                             <button
                               key={channel.id}

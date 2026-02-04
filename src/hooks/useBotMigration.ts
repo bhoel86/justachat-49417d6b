@@ -6,7 +6,13 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { MIGRATING_BOTS, ChatBot } from '@/lib/chatBots';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseUntyped } from '@/hooks/useAuth';
 import { getChatBotFunctionName } from '@/lib/environment';
+
+interface BotSettings {
+  enabled: boolean;
+  allowed_channels: string[];
+}
 
 interface MigratingBotState {
   bot: ChatBot;
@@ -76,8 +82,47 @@ export const useBotMigration = ({
   enabled = true,
 }: UseBotMigrationProps) => {
   const [currentRoomBots, setCurrentRoomBots] = useState<MigratingBotState[]>([]);
+  const [botSettings, setBotSettings] = useState<BotSettings | null>(null);
   const migrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const botStatesRef = useRef<Map<string, MigratingBotState>>(new Map());
+
+  // Fetch bot settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data, error } = await supabaseUntyped
+        .from('bot_settings')
+        .select('enabled, allowed_channels')
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        setBotSettings(data as BotSettings);
+      }
+    };
+
+    fetchSettings();
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('migration-bot-settings')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bot_settings' },
+        (payload) => {
+          setBotSettings(payload.new as BotSettings);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Check if bots are globally enabled
+  const botsEnabled = enabled && 
+    botSettings?.enabled === true && 
+    botSettings?.allowed_channels?.includes(channelName);
 
   // Initialize bot states on first load
   useEffect(() => {
@@ -118,7 +163,7 @@ export const useBotMigration = ({
 
   // Migrate a random bot to a random room
   const migrateBotRandomly = useCallback(async () => {
-    if (!enabled) return;
+    if (!botsEnabled) return;
 
     // Pick a random bot that hasn't migrated recently (at least 30 seconds)
     const availableBots: MigratingBotState[] = [];
@@ -162,11 +207,11 @@ export const useBotMigration = ({
 
     // Update local state
     setCurrentRoomBots(getBotsInRoom(channelName));
-  }, [enabled, channelName, addBotMessage, getBotsInRoom]);
+  }, [botsEnabled, channelName, addBotMessage, getBotsInRoom]);
 
   // Random migration interval - varies between 20-90 seconds
   useEffect(() => {
-    if (!enabled) return;
+    if (!botsEnabled) return;
 
     const scheduleMigration = () => {
       const delay = 20000 + Math.random() * 70000; // 20-90 seconds
@@ -188,11 +233,11 @@ export const useBotMigration = ({
         clearTimeout(migrationIntervalRef.current);
       }
     };
-  }, [enabled, migrateBotRandomly]);
+  }, [botsEnabled, migrateBotRandomly]);
 
   // Generate conversation from migrating bots occasionally
   useEffect(() => {
-    if (!enabled) return;
+    if (!botsEnabled) return;
 
     const convoInterval = setInterval(async () => {
       const botsInRoom = getBotsInRoom(channelName);
@@ -222,7 +267,7 @@ export const useBotMigration = ({
     }, 45000 + Math.random() * 60000); // Every 45-105 seconds
 
     return () => clearInterval(convoInterval);
-  }, [enabled, channelName, addBotMessage, getBotsInRoom]);
+  }, [botsEnabled, channelName, addBotMessage, getBotsInRoom]);
 
   return {
     currentRoomBots: currentRoomBots.map(s => s.bot),
