@@ -104,6 +104,12 @@ const roleConfig = {
   },
 };
 
+interface BotSettings {
+  enabled: boolean;
+  allowed_channels: string[];
+  moderator_bots_enabled: boolean;
+}
+
 const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', onOpenPm, onOpenBotPm, onAction }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,6 +117,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [viewProfileTarget, setViewProfileTarget] = useState<Member | null>(null);
   const [showOffline, setShowOffline] = useState(false);
+  const [botSettings, setBotSettings] = useState<BotSettings | null>(null);
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
   const radio = useRadioOptional();
@@ -123,6 +130,39 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
   const [currentBio, setCurrentBio] = useState<string | null>(null);
   const [currentAge, setCurrentAge] = useState<number | null>(null);
+
+  // Fetch bot settings and subscribe to changes
+  useEffect(() => {
+    const fetchBotSettings = async () => {
+      const { data, error } = await supabaseUntyped
+        .from('bot_settings')
+        .select('enabled, allowed_channels, moderator_bots_enabled')
+        .limit(1)
+        .single();
+
+      if (!error && data) {
+        setBotSettings(data);
+      }
+    };
+
+    fetchBotSettings();
+
+    // Subscribe to bot settings changes
+    const channel = supabase
+      .channel('bot-settings-member-list')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bot_settings' },
+        (payload) => {
+          setBotSettings(payload.new as BotSettings);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   
   useEffect(() => {
     if (user) {
@@ -459,19 +499,25 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
     return [];
   };
 
-  // Get the bot moderator for this channel
+  // Check if bots should be shown for this channel
+  const botsEnabledForChannel = botSettings?.enabled && 
+    botSettings?.allowed_channels?.includes(channelName);
+  const moderatorBotsEnabled = botSettings?.moderator_bots_enabled ?? true;
+
+  // Get the bot moderator for this channel (only if moderator bots enabled)
   const moderator = getModerator(channelName);
-  const botMember: Member = {
+  const botMember: Member | null = moderatorBotsEnabled ? {
     user_id: `bot-${channelName}`,
     username: `${moderator.avatar} ${moderator.name}`,
     role: 'bot',
     isOnline: true,
     isBot: true,
     avatar: moderator.avatar
-  };
+  } : null;
 
-  // Add simulated users to online members for allowed channels
+  // Add simulated users to online members for allowed channels (only if bots enabled)
   const simulatedUsers: Member[] = useMemo(() => {
+    if (!botsEnabledForChannel) return [];
     const botsForChannel = getBotsForChannel(channelName);
     return botsForChannel.map(bot => ({
       user_id: `sim-${bot.id}`,
@@ -482,7 +528,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
       bio: null,
       ip_address: null,
     }));
-  }, [channelName]);
+  }, [channelName, botsEnabledForChannel]);
 
   // Staff should always be visible (even if they appear offline due to Ghost Mode / presence filtering)
   const visibleOwners = members.filter(m => m.role === 'owner');
@@ -610,32 +656,35 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
               )}
 
               {/* Moderators Section (includes bot + human mods) */}
+              {(botMember || onlineModerators.length > 0) && (
               <div className="mb-1">
                 <p className="text-[10px] font-medium text-primary uppercase px-1 mb-0.5 flex items-center gap-1">
                   <Shield className="h-2.5 w-2.5" />
-                  Mods — {onlineModerators.length + 1}
+                  Mods — {onlineModerators.length + (botMember ? 1 : 0)}
                 </p>
                 <div className="space-y-0.5 pl-2 border-l border-primary/40">
-                  {/* Bot Moderator first */}
-                  <BotMemberItem 
-                    member={botMember} 
-                    moderator={moderator}
-                    channelName={channelName}
-                    onPmClick={() => onOpenBotPm ? onOpenBotPm(moderator, channelName) : setBotChatTarget({ moderator, channelName })}
-                    onBlockClick={() => {
-                      toast({
-                        variant: "destructive",
-                        title: "Cannot block moderators",
-                        description: "Moderators are essential for room management and cannot be blocked."
-                      });
-                    }}
-                    onInfoClick={() => {
-                      toast({
-                        title: `${moderator.avatar} ${moderator.name}`,
-                        description: `${moderator.displayName} - Moderator for #${channelName}. Personality based on famous hackers.`
-                      });
-                    }}
-                  />
+                  {/* Bot Moderator first (only if enabled) */}
+                  {botMember && (
+                    <BotMemberItem 
+                      member={botMember} 
+                      moderator={moderator}
+                      channelName={channelName}
+                      onPmClick={() => onOpenBotPm ? onOpenBotPm(moderator, channelName) : setBotChatTarget({ moderator, channelName })}
+                      onBlockClick={() => {
+                        toast({
+                          variant: "destructive",
+                          title: "Cannot block moderators",
+                          description: "Moderators are essential for room management and cannot be blocked."
+                        });
+                      }}
+                      onInfoClick={() => {
+                        toast({
+                          title: `${moderator.avatar} ${moderator.name}`,
+                          description: `${moderator.displayName} - Moderator for #${channelName}. Personality based on famous hackers.`
+                        });
+                      }}
+                    />
+                  )}
                   {/* Human Moderators */}
                   {onlineModerators.map((member) => (
                     <MemberItem 
@@ -661,6 +710,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
                   ))}
                 </div>
               </div>
+              )}
             </div>
 
             {/* VOICED USERS SECTION */}
