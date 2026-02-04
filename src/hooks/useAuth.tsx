@@ -103,56 +103,73 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // INITIAL load - controls loading state, waits for role before setting loading=false
     const initializeAuth = async () => {
-      // Handle OAuth callback hash explicitly (VPS self-hosted fix)
-      const hash = window.location.hash;
-      
-      if (hash && hash.includes('access_token')) {
-        console.log('[Auth] Detected OAuth callback hash, setting session from URL...');
-        const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-
-        try {
-          if (accessToken && refreshToken) {
-            const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-
-            if (error) {
-              console.error('[Auth] Failed to set session from OAuth hash:', error);
-              if (isMounted) setLoading(false);
-            } else if (data.session && isMounted) {
-              console.log('[Auth] Session established from OAuth hash');
-              setSession(data.session);
-              setUser(data.session.user);
-              await fetchRole(data.session.user.id, true); // Awaits role, then sets loading=false
-            }
-          } else {
-            console.warn('[Auth] OAuth hash missing tokens');
-            if (isMounted) setLoading(false);
-          }
-        } finally {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-      } else {
-        // No OAuth callback, check for existing session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!isMounted) return;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          await fetchRole(session.user.id, true); // Awaits role, then sets loading=false
-        } else {
+      // Safety timeout - NEVER stay loading forever (mobile fix)
+      const safetyTimeout = window.setTimeout(() => {
+        if (isMounted && loading) {
+          console.warn('[Auth] Safety timeout reached, forcing loading=false');
           setLoading(false);
         }
+      }, 5000);
+
+      try {
+        // Handle OAuth callback hash explicitly (VPS self-hosted fix)
+        const hash = window.location.hash;
+        
+        if (hash && hash.includes('access_token')) {
+          console.log('[Auth] Detected OAuth callback hash, setting session from URL...');
+          const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+
+          try {
+            if (accessToken && refreshToken) {
+              const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+
+              if (error) {
+                console.error('[Auth] Failed to set session from OAuth hash:', error);
+              } else if (data.session && isMounted) {
+                console.log('[Auth] Session established from OAuth hash');
+                setSession(data.session);
+                setUser(data.session.user);
+                await fetchRole(data.session.user.id, true);
+                return; // fetchRole sets loading=false
+              }
+            } else {
+              console.warn('[Auth] OAuth hash missing tokens');
+            }
+          } finally {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } else {
+          // No OAuth callback, check for existing session
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error('[Auth] getSession failed:', error);
+          }
+          
+          if (!isMounted) return;
+          
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          if (session?.user) {
+            await fetchRole(session.user.id, true);
+            return; // fetchRole sets loading=false
+          }
+        }
+      } catch (err) {
+        console.error('[Auth] initializeAuth error:', err);
+      } finally {
+        window.clearTimeout(safetyTimeout);
+        // Mark initial load as complete
+        isInitialLoad = false;
+        // Ensure loading is false if we get here
+        if (isMounted) setLoading(false);
       }
-      
-      // Mark initial load as complete
-      isInitialLoad = false;
     };
 
     initializeAuth();
