@@ -60,19 +60,18 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Verify user is authenticated (signing-keys compatible)
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    // Verify user is authenticated - use getUser() for VPS compatibility
+    const { data: userData, error: userError } = await supabase.auth.getUser();
 
-    if (claimsError || !claimsData?.claims?.sub) {
-      console.error('Auth error:', claimsError);
+    if (userError || !userData?.user?.id) {
+      console.error('Auth error:', userError?.message || 'No user');
       return new Response(
          JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = userData.user.id;
 
      // Parse request body (accept both old + new payload shapes)
      const body = await req.json().catch(() => ({} as Record<string, unknown>));
