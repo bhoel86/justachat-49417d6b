@@ -558,23 +558,26 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     };
   }, [currentUserId, fetchFriends, fetchPendingRequests, fetchBlockedUsers]);
 
-  // Track online status of friends via presence
+  // Track online status of friends via global presence channel
+  // This channel tracks ALL online users (not room-scoped) for friend status
   useEffect(() => {
-    if (!currentUserId || friends.length === 0) return;
+    if (!currentUserId) return;
 
-    const presenceChannel = supabase.channel('online-friends');
+    const presenceChannel = supabase.channel('global-online-users', {
+      config: { presence: { key: currentUserId } }
+    });
 
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState();
         const onlineIds = new Set<string>();
         Object.values(state).forEach((presences: any[]) => {
-          presences.forEach((p: { id?: string }) => {
-            if (p.id) onlineIds.add(p.id);
+          presences.forEach((p: { user_id?: string }) => {
+            if (p.user_id) onlineIds.add(p.user_id);
           });
         });
         
-        // Filter to only friends
+        // Filter to only friends who are online
         const onlineFriends = new Set(
           friends.map(f => f.friendId).filter(id => onlineIds.has(id))
         );
@@ -582,7 +585,8 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({ id: currentUserId });
+          // Track with user_id field to match room presence format
+          await presenceChannel.track({ user_id: currentUserId });
         }
       });
 

@@ -471,6 +471,36 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
   }, [user?.id, currentChannel?.id]);
 
+  // Global presence for friends system - tracks user as online site-wide
+  // This is separate from room presence which only shows users in specific rooms
+  const globalPresenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Only create once, don't recreate on channel change
+    if (globalPresenceRef.current) return;
+
+    const globalChannel = supabase.channel('global-online-users', {
+      config: { presence: { key: user.id } }
+    });
+
+    globalPresenceRef.current = globalChannel;
+
+    globalChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await globalChannel.track({ user_id: user.id });
+      }
+    });
+
+    return () => {
+      if (globalPresenceRef.current) {
+        supabase.removeChannel(globalPresenceRef.current);
+        globalPresenceRef.current = null;
+      }
+    };
+  }, [user?.id]);
+
   // Update presence payload (nowPlaying) without creating extra channels
   useEffect(() => {
     if (!user?.id) return;

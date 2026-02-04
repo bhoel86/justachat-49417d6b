@@ -183,21 +183,34 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   }, [user]);
 
   const fetchMembers = async () => {
-    // Fetch all profiles using public view (excludes sensitive fields like parent_email)
+    // ONLY fetch profiles for users who are currently online in this room
+    // This prevents users from appearing in every room's member list
+    const onlineIds = Array.from(onlineUserIds);
+    
+    if (onlineIds.length === 0) {
+      setMembers([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch profiles ONLY for online users in this room
     const { data: profiles } = await supabaseUntyped
       .from('profiles_public')
-      .select('user_id, username, avatar_url, bio, ghost_mode');
+      .select('user_id, username, avatar_url, bio, ghost_mode')
+      .in('user_id', onlineIds);
 
     const { data: roles } = await supabaseUntyped
       .from('user_roles')
-      .select('user_id, role');
+      .select('user_id, role')
+      .in('user_id', onlineIds);
 
-    // Fetch IP addresses for admins/owners
+    // Fetch IP addresses for admins/owners (only for online users)
     let locationMap = new Map<string, string>();
-    if (isAdmin || isOwner) {
+    if ((isAdmin || isOwner) && onlineIds.length > 0) {
       const { data: locations } = await supabaseUntyped
         .from('user_locations')
-        .select('user_id, ip_address');
+        .select('user_id, ip_address')
+        .in('user_id', onlineIds);
       if (locations) {
         locationMap = new Map(locations.map((l: { user_id: string; ip_address: string | null }) => [l.user_id, l.ip_address]));
       }
@@ -230,19 +243,16 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
             user_id: p.user_id,
             username: p.username,
             role: memberRole,
-            isOnline: shouldAppearOffline ? false : onlineUserIds.has(p.user_id),
+            isOnline: shouldAppearOffline ? false : true, // All fetched users are online in this room
             avatar_url: p.avatar_url,
             bio: p.bio,
             ip_address: showIp ? locationMap.get(p.user_id) || null : null,
           };
         });
 
-      // Sort by role priority and online status
+      // Sort by role priority
       const rolePriority = { owner: 0, admin: 1, moderator: 2, user: 3 };
       memberList.sort((a, b) => {
-        // Online first
-        if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
-        // Then by role
         return rolePriority[a.role] - rolePriority[b.role];
       });
 

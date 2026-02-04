@@ -481,29 +481,54 @@ const PrivateChatWindow = ({
       return;
     }
 
-     // For real users - encrypt and save via backend function
+    // For real users - encrypt and save via backend function
+    // Add optimistic UI update immediately so user sees their message
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: PrivateMessage = {
+      id: tempId,
+      content,
+      senderId: currentUserId,
+      senderName: currentUsername,
+      timestamp: new Date(),
+      isOwn: true
+    };
+    
+    // Add message immediately for instant feedback
+    processedIdsRef.current.add(tempId);
+    setMessages(cur => [...cur, optimisticMessage]);
+    setMessage('');
+    
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
       const resp = await supabase.functions.invoke('encrypt-pm', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-         // Keep payload aligned with backend expectations (and VPS router)
-         body: { message: content, recipient_id: targetUserId }
+        body: { message: content, recipient_id: targetUserId }
       });
 
-       if (resp.error) {
-         throw new Error(resp.error.message || 'Encryption failed');
-       }
-
-       if (!resp.data?.success) {
-         throw new Error(resp.data?.error || 'Encryption failed');
+      if (resp.error) {
+        throw new Error(resp.error.message || 'Encryption failed');
       }
 
-      // Message will appear via postgres_changes subscription
-      setMessage('');
+      if (!resp.data?.success) {
+        throw new Error(resp.data?.error || 'Encryption failed');
+      }
+
+      // Update the temp message ID with the real one from the server
+      const realId = resp.data.message_id;
+      if (realId) {
+        processedIdsRef.current.add(realId);
+        setMessages(cur => cur.map(m => 
+          m.id === tempId ? { ...m, id: realId } : m
+        ));
+      }
     } catch (e) {
       console.error('Send error:', e);
+      // Remove optimistic message on failure
+      setMessages(cur => cur.filter(m => m.id !== tempId));
+      processedIdsRef.current.delete(tempId);
+      setMessage(content); // Restore the message so user can retry
       toast({ variant: "destructive", title: "Failed to send message" });
     }
   };
