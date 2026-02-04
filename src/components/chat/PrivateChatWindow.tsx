@@ -383,7 +383,7 @@ const PrivateChatWindow = ({
 
       const formData = new FormData();
       formData.append("file", attachedImage);
-      formData.append("bucket", "avatars");
+      formData.append("bucket", "chat-images");
       formData.append("path", `chat-images/${Date.now()}-${attachedImage.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`);
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`, {

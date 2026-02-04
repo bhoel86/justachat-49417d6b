@@ -201,7 +201,7 @@ const VideoChatBar = ({ roomId, odious, username, avatarUrl, currentUserRole, on
 
       const formData = new FormData();
       formData.append("file", attachedImage);
-      formData.append("bucket", "avatars");
+      formData.append("bucket", "chat-images");
       formData.append("path", suggestedPath);
 
       const data = await new Promise<any>((resolve, reject) => {
