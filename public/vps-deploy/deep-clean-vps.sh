@@ -67,49 +67,138 @@ if [ "$PORTS_OK" = false ]; then
 fi
 
 # =====================================================
-# PHASE 2: NGINX CONFIGURATION CHECK & FIX
+# PHASE 2: NGINX DEEP CLEANUP & VALIDATION
 # =====================================================
 echo ""
 echo "═══════════════════════════════════════════════════════════"
-echo "[PHASE 2] NGINX CONFIGURATION CHECK"
+echo "[PHASE 2] NGINX DEEP CLEANUP & VALIDATION"
 echo "═══════════════════════════════════════════════════════════"
 
 NGINX_CONF="/etc/nginx/sites-available/justachat"
 NGINX_SNIPPET="/etc/nginx/snippets/storage-public.conf"
+SITES_AVAILABLE="/etc/nginx/sites-available"
+SITES_ENABLED="/etc/nginx/sites-enabled"
 
-# Check for duplicate location blocks in nginx
+# --- Step 1: Remove ALL backup files from nginx directories ---
+log_info "Cleaning backup files from nginx directories..."
+NGINX_DIRS="/etc/nginx /etc/nginx/sites-available /etc/nginx/sites-enabled /etc/nginx/snippets /etc/nginx/conf.d"
+BACKUP_TOTAL=0
+for dir in $NGINX_DIRS; do
+  if [ -d "$dir" ]; then
+    BACKUP_COUNT=$(find "$dir" -maxdepth 1 \( -name "*.bak*" -o -name "*.backup*" -o -name "*.old" -o -name "*~" -o -name "*.save" -o -name "*.orig" -o -name "*.dpkg-*" \) 2>/dev/null | wc -l)
+    if [ "$BACKUP_COUNT" -gt 0 ]; then
+      find "$dir" -maxdepth 1 \( -name "*.bak*" -o -name "*.backup*" -o -name "*.old" -o -name "*~" -o -name "*.save" -o -name "*.orig" -o -name "*.dpkg-*" \) -exec rm -v {} \; 2>/dev/null
+      BACKUP_TOTAL=$((BACKUP_TOTAL + BACKUP_COUNT))
+    fi
+  fi
+done
+if [ "$BACKUP_TOTAL" -gt 0 ]; then
+  log_ok "Removed $BACKUP_TOTAL backup files"
+else
+  log_ok "No backup files found"
+fi
+
+# --- Step 2: Clean sites-enabled - ensure single config per domain ---
+log_info "Cleaning sites-enabled (single config per domain)..."
+if [ -d "$SITES_ENABLED" ]; then
+  for f in "$SITES_ENABLED"/*; do
+    [ -e "$f" ] || continue
+    fname=$(basename "$f")
+    # Remove any justachat duplicates/variants (keep only 'justachat')
+    if [[ "$fname" == *"justachat"* ]] && [[ "$fname" != "justachat" ]]; then
+      log_warn "Removing duplicate: $fname"
+      rm -f "$f"
+    fi
+    # Remove default if justachat exists
+    if [[ "$fname" == "default" ]] && [ -e "$SITES_ENABLED/justachat" ]; then
+      log_info "Removing default (justachat is primary)"
+      rm -f "$f"
+    fi
+  done
+  ENABLED_COUNT=$(ls -1 "$SITES_ENABLED" 2>/dev/null | wc -l)
+  log_ok "Sites enabled: $ENABLED_COUNT"
+fi
+
+# --- Step 3: Clean sites-available of backup files ---
+log_info "Cleaning sites-available..."
+if [ -d "$SITES_AVAILABLE" ]; then
+  for f in "$SITES_AVAILABLE"/*; do
+    [ -e "$f" ] || continue
+    fname=$(basename "$f")
+    if [[ "$fname" == *".bak"* ]] || [[ "$fname" == *".backup"* ]] || [[ "$fname" == *".old"* ]] || [[ "$fname" == *"~"* ]] || [[ "$fname" == *".save"* ]]; then
+      log_warn "Removing: $fname"
+      rm -f "$f"
+    fi
+  done
+fi
+
+# --- Step 4: Validate nginx.conf structure (no server blocks outside http) ---
+log_info "Validating nginx.conf structure..."
+NGINX_MAIN="/etc/nginx/nginx.conf"
+if [ -f "$NGINX_MAIN" ]; then
+  # Check if there's a server block directly in nginx.conf (outside http context)
+  if grep -E "^\s*server\s*\{" "$NGINX_MAIN" 2>/dev/null; then
+    log_fail "Found 'server' block in nginx.conf - should be in sites-enabled only!"
+  else
+    log_ok "nginx.conf structure correct (no stray server blocks)"
+  fi
+fi
+
+# --- Step 5: Ensure symlink is correct ---
+log_info "Validating sites-enabled symlink..."
+if [ -L "$SITES_ENABLED/justachat" ]; then
+  TARGET=$(readlink -f "$SITES_ENABLED/justachat")
+  if [ "$TARGET" = "$SITES_AVAILABLE/justachat" ]; then
+    log_ok "Symlink correct"
+  else
+    log_warn "Symlink points to: $TARGET"
+  fi
+elif [ -f "$SITES_ENABLED/justachat" ]; then
+  log_ok "justachat is a file (not symlink - OK)"
+else
+  log_warn "justachat not found in sites-enabled"
+  if [ -f "$SITES_AVAILABLE/justachat" ]; then
+    ln -s "$SITES_AVAILABLE/justachat" "$SITES_ENABLED/justachat"
+    log_ok "Created symlink"
+  fi
+fi
+
+# --- Step 6: Check storage snippet ---
+if [ -f "$NGINX_SNIPPET" ]; then
+  log_ok "Storage snippet exists"
+  if grep -q "include.*storage-public.conf" "$NGINX_CONF" 2>/dev/null; then
+    log_ok "Storage snippet included in config"
+  else
+    log_warn "Storage snippet NOT included - run fix-storage-public-access.sh"
+  fi
+else
+  log_warn "Storage snippet missing - run fix-storage-public-access.sh"
+fi
+
+# --- Step 7: Check for duplicate location blocks ---
 if [ -f "$NGINX_CONF" ]; then
   STORAGE_LOCATIONS=$(grep -c "location.*storage/v1" "$NGINX_CONF" 2>/dev/null || echo "0")
   if [ "$STORAGE_LOCATIONS" -gt 1 ]; then
-    log_fail "DUPLICATE storage location blocks in nginx config ($STORAGE_LOCATIONS found)"
-    log_info "Consider consolidating into single block"
+    log_fail "DUPLICATE storage location blocks ($STORAGE_LOCATIONS found)"
   else
-    log_ok "No duplicate storage location blocks"
+    log_ok "No duplicate location blocks"
   fi
   
-  # Check if storage snippet is included
-  if grep -q "include.*storage-public.conf" "$NGINX_CONF"; then
-    log_ok "Storage snippet included in nginx config"
-  else
-    log_warn "Storage snippet NOT included - images may not load"
-  fi
-  
-  # Check for buffering settings (critical for realtime)
+  # Check for buffering settings
   if grep -q "proxy_buffering off" "$NGINX_CONF"; then
     log_ok "Proxy buffering disabled for realtime"
   else
     log_warn "Proxy buffering may cause realtime issues"
   fi
-  
-  # Test nginx config
-  if nginx -t 2>&1 | grep -q "successful"; then
-    log_ok "Nginx configuration syntax OK"
-  else
-    log_fail "Nginx configuration has errors"
-    nginx -t
-  fi
+fi
+
+# --- Step 8: Test nginx config ---
+log_info "Testing nginx configuration..."
+if nginx -t 2>&1 | grep -q "successful"; then
+  log_ok "Nginx configuration syntax OK"
 else
-  log_fail "Nginx config not found at $NGINX_CONF"
+  log_fail "Nginx configuration has errors:"
+  nginx -t 2>&1 | head -10
 fi
 
 # =====================================================
