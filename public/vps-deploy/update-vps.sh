@@ -31,6 +31,20 @@ echo ""
 cd "$PROJECT_DIR"
 
 # ============================================
+# STAGE 0: Backup VPS-specific files before git reset
+# ============================================
+log_info "Stage 0: Backing up VPS-protected files..."
+
+BACKUP_DIR="/tmp/vps-env-backup-$$"
+mkdir -p "$BACKUP_DIR"
+
+# Backup .env if it exists and has VPS config
+if [ -f ".env" ]; then
+  cp ".env" "$BACKUP_DIR/.env"
+  log_success "Backed up .env"
+fi
+
+# ============================================
 # STAGE 1: Pull latest from GitHub
 # ============================================
 log_info "Stage 1: Pulling latest changes from GitHub..."
@@ -39,6 +53,22 @@ git fetch origin main
 git reset --hard origin/main
 
 log_success "Git pull complete"
+
+# ============================================
+# STAGE 1b: Restore VPS-specific .env
+# ============================================
+log_info "Stage 1b: Restoring VPS .env configuration..."
+
+# Always write the correct VPS .env (prevents Cloud contamination)
+cat > .env << 'VPSENV'
+VITE_SUPABASE_URL=https://justachat.net
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzA0MDY3MjAwLCJleHAiOjE4NjE5MjAwMDB9.ApWkSEYJ7yzNQ_H7yfVE2zyUp--eWrR-h9pj-rUSQEU
+VPSENV
+
+log_success "VPS .env restored (justachat.net)"
+
+# Cleanup backup
+rm -rf "$BACKUP_DIR"
 
 # ============================================
 # STAGE 2: Run post-pull patcher
