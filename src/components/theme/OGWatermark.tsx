@@ -7,8 +7,8 @@
  import { useTheme } from '@/contexts/ThemeContext';
  
  /**
-  * OG Theme Watermark - Minimalist abstract design
-  * Interconnected circles representing connection/chat in an artistic way
+  * OG Theme Watermark - Minimalist abstract with JAC™ branding
+  * Clean geometric design with prominent trademark
   */
  export const OGWatermark: React.FC = () => {
    const { theme } = useTheme();
@@ -20,10 +20,10 @@
  
    return (
      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
-       {/* Minimalist abstract - interconnected circles */}
+       {/* Minimalist abstract with JAC™ branding */}
        <svg
-         viewBox="0 0 400 200"
-         className="w-[280px] sm:w-[360px] md:w-[440px] h-auto select-none"
+         viewBox="0 0 300 180"
+         className="w-[320px] sm:w-[400px] md:w-[500px] h-auto select-none"
          style={{ opacity: 0.06 }}
        >
          <defs>
@@ -44,71 +44,51 @@
            </filter>
          </defs>
          
-         {/* Abstract interconnected circles - representing connection */}
-         <g filter="url(#ogGlow)" transform="translate(200, 100)">
-           {/* Large outer ring */}
-           <circle 
-             cx="0" 
-             cy="0" 
-             r="70" 
-             fill="none" 
-             stroke="url(#ogGradient)" 
-             strokeWidth="2"
-             opacity="0.8"
-           />
+         <g filter="url(#ogGlow)" transform="translate(150, 90)">
+           {/* Outer decorative ring */}
+           <circle cx="0" cy="0" r="75" fill="none" stroke="url(#ogGradient)" strokeWidth="1.5" opacity="0.4" />
+           <circle cx="0" cy="0" r="85" fill="none" stroke="url(#ogGradient)" strokeWidth="0.5" opacity="0.25" />
            
-           {/* Left conversation bubble - abstract */}
-           <circle 
-             cx="-40" 
-             cy="-15" 
-             r="35" 
-             fill="url(#ogGradient)" 
-             opacity="0.4"
-           />
+           {/* JAC text - bold and centered */}
+           <text
+             x="0"
+             y="8"
+             textAnchor="middle"
+             dominantBaseline="middle"
+             fill="url(#ogGradient)"
+             fontSize="58"
+             fontWeight="900"
+             fontFamily="system-ui, -apple-system, sans-serif"
+             letterSpacing="-2"
+           >
+             JAC
+           </text>
            
-           {/* Right conversation bubble - abstract */}
-           <circle 
-             cx="40" 
-             cy="15" 
-             r="35" 
-             fill="url(#ogGradient)" 
-             opacity="0.4"
-           />
+           {/* Trademark symbol */}
+           <text
+             x="58"
+             y="-18"
+             textAnchor="start"
+             fill="url(#ogGradient)"
+             fontSize="16"
+             fontWeight="700"
+             fontFamily="system-ui, -apple-system, sans-serif"
+           >
+             ™
+           </text>
            
-           {/* Intersection highlight - the "connection" */}
-           <ellipse 
-             cx="0" 
-             cy="0" 
-             rx="18" 
-             ry="25" 
-             fill="url(#ogGradient)" 
-             opacity="0.7"
-           />
+           {/* Subtle underline accent */}
+           <line x1="-45" y1="32" x2="45" y2="32" stroke="url(#ogGradient)" strokeWidth="2" opacity="0.6" />
            
-           {/* Small accent dots - representing messages flowing */}
-           <circle cx="-65" cy="-35" r="6" fill="url(#ogGradient)" opacity="0.5" />
-           <circle cx="-80" cy="-20" r="4" fill="url(#ogGradient)" opacity="0.35" />
-           <circle cx="-88" cy="-5" r="2.5" fill="url(#ogGradient)" opacity="0.25" />
+           {/* Corner accents */}
+           <circle cx="-70" cy="-55" r="4" fill="url(#ogGradient)" opacity="0.5" />
+           <circle cx="70" cy="-55" r="4" fill="url(#ogGradient)" opacity="0.5" />
+           <circle cx="-70" cy="55" r="4" fill="url(#ogGradient)" opacity="0.5" />
+           <circle cx="70" cy="55" r="4" fill="url(#ogGradient)" opacity="0.5" />
            
-           <circle cx="65" cy="35" r="6" fill="url(#ogGradient)" opacity="0.5" />
-           <circle cx="80" cy="20" r="4" fill="url(#ogGradient)" opacity="0.35" />
-           <circle cx="88" cy="5" r="2.5" fill="url(#ogGradient)" opacity="0.25" />
-           
-           {/* Inner connection arcs */}
-           <path 
-             d="M -25 -30 Q 0 -45 25 -30" 
-             fill="none" 
-             stroke="url(#ogGradient)" 
-             strokeWidth="1.5"
-             opacity="0.5"
-           />
-           <path 
-             d="M -25 30 Q 0 45 25 30" 
-             fill="none" 
-             stroke="url(#ogGradient)" 
-             strokeWidth="1.5"
-             opacity="0.5"
-           />
+           {/* Small flowing dots */}
+           <circle cx="-90" cy="0" r="3" fill="url(#ogGradient)" opacity="0.35" />
+           <circle cx="90" cy="0" r="3" fill="url(#ogGradient)" opacity="0.35" />
          </g>
        
        </svg>
