@@ -78,6 +78,22 @@ const Auth = () => {
   const { theme } = useTheme();
   const { setPill } = useSimulationPill();
 
+  // Prevent mobile login from getting stuck forever if backend functions are slow/unreachable.
+  const withTimeout = useCallback(<T,>(promise: Promise<T>, ms: number): Promise<T> => {
+    return new Promise<T>((resolve, reject) => {
+      const t = window.setTimeout(() => reject(new Error("timeout")), ms);
+      promise
+        .then((v) => {
+          window.clearTimeout(t);
+          resolve(v);
+        })
+        .catch((e) => {
+          window.clearTimeout(t);
+          reject(e);
+        });
+    });
+  }, []);
+
   // Theme detection - must be before hook calls
   const isRetro = theme === 'retro80s';
   const isJungle = theme === 'jungle';
@@ -407,9 +423,12 @@ const Auth = () => {
 
   const checkRateLimit = async (identifier: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-rate-limit', {
-        body: { identifier, action: 'check' }
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('check-rate-limit', {
+          body: { identifier, action: 'check' }
+        }),
+        3500
+      );
       
       if (error) {
         console.error('Rate limit check error:', error);
@@ -431,9 +450,12 @@ const Auth = () => {
 
   const recordFailedAttempt = async (identifier: string) => {
     try {
-      const { data } = await supabase.functions.invoke('check-rate-limit', {
-        body: { identifier, action: 'record_failure' }
-      });
+      const { data } = await withTimeout(
+        supabase.functions.invoke('check-rate-limit', {
+          body: { identifier, action: 'record_failure' }
+        }),
+        3500
+      );
       
       if (data?.locked) {
         setRateLimitInfo({ locked: true, message: data.message });
@@ -447,9 +469,12 @@ const Auth = () => {
 
   const resetRateLimit = async (identifier: string) => {
     try {
-      await supabase.functions.invoke('check-rate-limit', {
-        body: { identifier, action: 'reset' }
-      });
+      await withTimeout(
+        supabase.functions.invoke('check-rate-limit', {
+          body: { identifier, action: 'reset' }
+        }),
+        3500
+      );
       setRateLimitInfo(null);
     } catch (err) {
       console.error('Failed to reset rate limit:', err);
@@ -551,7 +576,8 @@ const Auth = () => {
         const { error } = await signIn(email, password);
         if (error) {
           // Record failed attempt
-          await recordFailedAttempt(email.toLowerCase());
+          // Fire-and-forget so the UI never gets stuck waiting on a slow function.
+          void recordFailedAttempt(email.toLowerCase());
           
           const remainingMsg = rateLimitInfo?.remainingAttempts !== undefined 
             ? ` (${rateLimitInfo.remainingAttempts} attempts remaining)`
@@ -566,7 +592,8 @@ const Auth = () => {
           });
         } else {
           // Reset rate limit on successful login
-          await resetRateLimit(email.toLowerCase());
+          // Fire-and-forget so successful logins don't feel "hung" on mobile.
+          void resetRateLimit(email.toLowerCase());
           
           // Show pill transition for Matrix theme ONLY when user clicked a pill half
           // (prevents showing the overlay for Enter-key submits)

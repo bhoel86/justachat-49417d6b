@@ -1291,9 +1291,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden pt-12 lg:pt-0">
         {/* Mobile Header Bar */}
-         <div className="flex items-center gap-2 px-2 py-2 border-b border-border bg-card lg:hidden sticky top-0 z-50 shrink-0 shadow-sm">
+         <div className="flex items-center gap-2 px-2 py-2 border-b border-border bg-card lg:hidden fixed top-0 left-0 right-0 z-50 shrink-0 shadow-sm">
           <Button
             variant="ghost"
             size="icon"
