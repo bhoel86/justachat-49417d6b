@@ -83,6 +83,7 @@ All timestamps in UTC
 [03:13:56] Prophet: I used to own this domain back in the day haha
 [03:14:05] Prophet: I own the .us variation
 [03:14:22] Prophet: And I ran the .com back in 09
+ [03:14:3x] Unix: its only 5k to buy and 500 to rent [NOT PERSISTED - EPHEMERAL]
 [03:14:44] Prophet: 5k? Last I saw it was $50k
 [03:15:50] Prophet: Oh interesting
 
@@ -102,6 +103,8 @@ TIMESTAMP       STATEMENT                                    SIGNIFICANCE
 03:13:56        "I used to own this domain back in the day"  Domain ownership claim
 03:14:05        "I own the .us variation"                    Current justachat.us owner
 03:14:22        "And I ran the .com back in 09"              RAN JUSTACHAT.COM IN 2009
+ ~03:14:3x       Unix stated justachat.com was $5k buy/$500 rent  DOMAIN PRICING (ephemeral)
+ 03:14:44        Prophet's "5k?" confirms Unix's statement   CORROBORATING RESPONSE
 
 ================================================================================
                       CERTIFICATE OF AUTHENTICITY
@@ -124,6 +127,10 @@ This document serves as evidence that user "Prophet" (Maddy) admitted to:
 1. Running justachat.com in 2009
 2. Currently owning the justachat.us domain
 3. Operating a competing chat network
+ 4. Was informed justachat.com was available for $5,000 purchase / $500 rent
+ 
+ Note: Unix's message about pricing was not persisted (ephemeral chat) but is
+ corroborated by Prophet's immediate response "5k? Last I saw it was $50k"
 
 ================================================================================
                            END OF DOCUMENT
