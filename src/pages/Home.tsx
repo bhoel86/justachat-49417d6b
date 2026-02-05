@@ -1111,7 +1111,7 @@ const Home = () => {
       <PayPalDonateModal open={showDonateModal} onOpenChange={setShowDonateModal} />
       
       {/* Friends Tray - floating minimizable friends list */}
-      {user && (
+      {user && !isMobile && (
         <FriendsTray
           currentUserId={user.id}
           onOpenPm={(userId, username) => navigate(`/chat/general?pm=${userId}`)}
