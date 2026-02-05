@@ -645,20 +645,36 @@ const Home = () => {
 
       {/* MOBILE SIMPLIFIED VIEW */}
       {isMobile ? (
-        <main className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
-          {/* Sticky Mobile Sub-Header with Friends */}
-          <div className="sticky top-[56px] z-40 bg-background border-b border-border px-3 py-2 flex items-center justify-between shrink-0">
-            <span className={`text-sm font-semibold ${isRetro ? "font-['VT323'] text-lg" : ''}`}>
-              {isRetro ? '> LOBBY' : '🏠 Lobby'}
-            </span>
-            
-            {/* Friends Dropdown */}
+        <main className="flex flex-col min-h-[calc(100vh-56px)] pb-4">
+          {/* Compact Welcome Banner */}
+          <div 
+            onClick={() => navigate('/chat/general')}
+            className={`relative mx-2 mt-2 rounded-lg overflow-hidden cursor-pointer active:scale-[0.98] transition-transform ${
+              isRetro ? '' : 'border border-border'
+            }`}
+          >
+            {isRetro ? (
+              <RetroWelcomeBanner variant="mobile" />
+            ) : isValentines ? (
+              <ValentinesWelcomeBanner variant="mobile" />
+            ) : isStPatricks ? (
+              <StPatricksWelcomeBanner />
+            ) : isMatrix ? (
+              <MatrixWelcomeBanner variant="mobile" />
+            ) : (
+              <OGWelcomeBanner variant="mobile" onJoinClick={() => navigate('/chat/general')} />
+            )}
+          </div>
+          
+          {/* Quick Actions Row */}
+          <div className="flex gap-2 mx-2 mt-2">
+            {/* Friends Button */}
             {user && (
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 relative">
-                    <Users className="h-4 w-4" />
-                    <span className="text-xs">Friends</span>
+                  <Button variant="outline" size="sm" className="flex-1 gap-2 relative h-10">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-medium">Friends</span>
                     {friendsCounts.pending > 0 && (
                       <span className="absolute -top-1 -right-1 h-4 w-4 text-[10px] flex items-center justify-center font-bold rounded-full bg-destructive text-destructive-foreground animate-pulse">
                         {friendsCounts.pending}
@@ -686,34 +702,102 @@ const Home = () => {
                 </SheetContent>
               </Sheet>
             )}
+            
+            {/* Voice Chat Button */}
+            <Link to="/voice-chat" className="flex-1">
+              <Button variant="outline" size="sm" className="w-full gap-2 h-10 border-violet-500/50 hover:border-violet-500 hover:bg-violet-500/10">
+                <Radio className="h-4 w-4 text-violet-500" />
+                <span className="text-xs font-medium">Voice</span>
+              </Button>
+            </Link>
+            
+            {/* Video Chat Button */}
+            <Link to="/video-chat" className="flex-1">
+              <Button variant="outline" size="sm" className="w-full gap-2 h-10 border-green-500/50 hover:border-green-500 hover:bg-green-500/10">
+                <Camera className="h-4 w-4 text-green-500" />
+                <span className="text-xs font-medium">Cams</span>
+              </Button>
+            </Link>
           </div>
           
-          {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Welcome Banner - Clickable */}
-            <div 
-              onClick={() => navigate('/chat/general')}
-              className={`relative mx-3 mt-3 rounded-xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform z-10 ${
-                isRetro ? '' : 'border border-border'
-              }`}
-            >
-              {isRetro ? (
-                <RetroWelcomeBanner variant="mobile" />
-              ) : isValentines ? (
-                <ValentinesWelcomeBanner variant="mobile" />
-              ) : isStPatricks ? (
-                <StPatricksWelcomeBanner />
-              ) : isMatrix ? (
-                <MatrixWelcomeBanner variant="mobile" />
-              ) : (
-                <OGWelcomeBanner variant="mobile" onJoinClick={() => navigate('/chat/general')} />
-              )}
-            </div>
+          {/* Room Cards Grid */}
+          <div className="mx-2 mt-3">
+            <h2 className={`text-sm font-semibold mb-2 flex items-center gap-1.5 ${
+              isRetro ? "font-['VT323'] text-base" : ''
+            }`}>
+              {isRetro ? '📁 CHAT ROOMS' : isValentines ? '💕 Chat Rooms' : '💬 Chat Rooms'}
+            </h2>
             
-            {/* Full Chat Mirror */}
-            <div className="mx-3 my-3 h-[400px]">
+            {loadingChannels ? (
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-14 bg-card animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {channels.map((channel) => {
+                  const botsEnabledForChannel = botsGloballyEnabled && botsAllowedChannels.includes(channel.name);
+                  const userCount = (roomUserCounts[channel.id] || 0) + (botsEnabledForChannel ? getRoomBotCount(channel.name) : 0);
+                  return (
+                    <button
+                      key={channel.id}
+                      onClick={() => handleJoinRoom(channel)}
+                      className={`group relative h-14 overflow-hidden transition-all duration-200 active:scale-95 ${
+                        isRetro 
+                          ? 'retro-room-card' 
+                          : isValentines
+                            ? 'bg-card rounded-lg border border-pink-400/50 hover:border-pink-400'
+                            : 'bg-card rounded-lg border border-border hover:border-primary/50'
+                      }`}
+                    >
+                      {/* Background gradient */}
+                      {!isRetro && (
+                        <>
+                          <div className={`absolute inset-0 bg-gradient-to-br ${roomColors[channel.name] || 'from-primary to-accent'} opacity-30`} />
+                          <div className="absolute inset-0 bg-black/40" />
+                        </>
+                      )}
+                      
+                      {/* Content */}
+                      <div className="relative h-full flex flex-col items-center justify-center px-1 py-1">
+                        <span className="text-white/80 text-lg mb-0.5">
+                          {roomIcons[channel.name] || <Hash className="w-4 h-4" />}
+                        </span>
+                        <h3 className="text-[10px] font-semibold text-white text-center leading-tight truncate w-full px-0.5">
+                          {formatRoomName(channel.name).replace(' 21+', '').replace('Movies Tv', 'Movies')}
+                        </h3>
+                        <span className="text-[9px] text-white/70 mt-0.5">
+                          {userCount} online
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          
+          {/* Live Chat Preview */}
+          <div className="mx-2 mt-3">
+            <h2 className={`text-sm font-semibold mb-2 flex items-center gap-1.5 ${
+              isRetro ? "font-['VT323'] text-base" : ''
+            }`}>
+              {isRetro ? '📺 LIVE CHAT' : '📺 Live Preview'}
+            </h2>
+            <div className="h-[280px] rounded-lg overflow-hidden border border-border">
               <LobbyMirrorRoom />
             </div>
+          </div>
+          
+          {/* Games Link */}
+          <div className="mx-2 mt-3">
+            <Link to="/games">
+              <Button variant="outline" className="w-full h-11 gap-2 border-orange-500/50 hover:border-orange-500 hover:bg-orange-500/10">
+                <Gamepad2 className="h-5 w-5 text-orange-500" />
+                <span className="font-medium">Games & Dating</span>
+              </Button>
+            </Link>
           </div>
         </main>
       ) : (
