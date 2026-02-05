@@ -26,6 +26,7 @@ import PMTray from "./PMTray";
 import BotTray from "./BotTray";
 import FriendsTray from "@/components/friends/FriendsTray";
 import FriendRequestPopup from "@/components/friends/FriendRequestPopup";
+import FriendsList from "@/components/friends/FriendsList";
 import { usePrivateChats } from "@/hooks/usePrivateChats";
 import { useBotChats } from "@/hooks/useBotChats";
 import { useFriends, FriendRequestCallback } from "@/hooks/useFriends";
@@ -1292,7 +1293,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         {/* Mobile Header Bar */}
-         <div className="flex items-center gap-2 px-2 py-2 border-b border-border bg-card lg:hidden sticky top-0 z-50 shrink-0">
+         <div className="flex items-center gap-2 px-2 py-2 border-b border-border bg-card lg:hidden sticky top-0 z-50 shrink-0 shadow-sm">
           <Button
             variant="ghost"
             size="icon"
@@ -1304,6 +1305,44 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate">#{currentChannel?.name || 'general'}</p>
           </div>
+          {/* Friends Icon for Mobile */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 relative"
+              >
+                <Users className="h-5 w-5 text-primary" />
+                {privateChats.totalUnreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 text-[10px] flex items-center justify-center font-bold rounded-full bg-primary text-primary-foreground animate-bounce">
+                    {privateChats.totalUnreadCount > 9 ? '9+' : privateChats.totalUnreadCount}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] p-0">
+              <SheetHeader className="px-4 py-3 border-b">
+                <SheetTitle className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  Friends
+                </SheetTitle>
+              </SheetHeader>
+              <div className="h-[calc(100vh-80px)] overflow-hidden">
+                {user && (
+                  <FriendsList
+                    currentUserId={user.id}
+                    onOpenPm={handleOpenPm}
+                    getUnreadCount={privateChats.getUnreadCount}
+                    doNotDisturb={privateChats.doNotDisturb}
+                    onToggleDND={privateChats.toggleDoNotDisturb}
+                    awayMode={privateChats.awayMode}
+                    onToggleAway={privateChats.toggleAwayMode}
+                  />
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
           {/* DND Toggle for Mobile */}
           <Button
             variant="ghost"
