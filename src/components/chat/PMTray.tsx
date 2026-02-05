@@ -5,7 +5,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MessageSquare, X, GripHorizontal, GripVertical, BellOff, Bell } from "lucide-react";
+ import { MessageSquare, X, GripHorizontal, GripVertical, BellOff, Bell, Coffee, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -16,6 +16,12 @@ interface MinimizedChat {
   hasUnread: boolean;
 }
 
+ interface InboxMessage {
+   senderId: string;
+   senderUsername: string;
+   count: number;
+ }
+ 
 interface PMTrayProps {
   minimizedChats: MinimizedChat[];
   onRestore: (chatId: string) => void;
@@ -23,9 +29,24 @@ interface PMTrayProps {
   onReorder?: (fromIndex: number, toIndex: number) => void;
   doNotDisturb?: boolean;
   onToggleDND?: () => void;
+   awayMode?: boolean;
+   onToggleAway?: () => void;
+   inbox?: InboxMessage[];
+   onOpenInboxChat?: (userId: string, username: string) => void;
 }
 
-const PMTray = ({ minimizedChats, onRestore, onClose, onReorder, doNotDisturb, onToggleDND }: PMTrayProps) => {
+ const PMTray = ({ 
+   minimizedChats, 
+   onRestore, 
+   onClose, 
+   onReorder, 
+   doNotDisturb, 
+   onToggleDND,
+   awayMode,
+   onToggleAway,
+   inbox = [],
+   onOpenInboxChat,
+ }: PMTrayProps) => {
   const isMobile = useIsMobile();
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -108,7 +129,7 @@ const PMTray = ({ minimizedChats, onRestore, onClose, onReorder, doNotDisturb, o
   };
 
   // Show tray if there are chats OR if DND toggle should be visible
-  const showTray = minimizedChats.length > 0 || onToggleDND;
+   const showTray = minimizedChats.length > 0 || onToggleDND || inbox.length > 0;
   
   if (!showTray) return null;
 
@@ -120,6 +141,26 @@ const PMTray = ({ minimizedChats, onRestore, onClose, onReorder, doNotDisturb, o
         transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
       }}
     >
+       {/* Away Mode Toggle */}
+       {onToggleAway && (
+         <Tooltip>
+           <TooltipTrigger asChild>
+             <button
+               onClick={onToggleAway}
+               className={cn(
+                 "flex items-center justify-center px-2 py-2 rounded-t-lg border border-b-0 border-border bg-muted/80 shadow-lg transition-colors",
+                 awayMode ? "bg-blue-500/20 border-blue-500/50 text-blue-500" : "hover:bg-muted"
+               )}
+             >
+               <Coffee className="h-4 w-4" />
+             </button>
+           </TooltipTrigger>
+           <TooltipContent side="top">
+             {awayMode ? 'Away Mode: ON (messages go to inbox)' : 'Away Mode: OFF'}
+           </TooltipContent>
+         </Tooltip>
+       )}
+ 
       {/* DND Toggle */}
       {onToggleDND && (
         <Tooltip>
@@ -214,6 +255,33 @@ const PMTray = ({ minimizedChats, onRestore, onClose, onReorder, doNotDisturb, o
           </Button>
         </div>
       ))}
+ 
+       {/* Inbox messages (from away mode) */}
+       {inbox.map((msg) => (
+         <div
+           key={msg.senderId}
+           className="group relative flex items-center gap-2 px-3 py-2 rounded-t-lg border border-b-0 border-blue-500/50 bg-blue-500/10 shadow-lg cursor-pointer transition-all hover:bg-blue-500/20"
+           onClick={() => onOpenInboxChat?.(msg.senderId, msg.senderUsername)}
+         >
+           {/* Inbox indicator */}
+           <Inbox className="h-3.5 w-3.5 text-blue-500" />
+           
+           {/* Avatar */}
+           <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+             {msg.senderUsername.charAt(0).toUpperCase()}
+           </div>
+           
+           {/* Username */}
+           <span className="text-sm font-medium text-foreground max-w-[100px] truncate">
+             {msg.senderUsername}
+           </span>
+           
+           {/* Count badge */}
+           <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground">
+             {msg.count > 9 ? '9+' : msg.count}
+           </span>
+         </div>
+       ))}
     </div>
   );
 };

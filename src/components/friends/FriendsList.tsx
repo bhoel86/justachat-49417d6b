@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, UserX, MessageCircle, Ban, Clock, ChevronDown, ChevronRight } from 'lucide-react';
+ import { Users, UserPlus, UserX, MessageCircle, Ban, Clock, ChevronDown, ChevronRight, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,6 +13,7 @@ interface FriendsListProps {
   currentUserId: string;
   onOpenPm: (userId: string, username: string) => void;
   onCountsChange?: (counts: { total: number; online: number; pending: number }) => void;
+   getUnreadCount?: (userId: string) => number;
 }
 
 // Test friends for preview mode
@@ -44,7 +45,7 @@ const isPreviewMode = () => {
   return isPreviewModeHost();
 };
 
-const FriendsList = ({ currentUserId, onOpenPm, onCountsChange }: FriendsListProps) => {
+const FriendsList = ({ currentUserId, onOpenPm, onCountsChange, getUnreadCount }: FriendsListProps) => {
   const {
     friends: realFriends,
     incomingRequests: realIncoming,
@@ -172,6 +173,7 @@ const FriendsList = ({ currentUserId, onOpenPm, onCountsChange }: FriendsListPro
                   isOnline={onlineFriendIds.has(friend.friendId)}
                   onMessage={() => onOpenPm(friend.friendId, friend.username)}
                   onRemove={() => removeFriend(friend.id, friend.friendId)}
+                   unreadCount={getUnreadCount?.(friend.friendId) || 0}
                 />
               ))
             )}
@@ -211,11 +213,13 @@ const FriendItem = ({
   isOnline,
   onMessage,
   onRemove,
+   unreadCount = 0,
 }: {
   friend: Friend;
   isOnline: boolean;
   onMessage: () => void;
   onRemove: () => void;
+   unreadCount?: number;
 }) => {
   const [showActions, setShowActions] = useState(false);
 
@@ -240,17 +244,31 @@ const FriendItem = ({
             isOnline ? "bg-green-500" : "bg-muted"
           )}
         />
+         {/* Unread badge on avatar */}
+         {unreadCount > 0 && (
+           <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary flex items-center justify-center text-[9px] font-bold text-primary-foreground animate-pulse">
+             {unreadCount > 9 ? '9+' : unreadCount}
+           </div>
+         )}
       </div>
 
       {/* Username */}
-      <span className="flex-1 text-xs font-medium truncate">{friend.username}</span>
+       <div className="flex-1 min-w-0 flex items-center gap-1">
+         <span className="text-xs font-medium truncate">{friend.username}</span>
+         {unreadCount > 0 && (
+           <Mail className="h-3 w-3 text-primary shrink-0 animate-bounce" />
+         )}
+       </div>
 
       {/* Actions */}
       <div className={cn("flex items-center gap-0.5 transition-opacity", showActions ? "opacity-100" : "opacity-0")}>
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary"
+           className={cn(
+             "h-6 w-6 rounded hover:bg-primary/20 hover:text-primary",
+             unreadCount > 0 && "bg-primary/20 text-primary"
+           )}
           onClick={onMessage}
           title="Send message"
         >

@@ -10,6 +10,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 interface FriendsTrayProps {
   currentUserId: string;
   onOpenPm: (userId: string, username: string) => void;
+   getUnreadCount?: (userId: string) => number;
+   totalUnreadCount?: number;
 }
 
 type SizeMode = 'normal' | 'mid' | 'full';
@@ -17,6 +19,8 @@ type SizeMode = 'normal' | 'mid' | 'full';
 const FriendsTray = ({ 
   currentUserId, 
   onOpenPm, 
+   getUnreadCount,
+   totalUnreadCount = 0,
 }: FriendsTrayProps) => {
   const isMobile = useIsMobile();
   const { theme } = useTheme();
@@ -190,6 +194,15 @@ const FriendsTray = ({
               {counts.online}/{counts.total}
             </Badge>
           )}
+           {/* Unread messages badge */}
+           {totalUnreadCount > 0 && (
+             <span className={cn(
+               "absolute -top-2 -left-2 h-5 w-5 text-[10px] flex items-center justify-center font-bold animate-bounce",
+               isRetro ? "bg-[hsl(185_90%_55%)] text-black border-2 border-black rounded-none" : "rounded-full bg-primary text-primary-foreground"
+             )}>
+               {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+             </span>
+           )}
           {counts.pending > 0 && (
             <span className={cn(
               "absolute -top-1 -right-1 h-4 w-4 text-[10px] flex items-center justify-center font-bold animate-pulse",
@@ -280,6 +293,7 @@ const FriendsTray = ({
           currentUserId={currentUserId}
           onOpenPm={onOpenPm}
           onCountsChange={handleCountsChange}
+           getUnreadCount={getUnreadCount}
         />
       </div>
     </div>

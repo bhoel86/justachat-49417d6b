@@ -18,17 +18,32 @@ interface PrivateChat {
   hasUnread: boolean;
 }
 
+ // Tracks unread messages from users who don't have an open chat window
+ interface InboxMessage {
+   senderId: string;
+   senderUsername: string;
+   count: number;
+   lastMessageAt: Date;
+ }
+ 
 export const usePrivateChats = (currentUserId: string, currentUsername: string) => {
   const [chats, setChats] = useState<PrivateChat[]>([]);
   const [topZIndex, setTopZIndex] = useState(1000);
   const [doNotDisturb, setDoNotDisturb] = useState(false);
+   const [awayMode, setAwayMode] = useState(false);
+   const [inbox, setInbox] = useState<Map<string, InboxMessage>>(new Map());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const dndRef = useRef(doNotDisturb);
+   const awayRef = useRef(awayMode);
 
   useEffect(() => {
     dndRef.current = doNotDisturb;
   }, [doNotDisturb]);
 
+   useEffect(() => {
+     awayRef.current = awayMode;
+   }, [awayMode]);
+ 
   const toggleDoNotDisturb = useCallback(() => {
     setDoNotDisturb(prev => {
       const newValue = !prev;
@@ -37,6 +52,48 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     });
   }, []);
 
+   const toggleAwayMode = useCallback(() => {
+     setAwayMode(prev => {
+       const newValue = !prev;
+       toast.info(newValue ? 'Away mode enabled - messages will wait in your inbox' : 'Away mode disabled - back online!');
+       return newValue;
+     });
+   }, []);
+ 
+   // Clear inbox for a specific user when opening their chat
+   const clearInboxForUser = useCallback((userId: string) => {
+     setInbox(prev => {
+       const next = new Map(prev);
+       next.delete(userId);
+       return next;
+     });
+   }, []);
+ 
+   // Get unread counts for friends list display
+   const getUnreadCount = useCallback((userId: string): number => {
+     const inboxEntry = inbox.get(userId);
+     if (inboxEntry) return inboxEntry.count;
+     
+     // Also check minimized chats
+     const chat = chats.find(c => c.targetUserId === userId);
+     if (chat?.hasUnread) return 1; // At least 1 unread
+     
+     return 0;
+   }, [inbox, chats]);
+ 
+   // Get all users with unread messages
+   const getUsersWithUnread = useCallback((): string[] => {
+     const users = new Set<string>();
+     
+     // From inbox
+     inbox.forEach((_, key) => users.add(key));
+     
+     // From minimized chats with unread
+     chats.filter(c => c.hasUnread).forEach(c => users.add(c.targetUserId));
+     
+     return Array.from(users);
+   }, [inbox, chats]);
+ 
   // Track which sender IDs already have open chats
   const openChatSendersRef = useRef<Set<string>>(new Set());
 
@@ -69,6 +126,9 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
           const msg = payload.new as { sender_id: string };
           if (msg.sender_id === currentUserId) return;
           
+           const isAway = awayRef.current;
+           const isDND = dndRef.current;
+           
           // Check if we already have a chat open with this sender
           const hasExistingChat = openChatSendersRef.current.has(msg.sender_id);
           
@@ -76,13 +136,13 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
             // Just mark as unread if minimized
             setChats(prev => prev.map(c => {
               if (c.targetUserId === msg.sender_id && c.isMinimized) {
-                playPMNotificationSound();
+                 if (!isDND) playPMNotificationSound();
                 return { ...c, hasUnread: true };
               }
               return c;
             }));
           } else {
-            // New conversation - fetch sender info and open chat
+             // New conversation - fetch sender info
             try {
               const { data: profile } = await supabase
                 .from('profiles_public')
@@ -91,10 +151,38 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
                 .maybeSingle();
               
               const senderUsername = profile?.username || 'Unknown';
-              const isDND = dndRef.current;
               
-              playPMNotificationSound();
+               // Play sound unless DND
+               if (!isDND) playPMNotificationSound();
+               
+               // If away mode, add to inbox instead of opening chat
+               if (isAway) {
+                 setInbox(prev => {
+                   const next = new Map(prev);
+                   const existing = next.get(msg.sender_id);
+                   next.set(msg.sender_id, {
+                     senderId: msg.sender_id,
+                     senderUsername,
+                     count: (existing?.count || 0) + 1,
+                     lastMessageAt: new Date(),
+                   });
+                   return next;
+                 });
+                 
+                 // Show toast notification
+                 toast.info(`New message from ${senderUsername}`, {
+                   description: 'Message saved to inbox',
+                   action: {
+                     label: 'Open',
+                     onClick: () => {
+                       // This will be handled by opening the chat
+                     },
+                   },
+                 });
+                 return;
+               }
               
+               // Not away - open the chat window
               const offset = (openChatSendersRef.current.size % 5) * 30;
               
               const newChat: PrivateChat = {
@@ -134,6 +222,9 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
   }, [currentUserId]);
 
   const openChat = useCallback((targetUserId: string, targetUsername: string) => {
+     // Clear inbox for this user when opening chat
+     clearInboxForUser(targetUserId);
+     
     setChats(prev => {
       const existing = prev.find(c => c.targetUserId === targetUserId);
       if (existing) {
@@ -159,7 +250,7 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
       }];
     });
     setTopZIndex(prev => prev + 1);
-  }, [topZIndex]);
+   }, [topZIndex, clearInboxForUser]);
 
   const closeChat = useCallback((chatId: string) => {
     setChats(prev => prev.filter(c => c.id !== chatId));
@@ -204,6 +295,11 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
 
   const minimizedChats = chats.filter(c => c.isMinimized);
   const activeChats = chats.filter(c => !c.isMinimized);
+   const inboxMessages = Array.from(inbox.values()).sort(
+     (a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime()
+   );
+   const totalUnreadCount = inboxMessages.reduce((acc, m) => acc + m.count, 0) + 
+     minimizedChats.filter(c => c.hasUnread).length;
 
   return {
     chats,
@@ -218,6 +314,13 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     reorderChats,
     doNotDisturb,
     toggleDoNotDisturb,
+     awayMode,
+     toggleAwayMode,
+     inbox: inboxMessages,
+     totalUnreadCount,
+     getUnreadCount,
+     getUsersWithUnread,
+     clearInboxForUser,
     currentUserId,
     currentUsername
   };
