@@ -127,9 +127,16 @@ const formatRoomName = (name: string) => {
 };
 
 const Home = () => {
-  const { user, loading, signOut, isOwner, isAdmin } = useAuth();
+  const { user, loading: authLoading, signOut, isOwner, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
+  const isMobileRaw = useIsMobile();
+  // useIsMobile returns undefined initially - treat as loading
+  const isMobileLoading = isMobileRaw === undefined;
+  const isMobile = isMobileRaw ?? false;
+  
+  // Combine auth loading with mobile detection loading to prevent layout flash
+  const isPageLoading = authLoading || isMobileLoading;
+  
   const { theme } = useTheme();
   const isRetro = theme === 'retro80s';
   const isValentines = theme === 'valentines';
@@ -169,10 +176,10 @@ const Home = () => {
   useEffect(() => {
     if (oauthProcessing) return;
     
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       navigate("/home", { replace: true });
     }
-  }, [user, loading, navigate, oauthProcessing]);
+  }, [user, authLoading, navigate, oauthProcessing]);
 
   // Fetch bot settings for room counts
   useEffect(() => {
@@ -260,7 +267,7 @@ const Home = () => {
   };
 
 
-  if (loading) {
+  if (isPageLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="h-12 w-12 rounded-xl jac-gradient-bg animate-pulse" />
