@@ -177,20 +177,36 @@ const FriendsTray = ({
   // Minimized state - just the icon tab at the bottom
   if (isMinimized && !isOpen) {
     return (
-      <div className="fixed bottom-0 right-4 z-[998]">
+       <div className={cn(
+         "fixed z-[998]",
+         isMobile 
+           ? "top-2 left-2" // Mobile: top-left corner, out of the way
+           : "bottom-0 right-4" // Desktop: bottom-right tab
+       )}>
         <button
           onClick={handleToggle}
           className={cn(
-            "relative flex items-center gap-2 px-4 py-2 border border-b-0 transition-all",
+             "relative flex items-center gap-2 transition-all",
+             isMobile 
+               ? "px-2 py-1.5 border rounded-lg shadow-lg" // Mobile: compact rounded button
+               : "px-4 py-2 border border-b-0", // Desktop: tab style
             isRetro 
-              ? "retro-friends-tray bg-[hsl(50_100%_70%)] border-[3px] border-black border-b-0 rounded-none shadow-[3px_0_0_black,-3px_0_0_black]"
-              : "bg-card/95 backdrop-blur-sm shadow-lg rounded-t-lg border-border hover:bg-muted hover:border-primary/50"
+               ? "retro-friends-tray bg-[hsl(50_100%_70%)] border-[3px] border-black rounded-none shadow-[3px_0_0_black,-3px_0_0_black]"
+               : "bg-card/95 backdrop-blur-sm shadow-lg border-border hover:bg-muted hover:border-primary/50",
+             !isMobile && !isRetro && "rounded-t-lg border-b-0"
           )}
         >
           <Users className={cn("h-4 w-4", isRetro ? "text-[hsl(330_90%_45%)]" : "text-primary")} />
-          <span className={cn("text-sm font-medium", isRetro ? "font-['VT323'] text-base text-black" : "")}>Friends</span>
+           {/* Hide label on mobile for compactness */}
+           {!isMobile && (
+             <span className={cn("text-sm font-medium", isRetro ? "font-['VT323'] text-base text-black" : "")}>Friends</span>
+           )}
           {counts.total > 0 && (
-            <Badge variant="secondary" className={cn("text-xs px-1.5 py-0", isRetro ? "border-2 border-black rounded-none bg-[hsl(185_90%_55%)] text-black" : "")}>
+             <Badge variant="secondary" className={cn(
+               "text-xs px-1.5 py-0", 
+               isRetro ? "border-2 border-black rounded-none bg-[hsl(185_90%_55%)] text-black" : "",
+               isMobile && "text-[10px] px-1"
+             )}>
               {counts.online}/{counts.total}
             </Badge>
           )}
@@ -211,7 +227,9 @@ const FriendsTray = ({
               {counts.pending}
             </span>
           )}
-          <ChevronUp className={cn("h-3 w-3 ml-1", isRetro ? "text-black" : "text-muted-foreground")} />
+           {!isMobile && (
+             <ChevronUp className={cn("h-3 w-3 ml-1", isRetro ? "text-black" : "text-muted-foreground")} />
+           )}
         </button>
       </div>
     );
