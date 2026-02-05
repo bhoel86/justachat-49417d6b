@@ -1425,36 +1425,6 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           <div ref={messagesEndRef} />
         </div>
         
-        {/* Floating Room Switcher Button for Mobile */}
-        {isMobile && (
-          <Sheet open={showRoomSheet} onOpenChange={setShowRoomSheet}>
-            <SheetTrigger asChild>
-              <Button
-                variant="jac"
-                size="icon"
-                className="fixed bottom-24 right-4 h-12 w-12 rounded-full shadow-lg z-30"
-              >
-                <Hash className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <SheetHeader className="p-4 border-b border-border">
-                <SheetTitle className="text-left">Switch Room</SheetTitle>
-              </SheetHeader>
-              <div className="h-[calc(100vh-60px)] overflow-hidden">
-                <ChannelList 
-                  currentChannelId={currentChannel?.id} 
-                  onChannelSelect={(channel) => {
-                    handleChannelSelect(channel);
-                    setShowRoomSheet(false);
-                  }}
-                  autoSelectFirst={false}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
-        )}
-        
         <ChatInput 
           onSend={handleSend} 
           isMuted={isMuted || isRoomMuted} 
