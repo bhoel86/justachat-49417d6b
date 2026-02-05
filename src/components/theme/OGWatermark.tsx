@@ -1,15 +1,14 @@
- /**
+/**
   * ╔═ JustAChat™ ════════ Est. Jan 22, 2026 · 1:03 PM ═ © Unix ═╗
   * ╚═ Proprietary software. All rights reserved. ══════════════╝
   */
  
  import React from 'react';
  import { useTheme } from '@/contexts/ThemeContext';
- import { MessageSquare, Sparkles } from 'lucide-react';
  
  /**
-  * OG Theme Watermark - Modern, clean aesthetic with gradient text and subtle glow
-  * Matches the sophisticated OG theme palette
+  * OG Theme Watermark - Minimalist abstract design
+  * Interconnected circles representing connection/chat in an artistic way
   */
  export const OGWatermark: React.FC = () => {
    const { theme } = useTheme();
@@ -21,96 +20,98 @@
  
    return (
      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
-       {/* Main watermark container */}
-       <div 
-         className="text-center select-none"
-         style={{ 
-           opacity: 0.08,
-           transform: 'rotate(-8deg)',
-         }}
+       {/* Minimalist abstract - interconnected circles */}
+       <svg
+         viewBox="0 0 400 200"
+         className="w-[280px] sm:w-[360px] md:w-[440px] h-auto select-none"
+         style={{ opacity: 0.06 }}
        >
-         {/* Decorative icon cluster */}
-         <div className="flex justify-center items-center gap-3 mb-2">
-           <Sparkles 
-             className="w-8 h-8 sm:w-10 sm:h-10"
-             style={{ 
-               color: 'hsl(var(--primary))',
-               filter: 'drop-shadow(0 0 20px hsl(var(--primary) / 0.5))',
-               transform: 'rotate(-15deg)',
-             }}
+         <defs>
+           {/* Gradient for the main shapes */}
+           <linearGradient id="ogGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+             <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+             <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity="0.6" />
+             <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.9" />
+           </linearGradient>
+           
+           {/* Soft glow filter */}
+           <filter id="ogGlow" x="-50%" y="-50%" width="200%" height="200%">
+             <feGaussianBlur stdDeviation="4" result="blur" />
+             <feMerge>
+               <feMergeNode in="blur" />
+               <feMergeNode in="SourceGraphic" />
+             </feMerge>
+           </filter>
+         </defs>
+         
+         {/* Abstract interconnected circles - representing connection */}
+         <g filter="url(#ogGlow)" transform="translate(200, 100)">
+           {/* Large outer ring */}
+           <circle 
+             cx="0" 
+             cy="0" 
+             r="70" 
+             fill="none" 
+             stroke="url(#ogGradient)" 
+             strokeWidth="2"
+             opacity="0.8"
            />
-           <div 
-             className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center"
-             style={{
-               background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.7))',
-               boxShadow: '0 0 40px hsl(var(--primary) / 0.3)',
-             }}
-           >
-             <MessageSquare 
-               className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white"
-               strokeWidth={2.5}
-             />
-           </div>
-           <Sparkles 
-             className="w-8 h-8 sm:w-10 sm:h-10"
-             style={{ 
-               color: 'hsl(var(--primary))',
-               filter: 'drop-shadow(0 0 20px hsl(var(--primary) / 0.5))',
-               transform: 'rotate(15deg)',
-             }}
+           
+           {/* Left conversation bubble - abstract */}
+           <circle 
+             cx="-40" 
+             cy="-15" 
+             r="35" 
+             fill="url(#ogGradient)" 
+             opacity="0.4"
            />
-         </div>
-         
-         {/* Brand name with gradient */}
-         <div 
-           className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight"
-           style={{
-             background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.6), hsl(var(--primary)))',
-             WebkitBackgroundClip: 'text',
-             WebkitTextFillColor: 'transparent',
-             backgroundClip: 'text',
-             textShadow: '0 0 60px hsl(var(--primary) / 0.3)',
-           }}
-         >
-           JUSTACHAT
-         </div>
-         
-         {/* Trademark */}
-         <div 
-           className="font-display text-lg sm:text-xl font-semibold mt-1 tracking-[0.3em]"
-           style={{
-             color: 'hsl(var(--muted-foreground))',
-           }}
-         >
-           ™
-         </div>
-         
-         {/* Tagline */}
-         <div 
-           className="font-display text-sm sm:text-base md:text-lg font-medium mt-2 tracking-widest"
-           style={{
-             color: 'hsl(var(--primary) / 0.8)',
-           }}
-         >
-           CONNECT · CHAT · CREATE
-         </div>
-       </div>
+           
+           {/* Right conversation bubble - abstract */}
+           <circle 
+             cx="40" 
+             cy="15" 
+             r="35" 
+             fill="url(#ogGradient)" 
+             opacity="0.4"
+           />
+           
+           {/* Intersection highlight - the "connection" */}
+           <ellipse 
+             cx="0" 
+             cy="0" 
+             rx="18" 
+             ry="25" 
+             fill="url(#ogGradient)" 
+             opacity="0.7"
+           />
+           
+           {/* Small accent dots - representing messages flowing */}
+           <circle cx="-65" cy="-35" r="6" fill="url(#ogGradient)" opacity="0.5" />
+           <circle cx="-80" cy="-20" r="4" fill="url(#ogGradient)" opacity="0.35" />
+           <circle cx="-88" cy="-5" r="2.5" fill="url(#ogGradient)" opacity="0.25" />
+           
+           <circle cx="65" cy="35" r="6" fill="url(#ogGradient)" opacity="0.5" />
+           <circle cx="80" cy="20" r="4" fill="url(#ogGradient)" opacity="0.35" />
+           <circle cx="88" cy="5" r="2.5" fill="url(#ogGradient)" opacity="0.25" />
+           
+           {/* Inner connection arcs */}
+           <path 
+             d="M -25 -30 Q 0 -45 25 -30" 
+             fill="none" 
+             stroke="url(#ogGradient)" 
+             strokeWidth="1.5"
+             opacity="0.5"
+           />
+           <path 
+             d="M -25 30 Q 0 45 25 30" 
+             fill="none" 
+             stroke="url(#ogGradient)" 
+             strokeWidth="1.5"
+             opacity="0.5"
+           />
+         </g>
        
-       {/* Subtle decorative orbs */}
-       <div 
-         className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full"
-         style={{
-           background: 'radial-gradient(circle, hsl(var(--primary) / 0.1), transparent)',
-           filter: 'blur(40px)',
-         }}
-       />
-       <div 
-         className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full"
-         style={{
-           background: 'radial-gradient(circle, hsl(var(--primary) / 0.08), transparent)',
-           filter: 'blur(60px)',
-         }}
-       />
+       </svg>
      </div>
    );
  };
