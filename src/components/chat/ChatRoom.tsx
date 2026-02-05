@@ -1527,10 +1527,6 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         onRestore={(chatId) => privateChats.restoreChat(chatId)}
         onClose={(chatId) => privateChats.closeChat(chatId)}
         onReorder={(fromIndex, toIndex) => privateChats.reorderChats(fromIndex, toIndex)}
-         doNotDisturb={privateChats.doNotDisturb}
-         onToggleDND={privateChats.toggleDoNotDisturb}
-         awayMode={privateChats.awayMode}
-         onToggleAway={privateChats.toggleAwayMode}
          inbox={privateChats.inbox}
          onOpenInboxChat={privateChats.openChat}
       />
@@ -1549,6 +1545,10 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           onOpenPm={handleOpenPm}
            getUnreadCount={privateChats.getUnreadCount}
            totalUnreadCount={privateChats.totalUnreadCount}
+           doNotDisturb={privateChats.doNotDisturb}
+           onToggleDND={privateChats.toggleDoNotDisturb}
+           awayMode={privateChats.awayMode}
+           onToggleAway={privateChats.toggleAwayMode}
         />
       )}
       

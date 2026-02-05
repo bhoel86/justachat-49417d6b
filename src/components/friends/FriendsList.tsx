@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
- import { Users, UserPlus, UserX, MessageCircle, Ban, Clock, ChevronDown, ChevronRight, Mail } from 'lucide-react';
+ import { Users, UserPlus, UserX, MessageCircle, Ban, Clock, ChevronDown, ChevronRight, Mail, MoreVertical, BellOff, Bell, Coffee, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useFriends, Friend, FriendRequest, BlockedUser } from '@/hooks/useFriends';
 import { cn } from '@/lib/utils';
 import { defaultAvatars } from '@/lib/defaultAvatars';
@@ -14,6 +15,10 @@ interface FriendsListProps {
   onOpenPm: (userId: string, username: string) => void;
   onCountsChange?: (counts: { total: number; online: number; pending: number }) => void;
    getUnreadCount?: (userId: string) => number;
+   doNotDisturb?: boolean;
+   onToggleDND?: () => void;
+   awayMode?: boolean;
+   onToggleAway?: () => void;
 }
 
 // Test friends for preview mode
@@ -45,7 +50,7 @@ const isPreviewMode = () => {
   return isPreviewModeHost();
 };
 
-const FriendsList = ({ currentUserId, onOpenPm, onCountsChange, getUnreadCount }: FriendsListProps) => {
+const FriendsList = ({ currentUserId, onOpenPm, onCountsChange, getUnreadCount, doNotDisturb, onToggleDND, awayMode, onToggleAway }: FriendsListProps) => {
   const {
     friends: realFriends,
     incomingRequests: realIncoming,
@@ -111,8 +116,60 @@ const FriendsList = ({ currentUserId, onOpenPm, onCountsChange, getUnreadCount }
           <Badge variant="secondary" className="text-xs px-1.5 py-0">
             {friends.length}
           </Badge>
+          
+          {/* Status indicators */}
+          <div className="flex items-center gap-1 ml-auto">
+            {awayMode && (
+               <span title="Away Mode"><Coffee className="h-3.5 w-3.5 text-blue-500" /></span>
+            )}
+            {doNotDisturb && (
+               <span title="Do Not Disturb"><BellOff className="h-3.5 w-3.5 text-amber-500" /></span>
+            )}
+          </div>
+          
+          {/* Menu dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded hover:bg-muted">
+                <MoreVertical className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {onToggleAway && (
+                <DropdownMenuItem onClick={onToggleAway} className="gap-2">
+                  {awayMode ? (
+                    <>
+                      <Inbox className="h-4 w-4 text-blue-500" />
+                      <span>Away Mode: ON</span>
+                    </>
+                  ) : (
+                    <>
+                      <Coffee className="h-4 w-4 text-muted-foreground" />
+                      <span>Away Mode: OFF</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+              )}
+              {onToggleDND && (
+                <DropdownMenuItem onClick={onToggleDND} className="gap-2">
+                  {doNotDisturb ? (
+                    <>
+                      <BellOff className="h-4 w-4 text-amber-500" />
+                      <span>Do Not Disturb: ON</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="h-4 w-4 text-muted-foreground" />
+                      <span>Do Not Disturb: OFF</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           {pendingCount > 0 && (
-            <Badge variant="destructive" className="text-xs px-1.5 py-0 ml-auto">
+            <Badge variant="destructive" className="text-xs px-1.5 py-0">
               {pendingCount} new
             </Badge>
           )}

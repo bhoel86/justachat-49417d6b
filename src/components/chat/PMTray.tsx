@@ -5,10 +5,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
- import { MessageSquare, X, GripHorizontal, GripVertical, BellOff, Bell, Coffee, Inbox } from "lucide-react";
+ import { MessageSquare, X, GripHorizontal, GripVertical, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MinimizedChat {
   id: string;
@@ -27,10 +26,6 @@ interface PMTrayProps {
   onRestore: (chatId: string) => void;
   onClose: (chatId: string) => void;
   onReorder?: (fromIndex: number, toIndex: number) => void;
-  doNotDisturb?: boolean;
-  onToggleDND?: () => void;
-   awayMode?: boolean;
-   onToggleAway?: () => void;
    inbox?: InboxMessage[];
    onOpenInboxChat?: (userId: string, username: string) => void;
 }
@@ -40,10 +35,6 @@ interface PMTrayProps {
    onRestore, 
    onClose, 
    onReorder, 
-   doNotDisturb, 
-   onToggleDND,
-   awayMode,
-   onToggleAway,
    inbox = [],
    onOpenInboxChat,
  }: PMTrayProps) => {
@@ -129,7 +120,7 @@ interface PMTrayProps {
   };
 
   // Show tray if there are chats OR if DND toggle should be visible
-   const showTray = minimizedChats.length > 0 || onToggleDND || inbox.length > 0;
+   const showTray = minimizedChats.length > 0 || inbox.length > 0;
   
   if (!showTray) return null;
 
@@ -141,50 +132,6 @@ interface PMTrayProps {
         transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
       }}
     >
-       {/* Away Mode Toggle */}
-       {onToggleAway && (
-         <Tooltip>
-           <TooltipTrigger asChild>
-             <button
-               onClick={onToggleAway}
-               className={cn(
-                 "flex items-center justify-center px-2 py-2 rounded-t-lg border border-b-0 border-border bg-muted/80 shadow-lg transition-colors",
-                 awayMode ? "bg-blue-500/20 border-blue-500/50 text-blue-500" : "hover:bg-muted"
-               )}
-             >
-               <Coffee className="h-4 w-4" />
-             </button>
-           </TooltipTrigger>
-           <TooltipContent side="top">
-             {awayMode ? 'Away Mode: ON (messages go to inbox)' : 'Away Mode: OFF'}
-           </TooltipContent>
-         </Tooltip>
-       )}
- 
-      {/* DND Toggle */}
-      {onToggleDND && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={onToggleDND}
-              className={cn(
-                "flex items-center justify-center px-2 py-2 rounded-t-lg border border-b-0 border-border bg-muted/80 shadow-lg transition-colors",
-                doNotDisturb ? "bg-amber-500/20 border-amber-500/50 text-amber-500" : "hover:bg-muted"
-              )}
-            >
-              {doNotDisturb ? (
-                <BellOff className="h-4 w-4" />
-              ) : (
-                <Bell className="h-4 w-4 text-muted-foreground" />
-              )}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            {doNotDisturb ? 'Do Not Disturb: ON' : 'Do Not Disturb: OFF'}
-          </TooltipContent>
-        </Tooltip>
-      )}
-
       {/* Drag handle for whole tray */}
       {!isMobile && (
         <div

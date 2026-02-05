@@ -12,6 +12,10 @@ interface FriendsTrayProps {
   onOpenPm: (userId: string, username: string) => void;
    getUnreadCount?: (userId: string) => number;
    totalUnreadCount?: number;
+   doNotDisturb?: boolean;
+   onToggleDND?: () => void;
+   awayMode?: boolean;
+   onToggleAway?: () => void;
 }
 
 type SizeMode = 'normal' | 'mid' | 'full';
@@ -21,6 +25,10 @@ const FriendsTray = ({
   onOpenPm, 
    getUnreadCount,
    totalUnreadCount = 0,
+   doNotDisturb,
+   onToggleDND,
+   awayMode,
+   onToggleAway,
 }: FriendsTrayProps) => {
   const isMobile = useIsMobile();
   const { theme } = useTheme();
@@ -312,6 +320,10 @@ const FriendsTray = ({
           onOpenPm={onOpenPm}
           onCountsChange={handleCountsChange}
            getUnreadCount={getUnreadCount}
+           doNotDisturb={doNotDisturb}
+           onToggleDND={onToggleDND}
+           awayMode={awayMode}
+           onToggleAway={onToggleAway}
         />
       </div>
     </div>
