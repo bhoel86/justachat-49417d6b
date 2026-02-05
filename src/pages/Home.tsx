@@ -62,6 +62,8 @@ import { ThemedMascot } from "@/components/theme/ThemedMascot";
 import { useTheme } from "@/contexts/ThemeContext";
 import FriendsTray from "@/components/friends/FriendsTray";
 import { usePngCutout } from "@/hooks/usePngCutout";
+import FriendsList from "@/components/friends/FriendsList";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface Channel {
   id: string;
@@ -149,6 +151,7 @@ const Home = () => {
   const [showDonateModal, setShowDonateModal] = useState(false);
   const [botsGloballyEnabled, setBotsGloballyEnabled] = useState(false);
   const [botsAllowedChannels, setBotsAllowedChannels] = useState<string[]>([]);
+  const [friendsCounts, setFriendsCounts] = useState({ total: 0, online: 0, pending: 0 });
 
   // OAuth callback processing guard (VPS):
   // IMPORTANT: must be reactive (not module-level), otherwise it can get stuck "true"
@@ -642,30 +645,75 @@ const Home = () => {
 
       {/* MOBILE SIMPLIFIED VIEW */}
       {isMobile ? (
-        <main className="flex flex-col h-[calc(100vh-56px)]">
-          {/* Welcome Banner - Clickable */}
-          <div 
-            onClick={() => navigate('/chat/general')}
-            className={`relative mx-3 mt-3 rounded-xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform z-10 ${
-              isRetro ? '' : 'border border-border'
-            }`}
-          >
-            {isRetro ? (
-              <RetroWelcomeBanner variant="mobile" />
-            ) : isValentines ? (
-              <ValentinesWelcomeBanner variant="mobile" />
-            ) : isStPatricks ? (
-              <StPatricksWelcomeBanner />
-            ) : isMatrix ? (
-              <MatrixWelcomeBanner variant="mobile" />
-            ) : (
-              <OGWelcomeBanner variant="mobile" onJoinClick={() => navigate('/chat/general')} />
+        <main className="flex flex-col h-[calc(100vh-56px)] overflow-hidden">
+          {/* Sticky Mobile Sub-Header with Friends */}
+          <div className="sticky top-[56px] z-40 bg-background border-b border-border px-3 py-2 flex items-center justify-between shrink-0">
+            <span className={`text-sm font-semibold ${isRetro ? "font-['VT323'] text-lg" : ''}`}>
+              {isRetro ? '> LOBBY' : '🏠 Lobby'}
+            </span>
+            
+            {/* Friends Dropdown */}
+            {user && (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 relative">
+                    <Users className="h-4 w-4" />
+                    <span className="text-xs">Friends</span>
+                    {friendsCounts.pending > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 text-[10px] flex items-center justify-center font-bold rounded-full bg-destructive text-destructive-foreground animate-pulse">
+                        {friendsCounts.pending}
+                      </span>
+                    )}
+                    {friendsCounts.online > 0 && friendsCounts.pending === 0 && (
+                      <span className="text-[10px] text-muted-foreground">({friendsCounts.online})</span>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px] p-0">
+                  <SheetHeader className="px-4 py-3 border-b">
+                    <SheetTitle className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      Friends
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="h-[calc(100vh-80px)] overflow-hidden">
+                    <FriendsList
+                      currentUserId={user.id}
+                      onOpenPm={(userId, username) => navigate(`/chat/general`)}
+                      onCountsChange={setFriendsCounts}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
             )}
           </div>
           
-          {/* Full Chat Mirror - Takes up remaining space */}
-          <div className="flex-1 mx-3 my-3 overflow-hidden">
-            <LobbyMirrorRoom />
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Welcome Banner - Clickable */}
+            <div 
+              onClick={() => navigate('/chat/general')}
+              className={`relative mx-3 mt-3 rounded-xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform z-10 ${
+                isRetro ? '' : 'border border-border'
+              }`}
+            >
+              {isRetro ? (
+                <RetroWelcomeBanner variant="mobile" />
+              ) : isValentines ? (
+                <ValentinesWelcomeBanner variant="mobile" />
+              ) : isStPatricks ? (
+                <StPatricksWelcomeBanner />
+              ) : isMatrix ? (
+                <MatrixWelcomeBanner variant="mobile" />
+              ) : (
+                <OGWelcomeBanner variant="mobile" onJoinClick={() => navigate('/chat/general')} />
+              )}
+            </div>
+            
+            {/* Full Chat Mirror */}
+            <div className="mx-3 my-3 h-[400px]">
+              <LobbyMirrorRoom />
+            </div>
           </div>
         </main>
       ) : (
