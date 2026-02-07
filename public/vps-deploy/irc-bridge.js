@@ -139,6 +139,7 @@ function handleConnection(socket) {
   const clientAddr = `${socket.remoteAddress}:${socket.remotePort}`;
   
   console.log(`[${connId}] New IRC connection from ${clientAddr}`);
+  console.log(`[${connId}] Socket state: writable=${socket.writable} readable=${socket.readable}`);
   
   const state = {
     id: connId,
@@ -158,8 +159,14 @@ function handleConnection(socket) {
   
   // Send initial greeting so mIRC knows the server is ready
   // Many IRC clients wait for the server to speak first
+  console.log(`[${connId}] Sending NOTICE greetings...`);
   sendToClient(socket, `:jac.chat NOTICE * :*** Looking up your hostname...`);
   sendToClient(socket, `:jac.chat NOTICE * :*** Found your hostname`);
+  console.log(`[${connId}] Greetings sent. Waiting for client data...`);
+  
+  socket.on('end', () => {
+    console.log(`[${connId}] Socket END received (client disconnected gracefully)`);
+  });
   
   socket.on('data', (data) => {
     // Detect TLS/SSL handshake (first byte 0x16 = TLS ClientHello)
