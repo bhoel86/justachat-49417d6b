@@ -162,6 +162,21 @@ function handleConnection(socket) {
   sendToClient(socket, `:jac.chat NOTICE * :*** Found your hostname`);
   
   socket.on('data', (data) => {
+    // Detect TLS/SSL handshake (first byte 0x16 = TLS ClientHello)
+    if (!state.gotData) {
+      state.gotData = true;
+      const firstByte = typeof data === 'string' ? data.charCodeAt(0) : data[0];
+      console.log(`[${state.id}] First data byte: 0x${firstByte.toString(16)} (${firstByte})`);
+      if (firstByte === 0x16 || firstByte === 22) {
+        console.log(`[${state.id}] ⚠️  TLS/SSL HANDSHAKE DETECTED! Client has SSL enabled.`);
+        console.log(`[${state.id}]    mIRC must connect WITHOUT SSL to port 6667.`);
+        sendToClient(socket, `ERROR :This server does not support SSL on port 6667. Disable SSL in your IRC client.`);
+        socket.end();
+        return;
+      }
+      console.log(`[${state.id}] Raw data received: ${JSON.stringify(data.substring(0, 100))}`);
+    }
+    
     state.buffer += data;
     
     // Process complete lines
