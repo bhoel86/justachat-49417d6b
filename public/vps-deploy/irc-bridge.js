@@ -258,13 +258,14 @@ async function processIRCLine(socket, state, line) {
           // Reply with empty capability list - proper IRC format with server prefix
           sendToClient(socket, `:jac.chat CAP * LS :`);
           console.log(`[${state.id}] Sent CAP LS reply (no capabilities)`);
+        } else if (args.includes('LIST')) {
+          // Reply to CAP LIST with empty list
+          sendToClient(socket, `:jac.chat CAP * LIST :`);
         } else if (args.includes('REQ')) {
           // Deny any capability requests
           sendToClient(socket, `:jac.chat CAP * NAK :${trailing || args.replace('REQ', '').trim()}`);
         } else if (args.includes('END')) {
           console.log(`[${state.id}] CAP END received - proceeding with registration`);
-          // Client done with CAP negotiation, try to register
-          await tryRegister(socket, state);
         }
         break;
         
@@ -355,61 +356,52 @@ async function tryRegister(socket, state) {
   console.log(`[${state.id}] Attempting registration for ${state.nick}...`);
   
   try {
-    // Call edge function with registration data
-    const response = await callEdgeFunction('REGISTER', '', FINAL_ANON_KEY, state.sessionId);
-    
-    // If PASS was provided, authenticate
+    // If PASS was provided, authenticate via edge function
     if (state.pass) {
-      const authResponse = await callEdgeFunction('PASS', state.pass, FINAL_ANON_KEY, state.sessionId);
-      
-      if (authResponse.token) {
-        state.authToken = authResponse.token;
-        console.log(`[${state.id}] Auth successful for ${state.nick}`);
-      } else if (authResponse.error) {
-        console.log(`[${state.id}] Auth failed: ${authResponse.error}`);
-        sendToClient(socket, `:jac.chat 464 ${state.nick} :Password incorrect - use email;password format`);
-        return;
+      try {
+        const authResponse = await callEdgeFunction('PASS', state.pass, FINAL_ANON_KEY, state.sessionId);
+        
+        if (authResponse.token) {
+          state.authToken = authResponse.token;
+          console.log(`[${state.id}] Auth successful for ${state.nick}`);
+        } else if (authResponse.error) {
+          console.log(`[${state.id}] Auth failed: ${authResponse.error}`);
+          sendToClient(socket, `:jac.chat 464 ${state.nick} :Password incorrect - use email;password format`);
+          return;
+        }
+      } catch (authErr) {
+        console.error(`[${state.id}] Auth edge function failed: ${authErr.message}`);
+        // Continue anyway - send welcome without auth token
       }
     }
     
-    // Send the edge function response (welcome messages, MOTD, etc.)
-    if (state.pass) {
-      // Send NICK command to set the nickname
-      const nickResponse = await callEdgeFunction('NICK', state.nick, state.authToken || FINAL_ANON_KEY, state.sessionId);
-      
-      // Send USER command 
-      const userResponse = await callEdgeFunction('USER', `${state.user} 0 * :${state.nick}`, state.authToken || FINAL_ANON_KEY, state.sessionId);
-      
-      // Send all response lines
-      const allResponses = [nickResponse, userResponse].filter(Boolean);
-      for (const resp of allResponses) {
-        if (resp.response) {
-          const lines = resp.response.split('\r\n').filter(l => l.trim());
-          for (const line of lines) {
-            sendToClient(socket, line);
-          }
-        }
-        if (resp.lines) {
-          for (const line of resp.lines) {
-            if (line.trim()) sendToClient(socket, line);
-          }
-        }
-      }
+    // ALWAYS send IRC welcome numerics - mIRC requires these to complete registration
+    sendToClient(socket, `:jac.chat 001 ${state.nick} :Welcome to JustAChat IRC Network ${state.nick}`);
+    sendToClient(socket, `:jac.chat 002 ${state.nick} :Your host is jac.chat, running JAC-IRC-1.0`);
+    sendToClient(socket, `:jac.chat 003 ${state.nick} :This server was created 2026-01-01`);
+    sendToClient(socket, `:jac.chat 004 ${state.nick} jac.chat JAC-IRC-1.0 o o`);
+    sendToClient(socket, `:jac.chat 005 ${state.nick} NETWORK=JustAChat CHANTYPES=# :are supported by this server`);
+    
+    // Send MOTD
+    sendToClient(socket, `:jac.chat 375 ${state.nick} :- jac.chat Message of the Day -`);
+    if (state.authToken) {
+      sendToClient(socket, `:jac.chat 372 ${state.nick} :- Welcome to JustAChat, ${state.nick}!`);
+      sendToClient(socket, `:jac.chat 372 ${state.nick} :- You are authenticated.`);
+      sendToClient(socket, `:jac.chat 372 ${state.nick} :- Type /join #general to start chatting.`);
     } else {
-      // No password - send basic welcome without auth
-      sendToClient(socket, `:jac.chat 001 ${state.nick} :Welcome to JustAChat IRC Network ${state.nick}`);
-      sendToClient(socket, `:jac.chat 002 ${state.nick} :Your host is jac.chat, running JAC-IRC-1.0`);
-      sendToClient(socket, `:jac.chat 003 ${state.nick} :This server was created 2026-01-01`);
-      sendToClient(socket, `:jac.chat 004 ${state.nick} jac.chat JAC-IRC-1.0 o o`);
-      sendToClient(socket, `:jac.chat 375 ${state.nick} :- jac.chat Message of the Day -`);
       sendToClient(socket, `:jac.chat 372 ${state.nick} :- Welcome to JustAChat!`);
-      sendToClient(socket, `:jac.chat 372 ${state.nick} :- ⚠️  You are not authenticated.`);
+      sendToClient(socket, `:jac.chat 372 ${state.nick} :- You are NOT authenticated.`);
       sendToClient(socket, `:jac.chat 372 ${state.nick} :- Set server password to email;password to login.`);
-      sendToClient(socket, `:jac.chat 376 ${state.nick} :End of /MOTD command.`);
+    }
+    sendToClient(socket, `:jac.chat 376 ${state.nick} :End of /MOTD command.`);
+    
+    // Try to notify edge function of the connection (non-blocking)
+    if (state.authToken) {
+      callEdgeFunction('NICK', state.nick, state.authToken, state.sessionId).catch(() => {});
     }
     
     state.registered = true;
-    console.log(`[${state.id}] Registration complete for ${state.nick}`);
+    console.log(`[${state.id}] Registration complete for ${state.nick} (auth: ${!!state.authToken})`);
     
   } catch (err) {
     console.error(`[${state.id}] Registration failed: ${err.message}`);
