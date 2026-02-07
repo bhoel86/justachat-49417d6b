@@ -156,6 +156,11 @@ function handleConnection(socket) {
   socket.setEncoding('utf8');
   socket.setTimeout(300000); // 5 minute timeout
   
+  // Send initial greeting so mIRC knows the server is ready
+  // Many IRC clients wait for the server to speak first
+  sendToClient(socket, `:jac.chat NOTICE * :*** Looking up your hostname...`);
+  sendToClient(socket, `:jac.chat NOTICE * :*** Found your hostname`);
+  
   socket.on('data', (data) => {
     state.buffer += data;
     
