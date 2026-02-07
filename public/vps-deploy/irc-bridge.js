@@ -1,0 +1,430 @@
+#!/usr/bin/env node
+/**
+ * JustAChat IRC-to-HTTP Bridge
+ * 
+ * Listens on port 6667 (TCP) and translates raw IRC protocol
+ * to HTTP calls against the Supabase Edge Function (irc-gateway).
+ * 
+ * This is needed because Edge Functions are HTTP-based,
+ * but mIRC speaks raw IRC over TCP.
+ * 
+ * Usage: node irc-bridge.js
+ * Or:    pm2 start irc-bridge.js --name jac-irc-bridge
+ */
+
+const net = require('net');
+const http = require('http');
+const https = require('https');
+
+// Configuration - these get overridden by env vars
+const IRC_PORT = parseInt(process.env.IRC_PORT || '6667');
+const EDGE_FUNCTION_URL = process.env.EDGE_FUNCTION_URL || 'http://127.0.0.1:8000/functions/v1/irc-gateway';
+const ANON_KEY = process.env.ANON_KEY || '';
+
+// Read ANON_KEY from .env file if not set
+function loadEnv() {
+  const fs = require('fs');
+  const path = require('path');
+  
+  // Try multiple locations for .env
+  const envPaths = [
+    path.join(__dirname, '../../.env'),           // /var/www/justachat/.env
+    '/root/supabase/docker/.env',                  // Docker .env
+    path.join(process.cwd(), '.env'),
+  ];
+  
+  for (const envPath of envPaths) {
+    try {
+      const content = fs.readFileSync(envPath, 'utf8');
+      const lines = content.split('\n');
+      const env = {};
+      for (const line of lines) {
+        const match = line.match(/^([^#=]+)=(.*)$/);
+        if (match) {
+          env[match[1].trim()] = match[2].trim().replace(/^["']|["']$/g, '');
+        }
+      }
+      return env;
+    } catch (e) {
+      // Try next path
+    }
+  }
+  return {};
+}
+
+const envVars = loadEnv();
+const FINAL_ANON_KEY = ANON_KEY || envVars.ANON_KEY || envVars.SUPABASE_ANON_KEY || envVars.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+
+if (!FINAL_ANON_KEY) {
+  console.error('⚠️  WARNING: No ANON_KEY found. Auth will fail.');
+  console.error('   Set ANON_KEY env var or ensure .env file exists');
+}
+
+console.log(`🔌 JAC IRC Bridge starting...`);
+console.log(`   IRC Port: ${IRC_PORT}`);
+console.log(`   Edge URL: ${EDGE_FUNCTION_URL}`);
+console.log(`   ANON_KEY: ${FINAL_ANON_KEY ? FINAL_ANON_KEY.substring(0, 20) + '...' : 'NOT SET'}`);
+
+// Track active connections
+const connections = new Map();
+let connectionCounter = 0;
+
+/**
+ * Send an HTTP request to the Edge Function
+ */
+function callEdgeFunction(command, args, authToken, sessionId) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ command, args, sessionId });
+    const url = new URL(EDGE_FUNCTION_URL);
+    
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'Authorization': `Bearer ${authToken || FINAL_ANON_KEY}`,
+        'apikey': FINAL_ANON_KEY,
+      },
+      timeout: 15000,
+    };
+    
+    const client = url.protocol === 'https:' ? https : http;
+    
+    const req = client.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed);
+        } catch (e) {
+          // If response is plain text (IRC lines), split and return
+          resolve({ raw: data, lines: data.split('\n').filter(l => l.trim()) });
+        }
+      });
+    });
+    
+    req.on('error', (err) => {
+      console.error(`  Edge function error: ${err.message}`);
+      reject(err);
+    });
+    
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Edge function request timed out'));
+    });
+    
+    req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * Send raw IRC line to client
+ */
+function sendToClient(socket, line) {
+  if (socket.writable) {
+    socket.write(line + '\r\n');
+  }
+}
+
+/**
+ * Handle an incoming IRC connection
+ */
+function handleConnection(socket) {
+  const connId = ++connectionCounter;
+  const clientAddr = `${socket.remoteAddress}:${socket.remotePort}`;
+  
+  console.log(`[${connId}] New IRC connection from ${clientAddr}`);
+  
+  const state = {
+    id: connId,
+    nick: null,
+    user: null,
+    pass: null,       // email;password
+    authToken: null,  // JWT after successful auth
+    registered: false,
+    buffer: '',
+    sessionId: `bridge-${connId}-${Date.now()}`,
+  };
+  
+  connections.set(connId, { socket, state });
+  
+  socket.setEncoding('utf8');
+  socket.setTimeout(300000); // 5 minute timeout
+  
+  socket.on('data', (data) => {
+    state.buffer += data;
+    
+    // Process complete lines
+    let lines = state.buffer.split('\r\n');
+    state.buffer = lines.pop() || ''; // Keep incomplete line in buffer
+    
+    // Also handle \n only (some clients)
+    const extraLines = [];
+    for (const line of lines) {
+      if (line.includes('\n')) {
+        extraLines.push(...line.split('\n'));
+      } else {
+        extraLines.push(line);
+      }
+    }
+    
+    for (const line of extraLines) {
+      if (line.trim()) {
+        processIRCLine(socket, state, line.trim());
+      }
+    }
+  });
+  
+  socket.on('timeout', () => {
+    console.log(`[${connId}] Connection timed out`);
+    sendToClient(socket, `ERROR :Connection timed out`);
+    socket.end();
+  });
+  
+  socket.on('close', () => {
+    console.log(`[${connId}] Connection closed (${state.nick || 'unregistered'})`);
+    connections.delete(connId);
+    
+    // Notify edge function of disconnect
+    if (state.authToken) {
+      callEdgeFunction('QUIT', 'Connection closed', state.authToken, state.sessionId).catch(() => {});
+    }
+  });
+  
+  socket.on('error', (err) => {
+    console.error(`[${connId}] Socket error: ${err.message}`);
+    connections.delete(connId);
+  });
+}
+
+/**
+ * Process a single IRC protocol line
+ */
+async function processIRCLine(socket, state, line) {
+  console.log(`[${state.id}] << ${line}`);
+  
+  // Parse IRC message: [:prefix] command [params] [:trailing]
+  const parts = line.split(' ');
+  let command = parts[0].toUpperCase();
+  let args = parts.slice(1).join(' ');
+  
+  // Handle prefix (rare from clients)
+  if (command.startsWith(':')) {
+    command = parts[1] ? parts[1].toUpperCase() : '';
+    args = parts.slice(2).join(' ');
+  }
+  
+  // Extract trailing parameter (after :)
+  let trailing = null;
+  const trailingIdx = args.indexOf(' :');
+  if (trailingIdx !== -1) {
+    trailing = args.substring(trailingIdx + 2);
+    args = args.substring(0, trailingIdx);
+  } else if (args.startsWith(':')) {
+    trailing = args.substring(1);
+    args = '';
+  }
+
+  try {
+    switch (command) {
+      case 'CAP':
+        // Capability negotiation - acknowledge but don't support extras
+        if (args.includes('LS')) {
+          sendToClient(socket, `CAP * LS :`);
+        } else if (args.includes('END')) {
+          // Client done with CAP negotiation
+        }
+        break;
+        
+      case 'PASS':
+        // Store credentials: email;password
+        state.pass = trailing || args;
+        console.log(`[${state.id}] PASS received (${state.pass.split(';')[0]})`);
+        break;
+        
+      case 'NICK':
+        state.nick = trailing || args;
+        console.log(`[${state.id}] NICK set to: ${state.nick}`);
+        // Try to complete registration
+        await tryRegister(socket, state);
+        break;
+        
+      case 'USER':
+        // USER username mode * :realname
+        state.user = args.split(' ')[0] || trailing;
+        console.log(`[${state.id}] USER set to: ${state.user}`);
+        // Try to complete registration
+        await tryRegister(socket, state);
+        break;
+        
+      case 'PING':
+        const pingToken = trailing || args || 'jac.chat';
+        sendToClient(socket, `PONG jac.chat :${pingToken}`);
+        break;
+        
+      case 'PONG':
+        // Client responding to our ping - good, they're alive
+        break;
+        
+      case 'QUIT':
+        sendToClient(socket, `ERROR :Closing Link: ${state.nick || '*'} (Quit: ${trailing || 'Client quit'})`);
+        if (state.authToken) {
+          callEdgeFunction('QUIT', trailing || 'Client quit', state.authToken, state.sessionId).catch(() => {});
+        }
+        socket.end();
+        break;
+        
+      default:
+        // Forward all other commands to the edge function
+        if (!state.registered) {
+          sendToClient(socket, `:jac.chat 451 * :You have not registered`);
+          break;
+        }
+        
+        const fullArgs = trailing ? `${args} :${trailing}`.trim() : args;
+        const response = await callEdgeFunction(command, fullArgs, state.authToken, state.sessionId);
+        
+        // Send response lines back to client
+        if (response.lines) {
+          for (const ircLine of response.lines) {
+            if (ircLine.trim()) {
+              sendToClient(socket, ircLine);
+            }
+          }
+        } else if (response.raw) {
+          const rawLines = response.raw.split('\r\n').filter(l => l.trim());
+          for (const ircLine of rawLines) {
+            sendToClient(socket, ircLine);
+          }
+        } else if (response.response) {
+          // Edge function returns { response: "..." }
+          const respLines = response.response.split('\r\n').filter(l => l.trim());
+          for (const ircLine of respLines) {
+            sendToClient(socket, ircLine);
+          }
+        }
+        break;
+    }
+  } catch (err) {
+    console.error(`[${state.id}] Error processing ${command}: ${err.message}`);
+    if (command === 'PASS' || command === 'NICK' || command === 'USER') {
+      sendToClient(socket, `:jac.chat 464 ${state.nick || '*'} :Authentication failed - check your email;password in the server password field`);
+    }
+  }
+}
+
+/**
+ * Try to complete IRC registration (need NICK + USER, optionally PASS)
+ */
+async function tryRegister(socket, state) {
+  if (state.registered) return;
+  if (!state.nick || !state.user) return;
+  
+  console.log(`[${state.id}] Attempting registration for ${state.nick}...`);
+  
+  try {
+    // Call edge function with registration data
+    const response = await callEdgeFunction('REGISTER', '', FINAL_ANON_KEY, state.sessionId);
+    
+    // If PASS was provided, authenticate
+    if (state.pass) {
+      const authResponse = await callEdgeFunction('PASS', state.pass, FINAL_ANON_KEY, state.sessionId);
+      
+      if (authResponse.token) {
+        state.authToken = authResponse.token;
+        console.log(`[${state.id}] Auth successful for ${state.nick}`);
+      } else if (authResponse.error) {
+        console.log(`[${state.id}] Auth failed: ${authResponse.error}`);
+        sendToClient(socket, `:jac.chat 464 ${state.nick} :Password incorrect - use email;password format`);
+        return;
+      }
+    }
+    
+    // Send the edge function response (welcome messages, MOTD, etc.)
+    if (state.pass) {
+      // Send NICK command to set the nickname
+      const nickResponse = await callEdgeFunction('NICK', state.nick, state.authToken || FINAL_ANON_KEY, state.sessionId);
+      
+      // Send USER command 
+      const userResponse = await callEdgeFunction('USER', `${state.user} 0 * :${state.nick}`, state.authToken || FINAL_ANON_KEY, state.sessionId);
+      
+      // Send all response lines
+      const allResponses = [nickResponse, userResponse].filter(Boolean);
+      for (const resp of allResponses) {
+        if (resp.response) {
+          const lines = resp.response.split('\r\n').filter(l => l.trim());
+          for (const line of lines) {
+            sendToClient(socket, line);
+          }
+        }
+        if (resp.lines) {
+          for (const line of resp.lines) {
+            if (line.trim()) sendToClient(socket, line);
+          }
+        }
+      }
+    } else {
+      // No password - send basic welcome without auth
+      sendToClient(socket, `:jac.chat 001 ${state.nick} :Welcome to JustAChat IRC Network ${state.nick}`);
+      sendToClient(socket, `:jac.chat 002 ${state.nick} :Your host is jac.chat, running JAC-IRC-1.0`);
+      sendToClient(socket, `:jac.chat 003 ${state.nick} :This server was created 2026-01-01`);
+      sendToClient(socket, `:jac.chat 004 ${state.nick} jac.chat JAC-IRC-1.0 o o`);
+      sendToClient(socket, `:jac.chat 375 ${state.nick} :- jac.chat Message of the Day -`);
+      sendToClient(socket, `:jac.chat 372 ${state.nick} :- Welcome to JustAChat!`);
+      sendToClient(socket, `:jac.chat 372 ${state.nick} :- ⚠️  You are not authenticated.`);
+      sendToClient(socket, `:jac.chat 372 ${state.nick} :- Set server password to email;password to login.`);
+      sendToClient(socket, `:jac.chat 376 ${state.nick} :End of /MOTD command.`);
+    }
+    
+    state.registered = true;
+    console.log(`[${state.id}] Registration complete for ${state.nick}`);
+    
+  } catch (err) {
+    console.error(`[${state.id}] Registration failed: ${err.message}`);
+    sendToClient(socket, `:jac.chat NOTICE * :Connection to JustAChat backend failed. Please try again later.`);
+  }
+}
+
+// Create TCP server
+const server = net.createServer(handleConnection);
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${IRC_PORT} is already in use!`);
+    console.error(`   Run: sudo lsof -i :${IRC_PORT}  to find what's using it`);
+    console.error(`   Then: sudo kill <PID>`);
+  } else {
+    console.error(`❌ Server error: ${err.message}`);
+  }
+  process.exit(1);
+});
+
+server.listen(IRC_PORT, '0.0.0.0', () => {
+  console.log(`✅ JAC IRC Bridge listening on port ${IRC_PORT}`);
+  console.log(`   mIRC can now connect to this server`);
+  console.log(`   Password format: email@example.com;yourpassword`);
+  console.log('');
+  console.log(`   Press Ctrl+C to stop`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n🛑 Shutting down IRC bridge...');
+  for (const [id, conn] of connections) {
+    sendToClient(conn.socket, `ERROR :Server shutting down`);
+    conn.socket.end();
+  }
+  server.close(() => {
+    console.log('IRC bridge stopped.');
+    process.exit(0);
+  });
+});
+
+process.on('SIGTERM', () => {
+  process.emit('SIGINT');
+});
