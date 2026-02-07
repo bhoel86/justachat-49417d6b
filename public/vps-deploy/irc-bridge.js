@@ -191,12 +191,16 @@ function handleConnection(socket) {
     let lines = state.buffer.split('\n');
     state.buffer = lines.pop() || ''; // Keep incomplete line in buffer
     
-    for (const line of lines) {
-      const cleaned = line.replace(/\r$/, '').trim();
-      if (cleaned) {
-        processIRCLine(socket, state, cleaned);
+    // Process lines sequentially - each command must complete before the next
+    // This prevents QUIT from killing the socket before LIST response arrives
+    (async () => {
+      for (const line of lines) {
+        const cleaned = line.replace(/\r$/, '').trim();
+        if (cleaned) {
+          await processIRCLine(socket, state, cleaned);
+        }
       }
-    }
+    })();
   });
   
   socket.on('timeout', () => {
