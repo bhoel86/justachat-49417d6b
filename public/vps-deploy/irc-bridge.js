@@ -97,11 +97,20 @@ function callEdgeFunction(command, args, authToken, sessionId) {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
+        console.log(`  [Edge] ${command} HTTP ${res.statusCode} - ${data.length} bytes`);
+        if (res.statusCode >= 400) {
+          console.error(`  [Edge] ERROR response: ${data.substring(0, 300)}`);
+        }
         try {
           const parsed = JSON.parse(data);
+          // Log what keys we got back
+          console.log(`  [Edge] ${command} response keys: ${Object.keys(parsed).join(', ')}`);
+          if (parsed.lines) {
+            console.log(`  [Edge] ${command} lines array length: ${parsed.lines.length}`);
+          }
           resolve(parsed);
         } catch (e) {
-          // If response is plain text (IRC lines), split and return
+          console.log(`  [Edge] ${command} non-JSON response, splitting as raw lines`);
           resolve({ raw: data, lines: data.split('\n').filter(l => l.trim()) });
         }
       });
