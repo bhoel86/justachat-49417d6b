@@ -55,7 +55,7 @@ echo -e ""
  
  log_info "Writing VPS-specific .env..."
 echo 'VITE_SUPABASE_URL=https://justachat.net' > .env
-echo 'VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzA0MDY3MjAwLCJleHAiOjE4NjE5MjAwMDB9.ApWkSEYJ7yzNQ_H7yfVE2zyUp--eWrR-h9pj-rUSQEU' >> .env
+echo 'VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzY5NjYyODk3LCJleHAiOjIwODUwMjI4OTd9.qdPb9zUcD3hXTAUO8M2hAfK4UQoyHc3uPUXIsxofFfw' >> .env
  
  log_success "VPS .env protected (justachat.net)"
  
