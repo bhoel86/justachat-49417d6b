@@ -978,13 +978,14 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${formatThemedHeader('================================================', dbChannelName)}`);
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
 
-      // Join in database - use insert with conflict handling
+      // Join in database - use upsert with conflict handling so duplicate joins don't error
       await (session.supabase as any)
         .from("channel_members")
-        .insert({
-          channel_id: channel.id,
-          user_id: session.userId!,
-        });
+        .upsert(
+          { channel_id: channel.id, user_id: session.userId! },
+          { onConflict: 'channel_id,user_id', ignoreDuplicates: true }
+        );
+      console.log(`[IRC] User ${session.nick} (${session.userId}) joined channel_members for ${dbChannelName}`);
 
     } catch (e) {
       console.error("JOIN error:", e);
@@ -3230,115 +3231,141 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 if (supabaseUrl && supabaseServiceKey) {
   const realtimeClient = createClient(supabaseUrl, supabaseServiceKey);
   
-  // Subscribe to messages table for realtime updates
-  realtimeClient
-    .channel("irc-message-relay")
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "messages",
-      },
-      async (payload) => {
-        const newMessage = payload.new as {
-          id: string;
-          channel_id: string;
-          user_id: string;
-          content: string;
-          created_at: string;
-        };
+  function setupMessageRelay() {
+    console.log("[IRC Gateway] Setting up Realtime message relay...");
+    
+    // Subscribe to messages table for realtime updates
+    const relayChannel = realtimeClient
+      .channel("irc-message-relay")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        async (payload) => {
+          const newMessage = payload.new as {
+            id: string;
+            channel_id: string;
+            user_id: string;
+            content: string;
+            created_at: string;
+          };
 
-        console.log(`[Realtime] New message in channel ${newMessage.channel_id}`);
+          console.log(`[Realtime] New message in channel ${newMessage.channel_id} from ${newMessage.user_id}`);
 
-        // Get subscribers for this channel
-        const subscribers = channelSubscriptions.get(newMessage.channel_id);
-        if (!subscribers || subscribers.size === 0) {
-          console.log(`[Realtime] No IRC subscribers for channel ${newMessage.channel_id}`);
-          return;
-        }
+          // Get subscribers for this channel
+          const subscribers = channelSubscriptions.get(newMessage.channel_id);
+          if (!subscribers || subscribers.size === 0) {
+            console.log(`[Realtime] No IRC subscribers for channel ${newMessage.channel_id}`);
+            return;
+          }
 
-        // Determine sender username - check if it's a bot message
-        let senderUsername = "unknown";
-        let senderHost = "web";
-        
-        if (newMessage.user_id.startsWith("bot-")) {
-          // Bot message - extract bot name from user_id
-          // Format: bot-cryptoking, bot-nightowl88, etc.
-          const botNamePart = newMessage.user_id.slice(4); // Remove "bot-" prefix
+          console.log(`[Realtime] Found ${subscribers.size} IRC subscribers for channel ${newMessage.channel_id}`);
+
+          // Determine sender username - check if it's a bot message
+          let senderUsername = "unknown";
+          let senderHost = "web";
           
-          // Try to find a matching bot name in our channel bots (case-insensitive)
-          const allBotNames = Array.from(new Set(Object.values(channelBots).flat()));
-          const matchedBot = allBotNames.find(
-            (b) => b.toLowerCase().replace(/[^a-z0-9]/g, "") === botNamePart.toLowerCase().replace(/[^a-z0-9]/g, "")
-          );
-          
-          senderUsername = matchedBot || botNamePart;
-          senderHost = "bot";
-          console.log(`[Realtime] Bot message from: ${senderUsername}`);
-        } else {
-          // Regular user - look up from profiles
-          const { data: senderProfile } = await realtimeClient
-            .from("profiles")
-            .select("username")
-            .eq("user_id", newMessage.user_id)
-            .single();
-
-          senderUsername = (senderProfile as { username: string } | null)?.username || "unknown";
-        }
-
-        // Get channel info and user role for coloring
-        const [channelResult, roleResult] = await Promise.all([
-          realtimeClient
-            .from("channels")
-            .select("name")
-            .eq("id", newMessage.channel_id)
-            .single(),
-          !newMessage.user_id.startsWith("bot-") 
-            ? realtimeClient
-                .from("user_roles")
-                .select("role")
+          if (newMessage.user_id.startsWith("bot-")) {
+            const botNamePart = newMessage.user_id.slice(4);
+            const allBotNames = Array.from(new Set(Object.values(channelBots).flat()));
+            const matchedBot = allBotNames.find(
+              (b) => b.toLowerCase().replace(/[^a-z0-9]/g, "") === botNamePart.toLowerCase().replace(/[^a-z0-9]/g, "")
+            );
+            senderUsername = matchedBot || botNamePart;
+            senderHost = "bot";
+            console.log(`[Realtime] Bot message from: ${senderUsername}`);
+          } else {
+            // Check if sender is an IRC user (skip relay to avoid echo)
+            let isIrcUser = false;
+            for (const [, s] of sessions) {
+              if (s.userId === newMessage.user_id) {
+                isIrcUser = true;
+                senderUsername = s.nick || "unknown";
+                senderHost = "irc";
+                break;
+              }
+            }
+            
+            if (!isIrcUser) {
+              // Web user - look up from profiles
+              const { data: senderProfile } = await realtimeClient
+                .from("profiles")
+                .select("username")
                 .eq("user_id", newMessage.user_id)
-                .maybeSingle()
-            : Promise.resolve({ data: null })
-        ]);
+                .single();
+              senderUsername = (senderProfile as { username: string } | null)?.username || "unknown";
+              senderHost = "web";
+            }
+          }
 
-        const channelName = `#${(channelResult.data as { name: string } | null)?.name || "unknown"}`;
-        const userRole = (roleResult.data as { role: string } | null)?.role;
+          // Get channel info and user role for coloring
+          const [channelResult, roleResult] = await Promise.all([
+            realtimeClient
+              .from("channels")
+              .select("name")
+              .eq("id", newMessage.channel_id)
+              .single(),
+            !newMessage.user_id.startsWith("bot-") 
+              ? realtimeClient
+                  .from("user_roles")
+                  .select("role")
+                  .eq("user_id", newMessage.user_id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null })
+          ]);
 
-        // Apply mIRC color to sender name based on role
-        let coloredSenderName = senderUsername;
-        if (userRole === 'owner') {
-          coloredSenderName = `${IRC_COLORS.BOLD}${IRC_COLORS.YELLOW}${senderUsername}${IRC_COLORS.RESET}`;
-        } else if (userRole === 'admin') {
-          coloredSenderName = `${IRC_COLORS.BOLD}${IRC_COLORS.RED}${senderUsername}${IRC_COLORS.RESET}`;
-        } else if (userRole === 'moderator') {
-          coloredSenderName = `${IRC_COLORS.GREEN}${senderUsername}${IRC_COLORS.RESET}`;
-        } else if (senderHost === "bot") {
-          coloredSenderName = `${IRC_COLORS.CYAN}${senderUsername}${IRC_COLORS.RESET}`;
-        }
+          const channelName = `#${(channelResult.data as { name: string } | null)?.name || "unknown"}`;
+          const userRole = (roleResult.data as { role: string } | null)?.role;
 
-        // Relay message to all subscribed IRC sessions (except sender for non-bot messages)
-        for (const subscriberId of subscribers) {
-          const subscriberSession = sessions.get(subscriberId);
-          if (
-            subscriberSession &&
-            subscriberSession.registered &&
-            (newMessage.user_id.startsWith("bot-") || subscriberSession.userId !== newMessage.user_id) // Always relay bot messages, skip echo for own messages
-          ) {
-            // Send with colored sender name in the message prefix
+          // Apply mIRC color to sender name based on role
+          let coloredSenderName = senderUsername;
+          if (userRole === 'owner') {
+            coloredSenderName = `${IRC_COLORS.BOLD}${IRC_COLORS.YELLOW}${senderUsername}${IRC_COLORS.RESET}`;
+          } else if (userRole === 'admin') {
+            coloredSenderName = `${IRC_COLORS.BOLD}${IRC_COLORS.RED}${senderUsername}${IRC_COLORS.RESET}`;
+          } else if (userRole === 'moderator') {
+            coloredSenderName = `${IRC_COLORS.GREEN}${senderUsername}${IRC_COLORS.RESET}`;
+          } else if (senderHost === "bot") {
+            coloredSenderName = `${IRC_COLORS.CYAN}${senderUsername}${IRC_COLORS.RESET}`;
+          }
+
+          // Relay message to all subscribed IRC sessions
+          // Skip echo for IRC users (they already see their own message)
+          // Always relay web user messages and bot messages
+          let relayCount = 0;
+          for (const subscriberId of subscribers) {
+            const subscriberSession = sessions.get(subscriberId);
+            if (!subscriberSession || !subscriberSession.registered) continue;
+            
+            // Skip echo: don't relay a message back to the IRC user who sent it
+            if (senderHost === "irc" && subscriberSession.userId === newMessage.user_id) continue;
+            
             sendIRC(
               subscriberSession,
               `:${coloredSenderName}!${senderUsername}@${senderHost}.${SERVER_NAME} PRIVMSG ${channelName} :${newMessage.content}`
             );
-            console.log(`[Realtime] Relayed ${senderHost} message from ${senderUsername} to ${subscriberSession.nick}`);
+            relayCount++;
           }
+          console.log(`[Realtime] Relayed ${senderHost} message from ${senderUsername} to ${relayCount} IRC sessions`);
         }
-      }
-    )
-    .subscribe((status) => {
-      console.log(`[Realtime] Subscription status: ${status}`);
-    });
+      )
+      .subscribe((status) => {
+        console.log(`[Realtime] Message relay subscription status: ${status}`);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error(`[Realtime] Subscription error: ${status}. Will retry in 5s...`);
+          setTimeout(() => {
+            console.log("[Realtime] Retrying message relay subscription...");
+            realtimeClient.removeChannel(relayChannel);
+            setupMessageRelay();
+          }, 5000);
+        }
+      });
+  }
+  
+  setupMessageRelay();
 
   console.log("[IRC Gateway] Realtime message relay initialized");
 

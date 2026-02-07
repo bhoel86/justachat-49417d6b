@@ -1514,6 +1514,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           onlineUserIds={onlineUserIds} 
           listeningUsers={listeningUsers}
           channelName={currentChannel?.name} 
+          channelId={currentChannel?.id}
           onOpenPm={handleOpenPm}
           onOpenBotPm={handleOpenBotPm}
           onAction={(targetUsername, actionMessage) => handleSend(actionMessage)}

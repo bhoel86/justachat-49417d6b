@@ -48,6 +48,7 @@ interface MemberListProps {
   onlineUserIds: Set<string>;
   listeningUsers?: Map<string, { title: string; artist: string }>;
   channelName?: string;
+  channelId?: string;
   onOpenPm?: (userId: string, username: string) => void;
   onOpenBotPm?: (moderator: ModeratorInfo, channelName: string) => void;
   onAction?: (targetUsername: string, action: string) => void;
@@ -110,7 +111,7 @@ interface BotSettings {
   moderator_bots_enabled: boolean;
 }
 
-const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', onOpenPm, onOpenBotPm, onAction }: MemberListProps) => {
+const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', channelId, onOpenPm, onOpenBotPm, onAction }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
@@ -183,34 +184,52 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
   }, [user]);
 
   const fetchMembers = async () => {
-    // ONLY fetch profiles for users who are currently online in this room
-    // This prevents users from appearing in every room's member list
-    const onlineIds = Array.from(onlineUserIds);
+    // Get users from Presence (web users) AND channel_members (IRC users)
+    const presenceIds = Array.from(onlineUserIds);
     
-    if (onlineIds.length === 0) {
+    // Also fetch IRC users from channel_members table
+    let ircUserIds: string[] = [];
+    if (channelId) {
+      const { data: channelMembers } = await supabaseUntyped
+        .from('channel_members')
+        .select('user_id')
+        .eq('channel_id', channelId);
+      
+      if (channelMembers) {
+        // IRC users are those in channel_members but NOT in Presence
+        ircUserIds = (channelMembers as { user_id: string }[])
+          .map(m => m.user_id)
+          .filter(id => !presenceIds.includes(id) && !id.startsWith('bot-'));
+      }
+    }
+    
+    // Combine both sets of user IDs
+    const allOnlineIds = [...new Set([...presenceIds, ...ircUserIds])];
+    
+    if (allOnlineIds.length === 0) {
       setMembers([]);
       setLoading(false);
       return;
     }
 
-    // Fetch profiles ONLY for online users in this room
+    // Fetch profiles for ALL online users (web + IRC)
     const { data: profiles } = await supabaseUntyped
       .from('profiles_public')
       .select('user_id, username, avatar_url, bio, ghost_mode')
-      .in('user_id', onlineIds);
+      .in('user_id', allOnlineIds);
 
     const { data: roles } = await supabaseUntyped
       .from('user_roles')
       .select('user_id, role')
-      .in('user_id', onlineIds);
+      .in('user_id', allOnlineIds);
 
     // Fetch IP addresses for admins/owners (only for online users)
     let locationMap = new Map<string, string>();
-    if ((isAdmin || isOwner) && onlineIds.length > 0) {
+    if ((isAdmin || isOwner) && allOnlineIds.length > 0) {
       const { data: locations } = await supabaseUntyped
         .from('user_locations')
         .select('user_id, ip_address')
-        .in('user_id', onlineIds);
+        .in('user_id', allOnlineIds);
       if (locations) {
         locationMap = new Map(locations.map((l: { user_id: string; ip_address: string | null }) => [l.user_id, l.ip_address]));
       }
@@ -278,43 +297,53 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', on
         clearTimeout(fetchMembersTimeoutRef.current);
       }
     };
-  }, [onlineUserIds]);
+  }, [onlineUserIds, channelId]);
 
-  // Subscribe to profile and role changes - NO dependency on onlineUserIds to prevent resubscription loops
+  // Subscribe to profile, role, AND channel_members changes for IRC user visibility
   useEffect(() => {
-    const channel = supabase
+    const channels: ReturnType<typeof supabase.channel>[] = [];
+    
+    const memberChangesChannel = supabase
       .channel('member-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'profiles' },
         () => {
-          // Debounce profile changes too
-          if (fetchMembersTimeoutRef.current) {
-            clearTimeout(fetchMembersTimeoutRef.current);
-          }
-          fetchMembersTimeoutRef.current = setTimeout(() => {
-            fetchMembers();
-          }, 300);
+          if (fetchMembersTimeoutRef.current) clearTimeout(fetchMembersTimeoutRef.current);
+          fetchMembersTimeoutRef.current = setTimeout(() => fetchMembers(), 300);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'user_roles' },
         () => {
-          if (fetchMembersTimeoutRef.current) {
-            clearTimeout(fetchMembersTimeoutRef.current);
-          }
-          fetchMembersTimeoutRef.current = setTimeout(() => {
-            fetchMembers();
-          }, 300);
+          if (fetchMembersTimeoutRef.current) clearTimeout(fetchMembersTimeoutRef.current);
+          fetchMembersTimeoutRef.current = setTimeout(() => fetchMembers(), 300);
         }
       )
       .subscribe();
+    channels.push(memberChangesChannel);
+
+    // Subscribe to channel_members changes (IRC users joining/leaving)
+    if (channelId) {
+      const ircMembersChannel = supabase
+        .channel(`channel-members-${channelId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'channel_members', filter: `channel_id=eq.${channelId}` },
+          () => {
+            if (fetchMembersTimeoutRef.current) clearTimeout(fetchMembersTimeoutRef.current);
+            fetchMembersTimeoutRef.current = setTimeout(() => fetchMembers(), 500);
+          }
+        )
+        .subscribe();
+      channels.push(ircMembersChannel);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      channels.forEach(ch => supabase.removeChannel(ch));
     };
-  }, []); // Empty dependency - only subscribe once
+  }, [channelId]); // Only re-subscribe when channel changes
 
   const handleRoleChange = async (memberId: string, newRole: Member['role']) => {
     try {
