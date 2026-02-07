@@ -260,11 +260,19 @@ async function processIRCLine(socket, state, line) {
   try {
     switch (command) {
       case 'CAP':
-        // Capability negotiation - acknowledge but don't support extras
+        // IRCv3 Capability negotiation
+        console.log(`[${state.id}] CAP command: ${args} ${trailing || ''}`);
         if (args.includes('LS')) {
-          sendToClient(socket, `CAP * LS :`);
+          // Reply with empty capability list - proper IRC format with server prefix
+          sendToClient(socket, `:jac.chat CAP * LS :`);
+          console.log(`[${state.id}] Sent CAP LS reply (no capabilities)`);
+        } else if (args.includes('REQ')) {
+          // Deny any capability requests
+          sendToClient(socket, `:jac.chat CAP * NAK :${trailing || args.replace('REQ', '').trim()}`);
         } else if (args.includes('END')) {
-          // Client done with CAP negotiation
+          console.log(`[${state.id}] CAP END received - proceeding with registration`);
+          // Client done with CAP negotiation, try to register
+          await tryRegister(socket, state);
         }
         break;
         
