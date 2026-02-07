@@ -746,7 +746,7 @@ async function handleJOIN(session: IRCSession, params: string[]) {
     try {
       // Find channel in database
       const { data: channelData, error } = await session.supabase!
-        .from("channels")
+        .from("channels_public")
         .select("id, name, description")
         .ilike("name", dbChannelName)
         .maybeSingle();
@@ -807,7 +807,7 @@ async function handleJOIN(session: IRCSession, params: string[]) {
 
       // Get channel owner
       const { data: channelOwnerData } = await session.supabase!
-        .from("channels")
+        .from("channels_public")
         .select("created_by")
         .eq("id", channel.id)
         .single();
@@ -1006,7 +1006,7 @@ async function handlePART(session: IRCSession, params: string[]) {
 
     try {
       const { data: channelData } = await session.supabase!
-        .from("channels")
+        .from("channels_public")
         .select("id")
         .ilike("name", dbChannelName)
         .maybeSingle();
@@ -1455,7 +1455,7 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
 
     try {
       const { data: channelData } = await session.supabase!
-        .from("channels")
+        .from("channels_public")
         .select("id, name")
         .ilike("name", dbChannelName)
         .maybeSingle();
@@ -1654,8 +1654,9 @@ async function handleLIST(session: IRCSession, _params: string[]) {
   }
 
   try {
+    // Use channels_public view to respect VPS RLS (channels table has restricted direct access)
     const { data: channelsData } = await session.supabase!
-      .from("channels")
+      .from("channels_public")
       .select("id, name, description")
       .eq("is_private", false)
       .eq("is_hidden", false)
@@ -1840,7 +1841,7 @@ async function hasChannelOps(session: IRCSession, channelId: string): Promise<bo
     
     // Check if channel creator
     const { data: channelData } = await session.supabase
-      .from("channels")
+      .from("channels_public")
       .select("created_by")
       .eq("id", channelId)
       .maybeSingle();
@@ -1884,7 +1885,7 @@ async function handleMODE(session: IRCSession, params: string[]) {
     
     try {
       const { data: channelData } = await session.supabase!
-        .from("channels")
+        .from("channels_public")
         .select("id")
         .ilike("name", dbChannelName)
         .maybeSingle();
@@ -2044,7 +2045,7 @@ async function handleKICK(session: IRCSession, params: string[]) {
   
   try {
     const { data: channelData } = await session.supabase!
-      .from("channels")
+      .from("channels_public")
       .select("id")
       .ilike("name", dbChannelName)
       .maybeSingle();
@@ -2652,7 +2653,7 @@ async function handleNAMES(session: IRCSession, params: string[]) {
 
   // Find the channel
   const { data: channelData } = await session.supabase
-    .from("channels")
+    .from("channels_public")
     .select("id, name, description, created_by")
     .eq("name", dbChannelName)
     .maybeSingle();
