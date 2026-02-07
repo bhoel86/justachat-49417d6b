@@ -480,6 +480,19 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           : undefined;
 
         await presenceChannel.track({ user_id: user.id, nowPlaying });
+
+        // Insert into channel_members so IRC gateway can see web users
+        try {
+          await supabaseUntyped
+            .from('channel_members')
+            .upsert(
+              { channel_id: currentChannel.id, user_id: user.id },
+              { onConflict: 'channel_id,user_id', ignoreDuplicates: true }
+            );
+        } catch (e) {
+          // Non-critical - IRC visibility only
+          console.log('[ChatRoom] channel_members upsert skipped:', e);
+        }
       });
 
     return () => {
@@ -492,6 +505,16 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       setOnlineUserIds(new Set());
       setListeningUsers(new Map());
       setOnlineUsers([]);
+
+      // Clean up channel_members entry so IRC sees user left
+      if (user?.id && currentChannel?.id) {
+        supabaseUntyped
+          .from('channel_members')
+          .delete()
+          .eq('channel_id', currentChannel.id)
+          .eq('user_id', user.id)
+          .then(() => undefined, () => undefined);
+      }
     };
   }, [user?.id, currentChannel?.id]);
 

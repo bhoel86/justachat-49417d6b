@@ -854,14 +854,16 @@ async function handleJOIN(session: IRCSession, params: string[]) {
 
       // Check if bots are enabled for this channel
       let botsEnabledForChannel = false;
+      let moderatorBotEnabled = false;
       try {
         const { data: botSettingsData } = await session.supabase!
           .from("bot_settings")
-          .select("enabled, allowed_channels")
+          .select("enabled, allowed_channels, moderator_bots_enabled")
           .limit(1)
           .single();
-        const bSettings = botSettingsData as { enabled: boolean; allowed_channels: string[] } | null;
+        const bSettings = botSettingsData as { enabled: boolean; allowed_channels: string[]; moderator_bots_enabled: boolean } | null;
         botsEnabledForChannel = bSettings?.enabled === true && (bSettings?.allowed_channels?.includes(dbChannelName) ?? false);
+        moderatorBotEnabled = bSettings?.moderator_bots_enabled === true;
       } catch (e) {
         console.log("[IRC] Could not fetch bot_settings, defaulting to off");
       }
@@ -869,8 +871,9 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       // Only show bots if enabled
       const botNames = botsEnabledForChannel ? getBotsForChannel(dbChannelName) : [];
       
-      // Add room moderator bot with @ prefix (operator status)
+      // Add room moderator bot with @ prefix (operator status) - only if moderator bots enabled
       const welcomeInfo = getWelcomeInfo(dbChannelName);
+      const showModerator = moderatorBotEnabled;
       
       // Build colored member names for IRC prefixes:
       // ~ = owner (channel creator or global owner) - Yellow
@@ -881,12 +884,12 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       const coloredOwners = owners.map(u => `${IRC_COLORS.BOLD}${IRC_COLORS.YELLOW}~${u}${IRC_COLORS.RESET}`);
       const coloredAdmins = admins.map(u => `${IRC_COLORS.BOLD}${IRC_COLORS.RED}&${u}${IRC_COLORS.RESET}`);
       const coloredOps = ops.map(u => `${IRC_COLORS.GREEN}@${u}${IRC_COLORS.RESET}`);
-      const coloredModerator = `${IRC_COLORS.GREEN}@${welcomeInfo.moderator}${IRC_COLORS.RESET}`;
+      const coloredModerator = showModerator ? `${IRC_COLORS.GREEN}@${welcomeInfo.moderator}${IRC_COLORS.RESET}` : '';
       const coloredBots = botNames.map(b => `${IRC_COLORS.CYAN}+${b}${IRC_COLORS.RESET}`);
       const coloredUsers = users.map(u => `${IRC_COLORS.CYAN}${u}${IRC_COLORS.RESET}`);
       
-      // Total user count
-      const totalUsers = owners.length + admins.length + ops.length + users.length + botNames.length + 1;
+      // Total user count - only add moderator and bots if enabled
+      const totalUsers = owners.length + admins.length + ops.length + users.length + botNames.length + (showModerator ? 1 : 0);
       
       // Send channel header with themed background banner
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
@@ -904,11 +907,12 @@ async function handleJOIN(session: IRCSession, params: string[]) {
         sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :  ${coloredAdmins.join(' ')}`);
       }
       
-      // Ops section (including room moderator bot)
-      const allOps = [...coloredOps, coloredModerator];
-      if (allOps.length > 0) {
-        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${IRC_COLORS.GREEN}> Operators (${ops.length + 1})${IRC_COLORS.RESET}`);
-        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :  ${allOps.join(' ')}`);
+      // Ops section (including room moderator bot if enabled)
+      const allColoredOps = showModerator ? [...coloredOps, coloredModerator] : [...coloredOps];
+      if (allColoredOps.length > 0) {
+        const opsCount = ops.length + (showModerator ? 1 : 0);
+        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${IRC_COLORS.BOLD}${IRC_COLORS.GREEN}> Operators (${opsCount})${IRC_COLORS.RESET}`);
+        sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :  ${allColoredOps.join(' ')}`);
       }
       
       if (coloredBots.length > 0) {
@@ -927,9 +931,13 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       const standardOwners = owners.map(u => `~${u}`);
       const standardAdmins = admins.map(u => `&${u}`);
       const standardOps = ops.map(u => `@${u}`);
-      const moderatorNick = `@${welcomeInfo.moderator}`;
+      const moderatorNick = showModerator ? `@${welcomeInfo.moderator}` : null;
       
-      const allNames = [...standardOwners, ...standardAdmins, ...standardOps, moderatorNick, ...botNames.map(b => `+${b}`), ...users].join(' ');
+      const allNamesArr = [...standardOwners, ...standardAdmins, ...standardOps];
+      if (moderatorNick) allNamesArr.push(moderatorNick);
+      if (botNames.length > 0) allNamesArr.push(...botNames.map(b => `+${b}`));
+      allNamesArr.push(...users);
+      const allNames = allNamesArr.join(' ');
 
       sendNumeric(session, RPL.NAMREPLY, `= ${channelName} :${allNames}`);
       sendNumeric(session, RPL.ENDOFNAMES, `${channelName} :End of /NAMES list`);
@@ -957,9 +965,10 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       // Welcome divider with themed background
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${formatThemedHeader('================================================', dbChannelName)}`);
       
-      // Moderator message with themed accent
-      sendIRC(session, `:${IRC_COLORS.GREEN}@${welcomeInfo.moderator}${IRC_COLORS.RESET}!${welcomeInfo.moderator}@mod.${SERVER_NAME} PRIVMSG ${channelName} :${roomTheme.accent}${welcomeInfo.message}${IRC_COLORS.RESET}`);
-      
+      // Moderator message with themed accent - only if moderator bots enabled
+      if (showModerator) {
+        sendIRC(session, `:${IRC_COLORS.GREEN}@${welcomeInfo.moderator}${IRC_COLORS.RESET}!${welcomeInfo.moderator}@mod.${SERVER_NAME} PRIVMSG ${channelName} :${roomTheme.accent}${welcomeInfo.message}${IRC_COLORS.RESET}`);
+      }
       // Tips section with themed styling
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${roomTheme.fg}${IRC_COLORS.BOLD}* Quick Tips:${IRC_COLORS.RESET}`);
@@ -1697,15 +1706,17 @@ async function handleLIST(session: IRCSession, _params: string[]) {
     // Check bot_settings once for list
     let botsGloballyEnabled = false;
     let botsAllowedChannels: string[] = [];
+    let modBotsEnabled = false;
     try {
       const { data: bsData } = await session.supabase!
         .from("bot_settings")
-        .select("enabled, allowed_channels")
+        .select("enabled, allowed_channels, moderator_bots_enabled")
         .limit(1)
         .single();
-      const bs = bsData as { enabled: boolean; allowed_channels: string[] } | null;
+      const bs = bsData as { enabled: boolean; allowed_channels: string[]; moderator_bots_enabled: boolean } | null;
       botsGloballyEnabled = bs?.enabled === true;
       botsAllowedChannels = bs?.allowed_channels || [];
+      modBotsEnabled = bs?.moderator_bots_enabled === true;
     } catch (e) {
       // default off
     }
@@ -1721,7 +1732,7 @@ async function handleLIST(session: IRCSession, _params: string[]) {
       const welcomeInfo = getWelcomeInfo(channel.name);
       const botsForThisChannel = (botsGloballyEnabled && botsAllowedChannels.includes(channel.name));
       const botCount = botsForThisChannel ? getBotsForChannel(channel.name).length : 0;
-      const totalUsers = (count || 0) + botCount + 1; // +1 for moderator
+      const totalUsers = (count || 0) + botCount + (modBotsEnabled ? 1 : 0);
       
       // Pad values for alignment
       const channelPad = `#${channel.name}`.padEnd(17);
