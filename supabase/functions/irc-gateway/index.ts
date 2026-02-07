@@ -30,20 +30,22 @@ const sessions = new Map<string, IRCSession>();
 // Channel to session mapping for realtime relay
 const channelSubscriptions = new Map<string, Set<string>>(); // channelId -> Set<sessionId>
 
-// Simulated bot names per channel (subset of the full 140 bots)
+// Bot names per channel - ALIGNED with web frontend (src/lib/chatBots.ts ROOM_BOTS)
+// These are the exact same usernames that appear on the web client
 const channelBots: Record<string, string[]> = {
-  "general": ["CryptoKing", "NightOwl88", "PixelDreamer", "JazzCat", "ThunderStrike", "MoonWalker", "StarGazer", "CodeNinja", "RetroGamer", "NeonRider"],
-  "lounge": ["ChillVibes", "MidnightDJ", "SmoothOperator", "UrbanLegend", "CoffeeAddict", "BookWorm", "MovieBuff", "TravelJunkie", "FoodieLife", "ArtLover"],
-  "dating": ["LoveSeeker", "HeartBreaker", "RomanticSoul", "SingleAndReady", "CharmingOne", "SweetTalker", "DateNight", "FlirtMaster", "CupidArrow", "MatchMaker"],
-  "technology": ["TechGeek", "CodeMaster", "ByteRunner", "DigitalNomad", "CyberPunk", "AIEnthusiast", "DevOpsGuru", "CloudArchitect", "DataScientist", "HackerNews"],
-  "sports": ["GoalScorer", "SlamDunk", "HomeRun", "TouchDown", "FastLane", "ChampionMind", "TeamPlayer", "MVPstatus", "GoldMedal", "GameChanger"],
-  "music": ["BassDropper", "MelodyMaker", "VinylCollector", "ConcertGoer", "GuitarHero", "DrumBeat", "SynthWave", "HipHopHead", "RockStar", "JazzFusion"],
-  "movies": ["FilmCritic", "PopcornTime", "CinematicMind", "BlockBuster", "IndieFan", "HorrorNight", "ActionJunkie", "RomComLover", "SciFiGeek", "ClassicFilm"],
-  "games": ["ProGamer", "QuestMaster", "LootHunter", "BossSlayer", "SpeedRunner", "RetroKing", "VRExplorer", "StreamerLife", "EsportsLegend", "CasualPlay"],
-  "politics": ["DebateMaster", "PolicyWonk", "NewsJunkie", "FactChecker", "VoterVoice", "CivicMinded", "HistoryBuff", "GlobalWatch", "LocalActivist", "BipartisanBob"],
-  "adults-21-plus": ["NightLife", "PartyStarter", "ClubHopper", "MixMaster", "VIPaccess", "AfterHours", "WeekendWarrior", "SocialButterfly", "UrbanExplorer", "NightCrawler"],
-  "trivia": ["QuizWhiz", "FactMachine", "BrainTeaser", "TriviaKing", "KnowledgeSeeker", "AnswerBot", "SmartCookie", "QuestionMaster", "LearnItAll", "CuriousMind"],
-  "help": ["HelpDesk", "SupportHero", "GuideBot", "NewbieHelper", "TechSupport", "FriendlyFace", "WelcomeWagon", "InfoCenter", "AskMeAnything", "AssistantPro"],
+  "general": ["floralfantasy", "goldenhour04", "uwillneverknow", "sparkleshine99", "sunshinegirl82", "happyvibes_01", "cutiepie_88", "von_vibe", "youngin82", "spin_the_block"],
+  "music": ["hole98court", "smellslike91teen", "79londoncalling", "82thriller", "melodyqueen77", "musiclover_94", "songbird_88", "88fastcar", "94basketcase", "97daftthomas"],
+  "games": ["96macarena", "98genieinbottle", "gamergirl_22", "cozygamer_01", "pixelprincess", "levelu_87", "questqueen99", "slimshady99x", "84borninusa", "99partyover"],
+  "technology": ["frost95", "phoenix02", "codequeen_88", "techlady_77", "datadiva_01", "devgirl_94", "cloudgirl_82", "blaze03_", "wolf89_", "dragon_71"],
+  "sports": ["overlyattached", "watchthis92", "sportsgirl_88", "fitnessbabe_01", "goodguygreg", "aliens_guy", "one_does_not_simply", "distracted_boy", "lookout88", "hereigo70"],
+  "politics": ["01feellikewoman", "politicsgal_88", "newswatcher_01", "debatequeen_92", "civicsmom_77", "monsterjam80", "hotwheels98", "matchbox03", "90canthusthis", "83beatyit"],
+  "movies-tv": ["leave_britney_alone", "friday_rebecca", "grumpycat_vibe", "movielover_99", "bingewatch_88", "filmfan_92", "stargazer_01", "gangnam_12", "dat_boi_99", "badger_badger"],
+  "dating": ["littlelinda82", "auntie_em01", "romanticgirl_99", "datingtips_88", "matchmaker_01", "heartseeker_77", "lovelady_92", "blackpixies88", "eddievedderpj92", "louvelvets67"],
+  "adults-21-plus": ["nightowl_queen", "wineandvibes", "latenightlady", "craftbeergal", "winelover_88", "cocktailqueen", "mixologist_99", "david88", "driver_dave75", "baker_ben98"],
+  "trivia": ["97barbiegirl", "quizqueen_88", "factfinder_01", "smartcookie_92", "brainiac_77", "knowitall_94", "triviababe_99", "hawk88", "falcon96_", "raven70"],
+  "help": ["02comewithme", "03dirtypop", "helpergirl_99", "supportqueen_88", "friendlyface_01", "welcomewagon_77", "careandshare_94", "purple7haze67", "ziggy72stardust", "75sweetemotion"],
+  "lounge": ["04staceysmom", "rhythmnation89", "cozycorner_99", "peacefulpanda", "naptime_queen", "serenelady_88", "quiettime_01", "73jimihendrixvibe", "pizzaguy88steve", "66charliebitme"],
+  "art": ["niece_nicky", "grandma_gert", "artlover_99", "creativeone_88", "artgallery_01", "muralqueen_77", "photographygal", "babybilly90", "brotherbob85", "papajoe77"],
 };
 
 function getBotsForChannel(channelName: string): string[] {
