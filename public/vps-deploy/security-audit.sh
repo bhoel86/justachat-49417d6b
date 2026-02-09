@@ -16,32 +16,47 @@ NC='\033[0m'
 FULL_MODE="${1:-}"
 DB_CMD="docker exec -i supabase-db psql -U postgres --no-align -t"
 
-# Detect messages table join column using DIRECT query test (not information_schema)
-# information_schema can return stale results with collation mismatches
-# NOTE: Must use || true to prevent set -e from killing the script on failed queries
+# Detect messages table columns using DIRECT query tests
+# information_schema returns stale data due to collation version mismatch on this VPS
+# NOTE: Must use || true to prevent set -e from killing the script
+
+# Helper: test if a column exists in messages table
+msg_col_exists() {
+  local col="$1"
+  local result
+  result=$(docker exec -i supabase-db psql -U postgres --no-align -t -c "
+    SELECT '${col}' FROM (SELECT ${col} FROM public.messages LIMIT 0) sub;
+  " 2>/dev/null || true)
+  result=$(echo "$result" | tr -d '[:space:]')
+  [ "$result" = "$col" ]
+}
+
+# Detect user/sender column
 MSG_USER_COL=""
 for candidate in user_id sender_id author_id profile_id; do
-  # Actually try to SELECT the column - this tests the real relation (table or view)
-  TEST_OK=$(docker exec -i supabase-db psql -U postgres --no-align -t -c "
-    SELECT '${candidate}' FROM (SELECT ${candidate} FROM public.messages LIMIT 0) sub;
-  " 2>/dev/null || true)
-  TEST_OK=$(echo "$TEST_OK" | tr -d '[:space:]')
-  if [ "$TEST_OK" = "$candidate" ]; then
+  if msg_col_exists "$candidate"; then
     MSG_USER_COL="$candidate"
     break
   fi
 done
 
-# Debug: show what we found
-if [ -n "$MSG_USER_COL" ]; then
-  echo -e "  [DEBUG] Messages join column verified: '${MSG_USER_COL}' (direct query test)"
-else
-  echo -e "  [DEBUG] WARNING: No user column found in messages table via direct query"
-  # Show actual table structure for debugging
-  ACTUAL_COLS=$(docker exec -i supabase-db psql -U postgres -c "SELECT * FROM public.messages LIMIT 0;" 2>&1 | head -3 || true)
-  echo -e "  [DEBUG] Actual table header: ${ACTUAL_COLS}"
-  MSG_USER_COL="user_id"
-  echo -e "  [DEBUG] Falling back to '${MSG_USER_COL}' (queries using it will be skipped on error)"
+# Detect timestamp column
+MSG_TIME_COL=""
+for candidate in created_at updated_at sent_at timestamp; do
+  if msg_col_exists "$candidate"; then
+    MSG_TIME_COL="$candidate"
+    break
+  fi
+done
+
+# Debug output
+echo -e "  [DEBUG] Messages user column: '${MSG_USER_COL:-NOT FOUND}'"
+echo -e "  [DEBUG] Messages time column: '${MSG_TIME_COL:-NOT FOUND}'"
+
+# If neither found, show actual table structure
+if [ -z "$MSG_USER_COL" ] && [ -z "$MSG_TIME_COL" ]; then
+  echo -e "  [DEBUG] Dumping actual messages table header:"
+  docker exec -i supabase-db psql -U postgres -c "\\d public.messages" 2>&1 | head -20 || true
 fi
 
 # Helper: safely count grep matches (handles sudo multi-line output)
@@ -80,15 +95,12 @@ section "1. SPAM / JUNK MESSAGE DETECTION"
 
 info "Scanning for users who sent 10+ identical or near-identical messages..."
 
-# First verify the column exists
-COL_CHECK=$($DB_CMD -c "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='messages' ORDER BY ordinal_position;" 2>/dev/null || true)
-
-if echo "$COL_CHECK" | grep -q "$MSG_USER_COL"; then
-  SPAM_USERS=$($DB_CMD <<SQL
+if [ -n "$MSG_USER_COL" ] && [ -n "$MSG_TIME_COL" ]; then
+  SPAM_USERS=$($DB_CMD <<SQL 2>/dev/null || true
 SELECT p.username, COUNT(*) as spam_count, 
        LEFT(m.content, 40) as sample,
-       MIN(m.created_at)::date as first_seen,
-       MAX(m.created_at)::date as last_seen
+       MIN(m.${MSG_TIME_COL})::date as first_seen,
+       MAX(m.${MSG_TIME_COL})::date as last_seen
 FROM messages m
 JOIN profiles p ON p.user_id = m.${MSG_USER_COL}
 WHERE (
@@ -112,9 +124,7 @@ SQL
     ok "No heavy spam patterns detected"
   fi
 else
-  warn "Column '${MSG_USER_COL}' not found in messages table."
-  info "Available columns: $(echo "$COL_CHECK" | tr '\n' ', ')"
-  info "Skipping spam detection — fix column mapping"
+  warn "Skipping spam detection — missing column(s) in messages table (user=${MSG_USER_COL:-none}, time=${MSG_TIME_COL:-none})"
 fi
 
 # ──────────────────────────────────────────────
@@ -123,14 +133,14 @@ fi
 section "2. FLOOD DETECTION (Message Rate)"
 
 info "Users who sent 50+ messages in any single hour..."
-if echo "$COL_CHECK" | grep -q "$MSG_USER_COL"; then
-  FLOOD_USERS=$($DB_CMD <<SQL
+if [ -n "$MSG_USER_COL" ] && [ -n "$MSG_TIME_COL" ]; then
+  FLOOD_USERS=$($DB_CMD <<SQL 2>/dev/null || true
 SELECT p.username,
-       DATE_TRUNC('hour', m.created_at) as hour,
+       DATE_TRUNC('hour', m.${MSG_TIME_COL}) as hour,
        COUNT(*) as msg_count
 FROM messages m
 JOIN profiles p ON p.user_id = m.${MSG_USER_COL}
-GROUP BY p.username, DATE_TRUNC('hour', m.created_at)
+GROUP BY p.username, DATE_TRUNC('hour', m.${MSG_TIME_COL})
 HAVING COUNT(*) >= 50
 ORDER BY msg_count DESC
 LIMIT 20;
@@ -146,7 +156,7 @@ SQL
     ok "No flood patterns detected"
   fi
 else
-  warn "Skipping flood detection — column '${MSG_USER_COL}' missing"
+  warn "Skipping flood detection — missing column(s) in messages table"
 fi
 
 # ──────────────────────────────────────────────
@@ -319,20 +329,26 @@ if command -v pm2 &>/dev/null && pm2 list 2>/dev/null | grep -q "irc-bridge"; th
   info "Checking IRC bridge logs for suspicious patterns..."
   
   # Check recent IRC errors
-  IRC_ERRORS=$(pm2 logs irc-bridge --nostream --lines 200 2>/dev/null | grep -ciE "(error|failed|rejected|unauthorized|invalid)" || echo "0")
-  if [ "$IRC_ERRORS" -gt 10 ]; then
+  IRC_ERRORS=$(pm2 logs irc-bridge --nostream --lines 200 2>/dev/null | grep -ciE "(error|failed|rejected|unauthorized|invalid)" || true)
+  IRC_ERRORS=$(echo "$IRC_ERRORS" | tail -1 | tr -d '[:space:]')
+  IRC_ERRORS="${IRC_ERRORS:-0}"
+  if [ "$IRC_ERRORS" -gt 10 ] 2>/dev/null; then
     alert "IRC bridge errors in recent logs: $IRC_ERRORS"
   else
     ok "IRC bridge errors: $IRC_ERRORS"
   fi
 
   # Check for rapid connection attempts (potential abuse)
-  IRC_CONNECTS=$(pm2 logs irc-bridge --nostream --lines 500 2>/dev/null | grep -ci "new connection\|client connected\|NICK" || echo "0")
+  IRC_CONNECTS=$(pm2 logs irc-bridge --nostream --lines 500 2>/dev/null | grep -ci "new connection\|client connected\|NICK" || true)
+  IRC_CONNECTS=$(echo "$IRC_CONNECTS" | tail -1 | tr -d '[:space:]')
+  IRC_CONNECTS="${IRC_CONNECTS:-0}"
   info "Recent IRC connections/NICK changes: $IRC_CONNECTS"
   
   # Check for unusual commands
-  IRC_UNUSUAL=$(pm2 logs irc-bridge --nostream --lines 500 2>/dev/null | grep -ciE "(OPER|KILL|DIE|RESTART|WALLOPS)" || echo "0")
-  if [ "$IRC_UNUSUAL" -gt 0 ]; then
+  IRC_UNUSUAL=$(pm2 logs irc-bridge --nostream --lines 500 2>/dev/null | grep -ciE "(OPER|KILL|DIE|RESTART|WALLOPS)" || true)
+  IRC_UNUSUAL=$(echo "$IRC_UNUSUAL" | tail -1 | tr -d '[:space:]')
+  IRC_UNUSUAL="${IRC_UNUSUAL:-0}"
+  if [ "$IRC_UNUSUAL" -gt 0 ] 2>/dev/null; then
     warn "Unusual IRC commands detected: $IRC_UNUSUAL"
   else
     ok "No unusual IRC commands"
@@ -376,12 +392,17 @@ fi
 # ──────────────────────────────────────────────
 section "10. OVERALL DATABASE STATS"
 
-TOTAL_USERS=$($DB_CMD -c "SELECT COUNT(*) FROM profiles;")
-TOTAL_MSGS=$($DB_CMD -c "SELECT COUNT(*) FROM messages;")
-TOTAL_PMS=$($DB_CMD -c "SELECT COUNT(*) FROM private_messages;")
-TOTAL_CHANNELS=$($DB_CMD -c "SELECT COUNT(*) FROM channels;")
-MSGS_TODAY=$($DB_CMD -c "SELECT COUNT(*) FROM messages WHERE created_at > NOW() - INTERVAL '24 hours';")
-NEW_USERS_WEEK=$($DB_CMD -c "SELECT COUNT(*) FROM profiles WHERE created_at > NOW() - INTERVAL '7 days';")
+TOTAL_USERS=$($DB_CMD -c "SELECT COUNT(*) FROM profiles;" 2>/dev/null || echo "?")
+TOTAL_MSGS=$($DB_CMD -c "SELECT COUNT(*) FROM messages;" 2>/dev/null || echo "?")
+TOTAL_PMS=$($DB_CMD -c "SELECT COUNT(*) FROM private_messages;" 2>/dev/null || echo "?")
+TOTAL_CHANNELS=$($DB_CMD -c "SELECT COUNT(*) FROM channels;" 2>/dev/null || echo "?")
+
+if [ -n "$MSG_TIME_COL" ]; then
+  MSGS_TODAY=$($DB_CMD -c "SELECT COUNT(*) FROM messages WHERE ${MSG_TIME_COL} > NOW() - INTERVAL '24 hours';" 2>/dev/null || echo "?")
+else
+  MSGS_TODAY="N/A"
+fi
+NEW_USERS_WEEK=$($DB_CMD -c "SELECT COUNT(*) FROM profiles WHERE created_at > NOW() - INTERVAL '7 days';" 2>/dev/null || echo "?")
 
 info "Total users: $TOTAL_USERS"
 info "Total messages: $TOTAL_MSGS (last 24h: $MSGS_TODAY)"
@@ -395,10 +416,10 @@ info "New users (7 days): $NEW_USERS_WEEK"
 if [ "$FULL_MODE" = "--full" ]; then
   section "FULL: SAMPLE SUSPICIOUS MESSAGES"
   
-  if echo "$COL_CHECK" | grep -q "$MSG_USER_COL"; then
+  if [ -n "$MSG_USER_COL" ] && [ -n "$MSG_TIME_COL" ]; then
     info "Last 20 messages matching spam patterns:"
-    $DB_CMD <<SQL
-SELECT p.username, LEFT(m.content, 60) as content, m.created_at
+    $DB_CMD <<SQL 2>/dev/null || true
+SELECT p.username, LEFT(m.content, 60) as content, m.${MSG_TIME_COL}
 FROM messages m
 JOIN profiles p ON p.user_id = m.${MSG_USER_COL}
 WHERE (
@@ -406,11 +427,11 @@ WHERE (
   OR m.content ~ '^(.)\1{4,}\$'
   OR LENGTH(m.content) <= 2
 )
-ORDER BY m.created_at DESC
+ORDER BY m.${MSG_TIME_COL} DESC
 LIMIT 20;
 SQL
   else
-    warn "Skipping message samples — column '${MSG_USER_COL}' not in messages table"
+    warn "Skipping message samples — missing column(s) in messages table"
   fi
 fi
 
