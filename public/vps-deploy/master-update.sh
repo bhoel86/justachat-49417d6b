@@ -192,40 +192,58 @@ echo 'VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2x
  # ============================================
  log_step "STAGE 8: Edge Function Tests"
  
- ANON_KEY=$(grep SUPABASE_ANON_KEY "$DOCKER_DIR/.env" 2>/dev/null | cut -d'=' -f2 || echo '')
- 
- echo "Testing vps-test..."
- VPS_TEST=$(curl -s -X POST https://justachat.net/functions/v1/vps-test \
-   -H "Content-Type: application/json" \
-   -H "Authorization: Bearer $ANON_KEY" \
-   -d '{}' 2>/dev/null | head -c 200)
- if echo "$VPS_TEST" | grep -qi 'success\|ok\|working'; then
-   log_success "vps-test: Working"
- else
-   log_warn "vps-test: $VPS_TEST"
- fi
- 
- echo "Testing chat-bot..."
- CHAT_BOT=$(curl -s -X POST https://justachat.net/functions/v1/chat-bot \
-   -H "Content-Type: application/json" \
-   -H "Authorization: Bearer $ANON_KEY" \
-   -d '{"message":"test","botId":"serenity","channelName":"general"}' 2>/dev/null | head -c 200)
- if echo "$CHAT_BOT" | grep -qi '"reply"'; then
-   log_success "chat-bot: Working"
- else
-   log_warn "chat-bot: $CHAT_BOT"
- fi
- 
- echo "Testing ai-moderator..."
- AI_MOD=$(curl -s -X POST https://justachat.net/functions/v1/ai-moderator \
-   -H "Content-Type: application/json" \
-   -H "Authorization: Bearer $ANON_KEY" \
-   -d '{"message":"hello","username":"test"}' 2>/dev/null | head -c 200)
- if echo "$AI_MOD" | grep -qi '"safe"'; then
-   log_success "ai-moderator: Working"
- else
-   log_warn "ai-moderator: $AI_MOD"
- fi
+  # Extract ANON_KEY - try multiple patterns
+  ANON_KEY=""
+  if [ -f "$DOCKER_DIR/.env" ]; then
+    ANON_KEY=$(grep -E '^ANON_KEY=' "$DOCKER_DIR/.env" 2>/dev/null | head -1 | sed 's/^ANON_KEY=//')
+    if [ -z "$ANON_KEY" ]; then
+      ANON_KEY=$(grep -E '^SUPABASE_ANON_KEY=' "$DOCKER_DIR/.env" 2>/dev/null | head -1 | sed 's/^SUPABASE_ANON_KEY=//')
+    fi
+  fi
+
+  if [ -z "$ANON_KEY" ]; then
+    log_error "Could not extract ANON_KEY from $DOCKER_DIR/.env"
+    log_info "Available keys in .env:"
+    grep -i "anon\|key" "$DOCKER_DIR/.env" 2>/dev/null | sed 's/=.*/=[HIDDEN]/' || echo "  File not found"
+  else
+    log_success "ANON_KEY extracted (${#ANON_KEY} chars)"
+  fi
+
+  echo "Testing vps-test..."
+  VPS_TEST=$(curl -s -X POST https://justachat.net/functions/v1/vps-test \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ANON_KEY" \
+    -H "apikey: $ANON_KEY" \
+    -d '{}' 2>/dev/null | head -c 200)
+  if echo "$VPS_TEST" | grep -qi 'success\|ok\|working'; then
+    log_success "vps-test: Working"
+  else
+    log_warn "vps-test: $VPS_TEST"
+  fi
+
+  echo "Testing chat-bot..."
+  CHAT_BOT=$(curl -s -X POST https://justachat.net/functions/v1/chat-bot \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ANON_KEY" \
+    -H "apikey: $ANON_KEY" \
+    -d '{"message":"test","botId":"serenity","channelName":"general"}' 2>/dev/null | head -c 200)
+  if echo "$CHAT_BOT" | grep -qi '"reply"'; then
+    log_success "chat-bot: Working"
+  else
+    log_warn "chat-bot: $CHAT_BOT"
+  fi
+
+  echo "Testing ai-moderator..."
+  AI_MOD=$(curl -s -X POST https://justachat.net/functions/v1/ai-moderator \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ANON_KEY" \
+    -H "apikey: $ANON_KEY" \
+    -d '{"message":"hello","username":"test"}' 2>/dev/null | head -c 200)
+  if echo "$AI_MOD" | grep -qi '"safe"'; then
+    log_success "ai-moderator: Working"
+  else
+    log_warn "ai-moderator: $AI_MOD"
+  fi
  
  # ============================================
  # STAGE 9: Radio Diagnostics
@@ -284,8 +302,16 @@ echo 'VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2x
  # ============================================
  log_step "STAGE 10: Recent Error Logs"
  
- echo "Last 10 error lines from functions container:"
- docker logs supabase-functions 2>&1 | grep -i "error\|exception\|failed" | tail -10 || echo "  No recent errors found"
+  # Auto-detect functions container name
+  FUNC_CONTAINER=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -i "function" | head -1 || echo "")
+  if [ -n "$FUNC_CONTAINER" ]; then
+    echo "Last 10 error lines from $FUNC_CONTAINER:"
+    docker logs "$FUNC_CONTAINER" 2>&1 | grep -i "error\|exception\|failed" | tail -10 || echo "  No recent errors found"
+  else
+    log_warn "No functions container found running"
+    echo "  Running containers:"
+    docker ps --format '  {{.Names}} ({{.Status}})' 2>/dev/null | head -10
+  fi
  
  echo ""
  echo "Last 5 lines from Nginx error log:"
