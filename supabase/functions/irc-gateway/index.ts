@@ -965,13 +965,17 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${formatThemedHeader('================================================', dbChannelName)}`);
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
 
-      // Join in database - use upsert with conflict handling so duplicate joins don't error
+      // Join in database - delete then insert to ALWAYS trigger a Realtime INSERT event
+      // (upsert with ignoreDuplicates would silently no-op on stale rows, preventing Realtime from firing)
       await (session.supabase as any)
         .from("channel_members")
-        .upsert(
-          { channel_id: channel.id, user_id: session.userId! },
-          { onConflict: 'channel_id,user_id', ignoreDuplicates: true }
-        );
+        .delete()
+        .eq("channel_id", channel.id)
+        .eq("user_id", session.userId!);
+      
+      await (session.supabase as any)
+        .from("channel_members")
+        .insert({ channel_id: channel.id, user_id: session.userId! });
       console.log(`[IRC] User ${session.nick} (${session.userId}) joined channel_members for ${dbChannelName}`);
 
     } catch (e) {

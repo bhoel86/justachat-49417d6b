@@ -483,16 +483,19 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         await presenceChannel.track({ user_id: user.id, nowPlaying });
 
         // Insert into channel_members so IRC gateway can see web users
+        // Delete-then-insert ensures Realtime INSERT event always fires (upsert with ignoreDuplicates would silently no-op)
         try {
           await supabaseUntyped
             .from('channel_members')
-            .upsert(
-              { channel_id: currentChannel.id, user_id: user.id },
-              { onConflict: 'channel_id,user_id', ignoreDuplicates: true }
-            );
+            .delete()
+            .eq('channel_id', currentChannel.id)
+            .eq('user_id', user.id);
+          await supabaseUntyped
+            .from('channel_members')
+            .insert({ channel_id: currentChannel.id, user_id: user.id });
         } catch (e) {
           // Non-critical - IRC visibility only
-          console.log('[ChatRoom] channel_members upsert skipped:', e);
+          console.log('[ChatRoom] channel_members insert skipped:', e);
         }
       });
 
