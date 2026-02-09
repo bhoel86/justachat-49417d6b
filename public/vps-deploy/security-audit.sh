@@ -16,6 +16,14 @@ NC='\033[0m'
 FULL_MODE="${1:-}"
 DB_CMD="docker exec -i supabase-db psql -U postgres --no-align -t"
 
+# Detect messages table join column (user_id or sender_id)
+MSG_USER_COL=$(docker exec -i supabase-db psql -U postgres --no-align -t -c "
+  SELECT column_name FROM information_schema.columns 
+  WHERE table_schema='public' AND table_name='messages' AND column_name IN ('user_id','sender_id')
+  LIMIT 1;
+" 2>/dev/null | tr -d '[:space:]')
+MSG_USER_COL="${MSG_USER_COL:-user_id}"
+
 banner() {
   echo ""
   echo -e "${CYN}╔══════════════════════════════════════════════════════════╗${NC}"
@@ -43,18 +51,18 @@ banner
 section "1. SPAM / JUNK MESSAGE DETECTION"
 
 info "Scanning for users who sent 10+ identical or near-identical messages..."
-SPAM_USERS=$($DB_CMD <<'SQL'
+SPAM_USERS=$($DB_CMD <<SQL
 SELECT p.username, COUNT(*) as spam_count, 
        LEFT(m.content, 40) as sample,
        MIN(m.created_at)::date as first_seen,
        MAX(m.created_at)::date as last_seen
 FROM messages m
-JOIN profiles p ON p.user_id = m.user_id
+JOIN profiles p ON p.user_id = m.${MSG_USER_COL}
 WHERE (
   -- All dots, periods, commas
-  m.content ~ '^[.\-_=+!@#$%^&*()~,;:]+$'
+  m.content ~ '^[.\-_=+!@#\$%^&*()~,;:]+\$'
   -- Single repeated character
-  OR m.content ~ '^(.)\1{4,}$'
+  OR m.content ~ '^(.)\1{4,}\$'
   -- Very short junk (1-2 chars repeated)
   OR (LENGTH(m.content) >= 5 AND LENGTH(REGEXP_REPLACE(m.content, '(.)(?=.*\1)', '', 'g')) <= 2)
 )
@@ -80,12 +88,12 @@ fi
 section "2. FLOOD DETECTION (Message Rate)"
 
 info "Users who sent 50+ messages in any single hour..."
-FLOOD_USERS=$($DB_CMD <<'SQL'
+FLOOD_USERS=$($DB_CMD <<SQL
 SELECT p.username,
        DATE_TRUNC('hour', m.created_at) as hour,
        COUNT(*) as msg_count
 FROM messages m
-JOIN profiles p ON p.user_id = m.user_id
+JOIN profiles p ON p.user_id = m.${MSG_USER_COL}
 GROUP BY p.username, DATE_TRUNC('hour', m.created_at)
 HAVING COUNT(*) >= 50
 ORDER BY msg_count DESC
@@ -219,7 +227,7 @@ if [ -f /var/log/nginx/access.log ]; then
   info "Scanning for attack patterns in nginx logs..."
   
   # SQL injection attempts
-  SQL_INJECT=$(grep -ciE "(union.*select|drop.*table|insert.*into|delete.*from|sleep\(|benchmark\(|0x[0-9a-f]{4})" /var/log/nginx/access.log 2>/dev/null || echo "0")
+  SQL_INJECT=$(sudo grep -ciE "(union.*select|drop.*table|insert.*into|delete.*from|sleep\(|benchmark\(|0x[0-9a-f]{4})" /var/log/nginx/access.log 2>/dev/null || echo "0")
   if [ "$SQL_INJECT" -gt 0 ]; then
     alert "SQL injection attempts: $SQL_INJECT"
   else
@@ -227,7 +235,7 @@ if [ -f /var/log/nginx/access.log ]; then
   fi
 
   # Path traversal
-  PATH_TRAV=$(grep -ciE "(\.\.\/|\.\.\\\\|etc/passwd|etc/shadow|proc/self)" /var/log/nginx/access.log 2>/dev/null || echo "0")
+  PATH_TRAV=$(sudo grep -ciE "(\.\.\/|\.\.\\\\|etc/passwd|etc/shadow|proc/self)" /var/log/nginx/access.log 2>/dev/null || echo "0")
   if [ "$PATH_TRAV" -gt 0 ]; then
     alert "Path traversal attempts: $PATH_TRAV"
   else
@@ -235,7 +243,7 @@ if [ -f /var/log/nginx/access.log ]; then
   fi
 
   # XSS attempts
-  XSS=$(grep -ciE "(<script|javascript:|onerror=|onload=|eval\()" /var/log/nginx/access.log 2>/dev/null || echo "0")
+  XSS=$(sudo grep -ciE "(<script|javascript:|onerror=|onload=|eval\()" /var/log/nginx/access.log 2>/dev/null || echo "0")
   if [ "$XSS" -gt 0 ]; then
     alert "XSS attempt patterns: $XSS"
   else
@@ -244,7 +252,7 @@ if [ -f /var/log/nginx/access.log ]; then
 
   # Top 10 IPs by request count (potential DDoS/scanners)
   info "Top 10 IPs by request volume:"
-  awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -10 | while read count ip; do
+  sudo awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -10 | while read count ip; do
     if [ "$count" -gt 1000 ]; then
       echo -e "    ${RED}${ip}${NC}: ${count} requests"
     elif [ "$count" -gt 500 ]; then
@@ -255,8 +263,8 @@ if [ -f /var/log/nginx/access.log ]; then
   done
 
   # 4xx/5xx error spikes
-  ERRORS_4xx=$(grep -c '" 4[0-9][0-9] ' /var/log/nginx/access.log 2>/dev/null || echo "0")
-  ERRORS_5xx=$(grep -c '" 5[0-9][0-9] ' /var/log/nginx/access.log 2>/dev/null || echo "0")
+  ERRORS_4xx=$(sudo grep -c '" 4[0-9][0-9] ' /var/log/nginx/access.log 2>/dev/null || echo "0")
+  ERRORS_5xx=$(sudo grep -c '" 5[0-9][0-9] ' /var/log/nginx/access.log 2>/dev/null || echo "0")
   info "4xx errors: $ERRORS_4xx | 5xx errors: $ERRORS_5xx"
 
 else
@@ -344,13 +352,13 @@ if [ "$FULL_MODE" = "--full" ]; then
   section "FULL: SAMPLE SUSPICIOUS MESSAGES"
   
   info "Last 20 messages matching spam patterns:"
-  $DB_CMD <<'SQL'
+  $DB_CMD <<SQL
 SELECT p.username, LEFT(m.content, 60) as content, m.created_at
 FROM messages m
-JOIN profiles p ON p.user_id = m.user_id
+JOIN profiles p ON p.user_id = m.${MSG_USER_COL}
 WHERE (
-  m.content ~ '^[.\-_=+!@#$%^&*()~,;:]+$'
-  OR m.content ~ '^(.)\1{4,}$'
+  m.content ~ '^[.\-_=+!@#\$%^&*()~,;:]+\$'
+  OR m.content ~ '^(.)\1{4,}\$'
   OR LENGTH(m.content) <= 2
 )
 ORDER BY m.created_at DESC
