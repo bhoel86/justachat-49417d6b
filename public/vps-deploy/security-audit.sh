@@ -18,12 +18,14 @@ DB_CMD="docker exec -i supabase-db psql -U postgres --no-align -t"
 
 # Detect messages table join column using DIRECT query test (not information_schema)
 # information_schema can return stale results with collation mismatches
+# NOTE: Must use || true to prevent set -e from killing the script on failed queries
 MSG_USER_COL=""
 for candidate in user_id sender_id author_id profile_id; do
   # Actually try to SELECT the column - this tests the real relation (table or view)
   TEST_OK=$(docker exec -i supabase-db psql -U postgres --no-align -t -c "
-    SELECT '$candidate' FROM (SELECT ${candidate} FROM public.messages LIMIT 0) sub;
-  " 2>/dev/null | tr -d '[:space:]')
+    SELECT '${candidate}' FROM (SELECT ${candidate} FROM public.messages LIMIT 0) sub;
+  " 2>/dev/null || true)
+  TEST_OK=$(echo "$TEST_OK" | tr -d '[:space:]')
   if [ "$TEST_OK" = "$candidate" ]; then
     MSG_USER_COL="$candidate"
     break
@@ -35,17 +37,11 @@ if [ -n "$MSG_USER_COL" ]; then
   echo -e "  [DEBUG] Messages join column verified: '${MSG_USER_COL}' (direct query test)"
 else
   echo -e "  [DEBUG] WARNING: No user column found in messages table via direct query"
-  echo -e "  [DEBUG] Listing actual columns:"
-  docker exec -i supabase-db psql -U postgres --no-align -t -c "
-    SELECT column_name FROM information_schema.columns 
-    WHERE table_schema='public' AND table_name='messages' ORDER BY ordinal_position;
-  " 2>/dev/null | while read col; do
-    echo -e "  [DEBUG]   - $col"
-  done
-  # Try the table directly to see what columns exist
-  docker exec -i supabase-db psql -U postgres -c "SELECT * FROM public.messages LIMIT 0;" 2>&1 | head -3
+  # Show actual table structure for debugging
+  ACTUAL_COLS=$(docker exec -i supabase-db psql -U postgres -c "SELECT * FROM public.messages LIMIT 0;" 2>&1 | head -3 || true)
+  echo -e "  [DEBUG] Actual table header: ${ACTUAL_COLS}"
   MSG_USER_COL="user_id"
-  echo -e "  [DEBUG] Falling back to '${MSG_USER_COL}' (may fail)"
+  echo -e "  [DEBUG] Falling back to '${MSG_USER_COL}' (queries using it will be skipped on error)"
 fi
 
 # Helper: safely count grep matches (handles sudo multi-line output)
