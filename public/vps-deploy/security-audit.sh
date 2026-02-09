@@ -21,14 +21,10 @@ DB_CMD="docker exec -i supabase-db psql -U postgres --no-align -t"
 # NOTE: Must use || true to prevent set -e from killing the script
 
 # Helper: test if a column exists in messages table
+# Uses exit code only — LIMIT 0 returns no rows so we can't parse output
 msg_col_exists() {
   local col="$1"
-  local result
-  result=$(docker exec -i supabase-db psql -U postgres --no-align -t -c "
-    SELECT '${col}' FROM (SELECT ${col} FROM public.messages LIMIT 0) sub;
-  " 2>/dev/null || true)
-  result=$(echo "$result" | tr -d '[:space:]')
-  [ "$result" = "$col" ]
+  docker exec -i supabase-db psql -U postgres -c "SELECT ${col} FROM public.messages LIMIT 0;" >/dev/null 2>&1
 }
 
 # Detect user/sender column
