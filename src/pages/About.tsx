@@ -5,10 +5,17 @@
 
 import { Link } from "react-router-dom";
 import SiteFooter from "@/components/layout/SiteFooter";
+import PageSEO from "@/components/seo/PageSEO";
 
 const About = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageSEO
+        title="About Us - Private Chat for Adults"
+        description="JustAChat is a private chat platform for adults who want real conversation without the noise of social media. No feeds, no likes, no algorithms — just people talking."
+        path="/about"
+        keywords="about justachat, private chat platform, adult chat, no social media, real conversation"
+      />
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import PageSEO from "@/components/seo/PageSEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -369,6 +370,12 @@ const Help = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <PageSEO
+        title="Help & Support"
+        description="Get help with JustAChat: FAQ, troubleshooting, report users, and contact support. Our team is here to help you with any chat issues."
+        path="/help"
+        keywords="justachat help, chat support, troubleshooting, report user, contact support"
+      />
       {/* Header */}
       <header className="border-b border-border bg-card/50 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">

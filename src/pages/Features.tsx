@@ -5,6 +5,7 @@
 
 import { Link } from "react-router-dom";
 import SiteFooter from "@/components/layout/SiteFooter";
+import PageSEO from "@/components/seo/PageSEO";
 import { MessageCircle, Lock, Video, Heart, Bot, Users, Globe, Shield, Mic, Gamepad2 } from "lucide-react";
 
 const Features = () => {
@@ -73,6 +74,12 @@ const Features = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageSEO
+        title="Features - Chat Rooms, Voice, Video & More"
+        description="Explore JustAChat features: public chat rooms, encrypted private messaging, voice and video chat, dating, AI bots, and games. All free, all private."
+        path="/features"
+        keywords="chat features, encrypted messaging, voice chat, video chat, chat rooms, private chat, dating chat, AI chatbots"
+      />
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

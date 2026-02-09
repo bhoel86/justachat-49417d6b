@@ -6,12 +6,19 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Shield, AlertTriangle, Ban, MessageSquareWarning, Heart, Users, Eye, Gavel } from "lucide-react";
+import PageSEO from "@/components/seo/PageSEO";
 
 const CommunityGuidelines = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageSEO
+        title="Community Guidelines"
+        description="JustAChat community guidelines: rules for respectful conversation, prohibited behavior, and moderation policies. Keep our chat rooms safe and welcoming."
+        path="/guidelines"
+        keywords="chat guidelines, community rules, chat moderation, safe chat, chat room rules"
+      />
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">

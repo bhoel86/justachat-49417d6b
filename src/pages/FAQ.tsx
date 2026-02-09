@@ -5,6 +5,7 @@
 
 import { Link } from "react-router-dom";
 import SiteFooter from "@/components/layout/SiteFooter";
+import PageSEO from "@/components/seo/PageSEO";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const FAQ = () => {
@@ -147,6 +148,12 @@ const FAQ = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PageSEO
+        title="FAQ - Frequently Asked Questions"
+        description="Find answers to common questions about JustAChat: how to sign up, chat features, privacy, mIRC integration, and more. Get started with our free private chat platform."
+        path="/faq"
+        keywords="justachat faq, chat help, how to use justachat, private chat questions, chat room help"
+      />
       {/* FAQ Schema */}
       <script 
         type="application/ld+json"

@@ -9,10 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import SiteFooter from "@/components/layout/SiteFooter";
+import PageSEO from "@/components/seo/PageSEO";
 
 const Legal = () => {
   return (
     <div className="min-h-screen bg-background">
+      <PageSEO
+        title="Legal - Terms of Service & Privacy Policy"
+        description="JustAChat legal information including Terms of Service, Privacy Policy, and data handling practices. We respect your privacy and never sell your data."
+        path="/legal"
+        keywords="justachat legal, terms of service, privacy policy, data protection, chat privacy"
+      />
       {/* Header */}
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center px-4">

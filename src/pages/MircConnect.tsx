@@ -6,10 +6,17 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Server, Lock, Hash, User, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PageSEO from "@/components/seo/PageSEO";
 
 const MircConnect = () => {
   return (
     <div className="min-h-screen bg-[#f0f0f0]" style={{ fontFamily: 'Tahoma, Arial, sans-serif' }}>
+      <PageSEO
+        title="Connect with mIRC"
+        description="How to connect to JustAChat using mIRC. Step-by-step setup guide with server details, SSL configuration, and our custom theme package."
+        path="/mirc"
+        keywords="mirc setup, irc connection, justachat irc, mirc theme, irc client setup"
+      />
       {/* Classic mIRC-style header */}
       <div className="bg-gradient-to-r from-[#000080] to-[#0000cd] text-white py-3 px-4 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
