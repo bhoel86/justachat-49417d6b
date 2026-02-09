@@ -847,6 +847,19 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       const coloredTopic = `${roomTheme.fgBg} ${topicText} ${IRC_COLORS.RESET}`;
       sendNumeric(session, RPL.TOPIC, `${channelName} :${coloredTopic}`);
 
+      // Join in database FIRST so the current user appears in NAMES list
+      // delete then insert to ALWAYS trigger a Realtime INSERT event
+      await (session.supabase as any)
+        .from("channel_members")
+        .delete()
+        .eq("channel_id", channel.id)
+        .eq("user_id", session.userId!);
+      
+      await (session.supabase as any)
+        .from("channel_members")
+        .insert({ channel_id: channel.id, user_id: session.userId! });
+      console.log(`[IRC] User ${session.nick} (${session.userId}) joined channel_members for ${dbChannelName}`);
+
       // Get channel members for NAMES
       const { data: members } = await session.supabase!
         .from("channel_members")
@@ -1036,18 +1049,7 @@ async function handleJOIN(session: IRCSession, params: string[]) {
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} :${formatThemedHeader('================================================', dbChannelName)}`);
       sendIRC(session, `:${SERVER_NAME} NOTICE ${channelName} : `);
 
-      // Join in database - delete then insert to ALWAYS trigger a Realtime INSERT event
-      // (upsert with ignoreDuplicates would silently no-op on stale rows, preventing Realtime from firing)
-      await (session.supabase as any)
-        .from("channel_members")
-        .delete()
-        .eq("channel_id", channel.id)
-        .eq("user_id", session.userId!);
-      
-      await (session.supabase as any)
-        .from("channel_members")
-        .insert({ channel_id: channel.id, user_id: session.userId! });
-      console.log(`[IRC] User ${session.nick} (${session.userId}) joined channel_members for ${dbChannelName}`);
+      // (channel_members insert already done above before NAMES query)
 
     } catch (e) {
       console.error("JOIN error:", e);
