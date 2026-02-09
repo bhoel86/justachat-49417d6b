@@ -125,13 +125,33 @@ echo 'VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2x
    log_warn "Functions directory not found at $FUNCTIONS_DIR"
  fi
  
- # ============================================
- # STAGE 6: Restart Services (Cold Restart)
- # ============================================
- log_step "STAGE 6: Restart Services"
- 
- log_info "Cold restarting edge functions container..."
- cd "$DOCKER_DIR"
+  # ============================================
+  # STAGE 5.5: Sync Nginx Config
+  # ============================================
+  log_step "STAGE 5.5: Sync Nginx Config"
+
+  NGINX_SRC="$PROJECT_DIR/dist/nginx-justachat.conf"
+  NGINX_DEST="/etc/nginx/sites-available/justachat.net"
+
+  if [ -f "$NGINX_SRC" ]; then
+    if [ -f "$NGINX_DEST" ]; then
+      log_info "Backing up current Nginx config..."
+      sudo cp "$NGINX_DEST" "${NGINX_DEST}.bak.$(date +%Y%m%d%H%M%S)"
+    fi
+    log_info "Syncing Nginx config from repo..."
+    sudo cp "$NGINX_SRC" "$NGINX_DEST"
+    log_success "Nginx config synced from repo"
+  else
+    log_warn "Nginx config not found at $NGINX_SRC - skipping sync"
+  fi
+
+  # ============================================
+  # STAGE 6: Restart Services (Cold Restart)
+  # ============================================
+  log_step "STAGE 6: Restart Services"
+
+  log_info "Cold restarting edge functions container..."
+  cd "$DOCKER_DIR"
  
  # Cold restart (down + up) to clear Deno cache
  docker compose stop functions 2>/dev/null || docker-compose stop functions 2>/dev/null || true
