@@ -20,9 +20,20 @@ DB_CMD="docker exec -i supabase-db psql -U postgres --no-align -t"
 MSG_USER_COL=$(docker exec -i supabase-db psql -U postgres --no-align -t -c "
   SELECT column_name FROM information_schema.columns 
   WHERE table_schema='public' AND table_name='messages' AND column_name IN ('user_id','sender_id')
-  LIMIT 1;
+  ORDER BY column_name LIMIT 1;
 " 2>/dev/null | tr -d '[:space:]')
 MSG_USER_COL="${MSG_USER_COL:-user_id}"
+
+# Debug: show detected column
+echo -e "  [DEBUG] Messages join column detected: '${MSG_USER_COL}'"
+
+# Helper: safely count grep matches (handles sudo multi-line output)
+safe_count() {
+  local result
+  result=$(sudo grep -ciE "$1" "$2" 2>/dev/null || true)
+  # Take only the last numeric value (strips sudo noise)
+  echo "$result" | grep -oE '[0-9]+' | tail -1 || echo "0"
+}
 
 banner() {
   echo ""
@@ -51,7 +62,12 @@ banner
 section "1. SPAM / JUNK MESSAGE DETECTION"
 
 info "Scanning for users who sent 10+ identical or near-identical messages..."
-SPAM_USERS=$($DB_CMD <<SQL
+
+# First verify the column exists
+COL_CHECK=$($DB_CMD -c "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='messages' ORDER BY ordinal_position;" 2>/dev/null || true)
+
+if echo "$COL_CHECK" | grep -q "$MSG_USER_COL"; then
+  SPAM_USERS=$($DB_CMD <<SQL
 SELECT p.username, COUNT(*) as spam_count, 
        LEFT(m.content, 40) as sample,
        MIN(m.created_at)::date as first_seen,
@@ -59,11 +75,8 @@ SELECT p.username, COUNT(*) as spam_count,
 FROM messages m
 JOIN profiles p ON p.user_id = m.${MSG_USER_COL}
 WHERE (
-  -- All dots, periods, commas
   m.content ~ '^[.\-_=+!@#\$%^&*()~,;:]+\$'
-  -- Single repeated character
   OR m.content ~ '^(.)\1{4,}\$'
-  -- Very short junk (1-2 chars repeated)
   OR (LENGTH(m.content) >= 5 AND LENGTH(REGEXP_REPLACE(m.content, '(.)(?=.*\1)', '', 'g')) <= 2)
 )
 GROUP BY p.username, LEFT(m.content, 40)
@@ -71,15 +84,20 @@ HAVING COUNT(*) >= 10
 ORDER BY spam_count DESC
 LIMIT 20;
 SQL
-)
+  )
 
-if [ -n "$SPAM_USERS" ]; then
-  alert "Spam users detected:"
-  echo "$SPAM_USERS" | while IFS='|' read -r user count sample first last; do
-    echo -e "    ${RED}$user${NC}: ${count}x spam msgs (\"${sample}\") [$first → $last]"
-  done
+  if [ -n "$SPAM_USERS" ]; then
+    alert "Spam users detected:"
+    echo "$SPAM_USERS" | while IFS='|' read -r user count sample first last; do
+      echo -e "    ${RED}$user${NC}: ${count}x spam msgs (\"${sample}\") [$first → $last]"
+    done
+  else
+    ok "No heavy spam patterns detected"
+  fi
 else
-  ok "No heavy spam patterns detected"
+  warn "Column '${MSG_USER_COL}' not found in messages table."
+  info "Available columns: $(echo "$COL_CHECK" | tr '\n' ', ')"
+  info "Skipping spam detection — fix column mapping"
 fi
 
 # ──────────────────────────────────────────────
@@ -88,7 +106,8 @@ fi
 section "2. FLOOD DETECTION (Message Rate)"
 
 info "Users who sent 50+ messages in any single hour..."
-FLOOD_USERS=$($DB_CMD <<SQL
+if echo "$COL_CHECK" | grep -q "$MSG_USER_COL"; then
+  FLOOD_USERS=$($DB_CMD <<SQL
 SELECT p.username,
        DATE_TRUNC('hour', m.created_at) as hour,
        COUNT(*) as msg_count
@@ -99,15 +118,18 @@ HAVING COUNT(*) >= 50
 ORDER BY msg_count DESC
 LIMIT 20;
 SQL
-)
+  )
 
-if [ -n "$FLOOD_USERS" ]; then
-  warn "High-volume senders detected:"
-  echo "$FLOOD_USERS" | while IFS='|' read -r user hour count; do
-    echo -e "    ${YEL}$user${NC}: ${count} msgs at ${hour}"
-  done
+  if [ -n "$FLOOD_USERS" ]; then
+    warn "High-volume senders detected:"
+    echo "$FLOOD_USERS" | while IFS='|' read -r user hour count; do
+      echo -e "    ${YEL}$user${NC}: ${count} msgs at ${hour}"
+    done
+  else
+    ok "No flood patterns detected"
+  fi
 else
-  ok "No flood patterns detected"
+  warn "Skipping flood detection — column '${MSG_USER_COL}' missing"
 fi
 
 # ──────────────────────────────────────────────
@@ -227,24 +249,24 @@ if [ -f /var/log/nginx/access.log ]; then
   info "Scanning for attack patterns in nginx logs..."
   
   # SQL injection attempts
-  SQL_INJECT=$(sudo grep -ciE "(union.*select|drop.*table|insert.*into|delete.*from|sleep\(|benchmark\(|0x[0-9a-f]{4})" /var/log/nginx/access.log 2>/dev/null || echo "0")
-  if [ "$SQL_INJECT" -gt 0 ]; then
+  SQL_INJECT=$(safe_count "(union.*select|drop.*table|insert.*into|delete.*from|sleep\(|benchmark\(|0x[0-9a-f]{4})" /var/log/nginx/access.log)
+  if [ "${SQL_INJECT:-0}" -gt 0 ] 2>/dev/null; then
     alert "SQL injection attempts: $SQL_INJECT"
   else
     ok "No SQL injection patterns"
   fi
 
   # Path traversal
-  PATH_TRAV=$(sudo grep -ciE "(\.\.\/|\.\.\\\\|etc/passwd|etc/shadow|proc/self)" /var/log/nginx/access.log 2>/dev/null || echo "0")
-  if [ "$PATH_TRAV" -gt 0 ]; then
+  PATH_TRAV=$(safe_count "(\.\.\/|\.\.\\\\|etc/passwd|etc/shadow|proc/self)" /var/log/nginx/access.log)
+  if [ "${PATH_TRAV:-0}" -gt 0 ] 2>/dev/null; then
     alert "Path traversal attempts: $PATH_TRAV"
   else
     ok "No path traversal patterns"
   fi
 
   # XSS attempts
-  XSS=$(sudo grep -ciE "(<script|javascript:|onerror=|onload=|eval\()" /var/log/nginx/access.log 2>/dev/null || echo "0")
-  if [ "$XSS" -gt 0 ]; then
+  XSS=$(safe_count "(<script|javascript:|onerror=|onload=|eval\()" /var/log/nginx/access.log)
+  if [ "${XSS:-0}" -gt 0 ] 2>/dev/null; then
     alert "XSS attempt patterns: $XSS"
   else
     ok "No XSS patterns"
@@ -252,7 +274,7 @@ if [ -f /var/log/nginx/access.log ]; then
 
   # Top 10 IPs by request count (potential DDoS/scanners)
   info "Top 10 IPs by request volume:"
-  sudo awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -10 | while read count ip; do
+  sudo awk '{print $1}' /var/log/nginx/access.log 2>/dev/null | sort | uniq -c | sort -rn | head -10 | while read count ip; do
     if [ "$count" -gt 1000 ]; then
       echo -e "    ${RED}${ip}${NC}: ${count} requests"
     elif [ "$count" -gt 500 ]; then
@@ -263,9 +285,9 @@ if [ -f /var/log/nginx/access.log ]; then
   done
 
   # 4xx/5xx error spikes
-  ERRORS_4xx=$(sudo grep -c '" 4[0-9][0-9] ' /var/log/nginx/access.log 2>/dev/null || echo "0")
-  ERRORS_5xx=$(sudo grep -c '" 5[0-9][0-9] ' /var/log/nginx/access.log 2>/dev/null || echo "0")
-  info "4xx errors: $ERRORS_4xx | 5xx errors: $ERRORS_5xx"
+  ERRORS_4xx=$(safe_count '" 4[0-9][0-9] ' /var/log/nginx/access.log)
+  ERRORS_5xx=$(safe_count '" 5[0-9][0-9] ' /var/log/nginx/access.log)
+  info "4xx errors: ${ERRORS_4xx:-0} | 5xx errors: ${ERRORS_5xx:-0}"
 
 else
   warn "Nginx access log not found at /var/log/nginx/access.log"
@@ -351,8 +373,9 @@ info "New users (7 days): $NEW_USERS_WEEK"
 if [ "$FULL_MODE" = "--full" ]; then
   section "FULL: SAMPLE SUSPICIOUS MESSAGES"
   
-  info "Last 20 messages matching spam patterns:"
-  $DB_CMD <<SQL
+  if echo "$COL_CHECK" | grep -q "$MSG_USER_COL"; then
+    info "Last 20 messages matching spam patterns:"
+    $DB_CMD <<SQL
 SELECT p.username, LEFT(m.content, 60) as content, m.created_at
 FROM messages m
 JOIN profiles p ON p.user_id = m.${MSG_USER_COL}
@@ -364,6 +387,9 @@ WHERE (
 ORDER BY m.created_at DESC
 LIMIT 20;
 SQL
+  else
+    warn "Skipping message samples — column '${MSG_USER_COL}' not in messages table"
+  fi
 fi
 
 echo ""
