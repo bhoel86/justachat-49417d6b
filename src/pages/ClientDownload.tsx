@@ -14,6 +14,7 @@ import {
   Terminal, MessageSquare, Shield, Users, Zap,
   Palette, Globe, Lock, CheckCircle2, ExternalLink
 } from "lucide-react";
+import PageSEO from "@/components/seo/PageSEO";
 
 const ClientDownload = () => {
   const { user, loading } = useAuth();
@@ -116,6 +117,12 @@ const ClientDownload = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageSEO
+        title="Download Desktop Client"
+        description="Download the JustAChat desktop client for Windows, macOS, and Linux. Connect via IRC with our custom Quassel fork or mIRC theme package."
+        path="/downloads"
+        keywords="download chat client, desktop chat app, irc client, quassel fork, mirc theme, justachat download"
+      />
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">

@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { MessageSquare, ArrowLeft, Heart, Users, Zap, Shield, Lock, Eye, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SiteFooter from "@/components/layout/SiteFooter";
+import PageSEO from "@/components/seo/PageSEO";
 
 // Background images
 import chatSilhouettes1 from "@/assets/ethos/chat-silhouettes-1.jpg";
@@ -26,6 +27,12 @@ const Ethos = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageSEO
+        title="Our Ethos - Real Conversation, No Noise"
+        description="Why JustAChat exists: a return to real conversation without feeds, likes, or algorithms. Inspired by the golden age of IRC, AIM, and MSN Messenger."
+        path="/ethos"
+        keywords="justachat ethos, real conversation, no social media, irc nostalgia, private chat philosophy"
+      />
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
