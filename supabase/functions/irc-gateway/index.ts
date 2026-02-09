@@ -9,7 +9,7 @@ const corsHeaders = {
 // IRC Server configuration
 const SERVER_NAME = "jac.chat";
 const SERVER_VERSION = "JAC-IRC-2.1";
-const GATEWAY_DEPLOY_ID = "2026-02-09-bridge-poll";
+const GATEWAY_DEPLOY_ID = "2026-02-09-bridge-poll-v2";
 const NETWORK_NAME = "JACNet";
 const LOCAL_HOST_NAME = "Unix";
 
@@ -2587,11 +2587,13 @@ async function handleKILL(session: IRCSession, params: string[]) {
         }
       }
       
-      // Close the connection
-      try {
-        s.ws.close();
-      } catch (e) {
-        console.error("Error closing killed connection:", e);
+      // Close the connection (skip for bridge sessions)
+      if (!s.isBridge) {
+        try {
+          s.ws.close();
+        } catch (e) {
+          console.error("Error closing killed connection:", e);
+        }
       }
       
       // Remove from sessions
