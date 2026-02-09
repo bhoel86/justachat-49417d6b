@@ -1,212 +1,100 @@
 
-# VPS Network Error Diagnosis and Fix
 
-## Problem Analysis
+# Fix Plan: Radio, Ghost Members, IRC Relay, and Banner Styling
 
-After adding the new `/about`, `/features`, and `/faq` pages to the VPS, you're seeing "network error when attempting to fetch resource." This is caused by:
+## Issue 1: Radio Not Working on VPS
 
-1. **JWT Key Mismatch** - The frontend `.env` key (ending in `...ApWkSEYJ`) did not match the Docker backend key (ending in `...FnScRoOJ`) - we fixed this earlier but the frontend hasn't been rebuilt yet
-2. **Stale Production Build** - The new pages and the corrected environment variables haven't been compiled into the production bundle
-3. **Browser Cache** - Old JavaScript bundles may be cached in your browser
+**Root Cause:** The Content-Security-Policy (CSP) header currently served by Nginx on the VPS does not include YouTube domains. The master-update output shows the live CSP is missing `youtube.com`, `ytimg.com` entries in `script-src`, `frame-src`, `connect-src`, and `media-src`. The correct CSP exists in `public/nginx-justachat.conf` in the repo, but it appears the VPS's actual Nginx config file (`/etc/nginx/sites-available/justachat.net` or similar) is stale and was never synced.
 
-## Diagnostic and Fix Script
+**Fix:** Update `master-update.sh` to automatically sync the Nginx config from the repo during deploy. Add a stage that copies `dist/nginx-justachat.conf` to `/etc/nginx/sites-available/justachat.net` (or wherever the live config lives) before reloading Nginx. This ensures the CSP always matches the repo.
 
-Run this single script on your VPS to diagnose and fix everything:
+**Technical Details:**
+- Add a new stage in `public/vps-deploy/master-update.sh` between "Sync Edge Functions" and "Restart Services"
+- The stage will copy `dist/nginx-justachat.conf` to the correct Nginx path
+- Backup the old config first for safety
+- The CSP in the repo file already has the correct YouTube entries
 
-```bash
-#!/bin/bash
-# JustAChat VPS - Diagnose and Fix Network Errors
-# Run: bash /var/www/justachat/vps-network-fix.sh
+---
 
-set -e
-cd /var/www/justachat
+## Issue 2: Users/Admins Showing in Rooms They Did Not Join
 
-echo "╔════════════════════════════════════════════════════════════════════╗"
-echo "║     JustAChat™ VPS Network Error Diagnosis & Fix                   ║"
-echo "╚════════════════════════════════════════════════════════════════════╝"
-echo ""
+**Root Cause:** Two problems converge:
 
-# ═══════════════════════════════════════════════════════════════════════════
-# STEP 1: Verify JWT Keys Match
-# ═══════════════════════════════════════════════════════════════════════════
-echo "📋 STEP 1: Checking JWT Key Alignment..."
-echo ""
+1. **IRC disconnect does not clean up `channel_members`:** When an IRC user disconnects (`socket.onclose` at line 3199), the code removes them from the in-memory `channelSubscriptions` but **never deletes their `channel_members` rows** from the database. These stale rows cause users to appear in rooms indefinitely.
 
-FRONTEND_KEY=$(grep "VITE_SUPABASE_PUBLISHABLE_KEY" /var/www/justachat/.env | cut -d'=' -f2 | tail -c 20)
-DOCKER_KEY=$(grep "^ANON_KEY=" ~/supabase/docker/.env | cut -d'=' -f2 | tail -c 20)
+2. **Web user cleanup is best-effort:** The web client (`ChatRoom.tsx` line 511-517) attempts to delete `channel_members` on unmount, but if the browser tab is closed abruptly (or the network drops), the cleanup never runs, leaving stale entries.
 
-echo "   Frontend key ends with: ...${FRONTEND_KEY}"
-echo "   Docker key ends with:   ...${DOCKER_KEY}"
+**Fix:**
+- **IRC Gateway (`socket.onclose`):** Add database cleanup to delete all `channel_members` rows for the disconnecting user across all their joined channels.
+- **Periodic cleanup:** Add a lightweight cleanup mechanism. When the member list fetches members, cross-reference `channel_members` entries against current presence state. Members in `channel_members` who are NOT in the presence state and NOT connected via IRC should be pruned.
 
-if [[ "$FRONTEND_KEY" != "$DOCKER_KEY" ]]; then
-    echo ""
-    echo "   ❌ MISMATCH DETECTED - Syncing keys..."
-    
-    ANON_KEY=$(grep "^ANON_KEY=" ~/supabase/docker/.env | cut -d'=' -f2)
-    
-    cat > /var/www/justachat/.env << EOF
-VITE_SUPABASE_URL=https://justachat.net
-VITE_SUPABASE_PUBLISHABLE_KEY=$ANON_KEY
-VITE_SUPABASE_PROJECT_ID=justachat-vps
-EOF
-    
-    echo "   ✅ Keys synced!"
-else
-    echo "   ✅ Keys already match"
-fi
-echo ""
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STEP 2: Test Backend Connectivity
-# ═══════════════════════════════════════════════════════════════════════════
-echo "📋 STEP 2: Testing Backend Services..."
-echo ""
-
-ANON_KEY=$(grep "VITE_SUPABASE_PUBLISHABLE_KEY" /var/www/justachat/.env | cut -d'=' -f2)
-
-# Test Auth
-AUTH_RESULT=$(curl -s -H "apikey: $ANON_KEY" https://justachat.net/auth/v1/settings 2>/dev/null | head -c 50)
-if [[ "$AUTH_RESULT" == *"external"* ]]; then
-    echo "   ✅ Auth service: OK"
-else
-    echo "   ❌ Auth service: FAILED"
-    echo "      Response: $AUTH_RESULT"
-fi
-
-# Test REST API
-REST_RESULT=$(curl -s -H "apikey: $ANON_KEY" https://justachat.net/rest/v1/channels?select=name\&limit=1 2>/dev/null)
-if [[ "$REST_RESULT" == *"name"* ]]; then
-    echo "   ✅ REST API: OK"
-else
-    echo "   ❌ REST API: FAILED"
-    echo "      Response: $REST_RESULT"
-fi
-
-# Test site_settings (for theme loading)
-THEME_RESULT=$(curl -s -H "apikey: $ANON_KEY" "https://justachat.net/rest/v1/site_settings?key=eq.theme" 2>/dev/null)
-if [[ "$THEME_RESULT" == *"value"* ]] || [[ "$THEME_RESULT" == "[]" ]]; then
-    echo "   ✅ site_settings table: OK"
-else
-    echo "   ⚠️  site_settings: May need initialization"
-    echo "      Response: $THEME_RESULT"
-fi
-echo ""
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STEP 3: Pull Latest Code
-# ═══════════════════════════════════════════════════════════════════════════
-echo "📋 STEP 3: Pulling Latest Code from GitHub..."
-echo ""
-
-git fetch origin
-git reset --hard origin/main
-echo "   ✅ Code synced to latest"
-echo ""
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STEP 4: Clean Build
-# ═══════════════════════════════════════════════════════════════════════════
-echo "📋 STEP 4: Clean Rebuilding Frontend..."
-echo ""
-
-# Remove old build artifacts
-rm -rf dist node_modules/.vite
-
-# Install any new dependencies
-npm install --silent 2>/dev/null || npm install
-
-# Build with correct environment
-npm run build
-
-echo ""
-echo "   ✅ Frontend rebuilt with new pages and correct keys"
-echo ""
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STEP 5: Verify New Pages Exist
-# ═══════════════════════════════════════════════════════════════════════════
-echo "📋 STEP 5: Verifying New Pages in Build..."
-echo ""
-
-if grep -q "About.*JustAChat" dist/assets/*.js 2>/dev/null; then
-    echo "   ✅ About page: Compiled"
-else
-    echo "   ⚠️  About page: Not found in build"
-fi
-
-if grep -q "Powerful.*Features" dist/assets/*.js 2>/dev/null; then
-    echo "   ✅ Features page: Compiled"
-else
-    echo "   ⚠️  Features page: Not found in build"
-fi
-
-if grep -q "Frequently.*Asked" dist/assets/*.js 2>/dev/null; then
-    echo "   ✅ FAQ page: Compiled"
-else
-    echo "   ⚠️  FAQ page: Not found in build"
-fi
-echo ""
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STEP 6: Reload Nginx
-# ═══════════════════════════════════════════════════════════════════════════
-echo "📋 STEP 6: Reloading Nginx..."
-echo ""
-
-sudo nginx -t && sudo systemctl reload nginx
-echo "   ✅ Nginx reloaded"
-echo ""
-
-# ═══════════════════════════════════════════════════════════════════════════
-# FINAL VERIFICATION
-# ═══════════════════════════════════════════════════════════════════════════
-echo "╔════════════════════════════════════════════════════════════════════╗"
-echo "║                    ✅ FIX COMPLETE                                  ║"
-echo "╚════════════════════════════════════════════════════════════════════╝"
-echo ""
-echo "🔍 Test these URLs in your browser (hard refresh with Ctrl+Shift+R):"
-echo ""
-echo "   • https://justachat.net"
-echo "   • https://justachat.net/about"
-echo "   • https://justachat.net/features"
-echo "   • https://justachat.net/faq"
-echo ""
-echo "💡 If you still see errors, clear your browser cache completely:"
-echo "   Chrome: Settings → Privacy → Clear browsing data → Cached images"
-echo ""
+**Technical Details (IRC Gateway):**
+```
+socket.onclose:
+  - For each channelId in session.channels:
+    - Delete from channel_members where channel_id = channelId AND user_id = session.userId
+  - Remove from channelSubscriptions (already done)
+  - Delete from sessions (already done)
 ```
 
-## How to Run
+This uses the `realtimeClient` (service role) since the session's authenticated client may already be invalid at disconnect time.
 
-1. **SSH into your VPS**
-2. **Create the script**:
-   ```bash
-   cat > /var/www/justachat/vps-network-fix.sh << 'SCRIPT'
-   # [paste the script content above]
-   SCRIPT
-   ```
-3. **Run it**:
-   ```bash
-   bash /var/www/justachat/vps-network-fix.sh
-   ```
+---
 
-## What This Script Does
+## Issue 3: IRC Cannot See Web Chat
 
-| Step | Action | Purpose |
-|------|--------|---------|
-| 1 | Check JWT keys | Ensures frontend uses correct anon key |
-| 2 | Test backend | Verifies Auth, REST API, and theme table work |
-| 3 | Git pull | Gets latest code with new pages |
-| 4 | Clean build | Compiles new frontend with correct env vars |
-| 5 | Verify pages | Confirms About/Features/FAQ in bundle |
-| 6 | Nginx reload | Serves the new build |
+**Root Cause:** The Realtime message relay (line 3234-3365) subscribes to `postgres_changes` on the `messages` table using a service-role client. This subscription works for relaying web messages to IRC. However, the relay depends on a successful Realtime connection.
 
-## After Running
+Looking at the VPS logs, there are repeated `Connection refused` errors for `[::1]:8000` (IPv6). The Nginx config proxies to `localhost:8000` but Kong is listening on IPv4 only (`127.0.0.1:8000`). When the edge function's Realtime client connects, it goes through the same path and may hit this IPv6 issue, causing the relay subscription to fail silently.
 
-- **Hard refresh** the browser (Ctrl+Shift+R / Cmd+Shift+R)
-- Test login at `https://justachat.net`
-- Verify new pages load at `/about`, `/features`, `/faq`
+Additionally, the edge function container is cold-restarted during every deploy, which means the Realtime subscription has to re-establish. If the subscription enters `CHANNEL_ERROR` or `TIMED_OUT`, there's a 5-second retry, but it may keep failing if the underlying connection is broken.
 
-## Technical Root Cause
+**Fix:**
+1. **Nginx IPv6 fix:** Update the Nginx proxy config to explicitly use `127.0.0.1:8000` instead of `localhost:8000` to prevent IPv6 resolution issues.
+2. **Verify Realtime relay:** The relay code already has retry logic (line 3357-3364). The IPv6 fix should resolve the underlying issue.
 
-The SiteFooter component uses `useTheme()` which calls Supabase's `site_settings` table. When the frontend was using the wrong JWT key (`...ApWkSEYJ`) instead of the Docker backend's key (`...FnScRoOJ`), all API calls including theme fetching failed with "Invalid authentication credentials," which the browser reports as a network error.
+**Technical Details:**
+- In `public/nginx-justachat.conf`, change `proxy_pass http://localhost:8000` to `proxy_pass http://127.0.0.1:8000` in the Supabase API proxy block.
+
+---
+
+## Issue 4: Make IRC Banners Cooler
+
+**Current State:** The ASCII art banners are plain `#`-character block letters that look functional but boring now that spacing is correct.
+
+**Fix:** Replace the basic hash-character ASCII art with more visually appealing designs using dots, slashes, backslashes, and pipe characters for a cleaner, more stylized look. Add decorative borders and themed accents around each banner.
+
+**Technical Details:**
+- Redesign each room's ASCII art in `ROOM_ASCII_ART_RAW` (lines 348-440 in `irc-gateway/index.ts`)
+- Use a mix of `/`, `\`, `|`, `_`, `.`, and other ASCII chars (0x20-0x7E only per the standard) 
+- Add decorative top/bottom borders using `=`, `-`, `~` characters with room-specific accent characters
+- Enhance the welcome section formatting around the ASCII art with better dividers and spacing
+- Add a "powered by" footer line with the JAC brand
+
+Example style upgrade for "GENERAL":
+```
+     ___  ____  _  _  ____  ____   __   __
+    / __)(  __)( \( )(  __)(  _ \ / _\ (  )
+   ( (_ \ ) _) )  (  ) _)  )   //    \/ (_/\
+    \___/(____)(_)\_)(____)(__ _)\_/\_/\____/
+```
+
+Each room gets its own unique style treatment while maintaining the 50-character width standard and pure ASCII requirement.
+
+---
+
+## Summary of Files to Change
+
+| File | Change |
+|------|--------|
+| `supabase/functions/irc-gateway/index.ts` | Fix `socket.onclose` cleanup, redesign ASCII banners |
+| `public/nginx-justachat.conf` | Fix IPv6 proxy_pass, ensure CSP has YouTube |
+| `public/vps-deploy/master-update.sh` | Add Nginx config sync stage |
+
+## Implementation Order
+
+1. Fix Nginx config (IPv6 + CSP sync) -- resolves radio and IRC relay
+2. Fix `channel_members` cleanup in IRC gateway `onclose` -- resolves ghost members
+3. Redesign ASCII art banners -- visual improvement
+4. Deploy and verify
+
