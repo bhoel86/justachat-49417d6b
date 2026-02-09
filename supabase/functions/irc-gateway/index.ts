@@ -8,7 +8,8 @@ const corsHeaders = {
 
 // IRC Server configuration
 const SERVER_NAME = "jac.chat";
-const SERVER_VERSION = "JAC-IRC-1.0";
+const SERVER_VERSION = "JAC-IRC-2.1";
+const GATEWAY_DEPLOY_ID = "2026-02-09-relay-fix";
 const NETWORK_NAME = "JACNet";
 const LOCAL_HOST_NAME = "Unix";
 
@@ -3245,10 +3246,11 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 if (supabaseUrl && supabaseServiceKey) {
+  console.log(`[IRC Gateway ${GATEWAY_DEPLOY_ID}] Initializing Realtime relay. URL=${supabaseUrl}`);
   const realtimeClient = createClient(supabaseUrl, supabaseServiceKey);
   
   function setupMessageRelay() {
-    console.log("[IRC Gateway] Setting up Realtime message relay...");
+    console.log(`[IRC Gateway ${GATEWAY_DEPLOY_ID}] Setting up Realtime message relay...`);
     
     // Subscribe to messages table for realtime updates
     const relayChannel = realtimeClient
