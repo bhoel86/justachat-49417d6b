@@ -84,16 +84,9 @@ fi
 
 cd ~/supabase/docker
 
-# ─── 3. RESTART SERVICES ───
+# ─── 3. CHECK SERVICES (no restart - assume already running) ───
 echo ""
-echo "=== [3/5] RESTARTING SUPABASE SERVICES ==="
-docker compose down
-docker compose up -d
-echo "Waiting 20s for services to start..."
-sleep 20
-
-# Check services
-echo ""
+echo "=== [3/5] CHECKING SUPABASE SERVICES ==="
 echo "Service status:"
 docker ps --format "table {{.Names}}\t{{.Status}}" | grep supabase
 
