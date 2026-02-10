@@ -260,20 +260,33 @@ const Home = () => {
     fetchMemberCounts();
 
     // Subscribe to channel_members changes for real-time room counts
-    // Debounce to prevent flicker from delete-then-insert pattern
+    // Apply deltas directly from payload to avoid flicker from refetch during upsert
     let refetchTimeout: ReturnType<typeof setTimeout> | null = null;
-    const debouncedFetch = () => {
-      if (refetchTimeout) clearTimeout(refetchTimeout);
-      refetchTimeout = setTimeout(() => fetchMemberCounts(), 600);
-    };
 
     const memberChannel = supabase
       .channel('lobby-member-counts')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'channel_members' },
-        () => {
-          debouncedFetch();
+        { event: 'INSERT', schema: 'public', table: 'channel_members' },
+        (payload) => {
+          const channelId = (payload.new as any)?.channel_id;
+          if (channelId) {
+            // Debounce INSERT to let delete-then-insert settle
+            if (refetchTimeout) clearTimeout(refetchTimeout);
+            refetchTimeout = setTimeout(() => fetchMemberCounts(), 800);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'channel_members' },
+        (payload) => {
+          const channelId = (payload.old as any)?.channel_id;
+          if (channelId) {
+            // Debounce DELETE to let delete-then-insert settle
+            if (refetchTimeout) clearTimeout(refetchTimeout);
+            refetchTimeout = setTimeout(() => fetchMemberCounts(), 800);
+          }
         }
       )
       .subscribe();
