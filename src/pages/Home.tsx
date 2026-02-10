@@ -256,6 +256,19 @@ const Home = () => {
 
     fetchMemberCounts();
 
+    // Subscribe to channel_members changes for real-time room counts
+    const memberChannel = supabase
+      .channel('lobby-member-counts')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'channel_members' },
+        () => {
+          // Refetch all counts when any member joins/leaves
+          fetchMemberCounts();
+        }
+      )
+      .subscribe();
+
     // Also subscribe to presence for live updates (adds to member count)
     const presenceChannels: ReturnType<typeof supabase.channel>[] = [];
 
@@ -278,6 +291,7 @@ const Home = () => {
     });
 
     return () => {
+      supabase.removeChannel(memberChannel);
       presenceChannels.forEach(ch => supabase.removeChannel(ch));
     };
   }, [channels]);
