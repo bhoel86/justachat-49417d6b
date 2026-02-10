@@ -90,7 +90,7 @@ const AdminEmails = () => {
       // Since we can't access auth.users directly, we'll show user_id as placeholder
       // In a real scenario, you'd use a service role or edge function to get emails
       const userList = profiles?.map((p: { user_id: string; username: string; created_at: string }) => {
-        const locationInfo = locationMap.get(p.user_id);
+        const locationInfo = locationMap.get(p.user_id) as { ip_address: string | null; isp: string | null } | undefined;
         return {
           user_id: p.user_id,
           email: `${p.username.toLowerCase().replace(/\s+/g, '.')}@user.local`, // Placeholder
