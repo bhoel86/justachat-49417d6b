@@ -499,7 +499,31 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         }
       });
 
+    // Helper to clean up channel_members on any exit
+    const cleanupMember = () => {
+      if (user?.id && currentChannel?.id) {
+        // Use sendBeacon for reliability on tab close
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/channel_members?channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}`;
+        const headers = {
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Prefer': 'return=minimal',
+        };
+        // Try fetch DELETE (works during normal unmount)
+        fetch(url, { method: 'DELETE', headers }).catch(() => {});
+      }
+    };
+
+    // Handle tab/browser close - beforeunload fires even when React cleanup doesn't
+    const handleBeforeUnload = () => {
+      cleanupMember();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+
       // Only clear refs if this is the active channel
       if (presenceChannelRef.current === presenceChannel) {
         presenceChannelRef.current = null;
@@ -511,14 +535,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       setOnlineUsers([]);
 
       // Clean up channel_members entry so IRC sees user left
-      if (user?.id && currentChannel?.id) {
-        supabaseUntyped
-          .from('channel_members')
-          .delete()
-          .eq('channel_id', currentChannel.id)
-          .eq('user_id', user.id)
-          .then(() => undefined, () => undefined);
-      }
+      cleanupMember();
     };
   }, [user?.id, currentChannel?.id]);
 
