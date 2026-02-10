@@ -7,6 +7,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CHAT_BOTS, ChatBot, getBotResponseDelay, getRandomTopic } from '@/lib/chatBots';
 import { getChatBotFunctionName } from '@/lib/environment';
+import { useBotSettings } from '@/hooks/useBotSettings';
 
 interface Message {
   id: string;
@@ -17,11 +18,6 @@ interface Message {
     username: string;
     avatar_url?: string | null;
   };
-}
-
-interface BotSettings {
-  enabled: boolean;
-  allowed_channels: string[];
 }
 
 interface UseChatBotsProps {
@@ -40,44 +36,11 @@ export const useChatBots = ({
   enabled = true,
 }: UseChatBotsProps) => {
   const [activeBots, setActiveBots] = useState<Set<string>>(new Set());
-  const [botSettings, setBotSettings] = useState<BotSettings | null>(null);
+  const botSettings = useBotSettings();
   const lastBotActivityRef = useRef<number>(Date.now());
   const pendingResponseRef = useRef<boolean>(false);
   const conversationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const responseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Fetch bot settings from database
-  useEffect(() => {
-    const fetchSettings = async () => {
-      const { data, error } = await supabase
-        .from('bot_settings')
-        .select('enabled, allowed_channels')
-        .limit(1)
-        .single();
-
-      if (!error && data) {
-        setBotSettings(data);
-      }
-    };
-
-    fetchSettings();
-
-    // Subscribe to changes
-    const channel = supabase
-      .channel('bot-settings-changes')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'bot_settings' },
-        (payload) => {
-          setBotSettings(payload.new as BotSettings);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   // Check if bots are enabled for this channel
   const botsEnabled = enabled && 

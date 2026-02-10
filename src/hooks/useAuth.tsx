@@ -4,15 +4,13 @@
  */
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { User, Session, createClient } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { clearAuthStorage } from '@/lib/authStorage';
 
-// Create an untyped client for tables not yet in generated types
-const supabaseUntyped = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
+// Legacy alias — all tables are now in generated types so we just re-export
+// the typed client. Consumers can migrate to importing supabase directly.
+const supabaseUntyped = supabase as any;
 
 type AppRole = 'owner' | 'admin' | 'moderator' | 'user';
 

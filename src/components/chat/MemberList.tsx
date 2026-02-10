@@ -90,11 +90,7 @@ const roleConfig = {
   },
 };
 
-interface BotSettings {
-  enabled: boolean;
-  allowed_channels: string[];
-  moderator_bots_enabled: boolean;
-}
+import { useBotSettings } from "@/hooks/useBotSettings";
 
 const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', channelId, onOpenPm, onOpenBotPm, onAction }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
@@ -103,7 +99,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [viewProfileTarget, setViewProfileTarget] = useState<Member | null>(null);
   const [showOffline, setShowOffline] = useState(false);
-  const [botSettings, setBotSettings] = useState<BotSettings | null>(null);
+  const botSettings = useBotSettings();
   const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
   const radio = useRadioOptional();
@@ -117,39 +113,6 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
   const [currentBio, setCurrentBio] = useState<string | null>(null);
   const [currentAge, setCurrentAge] = useState<number | null>(null);
 
-  // Fetch bot settings and subscribe to changes
-  useEffect(() => {
-    const fetchBotSettings = async () => {
-      const { data, error } = await supabaseUntyped
-        .from('bot_settings')
-        .select('enabled, allowed_channels, moderator_bots_enabled')
-        .limit(1)
-        .single();
-
-      if (!error && data) {
-        setBotSettings(data);
-      }
-    };
-
-    fetchBotSettings();
-
-    // Subscribe to bot settings changes
-    const channel = supabase
-      .channel('bot-settings-member-list')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'bot_settings' },
-        (payload) => {
-          setBotSettings(payload.new as BotSettings);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-  
   useEffect(() => {
     if (user) {
       supabaseUntyped
