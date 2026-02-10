@@ -259,9 +259,24 @@ const Home = () => {
 
     fetchMemberCounts();
 
-    // Subscribe to channel_members changes for real-time room counts
-    // Apply deltas directly from payload to avoid flicker from refetch during upsert
-    let refetchTimeout: ReturnType<typeof setTimeout> | null = null;
+    // Subscribe to channel_members changes — apply deltas directly from payload
+    // to avoid flicker from delete-then-insert upsert pattern
+    const knownMembers: Record<string, Set<string>> = {};
+    // Seed known members from initial fetch
+    channels.forEach(ch => { knownMembers[ch.id] = new Set(); });
+
+    const seedKnownMembers = async () => {
+      for (const channel of channels) {
+        const { data } = await supabase
+          .from('channel_members')
+          .select('user_id')
+          .eq('channel_id', channel.id);
+        if (data) {
+          knownMembers[channel.id] = new Set(data.map(d => d.user_id));
+        }
+      }
+    };
+    seedKnownMembers();
 
     const memberChannel = supabase
       .channel('lobby-member-counts')
@@ -269,11 +284,11 @@ const Home = () => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'channel_members' },
         (payload) => {
-          const channelId = (payload.new as any)?.channel_id;
-          if (channelId) {
-            // Debounce INSERT to let delete-then-insert settle
-            if (refetchTimeout) clearTimeout(refetchTimeout);
-            refetchTimeout = setTimeout(() => fetchMemberCounts(), 800);
+          const row = payload.new as any;
+          if (row?.channel_id && row?.user_id) {
+            if (!knownMembers[row.channel_id]) knownMembers[row.channel_id] = new Set();
+            knownMembers[row.channel_id].add(row.user_id);
+            setRoomUserCounts(prev => ({ ...prev, [row.channel_id]: knownMembers[row.channel_id].size }));
           }
         }
       )
@@ -281,18 +296,16 @@ const Home = () => {
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'channel_members' },
         (payload) => {
-          const channelId = (payload.old as any)?.channel_id;
-          if (channelId) {
-            // Debounce DELETE to let delete-then-insert settle
-            if (refetchTimeout) clearTimeout(refetchTimeout);
-            refetchTimeout = setTimeout(() => fetchMemberCounts(), 800);
+          const row = payload.old as any;
+          if (row?.channel_id && row?.user_id) {
+            knownMembers[row.channel_id]?.delete(row.user_id);
+            setRoomUserCounts(prev => ({ ...prev, [row.channel_id]: knownMembers[row.channel_id]?.size || 0 }));
           }
         }
       )
       .subscribe();
 
     return () => {
-      if (refetchTimeout) clearTimeout(refetchTimeout);
       supabase.removeChannel(memberChannel);
     };
   }, [channels]);
