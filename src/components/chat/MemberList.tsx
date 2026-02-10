@@ -54,23 +54,8 @@ interface MemberListProps {
   onAction?: (targetUsername: string, action: string) => void;
 }
 
-// Fun IRC-style user actions
-const USER_ACTIONS = {
-  funny: [
-    { emoji: "🐟", action: "slaps", suffix: "around with a large trout" },
-    { emoji: "🍕", action: "throws", suffix: "a slice of pizza at" },
-    { emoji: "🎸", action: "serenades", suffix: "with an air guitar solo" },
-    { emoji: "💨", action: "blows", suffix: "a raspberry at" },
-    { emoji: "🤡", action: "does", suffix: "a silly dance for" },
-  ],
-  nice: [
-    { emoji: "🙌", action: "high-fives", suffix: "" },
-    { emoji: "🤗", action: "gives", suffix: "a warm hug" },
-    { emoji: "🎉", action: "celebrates", suffix: "with confetti" },
-    { emoji: "⭐", action: "awards", suffix: "a gold star" },
-    { emoji: "☕", action: "offers", suffix: "a cup of coffee" },
-  ],
-};
+// Fun IRC-style user actions - imported from shared lib
+import { USER_ACTIONS } from "@/lib/userActions";
 
 const roleConfig = {
   owner: {

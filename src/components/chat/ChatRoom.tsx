@@ -500,17 +500,17 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       });
 
     // Helper to clean up channel_members on any exit
+    // Uses keepalive:true so the browser finishes the request even after the page unloads
     const cleanupMember = () => {
       if (user?.id && currentChannel?.id) {
-        // Use sendBeacon for reliability on tab close
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/channel_members?channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}`;
-        const headers = {
+        const headers: Record<string, string> = {
           'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           'Prefer': 'return=minimal',
         };
-        // Try fetch DELETE (works during normal unmount)
-        fetch(url, { method: 'DELETE', headers }).catch(() => {});
+        // keepalive: true ensures the request survives page unload (beforeunload/visibilitychange)
+        fetch(url, { method: 'DELETE', headers, keepalive: true }).catch(() => {});
       }
     };
 
@@ -519,10 +519,19 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       cleanupMember();
     };
 
+    // Also handle mobile tab switch (visibilitychange fires when app goes to background)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        cleanupMember();
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
 
       // Only clear refs if this is the active channel
       if (presenceChannelRef.current === presenceChannel) {
