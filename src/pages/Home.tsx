@@ -151,6 +151,7 @@ const Home = () => {
   const [showDonateModal, setShowDonateModal] = useState(false);
   const [botsGloballyEnabled, setBotsGloballyEnabled] = useState(false);
   const [botsAllowedChannels, setBotsAllowedChannels] = useState<string[]>([]);
+  const [moderatorBotsEnabled, setModeratorBotsEnabled] = useState(false);
   const [friendsCounts, setFriendsCounts] = useState({ total: 0, online: 0, pending: 0 });
 
   // OAuth callback processing guard (VPS):
@@ -189,12 +190,13 @@ const Home = () => {
     const fetchBotSettings = async () => {
       const { data } = await supabaseUntyped
         .from('bot_settings')
-        .select('enabled, allowed_channels')
+        .select('enabled, allowed_channels, moderator_bots_enabled')
         .limit(1)
         .single();
       if (data) {
         setBotsGloballyEnabled(data.enabled ?? false);
         setBotsAllowedChannels(data.allowed_channels ?? []);
+        setModeratorBotsEnabled(data.moderator_bots_enabled ?? false);
       }
     };
     fetchBotSettings();
@@ -203,9 +205,10 @@ const Home = () => {
     const channel = supabase
       .channel('home-bot-settings')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bot_settings' }, (payload) => {
-        const newData = payload.new as { enabled?: boolean; allowed_channels?: string[] };
+        const newData = payload.new as { enabled?: boolean; allowed_channels?: string[]; moderator_bots_enabled?: boolean };
         setBotsGloballyEnabled(newData.enabled ?? false);
         setBotsAllowedChannels(newData.allowed_channels ?? []);
+        setModeratorBotsEnabled(newData.moderator_bots_enabled ?? false);
       })
       .subscribe();
 
@@ -698,7 +701,8 @@ const Home = () => {
               ) : (
                 channels.map((channel) => {
                   const botsEnabledForChannel = botsGloballyEnabled && botsAllowedChannels.includes(channel.name);
-                  const userCount = (roomUserCounts[channel.id] || 0) + (botsEnabledForChannel ? getRoomBotCount(channel.name) : 0);
+                  const modBotCount = (!botsGloballyEnabled && moderatorBotsEnabled && botsAllowedChannels.includes(channel.name)) ? 1 : 0;
+                  const userCount = (roomUserCounts[channel.id] || 0) + (botsEnabledForChannel ? getRoomBotCount(channel.name) : modBotCount);
                   return (
                     <button
                       key={channel.id}
@@ -856,7 +860,8 @@ const Home = () => {
                       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-1.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
                         {channels.map((channel) => {
                           const botsEnabledForChannel = botsGloballyEnabled && botsAllowedChannels.includes(channel.name);
-                          const userCount = (roomUserCounts[channel.id] || 0) + (botsEnabledForChannel ? getRoomBotCount(channel.name) : 0);
+                          const modBotCount = (!botsGloballyEnabled && moderatorBotsEnabled && botsAllowedChannels.includes(channel.name)) ? 1 : 0;
+                          const userCount = (roomUserCounts[channel.id] || 0) + (botsEnabledForChannel ? getRoomBotCount(channel.name) : modBotCount);
                           return (
                             <button
                               key={channel.id}
