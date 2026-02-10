@@ -499,6 +499,14 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         }
       });
 
+    // Capture session token NOW so cleanup can use it synchronously on unload
+    let cachedAccessToken = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.access_token) {
+        cachedAccessToken = data.session.access_token;
+      }
+    });
+
     // Helper to clean up channel_members on any exit
     // Uses keepalive:true so the browser finishes the request even after the page unloads
     const cleanupMember = () => {
@@ -506,7 +514,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/channel_members?channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}`;
         const headers: Record<string, string> = {
           'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${cachedAccessToken}`,
           'Prefer': 'return=minimal',
         };
         // keepalive: true ensures the request survives page unload (beforeunload/visibilitychange)
