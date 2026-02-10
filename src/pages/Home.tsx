@@ -264,7 +264,7 @@ const Home = () => {
     let refetchTimeout: ReturnType<typeof setTimeout> | null = null;
     const debouncedFetch = () => {
       if (refetchTimeout) clearTimeout(refetchTimeout);
-      refetchTimeout = setTimeout(() => fetchMemberCounts(), 500);
+      refetchTimeout = setTimeout(() => fetchMemberCounts(), 600);
     };
 
     const memberChannel = supabase
@@ -278,31 +278,9 @@ const Home = () => {
       )
       .subscribe();
 
-    // Also subscribe to presence for live updates (adds to member count)
-    const presenceChannels: ReturnType<typeof supabase.channel>[] = [];
-
-    channels.forEach((channel) => {
-      const presenceChannel = supabase.channel(`room:${channel.id}:presence`);
-      
-      presenceChannel
-        .on('presence', { event: 'sync' }, () => {
-          const state = presenceChannel.presenceState();
-          const onlineCount = Object.keys(state).length;
-          // Use presence count if higher than stored member count
-          setRoomUserCounts(prev => ({ 
-            ...prev, 
-            [channel.id]: Math.max(prev[channel.id] || 0, onlineCount) 
-          }));
-        })
-        .subscribe();
-
-      presenceChannels.push(presenceChannel);
-    });
-
     return () => {
       if (refetchTimeout) clearTimeout(refetchTimeout);
       supabase.removeChannel(memberChannel);
-      presenceChannels.forEach(ch => supabase.removeChannel(ch));
     };
   }, [channels]);
 
