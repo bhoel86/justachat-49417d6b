@@ -278,6 +278,13 @@ const Home = () => {
     };
     seedKnownMembers();
 
+    // Buffer DELETE events to absorb delete-then-insert upsert pattern
+    const pendingDeletes: Record<string, ReturnType<typeof setTimeout>> = {};
+
+    const flushCount = (channelId: string) => {
+      setRoomUserCounts(prev => ({ ...prev, [channelId]: knownMembers[channelId]?.size || 0 }));
+    };
+
     const memberChannel = supabase
       .channel('lobby-member-counts')
       .on(
@@ -288,7 +295,12 @@ const Home = () => {
           if (row?.channel_id && row?.user_id) {
             if (!knownMembers[row.channel_id]) knownMembers[row.channel_id] = new Set();
             knownMembers[row.channel_id].add(row.user_id);
-            setRoomUserCounts(prev => ({ ...prev, [row.channel_id]: knownMembers[row.channel_id].size }));
+            // Cancel any pending delete flush for this channel — the insert absorbed it
+            if (pendingDeletes[row.channel_id]) {
+              clearTimeout(pendingDeletes[row.channel_id]);
+              delete pendingDeletes[row.channel_id];
+            }
+            flushCount(row.channel_id);
           }
         }
       )
@@ -299,13 +311,19 @@ const Home = () => {
           const row = payload.old as any;
           if (row?.channel_id && row?.user_id) {
             knownMembers[row.channel_id]?.delete(row.user_id);
-            setRoomUserCounts(prev => ({ ...prev, [row.channel_id]: knownMembers[row.channel_id]?.size || 0 }));
+            // Delay the state update — if an INSERT follows within 1s, it cancels this
+            if (pendingDeletes[row.channel_id]) clearTimeout(pendingDeletes[row.channel_id]);
+            pendingDeletes[row.channel_id] = setTimeout(() => {
+              flushCount(row.channel_id);
+              delete pendingDeletes[row.channel_id];
+            }, 1000);
           }
         }
       )
       .subscribe();
 
     return () => {
+      Object.values(pendingDeletes).forEach(t => clearTimeout(t));
       supabase.removeChannel(memberChannel);
     };
   }, [channels]);
