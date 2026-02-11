@@ -49,10 +49,6 @@ const Landing = () => {
               <span className="text-lg font-bold text-primary">Justachat<sup className="text-[8px]">™</sup></span>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <Link to="/about" className="hidden sm:inline text-xs text-muted-foreground hover:text-primary transition-colors">About</Link>
-              <Link to="/features" className="hidden sm:inline text-xs text-muted-foreground hover:text-primary transition-colors">Features</Link>
-              <Link to="/faq" className="hidden sm:inline text-xs text-muted-foreground hover:text-primary transition-colors">FAQ</Link>
-              <Link to="/site-index" className="hidden md:inline text-xs text-muted-foreground hover:text-primary transition-colors">Site Index</Link>
               <Link to="/login" className="px-3 py-1.5 border border-border rounded-md font-medium hover:bg-accent/50 transition-colors text-sm">Login</Link>
               <Link to="/login?mode=signup" className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors text-sm">Create Account</Link>
             </div>
