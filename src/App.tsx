@@ -47,6 +47,10 @@ import Health from "./pages/Health";
 import About from "./pages/About";
 import Features from "./pages/Features";
 import FAQ from "./pages/FAQ";
+import FreeChat from "./pages/FreeChat";
+import ChatRooms from "./pages/ChatRooms";
+import OnlineChat from "./pages/OnlineChat";
+import IrcStyleChat from "./pages/IrcStyleChat";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +100,10 @@ const App = () => (
                 <Route path="/about" element={<About />} />
                 <Route path="/features" element={<Features />} />
                 <Route path="/faq" element={<FAQ />} />
+                <Route path="/free-chat" element={<FreeChat />} />
+                <Route path="/chat-rooms" element={<ChatRooms />} />
+                <Route path="/online-chat" element={<OnlineChat />} />
+                <Route path="/irc-style-chat" element={<IrcStyleChat />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

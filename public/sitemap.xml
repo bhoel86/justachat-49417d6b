@@ -41,7 +41,31 @@
   </url>
   <url>
     <loc>https://justachat.net/faq</loc>
-    <lastmod>2026-02-03</lastmod>
+    <lastmod>2026-02-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://justachat.net/free-chat</loc>
+    <lastmod>2026-02-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://justachat.net/chat-rooms</loc>
+    <lastmod>2026-02-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://justachat.net/online-chat</loc>
+    <lastmod>2026-02-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://justachat.net/irc-style-chat</loc>
+    <lastmod>2026-02-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

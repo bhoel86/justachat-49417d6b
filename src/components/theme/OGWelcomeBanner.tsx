@@ -41,9 +41,9 @@ export const OGWelcomeBanner: React.FC<OGWelcomeBannerProps> = ({ onJoinClick, v
         </h1>
         
         {/* Tagline */}
-        <p className={`text-muted-foreground text-center max-w-md ${isMobile ? 'text-[10px]' : 'text-xs sm:text-sm'}`}>
-          Connect Instantly, Chat Freely
-        </p>
+         <p className={`text-muted-foreground text-center max-w-md ${isMobile ? 'text-[10px]' : 'text-xs sm:text-sm'}`}>
+           Free Chat Platform — Real Conversation, No Noise
+         </p>
         
         {/* CTA hint */}
         {onJoinClick && (
