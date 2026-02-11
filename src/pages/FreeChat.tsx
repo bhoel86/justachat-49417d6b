@@ -36,7 +36,7 @@ const FreeChat = () => {
       <section className="py-16 md:py-24 bg-gradient-to-b from-background to-card/30">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-foreground">
-            <span className="text-primary">Free Chat Rooms</span> — No Strings Attached
+            <span className="text-primary">Free Chat Rooms</span> · No Strings Attached
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             Join free chat rooms on JustAChat. No registration fees. No ads. No algorithms. Just people having real conversations.
@@ -96,15 +96,15 @@ const FreeChat = () => {
               Our free online chat rooms cover every interest. Whether you want to discuss music, debate politics, play games, or just hang out, there's a free chat room waiting for you:
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground mb-4">
-              <li><strong>#general</strong> — Main free chat room for everyone</li>
-              <li><strong>#music</strong> — Free chat about music, artists, and recommendations</li>
-              <li><strong>#games</strong> — Free chat for gamers</li>
-              <li><strong>#technology</strong> — Free tech discussion room</li>
-              <li><strong>#movies</strong> — Free chat about films and TV shows</li>
-              <li><strong>#sports</strong> — Free sports discussion room</li>
-              <li><strong>#lounge</strong> — Casual, free chat room for random topics</li>
-              <li><strong>#trivia</strong> — Free trivia games with other users</li>
-              <li><strong>#help</strong> — Get free help and support from the community</li>
+              <li><strong>#general</strong>: Main free chat room for everyone</li>
+              <li><strong>#music</strong>: Free chat about music, artists, and recommendations</li>
+              <li><strong>#games</strong>: Free chat for gamers</li>
+              <li><strong>#technology</strong>: Free tech discussion room</li>
+              <li><strong>#movies</strong>: Free chat about films and TV shows</li>
+              <li><strong>#sports</strong>: Free sports discussion room</li>
+              <li><strong>#lounge</strong>: Casual, free chat room for random topics</li>
+              <li><strong>#trivia</strong>: Free trivia games with other users</li>
+              <li><strong>#help</strong>: Get free help and support from the community</li>
             </ul>
           </section>
 
@@ -159,7 +159,7 @@ const FreeChat = () => {
             <ul className="list-disc list-inside space-y-2 text-muted-foreground mb-4">
               <li>Enforcing community guidelines</li>
               <li>Removing spam and harassment</li>
-              <li>Protecting minors in free chat spaces</li>
+              <li>Protecting users and maintaining safe chat spaces</li>
               <li>Allowing room founders to customize their free chat room</li>
             </ul>
           </section>

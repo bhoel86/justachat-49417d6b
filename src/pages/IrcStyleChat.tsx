@@ -179,12 +179,12 @@ const IrcStyleChat = () => {
             <h2 className="text-3xl font-bold mb-4 text-foreground">Who Uses IRC-Style Chat?</h2>
             <p className="text-muted-foreground mb-4">IRC-style chat remains popular with:</p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground mb-4">
-              <li><strong>Tech Communities</strong> — Developers, system admins, open-source projects</li>
-              <li><strong>Gaming Communities</strong> — Clans, guilds, casual players</li>
-              <li><strong>Hobby Groups</strong> — Music, movies, books, games, tech enthusiasts</li>
-              <li><strong>Professional Teams</strong> — Remote collaboration, open communication</li>
-              <li><strong>Close-Knit Communities</strong> — Friend groups, local communities</li>
-              <li><strong>Privacy-Conscious Users</strong> — People who value decentralization and real conversation</li>
+              <li><strong>Tech Communities</strong>: Developers, system admins, open-source projects</li>
+              <li><strong>Gaming Communities</strong>: Clans, guilds, casual players</li>
+              <li><strong>Hobby Groups</strong>: Music, movies, books, games, tech enthusiasts</li>
+              <li><strong>Professional Teams</strong>: Remote collaboration, open communication</li>
+              <li><strong>Close-Knit Communities</strong>: Friend groups, local communities</li>
+              <li><strong>Privacy-Conscious Users</strong>: People who value decentralization and real conversation</li>
             </ul>
           </section>
 

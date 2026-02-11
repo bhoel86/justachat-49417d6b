@@ -71,7 +71,7 @@ const CommunityGuidelines = () => {
             <h2 className="text-lg font-semibold">Prohibited Content & Behavior</h2>
           </div>
           <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 space-y-3">
-            <p className="text-sm font-medium text-destructive">Zero Tolerance Policy — Immediate permanent ban:</p>
+            <p className="text-sm font-medium text-destructive">Zero Tolerance Policy: Immediate permanent ban</p>
             <ul className="space-y-2 text-sm text-muted-foreground ml-4">
               <li>• Child sexual abuse material (CSAM) or any sexual content involving minors</li>
               <li>• Solicitation or grooming of minors</li>
@@ -82,7 +82,7 @@ const CommunityGuidelines = () => {
           </div>
 
           <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-            <p className="text-sm font-medium">Strictly Prohibited — Results in ban:</p>
+            <p className="text-sm font-medium">Strictly Prohibited: Results in ban</p>
             <ul className="space-y-2 text-sm text-muted-foreground ml-4">
               <li>• Harassment, bullying, or targeted abuse of any user</li>
               <li>• Hate speech based on race, ethnicity, religion, gender, sexual orientation, disability, or national origin</li>
@@ -96,7 +96,7 @@ const CommunityGuidelines = () => {
           </div>
 
           <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-            <p className="text-sm font-medium">Not Allowed — May result in warning or ban:</p>
+            <p className="text-sm font-medium">Not Allowed: May result in warning or ban</p>
             <ul className="space-y-2 text-sm text-muted-foreground ml-4">
               <li>• Excessive profanity or vulgarity in non-adult rooms</li>
               <li>• Unsolicited sexual content or advances</li>
@@ -116,8 +116,7 @@ const CommunityGuidelines = () => {
           </div>
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• <strong>Minimum Age:</strong> Users must be at least 13 years old to use Justachat™</li>
-              <li>• <strong>Minors (13-17):</strong> Require parental/guardian consent for full feature access</li>
+              <li>• <strong>Minimum Age:</strong> Users must be at least 18 years old to use Justachat™</li>
               <li>• <strong>Adult Rooms (21+):</strong> Strictly limited to users aged 21 and older</li>
               <li>• <strong>Adult Content:</strong> Only permitted in designated adult rooms</li>
               <li>• Users who misrepresent their age will be permanently banned</li>
@@ -134,7 +133,7 @@ const CommunityGuidelines = () => {
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>Each chat room may have additional rules set by room owners/admins:</p>
             <ul className="space-y-2 ml-4">
-              <li>• Room topics are displayed in the header — stay on topic</li>
+              <li>• Room topics are displayed in the header. Stay on topic</li>
               <li>• Room admins have authority to warn, mute, kick, or ban users</li>
               <li>• Room-specific rules cannot override these Community Guidelines</li>
               <li>• Private rooms may have stricter or more relaxed rules at owner discretion</li>
@@ -164,7 +163,7 @@ const CommunityGuidelines = () => {
             <h2 className="text-lg font-semibold">Dating Feature Guidelines</h2>
           </div>
           <ul className="space-y-2 text-sm text-muted-foreground ml-7">
-            <li>• Be honest in your profile — no catfishing or misleading photos</li>
+            <li>• Be honest in your profile. No catfishing or misleading photos</li>
             <li>• Respect when someone declines or doesn't respond</li>
             <li>• No solicitation for money, gifts, or financial arrangements</li>
             <li>• Report suspicious profiles or behavior immediately</li>

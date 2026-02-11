@@ -52,7 +52,7 @@ const ChatRooms = () => {
             Explore Our <span className="text-primary">Chat Rooms</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            From #general to #gaming to #dating — find the chat rooms that match your interests.
+            From #general to #gaming to #dating, find the chat rooms that match your interests.
           </p>
         </div>
       </section>
@@ -80,12 +80,12 @@ const ChatRooms = () => {
         <section className="mb-12">
           <h2 className="text-3xl font-bold mb-4 text-foreground">Why Join Our Chat Rooms?</h2>
           <ul className="space-y-3 text-muted-foreground">
-            <li>✓ <strong>Real People</strong> — Connect with genuine users, not bots or algorithms</li>
-            <li>✓ <strong>No Feeds</strong> — Pure real-time conversation without social media noise</li>
-            <li>✓ <strong>Safe Spaces</strong> — Moderated chat rooms with community guidelines</li>
-            <li>✓ <strong>Diverse Topics</strong> — Whether you're into music, gaming, or dating, there's a room for you</li>
-            <li>✓ <strong>IRC-Style</strong> — Classic chat room experience built for the modern web</li>
-            <li>✓ <strong>Free Forever</strong> — Join any chat room without paying</li>
+            <li>✓ <strong>Real People</strong>: Connect with genuine users, not bots or algorithms</li>
+            <li>✓ <strong>No Feeds</strong>: Pure real-time conversation without social media noise</li>
+            <li>✓ <strong>Safe Spaces</strong>: Moderated chat rooms with community guidelines</li>
+            <li>✓ <strong>Diverse Topics</strong>: Whether you're into music, gaming, or dating, there's a room for you</li>
+            <li>✓ <strong>IRC-Style</strong>: Classic chat room experience built for the modern web</li>
+            <li>✓ <strong>Free Forever</strong>: Join any chat room without paying</li>
           </ul>
         </section>
 

@@ -30,6 +30,7 @@ import AdminSupport from "./pages/AdminSupport";
 import AdminBots from "./pages/AdminBots";
 import AdminKlines from "./pages/AdminKlines";
 import AdminDeploy from "./pages/AdminDeploy";
+import AdminSitemap from "./pages/AdminSitemap";
 import Help from "./pages/Help";
 import DownloadProxy from "./pages/DownloadProxy";
 import ClientDownload from "./pages/ClientDownload";
@@ -84,6 +85,7 @@ const App = () => (
                 <Route path="/admin/bots" element={<AdminBots />} />
                 <Route path="/admin/klines" element={<AdminKlines />} />
                 <Route path="/admin/deploy" element={<AdminDeploy />} />
+                <Route path="/admin/sitemap" element={<AdminSitemap />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/download-proxy" element={<DownloadProxy />} />
                 <Route path="/downloads" element={<ClientDownload />} />

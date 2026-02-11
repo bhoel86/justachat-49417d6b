@@ -79,14 +79,6 @@ export function VideoUserMenuAdminTools({
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => navigate("/admin/minors")}
-            className="cursor-pointer"
-          >
-            <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-            Minors
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
             onClick={() => navigate("/admin/klines")}
             className="cursor-pointer"
           >
