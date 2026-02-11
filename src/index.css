@@ -2447,3 +2447,11 @@
   scrollbar-width: thin;
   scrollbar-color: hsl(120 50% 35%) hsl(120 30% 10%);
 }
+
+/* Landing page floating chat bubbles */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-12px) rotate(2deg); }
+  66% { transform: translateY(6px) rotate(-1deg); }
+
+}

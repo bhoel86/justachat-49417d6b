@@ -4,6 +4,7 @@
  */
 
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import PageSEO from "@/components/seo/PageSEO";
 import SiteFooter from "@/components/layout/SiteFooter";
 import { MessageCircle, Shield, Users, Mic, Video, Gamepad2, Heart, Globe, Zap, Lock } from "lucide-react";
@@ -30,6 +31,53 @@ const rooms = [
   { name: "Trivia", color: "from-teal-500 to-cyan-500" },
 ];
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Justachat free to use?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, Justachat is completely free. There are no premium tiers, no hidden costs, and no subscriptions required. All features including voice chat, video chat, games, and private messaging are available to every user."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to download anything to use Justachat?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No downloads are required. Justachat runs entirely in your web browser. Simply create a free account and start chatting instantly from any device."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Justachat safe and moderated?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Justachat uses AI-powered moderation combined with active human staff to keep the platform safe. All private messages are end-to-end encrypted, and we never sell user data."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What chat rooms are available on Justachat?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Justachat offers topic-based rooms including General, Music, Games, Dating, Movies & TV, Technology, Sports, Trivia, and more. Users can also create their own custom rooms."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Justachat have voice and video chat?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Justachat includes free voice broadcasting and video chat features, allowing you to have hands-free conversations or face-to-face interactions with other users."
+      }
+    }
+  ]
+};
+
 const Landing = () => {
   return (
     <>
@@ -37,10 +85,45 @@ const Landing = () => {
         title="Justachat - Free Online Chat Rooms | Talk to People Now"
         description="Join Justachat for free online chat rooms with real people. Voice chat, video chat, games, dating, and more. No downloads, no fees. Start chatting instantly."
         path="/"
+        keywords="free chat, free chat rooms, online chat, chat with strangers, private chat, voice chat, video chat, dating chat, trivia games, IRC chat, secure chat, encrypted messaging, justachat"
       />
-      <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+      </Helmet>
+      <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+        {/* Background chat flair */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+          {/* Subtle gradient orbs */}
+          <div className="absolute top-20 -left-32 w-96 h-96 rounded-full bg-primary/[0.04] blur-3xl" />
+          <div className="absolute top-[60%] -right-40 w-[500px] h-[500px] rounded-full bg-primary/[0.03] blur-3xl" />
+          <div className="absolute bottom-20 left-1/4 w-72 h-72 rounded-full bg-accent/[0.04] blur-3xl" />
+          
+          {/* Floating chat bubble shapes */}
+          <svg className="absolute top-32 right-[12%] w-14 h-14 text-primary/[0.07] animate-[float_8s_ease-in-out_infinite]" viewBox="0 0 56 56" fill="currentColor">
+            <path d="M8 4h40a4 4 0 014 4v28a4 4 0 01-4 4H20l-12 8V40H8a4 4 0 01-4-4V8a4 4 0 014-4z"/>
+          </svg>
+          <svg className="absolute top-[45%] left-[8%] w-10 h-10 text-primary/[0.05] animate-[float_10s_ease-in-out_2s_infinite]" viewBox="0 0 56 56" fill="currentColor">
+            <path d="M8 4h40a4 4 0 014 4v28a4 4 0 01-4 4H20l-12 8V40H8a4 4 0 01-4-4V8a4 4 0 014-4z"/>
+          </svg>
+          <svg className="absolute bottom-[30%] right-[6%] w-8 h-8 text-primary/[0.06] animate-[float_12s_ease-in-out_4s_infinite]" viewBox="0 0 56 56" fill="currentColor">
+            <path d="M8 4h40a4 4 0 014 4v28a4 4 0 01-4 4H20l-12 8V40H8a4 4 0 01-4-4V8a4 4 0 014-4z"/>
+          </svg>
+          <svg className="absolute top-[70%] left-[45%] w-12 h-12 text-accent/[0.05] animate-[float_9s_ease-in-out_1s_infinite]" viewBox="0 0 56 56" fill="currentColor">
+            <path d="M48 4H8a4 4 0 00-4 4v28a4 4 0 004 4h28l12 8V40h0a4 4 0 004-4V8a4 4 0 00-4-4z"/>
+          </svg>
+          <svg className="absolute top-[15%] left-[30%] w-6 h-6 text-primary/[0.04] animate-[float_11s_ease-in-out_3s_infinite]" viewBox="0 0 56 56" fill="currentColor">
+            <path d="M48 4H8a4 4 0 00-4 4v28a4 4 0 004 4h28l12 8V40h0a4 4 0 004-4V8a4 4 0 00-4-4z"/>
+          </svg>
+
+          {/* Dot grid pattern */}
+          <div className="absolute inset-0 opacity-[0.02]" style={{
+            backgroundImage: 'radial-gradient(circle, hsl(var(--primary)) 1px, transparent 1px)',
+            backgroundSize: '32px 32px'
+          }} />
+        </div>
+
         {/* Nav */}
-        <nav className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
+        <nav className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 relative">
           <div className="container mx-auto px-4 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
@@ -56,7 +139,7 @@ const Landing = () => {
         </nav>
 
         {/* Hero - compact */}
-        <section className="container mx-auto px-4 pt-8 pb-6 text-center">
+        <section className="container mx-auto px-4 pt-8 pb-6 text-center relative z-10">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 leading-tight">
             Free Chat Platform. <span className="text-primary">Real Conversation, No Noise.</span>
           </h1>
@@ -70,7 +153,7 @@ const Landing = () => {
         </section>
 
         {/* Why Justachat - FIRST */}
-        <section className="border-y border-border bg-card/50">
+        <section className="border-y border-border bg-card/50 relative z-10">
           <div className="container mx-auto px-4 py-8">
             <h2 className="text-xl sm:text-2xl font-bold text-center mb-5">Why Justachat?</h2>
             <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
@@ -100,12 +183,12 @@ const Landing = () => {
         </section>
 
         {/* Everything You Need - SECOND */}
-        <section className="container mx-auto px-4 py-8">
+        <section className="container mx-auto px-4 py-8 relative z-10">
           <h2 className="text-xl sm:text-2xl font-bold text-center mb-1">Everything You Need</h2>
           <p className="text-muted-foreground text-center mb-5 text-xs">No premium tiers. No hidden costs.</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {features.map((f) => (
-              <div key={f.title} className="bg-card border border-border rounded-lg p-3 hover:border-primary/50 transition-colors">
+              <div key={f.title} className="bg-card/80 backdrop-blur-sm border border-border rounded-lg p-3 hover:border-primary/50 transition-colors">
                 <f.icon className="w-5 h-5 text-primary mb-1.5" />
                 <h3 className="font-semibold text-xs mb-0.5">{f.title}</h3>
                 <p className="text-[11px] text-muted-foreground leading-snug">{f.desc}</p>
@@ -115,7 +198,7 @@ const Landing = () => {
         </section>
 
         {/* Popular Rooms - THIRD */}
-        <section className="border-y border-border bg-card/50">
+        <section className="border-y border-border bg-card/50 relative z-10">
           <div className="container mx-auto px-4 py-8">
             <h2 className="text-xl sm:text-2xl font-bold text-center mb-1">Popular Rooms</h2>
             <p className="text-muted-foreground text-center mb-5 text-xs">Jump into conversations that interest you.</p>
@@ -136,7 +219,7 @@ const Landing = () => {
         </section>
 
         {/* CTA */}
-        <section className="bg-primary/10 border-y border-primary/20">
+        <section className="bg-primary/10 border-y border-primary/20 relative z-10">
           <div className="container mx-auto px-4 py-8 text-center">
             <h2 className="text-lg sm:text-xl font-bold mb-1.5">Ready to Chat?</h2>
             <p className="text-muted-foreground text-xs mb-3">Join the community. It only takes a minute.</p>
@@ -147,7 +230,9 @@ const Landing = () => {
           </div>
         </section>
 
-        <SiteFooter />
+        <div className="relative z-10">
+          <SiteFooter />
+        </div>
       </div>
     </>
   );
