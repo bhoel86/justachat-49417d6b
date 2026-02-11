@@ -15,7 +15,8 @@ type ModerationAction =
   | 'delete_message'
   | 'add_kline'
   | 'remove_kline'
-  | 'oper_auth';
+  | 'oper_auth'
+  | 'kill_user';
 
 interface ModerationLogParams {
   action: ModerationAction;

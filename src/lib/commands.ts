@@ -153,6 +153,7 @@ const helpCommand: CommandHandler = async (args, context) => {
 **Admin Commands:**
 /admin <username> - Promote user to admin
 /deadmin <username> - Demote admin to moderator
+/kill <username> [reason] - Force disconnect user from all rooms
 /kline <ip_pattern> [reason] - Add global IP ban (e.g., 192.168.1.*)
 /unkline <ip_pattern> - Remove global IP ban
 /klines - List all K-lines` : '';
@@ -510,6 +511,64 @@ const deadminCommand: CommandHandler = async (args, context) => {
     isSystemMessage: true,
     broadcast: true,
     refreshRole: targetUser.user_id === context.userId,
+  };
+};
+
+// /kill command - IRC-style forceful disconnect (removes user from ALL rooms)
+const killCommand: CommandHandler = async (args, context) => {
+  if (!context.isOwner && !context.isAdmin) {
+    return { success: false, message: 'Only owners and admins can use /kill.' };
+  }
+  if (args.length === 0) {
+    return { success: false, message: 'Usage: /kill <username> [reason]' };
+  }
+
+  const targetUser = await findUserByUsername(args[0]);
+  if (!targetUser) {
+    return { success: false, message: `User "${args[0]}" not found.` };
+  }
+
+  const targetRole = await getUserRole(targetUser.user_id);
+  if (targetRole === 'owner') {
+    return { success: false, message: 'Cannot kill the owner.' };
+  }
+  if (targetRole === 'admin' && !context.isOwner) {
+    return { success: false, message: 'Only the owner can kill admins.' };
+  }
+
+  const reason = args.slice(1).join(' ') || 'Killed by operator';
+
+  // Remove user from ALL channel_members (force disconnect from all rooms)
+  const { error } = await supabaseUntyped
+    .from('channel_members')
+    .delete()
+    .eq('user_id', targetUser.user_id);
+
+  if (error) {
+    console.error('Kill cleanup error:', error);
+  }
+
+  // Broadcast kill event so the target's client can react (force redirect to lobby)
+  supabaseUntyped.channel('global-kills').send({
+    type: 'broadcast',
+    event: 'user-killed',
+    payload: { userId: targetUser.user_id, reason, killedBy: context.username }
+  });
+
+  // Log the action
+  await logModerationAction({
+    action: 'kill_user',
+    moderatorId: context.userId,
+    targetUserId: targetUser.user_id,
+    targetUsername: targetUser.username,
+    details: { reason }
+  });
+
+  return {
+    success: true,
+    message: `*** ${targetUser.username} has been killed by ${context.username} (${reason})`,
+    isSystemMessage: true,
+    broadcast: true,
   };
 };
 
@@ -1379,6 +1438,7 @@ const commands: Record<string, CommandHandler> = {
   oper: operCommand, // IRC-style operator auth
   admin: adminCommand,
   deadmin: deadminCommand,
+  kill: killCommand,
   kick: kickCommand,
   ban: banCommand,
   unban: unbanCommand,

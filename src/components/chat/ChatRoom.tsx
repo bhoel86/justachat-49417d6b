@@ -586,6 +586,26 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
   }, [user?.id]);
 
+  // Listen for /kill broadcasts — if this user is killed, force them out
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const killChannel = supabase
+      .channel('global-kills')
+      .on('broadcast', { event: 'user-killed' }, (payload) => {
+        const { userId, reason, killedBy } = payload.payload as { userId: string; reason: string; killedBy: string };
+        if (userId === user.id) {
+          toast({ variant: 'destructive', title: 'Disconnected', description: `You were killed by ${killedBy}: ${reason}` });
+          navigate('/lobby');
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(killChannel);
+    };
+  }, [user?.id, navigate, toast]);
+
   // Update presence payload (nowPlaying) without creating extra channels
   useEffect(() => {
     if (!user?.id) return;

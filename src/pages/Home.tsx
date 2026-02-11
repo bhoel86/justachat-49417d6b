@@ -322,8 +322,24 @@ const Home = () => {
       )
       .subscribe();
 
+    // Polling fallback: re-fetch actual counts every 15s to catch missed Realtime events
+    // (e.g., user closes browser and keepalive DELETE isn't captured by Realtime)
+    const pollInterval = setInterval(async () => {
+      for (const channel of channels) {
+        const { data } = await supabase
+          .from('channel_members')
+          .select('user_id')
+          .eq('channel_id', channel.id);
+        if (data) {
+          knownMembers[channel.id] = new Set(data.map(d => d.user_id));
+          flushCount(channel.id);
+        }
+      }
+    }, 15000);
+
     return () => {
       Object.values(pendingDeletes).forEach(t => clearTimeout(t));
+      clearInterval(pollInterval);
       supabase.removeChannel(memberChannel);
     };
   }, [channels]);
