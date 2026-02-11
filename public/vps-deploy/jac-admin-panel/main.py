@@ -376,6 +376,69 @@ def ip_lookup(target: str) -> dict:
         result["error"] = str(e)
     return result
 
+def ping_host(target: str, count: int = 4, timeout: float = 2.0) -> dict:
+    """Ping a host using raw ICMP (falls back to TCP connect on port 80)"""
+    result = {"target": target, "results": [], "error": None, "resolved_ip": None}
+    try:
+        # Resolve hostname first
+        ip = socket.gethostbyname(target)
+        result["resolved_ip"] = ip
+    except socket.gaierror as e:
+        result["error"] = f"DNS resolution failed: {e}"
+        return result
+
+    for seq in range(count):
+        start = time.time()
+        try:
+            # TCP ping to port 80 (works without root/admin privileges)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout)
+            s.connect((ip, 80))
+            s.close()
+            elapsed = (time.time() - start) * 1000
+            result["results"].append({"seq": seq + 1, "time_ms": round(elapsed, 2), "status": "ok"})
+        except socket.timeout:
+            result["results"].append({"seq": seq + 1, "time_ms": None, "status": "timeout"})
+        except ConnectionRefusedError:
+            # Port closed but host is reachable (got RST)
+            elapsed = (time.time() - start) * 1000
+            result["results"].append({"seq": seq + 1, "time_ms": round(elapsed, 2), "status": "refused (host reachable)"})
+        except OSError as e:
+            result["results"].append({"seq": seq + 1, "time_ms": None, "status": f"error: {e}"})
+        if seq < count - 1:
+            time.sleep(0.5)
+    return result
+
+def finger_host(target: str, user: str = "", port: int = 79, timeout: float = 5.0) -> dict:
+    """Query a finger server (RFC 1288)"""
+    result = {"target": target, "port": port, "user": user, "response": "", "error": None}
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect((target, port))
+        query = f"{user}\r\n".encode("utf-8")
+        s.sendall(query)
+        data = b""
+        while True:
+            try:
+                chunk = s.recv(4096)
+                if not chunk:
+                    break
+                data += chunk
+            except socket.timeout:
+                break
+        s.close()
+        result["response"] = data.decode("utf-8", errors="replace")
+    except ConnectionRefusedError:
+        result["error"] = f"Connection refused on port {port} (finger service not running)"
+    except socket.timeout:
+        result["error"] = f"Connection timed out after {timeout}s"
+    except socket.gaierror as e:
+        result["error"] = f"DNS resolution failed: {e}"
+    except OSError as e:
+        result["error"] = str(e)
+    return result
+
 def scan_port(host: str, port: int, timeout: float = 2.0) -> dict:
     """Scan a single port"""
     try:
@@ -655,6 +718,12 @@ class App(tk.Tk):
         # Port Scanner tab
         self._build_port_scanner_tab()
 
+        # Ping tab
+        self._build_ping_tab()
+
+        # Finger tab
+        self._build_finger_tab()
+
         # User right-click menu
         self.user_menu = tk.Menu(self, tearoff=0, bg=COLORS["bg_card"], fg=COLORS["fg_primary"],
                                  activebackground=COLORS["bg_selected"], activeforeground=COLORS["accent_cyan"],
@@ -730,7 +799,68 @@ class App(tk.Tk):
                                 "  • Range — e.g. 1-1024\n")
         self.scan_result.configure(state=tk.DISABLED)
 
-    # ── Connection ────────────────────────────────────────────
+    def _build_ping_tab(self):
+        tab = ttk.Frame(self.nb)
+        self.nb.add(tab, text="📡 Ping")
+
+        top = ttk.Frame(tab); top.pack(fill=tk.X, padx=12, pady=10)
+        ttk.Label(top, text="Host:", style="Accent.TLabel").pack(side=tk.LEFT)
+        self.ping_host_var = tk.StringVar(value=SERVER_HOST)
+        ttk.Entry(top, textvariable=self.ping_host_var, width=30).pack(side=tk.LEFT, padx=8)
+
+        ttk.Label(top, text="Count:", style="Dim.TLabel").pack(side=tk.LEFT, padx=(8, 2))
+        self.ping_count_var = tk.IntVar(value=4)
+        ttk.Entry(top, textvariable=self.ping_count_var, width=5).pack(side=tk.LEFT, padx=(0, 8))
+
+        ttk.Button(top, text="📡 Ping", style="Accent.TButton", command=self._do_ping).pack(side=tk.LEFT)
+
+        self.ping_result = tk.Text(tab, wrap=tk.WORD,
+                                    bg=COLORS["bg_input"], fg=COLORS["fg_primary"],
+                                    insertbackground=COLORS["accent_cyan"],
+                                    font=("Consolas", 10), relief="flat")
+        self.ping_result.pack(fill=tk.BOTH, expand=True, padx=12, pady=(0, 10))
+        self.ping_result.tag_configure("ok", foreground=COLORS["accent_green"])
+        self.ping_result.tag_configure("fail", foreground=COLORS["accent_red"])
+        self.ping_result.tag_configure("header", foreground=COLORS["accent_cyan"], font=("Consolas", 10, "bold"))
+        self.ping_result.insert("1.0", "Enter a host and click Ping.\n\n"
+                                "Uses TCP connect to port 80 (no root required).\n"
+                                "Shows round-trip latency in milliseconds.\n")
+        self.ping_result.configure(state=tk.DISABLED)
+
+    def _build_finger_tab(self):
+        tab = ttk.Frame(self.nb)
+        self.nb.add(tab, text="👆 Finger")
+
+        top = ttk.Frame(tab); top.pack(fill=tk.X, padx=12, pady=10)
+        ttk.Label(top, text="Host:", style="Accent.TLabel").pack(side=tk.LEFT)
+        self.finger_host_var = tk.StringVar(value=SERVER_HOST)
+        ttk.Entry(top, textvariable=self.finger_host_var, width=24).pack(side=tk.LEFT, padx=8)
+
+        ttk.Label(top, text="User:", style="Dim.TLabel").pack(side=tk.LEFT, padx=(8, 2))
+        self.finger_user_var = tk.StringVar(value="")
+        ttk.Entry(top, textvariable=self.finger_user_var, width=16).pack(side=tk.LEFT, padx=(0, 8))
+
+        ttk.Label(top, text="Port:", style="Dim.TLabel").pack(side=tk.LEFT, padx=(8, 2))
+        self.finger_port_var = tk.IntVar(value=79)
+        ttk.Entry(top, textvariable=self.finger_port_var, width=6).pack(side=tk.LEFT, padx=(0, 8))
+
+        ttk.Button(top, text="👆 Finger", style="Accent.TButton", command=self._do_finger).pack(side=tk.LEFT)
+
+        self.finger_result = tk.Text(tab, wrap=tk.WORD,
+                                      bg=COLORS["bg_input"], fg=COLORS["fg_primary"],
+                                      insertbackground=COLORS["accent_cyan"],
+                                      font=("Consolas", 10), relief="flat")
+        self.finger_result.pack(fill=tk.BOTH, expand=True, padx=12, pady=(0, 10))
+        self.finger_result.tag_configure("header", foreground=COLORS["accent_cyan"], font=("Consolas", 10, "bold"))
+        self.finger_result.tag_configure("info", foreground=COLORS["accent_green"])
+        self.finger_result.tag_configure("error", foreground=COLORS["accent_red"])
+        self.finger_result.insert("1.0", "Finger protocol (RFC 1288) query tool.\n\n"
+                                  "Usage:\n"
+                                  "  • Leave User blank to query all users\n"
+                                  "  • Enter a username to query specific user\n"
+                                  "  • Default port is 79 (standard finger)\n"
+                                  "  • Most modern servers have finger disabled\n")
+        self.finger_result.configure(state=tk.DISABLED)
     def _connect_admin(self):
         if not self.admin_email.get().strip() or not self.admin_pass.get().strip():
             if not messagebox.askyesno("No PASS?", "Email/password empty. Connect without PASS?"):
@@ -1053,6 +1183,90 @@ class App(tk.Tk):
         self.scan_result.insert(tk.END, "\n" + "─" * 60 + "\n")
         self.scan_result.insert(tk.END, f"✓ Scan complete: {self._scan_open} open / {total} scanned on {host}\n", "header")
         self.scan_result.configure(state=tk.DISABLED)
+
+    # ── Ping Tool ─────────────────────────────────────────────
+    def _do_ping(self):
+        target = self.ping_host_var.get().strip()
+        if not target: return
+        count = self.ping_count_var.get()
+        if count < 1: count = 1
+        if count > 20: count = 20
+
+        self.ping_result.configure(state=tk.NORMAL)
+        self.ping_result.delete("1.0", tk.END)
+        self.ping_result.insert(tk.END, f"Pinging {target} ({count} probes)...\n\n", "header")
+        self.ping_result.configure(state=tk.DISABLED)
+
+        def run():
+            result = ping_host(target, count)
+            self.after(0, lambda: self._show_ping_result(result))
+        threading.Thread(target=run, daemon=True).start()
+
+    def _show_ping_result(self, result):
+        self.ping_result.configure(state=tk.NORMAL)
+        self.ping_result.delete("1.0", tk.END)
+
+        self.ping_result.insert(tk.END, f"═══ PING: {result['target']} ═══\n", "header")
+        if result["resolved_ip"]:
+            self.ping_result.insert(tk.END, f"Resolved: {result['resolved_ip']}\n\n")
+
+        if result["error"]:
+            self.ping_result.insert(tk.END, f"❌ {result['error']}\n", "fail")
+        else:
+            times = []
+            for r in result["results"]:
+                if r["time_ms"] is not None and r["status"] == "ok":
+                    self.ping_result.insert(tk.END, f"  seq={r['seq']}  time={r['time_ms']}ms  ✓\n", "ok")
+                    times.append(r["time_ms"])
+                elif "reachable" in r.get("status", ""):
+                    self.ping_result.insert(tk.END, f"  seq={r['seq']}  time={r['time_ms']}ms  {r['status']}\n", "ok")
+                    times.append(r["time_ms"])
+                else:
+                    self.ping_result.insert(tk.END, f"  seq={r['seq']}  {r['status']}\n", "fail")
+
+            self.ping_result.insert(tk.END, "\n")
+            total = len(result["results"])
+            ok = len(times)
+            lost = total - ok
+            self.ping_result.insert(tk.END, f"── Statistics ──\n", "header")
+            self.ping_result.insert(tk.END, f"  Sent: {total}  Received: {ok}  Lost: {lost} ({round(lost/total*100) if total else 0}%)\n")
+            if times:
+                self.ping_result.insert(tk.END, f"  Min: {min(times):.2f}ms  Avg: {sum(times)/len(times):.2f}ms  Max: {max(times):.2f}ms\n", "ok")
+
+        self.ping_result.configure(state=tk.DISABLED)
+
+    # ── Finger Tool ───────────────────────────────────────────
+    def _do_finger(self):
+        target = self.finger_host_var.get().strip()
+        if not target: return
+        user = self.finger_user_var.get().strip()
+        port = self.finger_port_var.get()
+
+        self.finger_result.configure(state=tk.NORMAL)
+        self.finger_result.delete("1.0", tk.END)
+        self.finger_result.insert(tk.END, f"Querying finger://{user}@{target}:{port}...\n\n", "header")
+        self.finger_result.configure(state=tk.DISABLED)
+
+        def run():
+            result = finger_host(target, user, port)
+            self.after(0, lambda: self._show_finger_result(result))
+        threading.Thread(target=run, daemon=True).start()
+
+    def _show_finger_result(self, result):
+        self.finger_result.configure(state=tk.NORMAL)
+        self.finger_result.delete("1.0", tk.END)
+
+        user_str = result["user"] or "(all users)"
+        self.finger_result.insert(tk.END, f"═══ FINGER: {user_str}@{result['target']}:{result['port']} ═══\n\n", "header")
+
+        if result["error"]:
+            self.finger_result.insert(tk.END, f"❌ {result['error']}\n", "error")
+        elif result["response"]:
+            self.finger_result.insert(tk.END, result["response"], "info")
+        else:
+            self.finger_result.insert(tk.END, "(empty response)\n", "error")
+
+        self.finger_result.configure(state=tk.DISABLED)
 
     # ── Event Loop ────────────────────────────────────────────
     def _poll(self):
