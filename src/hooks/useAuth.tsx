@@ -50,8 +50,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
     let isInitialLoad = true;
 
-    // NOTE: No beforeunload logout — sessions persist across refresh/navigation.
-    // Users must explicitly sign out via the UI.
+    // Auto-logout on browser close (but NOT on refresh/navigation).
+    // sessionStorage persists across refreshes but is cleared when the browser closes.
+    // If we load and there's a Supabase session but NO sessionStorage marker, the browser
+    // was closed → sign the user out.
+    const wasOpen = sessionStorage.getItem('jac_session_active');
+    sessionStorage.setItem('jac_session_active', '1');
 
     // Role check function that can optionally control loading state
     const fetchRole = async (userId: string, controlLoading: boolean) => {
@@ -153,6 +157,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           
           if (!isMounted) return;
+
+          // Browser-close detection: if we have a session but sessionStorage was empty,
+          // the browser was closed and reopened → sign the user out automatically.
+          if (session?.user && !wasOpen) {
+            console.log('[Auth] Browser was closed — auto-signing out');
+            try {
+              await supabase.auth.signOut({ scope: 'local' });
+            } catch { /* ignore */ }
+            clearAuthStorage();
+            localStorage.removeItem('jac_personal_theme');
+            setSession(null);
+            setUser(null);
+            setRole(null);
+            if (isMounted) setLoading(false);
+            return;
+          }
           
           setSession(session);
           setUser(session?.user ?? null);
