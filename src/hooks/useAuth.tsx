@@ -274,6 +274,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setUser(null);
     setRole(null);
+    // Redirect to login page
+    window.location.href = '/login';
   };
 
   return (
