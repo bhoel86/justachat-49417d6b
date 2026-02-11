@@ -45,7 +45,11 @@ import { PillTransitionOverlay } from "@/components/theme/PillTransitionOverlay"
 import type { PillChoice } from "@/hooks/useSimulationPill";
 
 const Auth = () => {
-  const [mode, setMode] = useState<AuthMode>("login");
+  // Check URL for ?signup to default to signup mode
+  const [mode, setMode] = useState<AuthMode>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'signup' ? 'signup' : 'login';
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");

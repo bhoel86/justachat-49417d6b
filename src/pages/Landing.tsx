@@ -56,6 +56,12 @@ const Landing = () => {
               <Link to="/site-index" className="hidden sm:inline text-sm text-muted-foreground hover:text-primary transition-colors">Site Index</Link>
               <Link 
                 to="/login" 
+                className="px-4 py-2 border border-border rounded-lg font-medium hover:bg-accent/50 transition-colors text-sm"
+              >
+                Login
+              </Link>
+              <Link 
+                to="/login?mode=signup" 
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors text-sm"
               >
                 Join Chat
@@ -81,7 +87,7 @@ const Landing = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link 
-                to="/login" 
+                to="/login?mode=signup" 
                 className="px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors text-lg"
               >
                 Join Chat Free
@@ -129,7 +135,7 @@ const Landing = () => {
             </div>
             <div className="text-center mt-8">
               <Link 
-                to="/login" 
+                to="/login?mode=signup" 
                 className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
               >
                 <Globe className="w-5 h-5" />
@@ -169,7 +175,7 @@ const Landing = () => {
             <h2 className="text-2xl sm:text-3xl font-bold mb-4">Ready to Start Chatting?</h2>
             <p className="text-muted-foreground mb-6">Join the community today. It only takes a minute.</p>
             <Link 
-              to="/login" 
+              to="/login?mode=signup" 
               className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors text-lg"
             >
               Create Free Account
