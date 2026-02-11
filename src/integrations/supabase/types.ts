@@ -939,6 +939,7 @@ export type Database = {
           parent_consent_verified: boolean | null
           parent_email: string | null
           preferred_language: string | null
+          preferred_theme: string | null
           updated_at: string
           user_id: string
           username: string
@@ -954,6 +955,7 @@ export type Database = {
           parent_consent_verified?: boolean | null
           parent_email?: string | null
           preferred_language?: string | null
+          preferred_theme?: string | null
           updated_at?: string
           user_id: string
           username: string
@@ -969,6 +971,7 @@ export type Database = {
           parent_consent_verified?: boolean | null
           parent_email?: string | null
           preferred_language?: string | null
+          preferred_theme?: string | null
           updated_at?: string
           user_id?: string
           username?: string
