@@ -417,7 +417,7 @@ const Dating = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-border bg-card">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/lobby')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         

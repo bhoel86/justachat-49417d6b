@@ -724,7 +724,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/lobby')}
           className="w-full justify-start text-muted-foreground hover:text-foreground"
         >
           <Home className="h-4 w-4 mr-2" />

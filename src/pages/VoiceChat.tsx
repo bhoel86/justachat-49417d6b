@@ -248,7 +248,7 @@ const VoiceChat = () => {
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/lobby')}
             className="hover:bg-primary/10"
           >
             <ArrowLeft className="w-5 h-5" />

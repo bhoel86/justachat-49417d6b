@@ -50,6 +50,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
     let isInitialLoad = true;
 
+    // Auto-logout on browser/tab close (not on in-page navigation)
+    const handleBeforeUnload = () => {
+      // Use sendBeacon to sign out reliably during page unload
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const accessToken = session?.access_token;
+      if (supabaseUrl && accessToken) {
+        navigator.sendBeacon(
+          `${supabaseUrl}/auth/v1/logout`,
+          new Blob([JSON.stringify({})], { type: 'application/json' })
+        );
+      }
+      // Clear local storage regardless
+      clearAuthStorage();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     // Role check function that can optionally control loading state
     const fetchRole = async (userId: string, controlLoading: boolean) => {
       try {
@@ -175,6 +193,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 

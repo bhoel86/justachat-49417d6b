@@ -117,7 +117,7 @@ export const ProfileEditModal = ({
       // Sign out and redirect
       await supabase.auth.signOut();
       onOpenChange(false);
-      navigate('/');
+      navigate('/login');
     } catch (error: any) {
       console.error('Delete account error:', error);
       toast.error(error.message || 'Failed to delete account');

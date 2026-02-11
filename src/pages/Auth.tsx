@@ -700,7 +700,7 @@ const Auth = () => {
             // Navigate after transition completes (for email login)
             // Google OAuth will have already redirected
             if (user) {
-              navigate('/');
+              navigate('/lobby');
             }
           }} 
         />

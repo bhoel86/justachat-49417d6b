@@ -261,7 +261,7 @@ const VideoChat = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/lobby')}
               className="hover:bg-primary/10 h-8 w-8 p-0"
             >
               <ArrowLeft className="w-4 h-4" />

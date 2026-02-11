@@ -194,7 +194,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           title: "Channel not found",
           description: "Redirecting to lobby..."
         });
-        navigate('/');
+        navigate('/lobby');
       }
     };
     
@@ -1345,9 +1345,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           <Button 
             variant="outline" 
             className="mt-4 lg:hidden"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/lobby')}
           >
-            Back to Home
+            Back to Lobby
           </Button>
         </div>
       </div>
