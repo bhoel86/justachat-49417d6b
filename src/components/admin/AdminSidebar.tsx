@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Bot,
   Globe,
-  Baby,
+  Map,
   Rocket,
   HelpCircle,
   MessageSquareLock,
@@ -41,7 +41,7 @@ const navItems: NavItem[] = [
   { label: "Audit Logs", href: "/admin", icon: Shield, ownerOnly: true },
   { label: "Support", href: "/admin/support", icon: HelpCircle, moderatorAllowed: true },
   { label: "Users", href: "/admin/users", icon: Users, adminOnly: true },
-  { label: "Minors", href: "/admin/minors", icon: Baby, adminOnly: true },
+  
   { label: "Bans", href: "/admin/bans", icon: Ban, moderatorAllowed: true },
   { label: "Mutes", href: "/admin/mutes", icon: VolumeX, moderatorAllowed: true },
   { label: "K-Lines", href: "/admin/klines", icon: Globe, adminOnly: true },
@@ -50,6 +50,7 @@ const navItems: NavItem[] = [
   { label: "Emails", href: "/admin/emails", icon: Mail, ownerOnly: true },
   { label: "API Keys", href: "/admin/api", icon: Key, ownerOnly: true },
   { label: "Deploy", href: "/admin/deploy", icon: Rocket, ownerOnly: true },
+  { label: "Sitemap", href: "/admin/sitemap", icon: Map, adminOnly: true },
 ];
 
 interface AdminSidebarProps {

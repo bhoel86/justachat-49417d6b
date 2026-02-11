@@ -80,11 +80,7 @@ const Legal = () => {
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-primary font-bold">•</span>
-                Parents/guardians are responsible for monitoring minors' use of this service
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary font-bold">•</span>
-                We comply with COPPA (Children's Online Privacy Protection Act) requirements
+                Users must be at least 18 years old to create an account and use this service
               </li>
             </ul>
           </CardContent>
