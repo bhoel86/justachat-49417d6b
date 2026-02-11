@@ -52,6 +52,7 @@ import FreeChat from "./pages/FreeChat";
 import ChatRooms from "./pages/ChatRooms";
 import OnlineChat from "./pages/OnlineChat";
 import IrcStyleChat from "./pages/IrcStyleChat";
+import SiteIndex from "./pages/SiteIndex";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +107,7 @@ const App = () => (
                 <Route path="/chat-rooms" element={<ChatRooms />} />
                 <Route path="/online-chat" element={<OnlineChat />} />
                 <Route path="/irc-style-chat" element={<IrcStyleChat />} />
+                <Route path="/site-index" element={<SiteIndex />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
