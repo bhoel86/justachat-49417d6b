@@ -31,6 +31,39 @@ const sessions = new Map<string, IRCSession>();
 // Channel to session mapping for realtime relay
 const channelSubscriptions = new Map<string, Set<string>>(); // channelId -> Set<sessionId>
 
+// ============================================
+// Security Hardening: Rate Limiting & Flood Protection
+// ============================================
+
+// Per-IP connection tracking (for rate limiting)
+interface IPStats {
+  connectionCount: number;
+  lastConnectionTime: number;
+  messageCount: number;
+  lastMessageTime: number;
+}
+const ipConnectionStats = new Map<string, IPStats>();
+
+// Per-session message tracking (for flood protection)
+interface SessionFloodStats {
+  messageCount: number;
+  joinPartCount: number;
+  lastMessageTime: number;
+  lastJoinPartTime: number;
+  isFlooding: boolean;
+}
+const sessionFloodStats = new Map<string, SessionFloodStats>();
+
+// Configuration constants
+const RATE_LIMIT_CONFIG = {
+  MAX_CONNECTIONS_PER_IP: 5,           // Max concurrent connections per IP
+  CONNECTION_WINDOW_MS: 60000,          // 1 minute window for connection throttling
+  MAX_MESSAGES_PER_10_SEC: 20,          // Max messages in 10 seconds per session
+  MAX_JOINS_PER_MINUTE: 10,             // Max join/part commands per minute
+  IDLE_TIMEOUT_MS: 600000,              // 10 minutes idle timeout
+  FLOOD_COOLDOWN_MS: 30000,             // 30 second cooldown after flood detection
+};
+
 // Bot names per channel - ALIGNED with web frontend (src/lib/chatBots.ts ROOM_BOTS)
 // These are the exact same usernames that appear on the web client
 const channelBots: Record<string, string[]> = {
@@ -796,6 +829,12 @@ async function handleJOIN(session: IRCSession, params: string[]) {
     return;
   }
 
+  // Security: Check join/part flood limit
+  if (recordJoinPart(session)) {
+    sendNumeric(session, ERR.NOTREGISTERED, ":Too many join/part commands. Slow down.");
+    return;
+  }
+
   const channelNames = params[0].split(",");
 
   for (const channelName of channelNames) {
@@ -1086,6 +1125,12 @@ async function handlePART(session: IRCSession, params: string[]) {
 
   if (params.length === 0) {
     sendNumeric(session, ERR.NEEDMOREPARAMS, "PART :Not enough parameters");
+    return;
+  }
+
+  // Security: Check join/part flood limit
+  if (recordJoinPart(session)) {
+    sendNumeric(session, ERR.NOTREGISTERED, ":Too many join/part commands. Slow down.");
     return;
   }
 
@@ -2738,6 +2783,33 @@ function handleQUIT(session: IRCSession, params: string[]) {
   const reason = params.join(" ").replace(/^:/, "") || "Client Quit";
   sendIRC(session, `ERROR :Closing Link: ${session.nick} (${reason})`);
   
+  // Clean up database: Delete channel_members for this user across all channels (prevents ghost members)
+  if (session.userId && session.channels.size > 0) {
+    (async () => {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const cleanupClient = createClient(supabaseUrl, supabaseServiceKey);
+        
+        for (const channelId of session.channels) {
+          const { error } = await cleanupClient
+            .from("channel_members")
+            .delete()
+            .eq("channel_id", channelId)
+            .eq("user_id", session.userId);
+          
+          if (error) {
+            console.error(`[IRC QUIT] Failed to cleanup channel_members for ${channelId}:`, error.message);
+          } else {
+            console.log(`[IRC QUIT] Cleaned up channel_members for user ${session.nick} in channel ${channelId}`);
+          }
+        }
+      } catch (e) {
+        console.error(`[IRC QUIT] Error cleaning up channel_members:`, e);
+      }
+    })();
+  }
+  
   // Clean up channel subscriptions
   for (const channelId of session.channels) {
     const subscribers = channelSubscriptions.get(channelId);
@@ -2748,6 +2820,9 @@ function handleQUIT(session: IRCSession, params: string[]) {
       }
     }
   }
+  
+  // Clean up flood stats
+  sessionFloodStats.delete(session.sessionId);
   
   // Remove from sessions map
   sessions.delete(session.sessionId);
@@ -2915,14 +2990,134 @@ async function handleNAMES(session: IRCSession, params: string[]) {
   sendNumeric(session, RPL.ENDOFNAMES, `${channelName} :End of /NAMES list`);
 }
 
+// ============================================
+// Security Helper Functions
+// ============================================
+
+// Check if a session is flooding (too many messages)
+function isSessionFlooding(session: IRCSession): boolean {
+  const stats = sessionFloodStats.get(session.sessionId);
+  if (!stats) return false;
+  
+  const now = Date.now();
+  
+  // Reset if window has passed
+  if (now - stats.lastMessageTime > 10000) {
+    stats.messageCount = 0;
+    stats.lastMessageTime = now;
+  }
+  
+  return stats.isFlooding || stats.messageCount > RATE_LIMIT_CONFIG.MAX_MESSAGES_PER_10_SEC;
+}
+
+// Record a message for flood detection
+function recordMessage(session: IRCSession): void {
+  const stats = sessionFloodStats.get(session.sessionId) || {
+    messageCount: 0,
+    joinPartCount: 0,
+    lastMessageTime: Date.now(),
+    lastJoinPartTime: Date.now(),
+    isFlooding: false,
+  };
+  
+  const now = Date.now();
+  
+  // Reset message count if window expired
+  if (now - stats.lastMessageTime > 10000) {
+    stats.messageCount = 0;
+  }
+  
+  stats.messageCount++;
+  stats.lastMessageTime = now;
+  
+  // Flag as flooding if exceeds limit
+  if (stats.messageCount > RATE_LIMIT_CONFIG.MAX_MESSAGES_PER_10_SEC) {
+    stats.isFlooding = true;
+    console.warn(`[FLOOD] Session ${session.nick} exceeded message rate limit`);
+  }
+  
+  sessionFloodStats.set(session.sessionId, stats);
+}
+
+// Record a join/part for flood detection
+function recordJoinPart(session: IRCSession): boolean {
+  const stats = sessionFloodStats.get(session.sessionId) || {
+    messageCount: 0,
+    joinPartCount: 0,
+    lastMessageTime: Date.now(),
+    lastJoinPartTime: Date.now(),
+    isFlooding: false,
+  };
+  
+  const now = Date.now();
+  
+  // Reset join/part count if window expired
+  if (now - stats.lastJoinPartTime > 60000) {
+    stats.joinPartCount = 0;
+  }
+  
+  stats.joinPartCount++;
+  stats.lastJoinPartTime = now;
+  
+  // Return true if exceeds limit
+  if (stats.joinPartCount > RATE_LIMIT_CONFIG.MAX_JOINS_PER_MINUTE) {
+    console.warn(`[FLOOD] Session ${session.nick} exceeded join/part rate limit (${stats.joinPartCount})`);
+    sessionFloodStats.set(session.sessionId, stats);
+    return true; // Blocked
+  }
+  
+  sessionFloodStats.set(session.sessionId, stats);
+  return false; // Allowed
+}
+
+// Check and enforce idle timeout
+function checkIdleTimeout(session: IRCSession): boolean {
+  const now = Date.now();
+  const idleDuration = now - session.lastPing;
+  
+  if (idleDuration > RATE_LIMIT_CONFIG.IDLE_TIMEOUT_MS) {
+    console.log(`[IDLE] Session ${session.nick} exceeded idle timeout (${Math.round(idleDuration / 1000)}s)`);
+    return true; // Session should be disconnected
+  }
+  
+  return false;
+}
+
 async function handleIRCCommand(session: IRCSession, line: string) {
   console.log(`[IRC IN] ${line}`);
   
+  // ============================================
+  // SECURITY: Check for flood and idle timeouts
+  // ============================================
+  
+  // Check idle timeout (10 minutes of inactivity)
+  if (checkIdleTimeout(session)) {
+    sendIRC(session, `ERROR :Idle timeout exceeded`);
+    try { session.ws.close(); } catch (_e) { /* ignore */ }
+    return;
+  }
+  
+  // Record message for flood detection (except for PING/PONG which are keep-alive)
   const parts = line.trim().split(" ");
   if (parts.length === 0) return;
-
-  // Handle prefix (messages from server, ignore for client input)
+  
   let command = parts[0].toUpperCase();
+  if (command !== "PING" && command !== "PONG") {
+    recordMessage(session);
+    
+    // Check if flooding
+    if (isSessionFlooding(session)) {
+      sendIRC(session, `ERROR :Message flood detected. Please slow down.`);
+      console.warn(`[FLOOD] Disconnecting flooding session ${session.nick}`);
+      try { session.ws.close(); } catch (_e) { /* ignore */ }
+      return;
+    }
+  }
+  
+  // Update lastPing timestamp on any command (keep-alive)
+  session.lastPing = Date.now();
+  
+  // Parse command and params
   let params = parts.slice(1);
 
   if (command.startsWith(":")) {
@@ -3281,10 +3476,27 @@ Deno.serve(async (req) => {
     sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Please authenticate with PASS email:password (or email|password for mIRC)`);
     
     // Send PING every 30 seconds to keep the connection alive
+    // Also perform periodic idle timeout and flood stat cleanup
     keepAliveInterval = setInterval(() => {
       if (socket.readyState === WebSocket.OPEN) {
+        // Check idle timeout
+        if (checkIdleTimeout(session)) {
+          console.log(`[IDLE] Disconnecting idle session ${session.nick}`);
+          sendIRC(session, `ERROR :Idle timeout exceeded`);
+          try { socket.close(); } catch (_e) { /* ignore */ }
+          return;
+        }
+        
         sendIRC(session, `PING :${SERVER_NAME}`);
         session.lastPing = Date.now();
+      }
+      
+      // Periodic cleanup: clear old IP stats and session flood stats
+      const now = Date.now();
+      for (const [ip, stats] of ipConnectionStats) {
+        if (now - stats.lastConnectionTime > 120000) { // 2 minutes
+          ipConnectionStats.delete(ip);
+        }
       }
     }, 30000);
   };
