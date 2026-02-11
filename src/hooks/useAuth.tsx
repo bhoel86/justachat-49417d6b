@@ -64,6 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       // Clear local storage regardless
       clearAuthStorage();
+      localStorage.removeItem('jac_personal_theme');
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -209,6 +210,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // ignore
     } finally {
       clearAuthStorage();
+      localStorage.removeItem('jac_personal_theme');
     }
     setSession(null);
     setUser(null);
@@ -267,6 +269,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // ignore
     } finally {
       clearAuthStorage();
+      localStorage.removeItem('jac_personal_theme');
     }
     setSession(null);
     setUser(null);

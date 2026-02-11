@@ -3,7 +3,7 @@
  * ╚═ Proprietary software. All rights reserved. ══════════════╝
  */
 
-import React, { createContext, useContext, useEffect, useState, useLayoutEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { isPreviewHost } from '@/lib/previewHost';
@@ -12,9 +12,12 @@ export type ThemeName = 'jac' | 'retro80s' | 'valentines' | 'stpatricks' | 'matr
 
 interface ThemeContextType {
   theme: ThemeName;
+  globalTheme: ThemeName;
   setTheme: (theme: ThemeName) => void;
+  setPersonalTheme: (theme: ThemeName | null) => void;
   themes: { id: ThemeName; name: string; description: string }[];
   isLoading: boolean;
+  personalTheme: ThemeName | null;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -38,6 +41,8 @@ const isValidTheme = (value: string): value is ThemeName => {
 
 // Session storage key for local preview mode (set by LoginThemeSelector)
 const LOCAL_PREVIEW_KEY = 'jac_local_theme_preview';
+// localStorage key for personal theme (persists across tabs but cleared on logout)
+const PERSONAL_THEME_KEY = 'jac_personal_theme';
 
 const getLocalPreviewTheme = (): ThemeName | null => {
   if (typeof sessionStorage === 'undefined') return null;
@@ -48,37 +53,43 @@ const getLocalPreviewTheme = (): ThemeName | null => {
 
 const isLocalPreviewActive = () => {
   if (typeof sessionStorage === 'undefined') return false;
-  // Only treat local preview as active inside preview hosts.
-  // This prevents accidental persistence of preview-only behavior elsewhere.
   if (!isPreviewHost()) return false;
   return !!getLocalPreviewTheme();
 };
 
 const applyThemeClass = (theme: ThemeName) => {
   if (typeof document !== 'undefined') {
-    // Skip if local preview is active - let LoginThemeSelector control the class
     if (isLocalPreviewActive()) {
       console.log('[Theme] Skipping apply - local preview active');
       return;
     }
     document.documentElement.classList.remove('theme-jac', 'theme-retro80s', 'theme-valentines', 'theme-stpatricks', 'theme-matrix', 'theme-vapor', 'theme-arcade', 'theme-dieselpunk', 'theme-cyberpunk', 'theme-jungle');
     document.documentElement.classList.add(`theme-${theme}`);
+    localStorage.setItem('jac-theme', theme);
     console.log('[Theme] Applied:', theme);
   }
 };
 
-// Get initial theme from local preview if active
 const getInitialTheme = (): ThemeName => {
   const localPreview = getLocalPreviewTheme();
   if (localPreview) return localPreview;
+  // Check for cached personal theme (fast hydration for logged-in users)
+  if (typeof localStorage !== 'undefined') {
+    const personal = localStorage.getItem(PERSONAL_THEME_KEY);
+    if (personal && isValidTheme(personal)) return personal;
+    const cached = localStorage.getItem('jac-theme');
+    if (cached && isValidTheme(cached)) return cached;
+  }
   return 'jac';
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeName>(getInitialTheme);
+  const [globalTheme, setGlobalTheme] = useState<ThemeName>('jac');
+  const [personalTheme, setPersonalThemeState] = useState<ThemeName | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const lastUserChangeRef = React.useRef<number>(0);
-  
+
   // Listen for local preview changes from LoginThemeSelector
   useEffect(() => {
     const handleStorageChange = () => {
@@ -87,18 +98,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setThemeState(localPreview);
       }
     };
-    
-    // Check periodically for sessionStorage changes (same-tab)
     const interval = setInterval(handleStorageChange, 500);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch global theme from database on mount
+  // Determine the effective theme: personal > global
+  const resolveEffectiveTheme = (personal: ThemeName | null, global: ThemeName): ThemeName => {
+    return personal ?? global;
+  };
+
+  // Fetch global theme + personal theme on mount
   useEffect(() => {
     let isMounted = true;
 
-    const fetchTheme = async () => {
-      // If preview-only theme is active, never let DB polling overwrite it.
+    const fetchThemes = async () => {
       const localPreview = getLocalPreviewTheme();
       if (localPreview) {
         if (isMounted) {
@@ -108,7 +121,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return;
       }
 
-      // Skip polling if user just changed theme (5 second cooldown)
       const timeSinceUserChange = Date.now() - lastUserChangeRef.current;
       if (timeSinceUserChange < 5000) {
         console.log('[Theme] Skipping poll - user changed theme recently');
@@ -116,37 +128,65 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       try {
-        const { data, error } = await supabase
+        // Fetch global site theme
+        const { data: siteData, error: siteError } = await supabase
           .from('site_settings')
           .select('value')
           .eq('key', 'theme')
           .single();
 
-        if (error) {
-          console.warn('[Theme] Failed to fetch from DB:', error.message);
-          return;
+        if (siteError) {
+          console.warn('[Theme] Failed to fetch global theme:', siteError.message);
+        }
+
+        let fetchedGlobal: ThemeName = 'jac';
+        if (siteData && isValidTheme(siteData.value)) {
+          fetchedGlobal = siteData.value;
         }
 
         if (!isMounted) return;
+        setGlobalTheme(fetchedGlobal);
 
-        if (data && isValidTheme(data.value)) {
-          const nextTheme: ThemeName = data.value;
-          console.log('[Theme] Loaded from DB:', nextTheme);
-          setThemeState((prev) => {
-            if (prev !== nextTheme) applyThemeClass(nextTheme);
-            return nextTheme;
-          });
+        // Fetch personal theme if user is logged in
+        const { data: { session } } = await supabase.auth.getSession();
+        let fetchedPersonal: ThemeName | null = null;
+
+        if (session?.user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('preferred_theme')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (profileData?.preferred_theme && isValidTheme(profileData.preferred_theme)) {
+            fetchedPersonal = profileData.preferred_theme;
+          }
         }
+
+        if (!isMounted) return;
+        setPersonalThemeState(fetchedPersonal);
+
+        // Cache personal theme for fast hydration
+        if (fetchedPersonal) {
+          localStorage.setItem(PERSONAL_THEME_KEY, fetchedPersonal);
+        } else {
+          localStorage.removeItem(PERSONAL_THEME_KEY);
+        }
+
+        const effective = resolveEffectiveTheme(fetchedPersonal, fetchedGlobal);
+        console.log('[Theme] Resolved:', { global: fetchedGlobal, personal: fetchedPersonal, effective });
+        setThemeState(effective);
+        applyThemeClass(effective);
       } catch (err) {
-        console.warn('[Theme] Error fetching theme:', err);
+        console.warn('[Theme] Error fetching themes:', err);
       } finally {
         if (isMounted) setIsLoading(false);
       }
     };
 
-    fetchTheme();
+    fetchThemes();
 
-    // Subscribe to realtime changes so all users see updates instantly (when realtime is available)
+    // Realtime for global theme changes
     const channel = supabase
       .channel('site-settings-theme')
       .on(
@@ -158,59 +198,90 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           filter: 'key=eq.theme'
         },
         (payload) => {
-          // If preview-only theme is active, never let realtime overwrite it.
-          if (getLocalPreviewTheme()) {
-            console.log('[Theme] Skipping realtime - local preview active');
-            return;
-          }
-
-          // Skip realtime if user just changed theme (same cooldown as polling)
+          if (getLocalPreviewTheme()) return;
           const timeSinceUserChange = Date.now() - lastUserChangeRef.current;
-          if (timeSinceUserChange < 5000) {
-            console.log('[Theme] Skipping realtime - user changed theme recently');
-            return;
-          }
-          
-          console.log('[Theme] Realtime update:', payload);
+          if (timeSinceUserChange < 5000) return;
+
           const newValue = (payload.new as { value?: string })?.value;
           if (newValue && isValidTheme(newValue)) {
-            setThemeState(newValue);
-            applyThemeClass(newValue);
+            console.log('[Theme] Realtime global update:', newValue);
+            setGlobalTheme(newValue);
+            // Only apply if user has no personal theme
+            setPersonalThemeState(current => {
+              if (!current) {
+                setThemeState(newValue);
+                applyThemeClass(newValue);
+              }
+              return current;
+            });
           }
         }
       )
-      .subscribe((status) => {
-        console.log('[Theme] Realtime status:', status);
-      });
+      .subscribe();
 
-    // VPS-safe fallback: poll occasionally in case websocket/realtime isn't working.
-    // This ensures cross-browser/device sync still happens (just not instant).
+    // Listen for auth changes to load/clear personal theme
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+
+      if (event === 'SIGNED_OUT') {
+        console.log('[Theme] User signed out, reverting to global theme');
+        setPersonalThemeState(null);
+        localStorage.removeItem(PERSONAL_THEME_KEY);
+        setThemeState(prev => {
+          // Use current globalTheme
+          setGlobalTheme(g => {
+            applyThemeClass(g);
+            setThemeState(g);
+            return g;
+          });
+          return prev;
+        });
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        // Fetch personal theme for newly signed-in user
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('preferred_theme')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (!isMounted) return;
+
+        if (profileData?.preferred_theme && isValidTheme(profileData.preferred_theme)) {
+          const personal = profileData.preferred_theme;
+          setPersonalThemeState(personal);
+          localStorage.setItem(PERSONAL_THEME_KEY, personal);
+          setThemeState(personal);
+          applyThemeClass(personal);
+          console.log('[Theme] Loaded personal theme on login:', personal);
+        }
+      }
+    });
+
     const pollInterval = window.setInterval(() => {
-      fetchTheme();
+      fetchThemes();
     }, 10_000);
 
     return () => {
       isMounted = false;
       window.clearInterval(pollInterval);
       supabase.removeChannel(channel);
+      subscription.unsubscribe();
     };
   }, []);
 
-  // Note: applyThemeClass is called directly in setThemeState callbacks,
-  // so no separate useLayoutEffect needed here.
-
+  // Owner sets GLOBAL theme (affects all users)
   const setTheme = async (newTheme: ThemeName) => {
-    console.log('[Theme] Owner setting theme to:', newTheme);
-    const previousTheme = theme;
-    
-    // Mark that user just changed theme - prevents polling from overwriting
+    console.log('[Theme] Owner setting global theme to:', newTheme);
+    const previousGlobal = globalTheme;
     lastUserChangeRef.current = Date.now();
-    
-    // Optimistically update local state
-    setThemeState(newTheme);
-    applyThemeClass(newTheme);
 
-    // Persist to database (only owners can do this due to RLS)
+    setGlobalTheme(newTheme);
+    // If this user has no personal theme, apply immediately
+    if (!personalTheme) {
+      setThemeState(newTheme);
+      applyThemeClass(newTheme);
+    }
+
     const { error } = await supabase
       .from('site_settings')
       .upsert(
@@ -219,29 +290,63 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
     if (error) {
-      console.error('[Theme] Failed to save to DB:', error.message);
-      // Note: Non-owners will get an RLS error, which is expected
-
-      // Revert local change so UI matches the actual global theme
-      setThemeState(previousTheme);
-      applyThemeClass(previousTheme);
-
-      toast.error('Could not set global theme', {
-        description: error.message,
-        duration: 6000,
-      });
+      console.error('[Theme] Failed to save global theme:', error.message);
+      setGlobalTheme(previousGlobal);
+      if (!personalTheme) {
+        setThemeState(previousGlobal);
+        applyThemeClass(previousGlobal);
+      }
+      toast.error('Could not set global theme', { description: error.message, duration: 6000 });
     } else {
-      console.log('[Theme] Saved to DB successfully');
+      toast.success('Global theme updated', { description: 'Changes apply to all users site-wide.', duration: 4000 });
+    }
+  };
 
-      toast.success('Global theme updated', {
-        description: 'Changes apply to all users site-wide.',
-        duration: 4000,
-      });
+  // User sets PERSONAL theme (affects only them)
+  const setPersonalTheme = async (newTheme: ThemeName | null) => {
+    console.log('[Theme] User setting personal theme to:', newTheme);
+    lastUserChangeRef.current = Date.now();
+
+    const previousPersonal = personalTheme;
+    setPersonalThemeState(newTheme);
+
+    const effective = resolveEffectiveTheme(newTheme, globalTheme);
+    setThemeState(effective);
+    applyThemeClass(effective);
+
+    if (newTheme) {
+      localStorage.setItem(PERSONAL_THEME_KEY, newTheme);
+    } else {
+      localStorage.removeItem(PERSONAL_THEME_KEY);
+    }
+
+    // Save to profile
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ preferred_theme: newTheme })
+      .eq('user_id', session.user.id);
+
+    if (error) {
+      console.error('[Theme] Failed to save personal theme:', error.message);
+      setPersonalThemeState(previousPersonal);
+      const reverted = resolveEffectiveTheme(previousPersonal, globalTheme);
+      setThemeState(reverted);
+      applyThemeClass(reverted);
+      toast.error('Could not save your theme preference', { description: error.message, duration: 4000 });
+    } else {
+      if (newTheme) {
+        toast.success('Personal theme saved', { description: 'This theme applies only to you.', duration: 3000 });
+      } else {
+        toast.success('Using site default theme', { description: 'Your theme now matches the global setting.', duration: 3000 });
+      }
     }
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, themes: THEMES, isLoading }}>
+    <ThemeContext.Provider value={{ theme, globalTheme, setTheme, setPersonalTheme, themes: THEMES, isLoading, personalTheme }}>
       {children}
     </ThemeContext.Provider>
   );
