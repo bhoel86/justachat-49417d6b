@@ -381,7 +381,7 @@ const Help = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/lobby")}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               <div className="h-10 w-10 rounded-xl jac-gradient-bg flex items-center justify-center">
@@ -482,7 +482,7 @@ const Help = () => {
                   <p className="text-muted-foreground">
                     You must be logged in to contact support
                   </p>
-                  <Button onClick={() => navigate("/home")}>Sign In</Button>
+                  <Button onClick={() => navigate("/login")}>Sign In</Button>
                 </div>
               ) : activeTicket ? (
                 <div className="space-y-4">

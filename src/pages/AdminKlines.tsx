@@ -174,11 +174,11 @@ const AdminKlines = () => {
   }
 
   if (!user) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (!isAdmin && !isOwner) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/lobby" replace />;
   }
 
   const activeKlines = klines.filter(k => !k.expires_at || new Date(k.expires_at) > new Date());

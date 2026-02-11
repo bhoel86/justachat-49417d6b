@@ -64,7 +64,7 @@ const AdminSitemap = () => {
   const { isAdmin, isOwner, loading } = useAuth();
 
   if (loading) return null;
-  if (!isAdmin && !isOwner) return <Navigate to="/" replace />;
+  if (!isAdmin && !isOwner) return <Navigate to="/lobby" replace />;
 
   return (
     <AdminSidebar>

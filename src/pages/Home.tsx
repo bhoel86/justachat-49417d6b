@@ -181,7 +181,7 @@ const Home = () => {
     if (oauthProcessing) return;
     
     if (!authLoading && !user) {
-      navigate("/home", { replace: true });
+      navigate("/login", { replace: true });
     }
   }, [user, authLoading, navigate, oauthProcessing]);
 
@@ -334,7 +334,7 @@ const Home = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.href = '/home';
+    window.location.href = '/login';
   };
 
 

@@ -118,11 +118,11 @@ const AdminMutes = () => {
   }
 
   if (!user) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (!isModerator) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/lobby" replace />;
   }
 
   const activeMutes = mutes.filter(m => !m.expires_at || new Date(m.expires_at) > new Date());

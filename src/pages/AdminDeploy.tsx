@@ -68,7 +68,7 @@ export default function AdminDeploy() {
 
   useEffect(() => {
     if (!authLoading && !isOwner) {
-      navigate("/");
+      navigate("/lobby");
     }
   }, [authLoading, isOwner, navigate]);
 

@@ -27,7 +27,7 @@ const MircConnect = () => {
             <h1 className="text-xl font-bold">Connect to Justachat with mIRC</h1>
           </div>
           <Button asChild variant="outline" size="sm" className="bg-[#c0c0c0] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] hover:bg-[#d0d0d0]">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/lobby" className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
               Back to Lobby
             </Link>
@@ -199,7 +199,7 @@ const MircConnect = () => {
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-600">
-          <p>Don't have an account? <Link to="/home" className="text-[#0000ff] underline">Sign up on the web first</Link></p>
+          <p>Don't have an account? <Link to="/login" className="text-[#0000ff] underline">Sign up on the web first</Link></p>
         </div>
       </div>
     </div>

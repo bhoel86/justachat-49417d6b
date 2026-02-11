@@ -15,6 +15,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RetroFloatingIcons } from "@/components/theme/RetroFloatingIcons";
 import { ValentinesGlobalEffects } from "@/components/theme/ValentinesGlobalEffects";
 import { StPatricksGlobalEffects } from "@/components/theme/StPatricksGlobalEffects";
+import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -70,10 +71,12 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Landing />} />
+                <Route path="/lobby" element={<Home />} />
                 <Route path="/chat" element={<Index />} />
                 <Route path="/chat/:channelName" element={<Index />} />
-                <Route path="/home" element={<Auth />} />
+                <Route path="/login" element={<Auth />} />
+                <Route path="/home" element={<Auth />} /> {/* Legacy redirect */}
                 <Route path="/map" element={<MapView />} />
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/admin/bans" element={<AdminBans />} />

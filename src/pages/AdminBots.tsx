@@ -41,7 +41,7 @@ const AdminBots = () => {
 
   useEffect(() => {
     if (!authLoading && (!user || (!isAdmin && !isOwner))) {
-      navigate("/");
+      navigate("/lobby");
     }
   }, [user, isAdmin, isOwner, authLoading, navigate]);
 

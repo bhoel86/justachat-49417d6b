@@ -223,7 +223,7 @@ const AdminPanel = () => {
   }
 
   if (!user) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // Redirect admins to users page (they can't see audit logs but can access other admin pages)
@@ -232,7 +232,7 @@ const AdminPanel = () => {
   }
 
   if (!isOwner) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/lobby" replace />;
   }
 
   return (

@@ -131,11 +131,11 @@ const AdminBans = () => {
   }
 
   if (!user) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (!isModerator) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/lobby" replace />;
   }
 
   const activeBans = bans.filter(b => !b.expires_at || new Date(b.expires_at) > new Date());

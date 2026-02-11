@@ -169,7 +169,7 @@ const FAQ = () => {
           <nav className="flex items-center gap-4">
             <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">About</Link>
             <Link to="/features" className="text-muted-foreground hover:text-primary transition-colors">Features</Link>
-            <Link to="/home" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
+            <Link to="/login" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
           </nav>
         </div>
       </header>

@@ -27,7 +27,7 @@ const IrcStyleChat = () => {
           <nav className="flex items-center gap-4">
             <Link to="/free-chat" className="text-muted-foreground hover:text-primary transition-colors">Free Chat</Link>
             <Link to="/online-chat" className="text-muted-foreground hover:text-primary transition-colors">Online Chat</Link>
-            <Link to="/home" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
+            <Link to="/login" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
           </nav>
         </div>
       </header>
@@ -42,7 +42,7 @@ const IrcStyleChat = () => {
             JustAChat brings back the simplicity and authenticity of classic Internet Relay Chat. Real conversations, channels, and community without modern social media noise.
           </p>
           <Link 
-            to="/home"
+            to="/login"
             className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
           >
             Try IRC-Style Chat Free
@@ -194,7 +194,7 @@ const IrcStyleChat = () => {
               Whether you're an IRC veteran or new to channel-based chat, JustAChat offers the simplicity you're looking for. Real conversations. Real community. No algorithms.
             </p>
             <Link 
-              to="/home"
+              to="/login"
               className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
             >
               Start Chatting IRC-Style

@@ -7,7 +7,8 @@ const sections = [
   {
     title: "Chat",
     links: [
-      { to: "/", label: "Lobby", desc: "Main chat lobby with live rooms", icon: Globe },
+      { to: "/login", label: "Login / Sign Up", desc: "Create an account or sign in", icon: Globe },
+      { to: "/lobby", label: "Lobby", desc: "Main chat lobby with live rooms", icon: Globe },
       { to: "/free-chat", label: "Free Chat", desc: "Jump into free online chat rooms", icon: MessageCircle },
       { to: "/chat-rooms", label: "Chat Rooms", desc: "Browse all available chat rooms", icon: Users },
       { to: "/online-chat", label: "Online Chat", desc: "Connect with people online now", icon: Zap },

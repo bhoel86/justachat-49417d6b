@@ -102,7 +102,7 @@ export const AdminSidebar = ({ children }: AdminSidebarProps) => {
           {/* Header */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-border">
             {!collapsed && (
-              <Link to="/" className="flex items-center gap-2">
+              <Link to="/lobby" className="flex items-center gap-2">
                 <Shield className="h-6 w-6 text-primary" />
                 <span className="font-bold text-lg">Admin</span>
               </Link>
@@ -148,7 +148,7 @@ export const AdminSidebar = ({ children }: AdminSidebarProps) => {
           {/* Footer */}
           <div className="p-4 border-t border-border">
             <Link
-              to="/"
+              to="/lobby"
               className={cn(
                 "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
                 collapsed && "justify-center"

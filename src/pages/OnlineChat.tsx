@@ -27,7 +27,7 @@ const OnlineChat = () => {
           <nav className="flex items-center gap-4">
             <Link to="/free-chat" className="text-muted-foreground hover:text-primary transition-colors">Free Chat</Link>
             <Link to="/chat-rooms" className="text-muted-foreground hover:text-primary transition-colors">Rooms</Link>
-            <Link to="/home" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
+            <Link to="/login" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
           </nav>
         </div>
       </header>
@@ -42,7 +42,7 @@ const OnlineChat = () => {
             JustAChat is a modern online chat platform designed for real conversations. No feeds deciding what you see. No algorithms pushing content. Just people talking.
           </p>
           <Link 
-            to="/home"
+            to="/login"
             className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
           >
             Start Chatting Online
@@ -162,7 +162,7 @@ const OnlineChat = () => {
               Join JustAChat and discover what online chat is meant to be. Real conversations. Real people. No algorithms. No noise.
             </p>
             <Link 
-              to="/home"
+              to="/login"
               className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
             >
               Start Chatting Now

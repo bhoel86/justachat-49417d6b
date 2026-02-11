@@ -100,7 +100,7 @@ const Index = () => {
     if (oauthProcessing) return;
     
     if (!loading && !user) {
-      navigate("/home");
+      navigate("/login");
     }
   }, [user, loading, navigate, oauthProcessing]);
 

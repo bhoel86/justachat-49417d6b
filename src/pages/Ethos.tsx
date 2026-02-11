@@ -43,7 +43,7 @@ const Ethos = () => {
             <h1 className="text-2xl font-bold brand jac-gradient-text">Justachat<sup className="text-xs">™</sup></h1>
           </Link>
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/" className="gap-2">
+            <Link to="/lobby" className="gap-2">
               <ArrowLeft className="w-4 h-4" />
               Back to Lobby
             </Link>
@@ -280,7 +280,7 @@ const Ethos = () => {
                 </p>
                 
                 <Button size="lg" className="jac-gradient-bg text-primary-foreground font-semibold" asChild>
-                  <Link to="/">
+                  <Link to="/lobby">
                     Enter the Lobby
                     <MessageSquare className="w-5 h-5 ml-2" />
                   </Link>

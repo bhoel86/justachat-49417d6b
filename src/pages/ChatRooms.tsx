@@ -40,7 +40,7 @@ const ChatRooms = () => {
           <nav className="flex items-center gap-4">
             <Link to="/free-chat" className="text-muted-foreground hover:text-primary transition-colors">Free Chat</Link>
             <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">About</Link>
-            <Link to="/home" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
+            <Link to="/login" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
           </nav>
         </div>
       </header>
@@ -119,7 +119,7 @@ const ChatRooms = () => {
             Pick a chat room that interests you and start conversing with real people. Sign up free and begin chatting instantly.
           </p>
           <Link 
-            to="/home"
+            to="/login"
             className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-semibold"
           >
             Explore Chat Rooms Now

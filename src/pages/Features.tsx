@@ -89,7 +89,7 @@ const Features = () => {
           <nav className="flex items-center gap-4">
             <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">About</Link>
             <Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">FAQ</Link>
-            <Link to="/home" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
+            <Link to="/login" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">Join Now</Link>
           </nav>
         </div>
       </header>
@@ -169,7 +169,7 @@ const Features = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              to="/home" 
+              to="/login" 
               className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
             >
               Sign Up Free

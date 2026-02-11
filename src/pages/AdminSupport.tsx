@@ -302,11 +302,11 @@ const AdminSupport = () => {
   }
 
   if (!user) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (!isOwner && !isAdmin && !isModerator) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/lobby" replace />;
   }
 
   const openTickets = tickets.filter((t) => t.status === "open");

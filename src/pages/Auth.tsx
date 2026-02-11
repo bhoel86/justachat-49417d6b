@@ -127,7 +127,7 @@ const Auth = () => {
       if (isCapacitorApp) {
         // For Capacitor: Open OAuth in system browser
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const redirectUrl = 'https://justachat.net/'; // Must use production URL for deep linking
+        const redirectUrl = 'https://justachat.net/lobby'; // Must use production URL for deep linking
         
         const oauthUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}&prompt=select_account`;
         
@@ -151,7 +151,7 @@ const Auth = () => {
           const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-              redirectTo: `${window.location.origin}/`,
+              redirectTo: `${window.location.origin}/lobby`,
               skipBrowserRedirect: true, // Prevents auth-bridge interception
               queryParams: {
                 prompt: 'select_account'
@@ -174,7 +174,7 @@ const Auth = () => {
           const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-              redirectTo: `${window.location.origin}/`,
+              redirectTo: `${window.location.origin}/lobby`,
               queryParams: {
                 prompt: 'select_account'
               }
@@ -296,7 +296,7 @@ const Auth = () => {
   // Redirect logged-in users ONLY if not in password reset flow or showing pill transition
   useEffect(() => {
     if (!loading && user && !isPasswordResetFlow && !showPillTransition) {
-      navigate("/");
+      navigate("/lobby");
     }
   }, [user, loading, navigate, isPasswordResetFlow, showPillTransition]);
 
