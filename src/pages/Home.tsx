@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LobbyMirrorRoom from "@/components/home/LobbyMirrorRoom";
 import PayPalDonateModal from "@/components/home/PayPalDonateModal";
-import { getRoomBotCount } from "@/lib/chatBots";
+// Bot counts removed — only real users count
 import { supabaseUntyped } from "@/hooks/useAuth";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 // Room background images
@@ -756,8 +756,7 @@ const Home = () => {
                 ))
               ) : (
                 channels.map((channel) => {
-                  const botsEnabledForChannel = botsGloballyEnabled && botsAllowedChannels.includes(channel.name);
-                  const userCount = (roomUserCounts[channel.id] || 0) + (botsEnabledForChannel ? getRoomBotCount(channel.name) : 0);
+                  const userCount = roomUserCounts[channel.id] || 0;
                   return (
                     <button
                       key={channel.id}
@@ -914,8 +913,7 @@ const Home = () => {
                     <>
                       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-1.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
                         {channels.map((channel) => {
-                          const botsEnabledForChannel = botsGloballyEnabled && botsAllowedChannels.includes(channel.name);
-                          const userCount = (roomUserCounts[channel.id] || 0) + (botsEnabledForChannel ? getRoomBotCount(channel.name) : 0);
+                          const userCount = roomUserCounts[channel.id] || 0;
                           return (
                             <button
                               key={channel.id}

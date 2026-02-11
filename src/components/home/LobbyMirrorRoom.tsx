@@ -6,7 +6,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { supabaseUntyped } from "@/hooks/useAuth";
 import ChatHeader from "@/components/chat/ChatHeader";
 import MemberList from "@/components/chat/MemberList";
 import MessageBubble from "@/components/chat/MessageBubble";
@@ -14,15 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Users, X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getBotsForChannel, CHAT_BOTS, getBotResponseDelay } from "@/lib/chatBots";
 import { useTheme } from "@/contexts/ThemeContext";
-import { getChatBotFunctionName } from "@/lib/environment";
 import { RetroWatermark } from "@/components/theme/RetroWatermark";
 import { ValentinesWatermark } from "@/components/theme/ValentinesWatermark";
 import { StPatricksWatermark } from "@/components/theme/StPatricksWatermark";
 import { MatrixWatermark } from "@/components/theme/MatrixWatermark";
 import { JungleWatermark } from "@/components/theme/JungleWatermark";
- import { OGWatermark } from "@/components/theme/OGWatermark";
+import { OGWatermark } from "@/components/theme/OGWatermark";
 
 interface MirrorMessage {
   id: string;
@@ -36,153 +33,25 @@ interface MirrorMessage {
   };
 }
 
-interface BotSettings {
-  enabled: boolean;
-  allowed_channels: string[];
-}
-
 const LobbyMirrorRoom = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
   const isRetro = theme === 'retro80s';
-  const isStPatricks = theme === 'stpatricks';
   const [messages, setMessages] = useState<MirrorMessage[]>([]);
   const [showMemberSidebar, setShowMemberSidebar] = useState(false);
-  const [botSettings, setBotSettings] = useState<BotSettings | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const lastActivityRef = useRef<number>(Date.now());
-  const pendingRef = useRef<boolean>(false);
 
-  // Fetch bot settings
-  useEffect(() => {
-    const fetchSettings = async () => {
-      const { data, error } = await supabaseUntyped
-        .from('bot_settings')
-        .select('enabled, allowed_channels')
-        .limit(1)
-        .single();
+  // Only real users appear — no simulated bots
+  const onlineUserIds = useMemo(() => new Set<string>(), []);
 
-      if (!error && data) {
-        setBotSettings(data as BotSettings);
-      }
-    };
-
-    fetchSettings();
-
-    // Subscribe to changes
-    const channel = supabase
-      .channel('lobby-bot-settings')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'bot_settings' },
-        (payload) => {
-          setBotSettings(payload.new as BotSettings);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  // Check if bots are enabled for general channel
-  const botsEnabled = botSettings?.enabled === true && 
-    botSettings?.allowed_channels?.includes('general');
-
-  // Get simulated bot users for member list - only if enabled
-  const simulatedBots = useMemo(() => {
-    if (!botsEnabled) return [];
-    return getBotsForChannel('general');
-  }, [botsEnabled]);
-  
-  const onlineUserIds = useMemo(() => new Set(simulatedBots.map(b => `bot-${b.id}`)), [simulatedBots]);
-
-  // Add a message to the mirror
-  const addMirrorMessage = useCallback((username: string, content: string, avatarUrl?: string | null) => {
-    const newMsg: MirrorMessage = {
-      id: `mirror-${Date.now()}-${Math.random()}`,
-      content,
-      user_id: `bot-${username}`,
-      channel_id: 'general-mirror',
-      created_at: new Date().toISOString(),
-      profile: {
-        username,
-        avatar_url: avatarUrl || null,
-      }
-    };
-    setMessages(prev => [...prev, newMsg].slice(-50));
-    lastActivityRef.current = Date.now();
-  }, []);
-
-  // Generate bot conversation for the lobby - only if bots enabled
-  const generateBotMessage = useCallback(async (isStarter: boolean = false) => {
-    if (!botsEnabled || pendingRef.current) return;
-    pendingRef.current = true;
-
-    try {
-      const bot = CHAT_BOTS[Math.floor(Math.random() * CHAT_BOTS.length)];
-      const recentMsgs = messages.slice(-10).map(m => ({
-        username: m.profile?.username || 'Unknown',
-        content: m.content,
-        timestamp: m.created_at,
-      }));
-
-      const { data, error } = await supabase.functions.invoke(getChatBotFunctionName(), {
-        body: {
-          botId: bot.id,
-          context: 'general',
-          recentMessages: recentMsgs,
-          isConversationStarter: isStarter,
-        },
-      });
-
-      if (!error && data?.message) {
-        addMirrorMessage(bot.username, data.message, bot.avatarUrl);
-      }
-    } catch (err) {
-      console.error('Lobby bot error:', err);
-    } finally {
-      pendingRef.current = false;
-    }
-  }, [botsEnabled, messages, addMirrorMessage]);
-
-  // Periodic bot conversations for the lobby - only if bots enabled
-  useEffect(() => {
-    if (!botsEnabled) return;
-
-    // Start initial conversation quickly
-    const initialTimeout = setTimeout(() => {
-      generateBotMessage(true);
-    }, 2000);
-
-    // Continue conversations every 10-25 seconds
-    const interval = setInterval(() => {
-      const timeSinceActivity = Date.now() - lastActivityRef.current;
-      if (timeSinceActivity > 8000) {
-        generateBotMessage(Math.random() < 0.3);
-      }
-    }, 10000 + Math.random() * 15000);
-
-    return () => {
-      clearTimeout(initialTimeout);
-      clearInterval(interval);
-    };
-  }, [botsEnabled, generateBotMessage]);
-
-  // Subscribe to mirrored messages from #general (real activity)
+  // Subscribe to mirrored messages from #general (real activity only)
   useEffect(() => {
     const channel = supabase.channel('general-lobby-mirror', {
       config: { broadcast: { self: true } }
     });
 
     channel
-      .on('broadcast', { event: 'bot-message' }, (payload) => {
-        if (!botsEnabled) return;
-        const { username, content, avatarUrl } = payload.payload;
-        addMirrorMessage(username, content, avatarUrl);
-      })
       .on('broadcast', { event: 'user-message' }, (payload) => {
         const { username, content, avatarUrl } = payload.payload;
         const newMsg: MirrorMessage = {
@@ -197,14 +66,13 @@ const LobbyMirrorRoom = () => {
           }
         };
         setMessages(prev => [...prev, newMsg].slice(-50));
-        lastActivityRef.current = Date.now();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [botsEnabled, addMirrorMessage]);
+  }, []);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -270,13 +138,13 @@ const LobbyMirrorRoom = () => {
         {/* Desktop Header */}
         <div className={`hidden lg:block ${isRetro ? 'border-b-4 border-pink-500' : ''}`} onClick={(e) => e.stopPropagation()}>
           <ChatHeader 
-            onlineCount={botsEnabled ? (onlineUserIds.size || 200) : 0}
+            onlineCount={0}
             topic="Live preview of #general — Click anywhere to join the conversation!"
             channelName="general"
           />
         </div>
         
-        {/* Messages Area - No scrolling, shows latest messages only */}
+        {/* Messages Area */}
         <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col relative isolate">
           {/* Transparent logo watermark - theme aware */}
           {theme === 'retro80s' ? (
@@ -290,7 +158,6 @@ const LobbyMirrorRoom = () => {
           ) : theme === 'jungle' ? (
             <JungleWatermark />
           ) : theme === 'vapor' || theme === 'arcade' || theme === 'dieselpunk' || theme === 'cyberpunk' ? (
-            // 2026 expansion themes suppress default watermark
             null
           ) : (
              <OGWatermark />
@@ -298,7 +165,7 @@ const LobbyMirrorRoom = () => {
           
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
-              <p>{botsEnabled ? 'Waiting for chat activity...' : 'Chat preview disabled'}</p>
+              <p>Waiting for chat activity...</p>
               <p className="text-sm mt-2">Click to join #general and start chatting!</p>
             </div>
           ) : (
@@ -323,7 +190,6 @@ const LobbyMirrorRoom = () => {
           <div ref={messagesEndRef} />
         </div>
         
-        
         {/* Fake Input - Shows join prompt */}
         <div className="p-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
           <div className="flex gap-2">
@@ -335,7 +201,7 @@ const LobbyMirrorRoom = () => {
         </div>
       </div>
 
-      {/* Member Sidebar - Hidden on mobile unless toggled, narrower for lobby */}
+      {/* Member Sidebar */}
       <div 
         className={cn(
           "fixed lg:relative inset-y-0 right-0 z-40 transition-transform duration-300 lg:transition-none shrink-0",
@@ -344,7 +210,6 @@ const LobbyMirrorRoom = () => {
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button for mobile */}
         <Button
           variant="ghost"
           size="icon"

@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLock, Bot, Info, Ban, Flag, Camera, AtSign, Settings, FileText, VolumeX, LogOut, Music, Globe, Eye, EyeOff, Zap, Lock, ServerCrash } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getBotsForChannel } from "@/lib/chatBots";
+// Fake bots removed — only real users and moderator bots
 import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import {
@@ -502,20 +502,8 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     avatar: moderator.avatar
   } : null;
 
-  // Add simulated users to online members for allowed channels (only if bots enabled)
-  const simulatedUsers: Member[] = useMemo(() => {
-    if (!botsEnabledForChannel) return [];
-    const botsForChannel = getBotsForChannel(channelName);
-    return botsForChannel.map(bot => ({
-      user_id: `sim-${bot.id}`,
-      username: bot.username,
-      role: 'user' as const,
-      isOnline: true,
-      avatar_url: bot.avatarUrl,
-      bio: null,
-      ip_address: null,
-    }));
-  }, [channelName, botsEnabledForChannel]);
+  // No simulated users — only real users appear in member lists
+  const simulatedUsers: Member[] = [];
 
   // Staff should always be visible (even if they appear offline due to Ghost Mode / presence filtering)
   const visibleOwners = members.filter(m => m.role === 'owner');
