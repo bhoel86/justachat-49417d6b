@@ -6,7 +6,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { restSelect } from "@/lib/supabaseRest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -66,7 +66,7 @@ const ACTION_TYPE_MAP: Record<string, keyof typeof ACTION_CATEGORIES> = {
 };
 
 const AdminPanel = () => {
-  const { user, loading, isOwner, isAdmin } = useAuth();
+  const { user, session, loading, isOwner, isAdmin } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,26 +99,18 @@ const AdminPanel = () => {
 
   const fetchLogs = async () => {
     try {
-      // Fetch audit logs
-      const { data: auditLogs, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+      const token = session?.access_token;
+      const auditLogs = await restSelect<any>('audit_logs', 'select=*&order=created_at.desc&limit=100', token);
 
-      if (error) throw error;
+      const userIds = [...new Set(auditLogs.map((l: any) => l.user_id))];
+      const profiles = userIds.length > 0
+        ? await restSelect<any>('profiles', `select=user_id,username&user_id=in.(${userIds.join(',')})`, token)
+        : [];
 
-      // Fetch usernames for the logs
-      const userIds = [...new Set(auditLogs?.map(l => l.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, username')
-        .in('user_id', userIds);
-
-      const logsWithProfiles = auditLogs?.map(log => ({
+      const logsWithProfiles = auditLogs.map((log: any) => ({
         ...log,
-        profiles: profiles?.find(p => p.user_id === log.user_id)
-      })) || [];
+        profiles: profiles.find((p: any) => p.user_id === log.user_id)
+      }));
 
       setLogs(logsWithProfiles);
     } catch (error) {

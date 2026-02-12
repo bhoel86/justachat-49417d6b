@@ -7,6 +7,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { restSelect, restInsert, restUpdate } from "@/lib/supabaseRest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,7 +61,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const AdminSupport = () => {
-  const { user, loading, isOwner, isAdmin, isModerator } = useAuth();
+  const { user, session, loading, isOwner, isAdmin, isModerator } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
@@ -81,26 +82,16 @@ const AdminSupport = () => {
   // Fetch user profile
   useEffect(() => {
     if (user) {
-      supabase
-        .from("profiles")
-        .select("username")
-        .eq("user_id", user.id)
-        .single()
-        .then(({ data }) => {
-          if (data) setProfile(data);
-        });
+      restSelect<any>('profiles', `select=username&user_id=eq.${user.id}`, session?.access_token)
+        .then((data) => { if (data?.[0]) setProfile(data[0]); })
+        .catch(() => {});
     }
   }, [user]);
 
   // Fetch tickets
   const fetchTickets = async () => {
     try {
-      const { data, error } = await supabase
-        .from("support_tickets")
-        .select("*")
-        .order("updated_at", { ascending: false });
-
-      if (error) throw error;
+      const data = await restSelect<SupportTicket>('support_tickets', 'select=*&order=updated_at.desc', session?.access_token);
       setTickets(data || []);
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -204,13 +195,7 @@ const AdminSupport = () => {
   const fetchMessages = async (ticketId: string) => {
     setMessagesLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("support_messages")
-        .select("*")
-        .eq("ticket_id", ticketId)
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
+      const data = await restSelect<SupportMessage>('support_messages', `select=*&ticket_id=eq.${ticketId}&order=created_at.asc`, session?.access_token);
       setMessages(data || []);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -234,21 +219,15 @@ const AdminSupport = () => {
     setSending(true);
 
     try {
-      const { error } = await supabase.from("support_messages").insert({
+      await restInsert('support_messages', {
         ticket_id: selectedTicket.id,
         sender_id: user.id,
         sender_username: profile.username,
         content,
         is_admin: true,
-      });
+      }, session?.access_token);
 
-      if (error) throw error;
-
-      // Update ticket timestamp
-      await supabase
-        .from("support_tickets")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", selectedTicket.id);
+      await restUpdate('support_tickets', `id=eq.${selectedTicket.id}`, { updated_at: new Date().toISOString() }, session?.access_token);
     } catch (error) {
       console.error("Error sending reply:", error);
       toast.error("Failed to send reply");
@@ -260,13 +239,8 @@ const AdminSupport = () => {
 
   const handleCloseTicket = async () => {
     if (!selectedTicket) return;
-
     try {
-      await supabase
-        .from("support_tickets")
-        .update({ status: "closed", updated_at: new Date().toISOString() })
-        .eq("id", selectedTicket.id);
-
+      await restUpdate('support_tickets', `id=eq.${selectedTicket.id}`, { status: "closed", updated_at: new Date().toISOString() }, session?.access_token);
       toast.success("Ticket closed");
     } catch (error) {
       toast.error("Failed to close ticket");
@@ -275,13 +249,8 @@ const AdminSupport = () => {
 
   const handleReopenTicket = async () => {
     if (!selectedTicket) return;
-
     try {
-      await supabase
-        .from("support_tickets")
-        .update({ status: "open", updated_at: new Date().toISOString() })
-        .eq("id", selectedTicket.id);
-
+      await restUpdate('support_tickets', `id=eq.${selectedTicket.id}`, { status: "open", updated_at: new Date().toISOString() }, session?.access_token);
       toast.success("Ticket reopened");
     } catch (error) {
       toast.error("Failed to reopen ticket");
