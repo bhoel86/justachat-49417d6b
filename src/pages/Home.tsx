@@ -332,8 +332,13 @@ const Home = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    window.location.href = '/login';
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('[Lobby] Sign out error:', err);
+      // Force redirect even if signOut fails
+      window.location.href = '/login';
+    }
   };
 
 
