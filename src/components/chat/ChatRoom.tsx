@@ -212,6 +212,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         const rows = await restSelect<{ username: string; preferred_language: string | null; parent_email: string | null }>(
           'profiles',
           `select=username,preferred_language,parent_email&user_id=eq.${user.id}&limit=1`,
+          session?.access_token,
         );
         const data = rows?.[0];
         if (data) {
@@ -228,15 +229,15 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       }
     };
     fetchProfile();
-  }, [user]);
+  }, [user, session]);
 
   // Check ban/mute status
   useEffect(() => {
     const checkStatus = async () => {
       if (!user) return;
       try {
-        const bans = await restSelect('bans', `select=id&user_id=eq.${user.id}&limit=1`);
-        const mutes = await restSelect('mutes', `select=id&user_id=eq.${user.id}&limit=1`);
+        const bans = await restSelect('bans', `select=id&user_id=eq.${user.id}&limit=1`, session?.access_token);
+        const mutes = await restSelect('mutes', `select=id&user_id=eq.${user.id}&limit=1`, session?.access_token);
         setIsBanned(bans && bans.length > 0);
         setIsMuted(mutes && mutes.length > 0);
       } catch (err) {
@@ -259,17 +260,17 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       
       try {
         // Check room ban
-        const roomBans = await restSelect('room_bans', `select=id&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`);
+        const roomBans = await restSelect('room_bans', `select=id&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`, session?.access_token);
         
         // Check room mute (including expired)
-        const roomMutes = await restSelect<{ id: string; expires_at: string | null }>('room_mutes', `select=id,expires_at&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`);
+        const roomMutes = await restSelect<{ id: string; expires_at: string | null }>('room_mutes', `select=id,expires_at&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`, session?.access_token);
         const roomMute = roomMutes?.[0];
         
         // Check if room mute is expired
         const isExpiredMute = roomMute?.expires_at && new Date(roomMute.expires_at) < new Date();
         
         // Check if user is room admin
-        const roomAdmins = await restSelect('room_admins', `select=id&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`);
+        const roomAdmins = await restSelect('room_admins', `select=id&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`, session?.access_token);
         
         setIsRoomBanned(roomBans && roomBans.length > 0);
         setIsRoomMuted(!!roomMute && !isExpiredMute);

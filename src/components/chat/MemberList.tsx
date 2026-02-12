@@ -114,24 +114,26 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
   const [currentBio, setCurrentBio] = useState<string | null>(null);
   const [currentAge, setCurrentAge] = useState<number | null>(null);
 
+  // Access token from auth context — always fresh, no race condition
+  const accessToken = session?.access_token || null;
+
   useEffect(() => {
-    if (user) {
-      // Use supabase client directly (handles auth natively, avoids token race)
-      supabase
-        .from('profiles')
-        .select('username, avatar_url, bio, age')
-        .eq('user_id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data) {
-            setCurrentUsername(data.username);
-            setCurrentAvatarUrl(data.avatar_url);
-            setCurrentBio(data.bio);
-            setCurrentAge(data.age);
-          }
-        });
+    if (user && accessToken) {
+      restSelect<{ username: string; avatar_url: string | null; bio: string | null; age: number | null }>(
+        'profiles',
+        `select=username,avatar_url,bio,age&user_id=eq.${user.id}&limit=1`,
+        accessToken
+      ).then((rows) => {
+        const data = rows?.[0];
+        if (data) {
+          setCurrentUsername(data.username);
+          setCurrentAvatarUrl(data.avatar_url);
+          setCurrentBio(data.bio);
+          setCurrentAge(data.age);
+        }
+      }).catch(() => {});
     }
-  }, [user]);
+  }, [user, accessToken]);
 
   const fetchMembers = async () => {
     // Get users from Presence (web users) AND channel_members (IRC users)
@@ -141,7 +143,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     let ircUserIds: string[] = [];
     if (channelId) {
       try {
-        const channelMembers = await restSelect<{ user_id: string }>('channel_members', `select=user_id&channel_id=eq.${channelId}`);
+        const channelMembers = await restSelect<{ user_id: string }>('channel_members', `select=user_id&channel_id=eq.${channelId}`, accessToken);
         if (channelMembers) {
           ircUserIds = channelMembers
             .map(m => m.user_id)
@@ -161,16 +163,14 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
       return;
     }
 
-    // Fetch profiles for ALL online users (web + IRC) — use supabase client for auth
+    // Fetch profiles for ALL online users — pass access token explicitly
     let profiles: any[] | null = null;
     let roles: any[] | null = null;
     try {
-      const [profilesRes, rolesRes] = await Promise.all([
-        supabase.from('profiles_public').select('user_id,username,avatar_url,bio,ghost_mode').in('user_id', allOnlineIds),
-        supabase.from('user_roles').select('user_id,role').in('user_id', allOnlineIds),
+      [profiles, roles] = await Promise.all([
+        restSelect('profiles_public', `select=user_id,username,avatar_url,bio,ghost_mode&user_id=in.(${allOnlineIds.join(',')})`, accessToken),
+        restSelect('user_roles', `select=user_id,role&user_id=in.(${allOnlineIds.join(',')})`, accessToken),
       ]);
-      profiles = profilesRes.data;
-      roles = rolesRes.data;
     } catch {
       setLoading(false);
       return;
@@ -180,7 +180,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     let locationMap = new Map<string, string>();
     if ((isAdmin || isOwner) && allOnlineIds.length > 0) {
       try {
-        const { data: locations } = await supabase.from('user_locations').select('user_id,ip_address').in('user_id', allOnlineIds);
+        const locations = await restSelect<{ user_id: string; ip_address: string | null }>('user_locations', `select=user_id,ip_address&user_id=in.(${allOnlineIds.join(',')})`, accessToken);
         if (locations) {
           locationMap = new Map(locations.map(l => [l.user_id, l.ip_address || '']));
         }
@@ -801,19 +801,19 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
           age={currentAge}
           onProfileUpdated={() => {
             // Refresh current user data
-            supabase
-              .from('profiles')
-              .select('username, avatar_url, bio, age')
-              .eq('user_id', user.id)
-              .maybeSingle()
-              .then(({ data }) => {
-                if (data) {
-                  setCurrentUsername(data.username);
-                  setCurrentAvatarUrl(data.avatar_url);
-                  setCurrentBio(data.bio);
-                  setCurrentAge(data.age);
-                }
-              });
+            restSelect<{ username: string; avatar_url: string | null; bio: string | null; age: number | null }>(
+              'profiles',
+              `select=username,avatar_url,bio,age&user_id=eq.${user.id}&limit=1`,
+              accessToken
+            ).then((rows) => {
+              const data = rows?.[0];
+              if (data) {
+                setCurrentUsername(data.username);
+                setCurrentAvatarUrl(data.avatar_url);
+                setCurrentBio(data.bio);
+                setCurrentAge(data.age);
+              }
+            }).catch(() => {});
             fetchMembers();
           }}
         />
