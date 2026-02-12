@@ -1,12 +1,5 @@
-# Kong configuration for Supabase API Gateway
-# NO ANALYTICS routes included
-
 _format_version: "2.1"
 _transform: true
-
-###
-### Consumers / API Keys
-###
 
 consumers:
   - username: DASHBOARD
@@ -17,22 +10,13 @@ consumers:
     keyauth_credentials:
       - key: $SUPABASE_SERVICE_KEY
 
-###
-### Access Control Lists
-###
-
 acls:
   - consumer: anon
     group: anon
   - consumer: service_role
     group: admin
 
-###
-### API Routes
-###
-
 services:
-  ## Auth
   - name: auth-v1-open
     url: http://auth:9999/verify
     routes:
@@ -89,7 +73,6 @@ services:
       - name: cors
 
   - name: auth-v1
-    _comment: "GoTrue: /auth/v1/* -> http://auth:9999/*"
     url: http://auth:9999/
     routes:
       - name: auth-v1-all
@@ -108,9 +91,7 @@ services:
             - admin
             - anon
 
-  ## REST
   - name: rest-v1
-    _comment: "PostgREST: /rest/v1/* -> http://rest:3000/*"
     url: http://rest:3000/
     routes:
       - name: rest-v1-all
@@ -129,9 +110,7 @@ services:
             - admin
             - anon
 
-  ## Realtime
   - name: realtime-v1-ws
-    _comment: "Realtime: /realtime/v1/* -> ws://realtime:4000/socket/realtime-dev/*"
     url: http://realtime:4000/socket/realtime-dev
     routes:
       - name: realtime-v1-ws
@@ -150,9 +129,7 @@ services:
             - admin
             - anon
 
-  ## Storage
   - name: storage-v1
-    _comment: "Storage: /storage/v1/* -> http://storage:5000/*"
     url: http://storage:5000/
     routes:
       - name: storage-v1-all
@@ -171,9 +148,7 @@ services:
             - admin
             - anon
 
-  ## Functions
   - name: functions-v1
-    _comment: "Edge Functions: /functions/v1/* -> http://functions:9000/*"
     url: http://functions:9000/
     routes:
       - name: functions-v1-all
@@ -192,9 +167,7 @@ services:
             - admin
             - anon
 
-  ## Meta (for pg-meta API)
   - name: meta
-    _comment: "pg-meta: /pg/* -> http://meta:8080/*"
     url: http://meta:8080/
     routes:
       - name: meta-all
@@ -211,9 +184,7 @@ services:
           allow:
             - admin
 
-  ## Dashboard (protected)
   - name: dashboard
-    _comment: "Studio: /project/* -> http://studio:3000/*"
     url: http://studio:3000/
     routes:
       - name: dashboard-all
