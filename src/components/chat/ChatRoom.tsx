@@ -6,7 +6,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth, supabaseUntyped } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { restSelect } from "@/lib/supabaseRest";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTriviaGame } from "@/hooks/useTriviaGame";
@@ -179,22 +180,24 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     if (!initialChannelName) return;
     
     const loadInitialChannel = async () => {
-      const { data } = await supabaseUntyped
-        .from('channels_public')
-        .select('*')
-        .eq('name', initialChannelName)
-        .maybeSingle();
-      
-      if (data) {
-        setCurrentChannel(data);
-      } else {
+      try {
+        const rows = await restSelect<Channel>(
+          'channels_public',
+          `select=*&name=eq.${encodeURIComponent(initialChannelName)}&limit=1`,
+        );
+        if (rows && rows.length > 0) {
+          setCurrentChannel(rows[0]);
+        } else {
         // Channel not found, redirect to home
         toast({
           variant: "destructive",
           title: "Channel not found",
           description: "Redirecting to lobby..."
         });
-        navigate('/lobby');
+          navigate('/lobby');
+        }
+      } catch (err) {
+        console.error('[ChatRoom] loadInitialChannel failed:', err);
       }
     };
     
@@ -205,19 +208,23 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
-      const { data } = await supabaseUntyped
-        .from('profiles')
-        .select('username, preferred_language, parent_email')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (data) {
-        setUsername(data.username);
-        if (data.preferred_language) {
-          setPreferredLanguage(data.preferred_language);
+      try {
+        const rows = await restSelect<{ username: string; preferred_language: string | null; parent_email: string | null }>(
+          'profiles',
+          `select=username,preferred_language,parent_email&user_id=eq.${user.id}&limit=1`,
+        );
+        const data = rows?.[0];
+        if (data) {
+          setUsername(data.username);
+          if (data.preferred_language) {
+            setPreferredLanguage(data.preferred_language);
+          }
+          if (data.parent_email) {
+            setParentEmail(data.parent_email);
+          }
         }
-        if (data.parent_email) {
-          setParentEmail(data.parent_email);
-        }
+      } catch (err) {
+        console.error('[ChatRoom] fetchProfile failed:', err);
       }
     };
     fetchProfile();
@@ -227,18 +234,14 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
   useEffect(() => {
     const checkStatus = async () => {
       if (!user) return;
-      const { data: ban } = await supabaseUntyped
-        .from('bans')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      const { data: mute } = await supabaseUntyped
-        .from('mutes')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      setIsBanned(!!ban);
-      setIsMuted(!!mute);
+      try {
+        const bans = await restSelect('bans', `select=id&user_id=eq.${user.id}&limit=1`);
+        const mutes = await restSelect('mutes', `select=id&user_id=eq.${user.id}&limit=1`);
+        setIsBanned(bans && bans.length > 0);
+        setIsMuted(mutes && mutes.length > 0);
+      } catch (err) {
+        console.error('[ChatRoom] checkStatus failed:', err);
+      }
     };
     checkStatus();
   }, [user]);
@@ -254,37 +257,27 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         return;
       }
       
-      // Check room ban
-      const { data: roomBan } = await supabaseUntyped
-        .from('room_bans')
-        .select('*')
-        .eq('channel_id', currentChannel.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      // Check room mute (including expired)
-      const { data: roomMute } = await supabaseUntyped
-        .from('room_mutes')
-        .select('*')
-        .eq('channel_id', currentChannel.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      // Check if room mute is expired
-      const isExpiredMute = roomMute?.expires_at && new Date(roomMute.expires_at) < new Date();
-      
-      // Check if user is room admin
-      const { data: roomAdmin } = await supabaseUntyped
-        .from('room_admins')
-        .select('*')
-        .eq('channel_id', currentChannel.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      setIsRoomBanned(!!roomBan);
-      setIsRoomMuted(!!roomMute && !isExpiredMute);
-      setIsRoomOwner(currentChannel.created_by === user.id);
-      setIsRoomAdmin(!!roomAdmin || currentChannel.created_by === user.id);
+      try {
+        // Check room ban
+        const roomBans = await restSelect('room_bans', `select=id&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`);
+        
+        // Check room mute (including expired)
+        const roomMutes = await restSelect<{ id: string; expires_at: string | null }>('room_mutes', `select=id,expires_at&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`);
+        const roomMute = roomMutes?.[0];
+        
+        // Check if room mute is expired
+        const isExpiredMute = roomMute?.expires_at && new Date(roomMute.expires_at) < new Date();
+        
+        // Check if user is room admin
+        const roomAdmins = await restSelect('room_admins', `select=id&channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}&limit=1`);
+        
+        setIsRoomBanned(roomBans && roomBans.length > 0);
+        setIsRoomMuted(!!roomMute && !isExpiredMute);
+        setIsRoomOwner(currentChannel.created_by === user.id);
+        setIsRoomAdmin((roomAdmins && roomAdmins.length > 0) || currentChannel.created_by === user.id);
+      } catch (err) {
+        console.error('[ChatRoom] checkRoomStatus failed:', err);
+      }
     };
     checkRoomStatus();
   }, [user, currentChannel]);
@@ -313,12 +306,13 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     if (!currentChannel) return;
 
     const fetchTopic = async () => {
-      const { data } = await supabaseUntyped
-        .from('channel_settings')
-        .select('topic')
-        .eq('channel_id', currentChannel.id)
-        .maybeSingle();
-      setTopic(data?.topic || currentChannel.description || `Welcome to #${currentChannel.name}`);
+      try {
+        const rows = await restSelect<{ topic: string | null }>('channel_settings', `select=topic&channel_id=eq.${currentChannel.id}&limit=1`);
+        const data = rows?.[0];
+        setTopic(data?.topic || currentChannel.description || `Welcome to #${currentChannel.name}`);
+      } catch {
+        setTopic(currentChannel.description || `Welcome to #${currentChannel.name}`);
+      }
     };
     fetchTopic();
 
@@ -359,13 +353,12 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${currentChannel.id}` },
         async (payload) => {
           const newMessage = payload.new as Message;
-           const { data: profile } = await supabaseUntyped
-             // Use public view so regular users can resolve other users' usernames/avatars
-             .from('profiles_public')
-             .select('username, avatar_url')
-             .eq('user_id', newMessage.user_id)
-             .single();
-          setMessages(prev => [...prev, { ...newMessage, profile: profile || undefined }]);
+           let profile: { username: string; avatar_url?: string | null } | undefined;
+           try {
+             const rows = await restSelect<{ username: string; avatar_url: string | null }>('profiles_public', `select=username,avatar_url&user_id=eq.${newMessage.user_id}&limit=1`);
+             profile = rows?.[0];
+           } catch {}
+           setMessages(prev => [...prev, { ...newMessage, profile: profile || undefined }]);
           
           // Broadcast to lobby mirror if this is #general
           if (currentChannel.name === 'general' && profile) {
@@ -461,13 +454,13 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
 
         // Fetch usernames for online users
         if (onlineIds.size > 0) {
-          const { data: profiles } = await supabaseUntyped
-            // Use public view so regular users can see who is online
-            .from('profiles_public')
-            .select('username')
-            .in('user_id', Array.from(onlineIds));
-
-          setOnlineUsers((profiles || []).map((p: { username: string }) => ({ username: p.username })));
+          try {
+            const userIds = Array.from(onlineIds);
+            const profiles = await restSelect<{ username: string }>('profiles_public', `select=username&user_id=in.(${userIds.join(',')})`);
+            setOnlineUsers((profiles || []).map((p) => ({ username: p.username })));
+          } catch {
+            setOnlineUsers([]);
+          }
         } else {
           setOnlineUsers([]);
         }
@@ -485,12 +478,12 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         // Insert into channel_members so IRC gateway can see web users
         // Delete-then-insert ensures Realtime INSERT event always fires (upsert with ignoreDuplicates would silently no-op)
         try {
-          await supabaseUntyped
+          await (supabase as any)
             .from('channel_members')
             .delete()
             .eq('channel_id', currentChannel.id)
             .eq('user_id', user.id);
-          await supabaseUntyped
+          await (supabase as any)
             .from('channel_members')
             .insert({ channel_id: currentChannel.id, user_id: user.id });
         } catch (e) {
@@ -729,12 +722,11 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     
     const handleWelcome = async () => {
       // Check if user has visited this channel before
-      const { data: existingVisit } = await supabaseUntyped
-        .from('user_channel_visits')
-        .select('visit_count, last_visit_at')
-        .eq('user_id', user.id)
-        .eq('channel_name', currentChannel.name)
-        .maybeSingle();
+      let existingVisit: { visit_count: number; last_visit_at: string } | null = null;
+      try {
+        const rows = await restSelect<{ visit_count: number; last_visit_at: string }>('user_channel_visits', `select=visit_count,last_visit_at&user_id=eq.${user.id}&channel_name=eq.${encodeURIComponent(currentChannel.name)}&limit=1`);
+        existingVisit = rows?.[0] || null;
+      } catch {}
       
       const moderator = getModerator(currentChannel.name);
       let welcomeMsg: string;
@@ -776,7 +768,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         }
         
         // Update visit count
-        await supabaseUntyped
+        await (supabase as any)
           .from('user_channel_visits')
           .update({ 
             visit_count: visitCount + 1, 
@@ -790,7 +782,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         welcomeMsg = getWelcomeMessage(currentChannel.name);
         
         // Record first visit
-        await supabaseUntyped
+        await (supabase as any)
           .from('user_channel_visits')
           .insert({
             user_id: user.id,
@@ -928,7 +920,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     // Check if room has a password and user is not room owner
     if (channel.created_by !== user?.id && !isAdmin && !isOwner) {
       // Use secure server-side function to check if room has password
-      const { data: hasPassword } = await supabaseUntyped
+      const { data: hasPassword } = await (supabase as any)
         .rpc('channel_has_password', { _channel_id: channel.id });
       
       if (hasPassword) {
@@ -979,11 +971,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           toast({ variant: "destructive", title: "Usage", description: "/join #channel-name" });
           return;
         }
-        const { data: targetChannel } = await supabaseUntyped
-          .from('channels_public')
-          .select('*')
-          .eq('name', channelName)
-          .maybeSingle();
+        const rows = await restSelect<Channel>('channels_public', `select=*&name=eq.${encodeURIComponent(channelName)}&limit=1`);
+        const targetChannel = rows?.[0];
         if (targetChannel) {
           handleChannelSelect(targetChannel);
           toast({ title: "Switched channel", description: `Now in #${channelName}` });
@@ -995,11 +984,8 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
 
       // Handle /part command
       if (parsed.command === 'part') {
-        const { data: generalChannel } = await supabaseUntyped
-          .from('channels_public')
-          .select('*')
-          .eq('name', 'general')
-          .single();
+        const rows = await restSelect<Channel>('channels_public', `select=*&name=eq.general&limit=1`);
+        const generalChannel = rows?.[0];
         if (generalChannel) {
           handleChannelSelect(generalChannel);
           toast({ title: "Left channel", description: "Returned to #general" });
@@ -1177,7 +1163,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       if (result.isSystemMessage && !result.broadcast) {
         addSystemMessage(result.message);
       } else if (result.broadcast) {
-        await supabaseUntyped
+        await (supabase as any)
           .from('messages')
           .insert({
             content: result.message,
@@ -1218,7 +1204,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           description: "You've been temporarily muted for repeated spam. Please stop."
         });
         // Insert a temporary mute (10 minutes)
-        await supabaseUntyped
+        await (supabase as any)
           .from('mutes')
           .insert({
             user_id: user.id,
@@ -1267,7 +1253,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       }
     }
 
-    await supabaseUntyped
+    await (supabase as any)
       .from('messages')
       .insert({
         content: finalContent,
@@ -1295,7 +1281,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       setMessages(prev => prev.filter(msg => msg.id !== messageId));
       return;
     }
-    await supabaseUntyped
+    await (supabase as any)
       .from('messages')
       .delete()
       .eq('id', messageId);
@@ -1323,13 +1309,12 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
 
   const handleInfoClick = async (userId: string, username: string) => {
     // Fetch user info and display
-    const { data: roleData } = await supabaseUntyped
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
+    let userRole = 'user';
+    try {
+      const rows = await restSelect<{ role: string }>('user_roles', `select=role&user_id=eq.${userId}&limit=1`);
+      userRole = rows?.[0]?.role || 'user';
+    } catch {}
     
-    const userRole = roleData?.role || 'user';
     addSystemMessage(`**User Info: ${username}**\nRole: ${userRole}`);
   };
 
@@ -1729,7 +1714,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           roomName={pendingChannel.name}
           onPasswordSubmit={async (password) => {
             // Verify password server-side (no password exposure)
-            const { data: isValid } = await supabaseUntyped
+            const { data: isValid } = await (supabase as any)
               .rpc('verify_room_password', { 
                 _channel_id: pendingChannel.id, 
                 _password: password 

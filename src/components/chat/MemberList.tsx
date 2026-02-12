@@ -8,7 +8,8 @@ import { Crown, Shield, ShieldCheck, User, Users, MoreVertical, MessageSquareLoc
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 // Fake bots removed — only real users and moderator bots
-import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { restSelect } from "@/lib/supabaseRest";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -115,19 +116,18 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
 
   useEffect(() => {
     if (user) {
-      supabaseUntyped
-        .from('profiles')
-        .select('username, avatar_url, bio, age')
-        .eq('user_id', user.id)
-        .single()
-        .then(({ data }: { data: { username: string; avatar_url: string | null; bio: string | null; age: number | null } | null }) => {
-          if (data) {
-            setCurrentUsername(data.username);
-            setCurrentAvatarUrl(data.avatar_url);
-            setCurrentBio(data.bio);
-            setCurrentAge(data.age);
-          }
-        });
+      restSelect<{ username: string; avatar_url: string | null; bio: string | null; age: number | null }>(
+        'profiles',
+        `select=username,avatar_url,bio,age&user_id=eq.${user.id}&limit=1`
+      ).then((rows) => {
+        const data = rows?.[0];
+        if (data) {
+          setCurrentUsername(data.username);
+          setCurrentAvatarUrl(data.avatar_url);
+          setCurrentBio(data.bio);
+          setCurrentAge(data.age);
+        }
+      }).catch(() => {});
     }
   }, [user]);
 
@@ -138,17 +138,14 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     // Also fetch IRC users from channel_members table
     let ircUserIds: string[] = [];
     if (channelId) {
-      const { data: channelMembers } = await supabaseUntyped
-        .from('channel_members')
-        .select('user_id')
-        .eq('channel_id', channelId);
-      
-      if (channelMembers) {
-        // IRC users are those in channel_members but NOT in Presence
-        ircUserIds = (channelMembers as { user_id: string }[])
-          .map(m => m.user_id)
-          .filter(id => !presenceIds.includes(id) && !id.startsWith('bot-'));
-      }
+      try {
+        const channelMembers = await restSelect<{ user_id: string }>('channel_members', `select=user_id&channel_id=eq.${channelId}`);
+        if (channelMembers) {
+          ircUserIds = channelMembers
+            .map(m => m.user_id)
+            .filter(id => !presenceIds.includes(id) && !id.startsWith('bot-'));
+        }
+      } catch {}
     }
     
     // Combine both sets of user IDs
@@ -161,26 +158,25 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     }
 
     // Fetch profiles for ALL online users (web + IRC)
-    const { data: profiles } = await supabaseUntyped
-      .from('profiles_public')
-      .select('user_id, username, avatar_url, bio, ghost_mode')
-      .in('user_id', allOnlineIds);
-
-    const { data: roles } = await supabaseUntyped
-      .from('user_roles')
-      .select('user_id, role')
-      .in('user_id', allOnlineIds);
+    let profiles: any[] | null = null;
+    let roles: any[] | null = null;
+    try {
+      profiles = await restSelect('profiles_public', `select=user_id,username,avatar_url,bio,ghost_mode&user_id=in.(${allOnlineIds.join(',')})`);
+      roles = await restSelect('user_roles', `select=user_id,role&user_id=in.(${allOnlineIds.join(',')})`);
+    } catch {
+      setLoading(false);
+      return;
+    }
 
     // Fetch IP addresses for admins/owners (only for online users)
     let locationMap = new Map<string, string>();
     if ((isAdmin || isOwner) && allOnlineIds.length > 0) {
-      const { data: locations } = await supabaseUntyped
-        .from('user_locations')
-        .select('user_id, ip_address')
-        .in('user_id', allOnlineIds);
-      if (locations) {
-        locationMap = new Map(locations.map((l: { user_id: string; ip_address: string | null }) => [l.user_id, l.ip_address]));
-      }
+      try {
+        const locations = await restSelect<{ user_id: string; ip_address: string | null }>('user_locations', `select=user_id,ip_address&user_id=in.(${allOnlineIds.join(',')})`);
+        if (locations) {
+          locationMap = new Map(locations.map(l => [l.user_id, l.ip_address || '']));
+        }
+      } catch {}
     }
 
     if (profiles) {
@@ -296,7 +292,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
   const handleRoleChange = async (memberId: string, newRole: Member['role']) => {
     try {
       // Use upsert to handle users who may not have a role row yet
-      const { error } = await supabaseUntyped
+      const { error } = await (supabase as any)
         .from('user_roles')
         .upsert({ user_id: memberId, role: newRole }, { onConflict: 'user_id' });
 
@@ -785,19 +781,18 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
           age={currentAge}
           onProfileUpdated={() => {
             // Refresh current user data
-            supabaseUntyped
-              .from('profiles')
-              .select('username, avatar_url, bio, age')
-              .eq('user_id', user.id)
-              .single()
-              .then(({ data }: { data: { username: string; avatar_url: string | null; bio: string | null; age: number | null } | null }) => {
-                if (data) {
-                  setCurrentUsername(data.username);
-                  setCurrentAvatarUrl(data.avatar_url);
-                  setCurrentBio(data.bio);
-                  setCurrentAge(data.age);
-                }
-              });
+            restSelect<{ username: string; avatar_url: string | null; bio: string | null; age: number | null }>(
+              'profiles',
+              `select=username,avatar_url,bio,age&user_id=eq.${user.id}&limit=1`
+            ).then((rows) => {
+              const data = rows?.[0];
+              if (data) {
+                setCurrentUsername(data.username);
+                setCurrentAvatarUrl(data.avatar_url);
+                setCurrentBio(data.bio);
+                setCurrentAge(data.age);
+              }
+            }).catch(() => {});
             fetchMembers();
           }}
         />

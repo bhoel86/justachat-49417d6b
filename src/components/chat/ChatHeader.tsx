@@ -5,7 +5,9 @@
 
 import { useState, useEffect } from "react";
 import { MessagesSquare, Users, LogOut, Crown, ShieldCheck, Info, Hash, Globe, Bell, BellOff, Eye, EyeOff } from "lucide-react";
-import { useAuth, supabaseUntyped } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { restSelect } from "@/lib/supabaseRest";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -38,14 +40,12 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
   useEffect(() => {
     const fetchGhostMode = async () => {
       if (!user) return;
-      const { data } = await supabaseUntyped
-        .from('profiles')
-        .select('ghost_mode')
-        .eq('user_id', user.id)
-        .single();
-      if (data) {
-        setGhostMode(data.ghost_mode || false);
-      }
+      try {
+        const rows = await restSelect<{ ghost_mode: boolean | null }>('profiles', `select=ghost_mode&user_id=eq.${user.id}&limit=1`);
+        if (rows?.[0]) {
+          setGhostMode(rows[0].ghost_mode || false);
+        }
+      } catch {}
     };
     fetchGhostMode();
   }, [user]);
@@ -56,7 +56,7 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
     setTogglingGhost(true);
     try {
       const newValue = !ghostMode;
-      const { error } = await supabaseUntyped
+      const { error } = await (supabase as any)
         .from('profiles')
         .update({ ghost_mode: newValue })
         .eq('user_id', user.id);
