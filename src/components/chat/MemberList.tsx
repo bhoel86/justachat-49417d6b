@@ -96,6 +96,7 @@ import { useBotSettings } from "@/hooks/useBotSettings";
 const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', channelId, onOpenPm, onOpenBotPm, onAction }: MemberListProps) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const initialSelfShown = useRef(false);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [viewProfileTarget, setViewProfileTarget] = useState<Member | null>(null);
@@ -117,8 +118,10 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
   // Access token from auth context — always fresh, no race condition
   const accessToken = session?.access_token || null;
 
+  // Immediately show current user in member list before presence syncs
   useEffect(() => {
-    if (user && accessToken) {
+    if (user && accessToken && !initialSelfShown.current) {
+      initialSelfShown.current = true;
       restSelect<{ username: string; avatar_url: string | null; bio: string | null; age: number | null }>(
         'profiles',
         `select=username,avatar_url,bio,age&user_id=eq.${user.id}&limit=1`,
@@ -130,6 +133,21 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
           setCurrentAvatarUrl(data.avatar_url);
           setCurrentBio(data.bio);
           setCurrentAge(data.age);
+          // Seed member list immediately so it's never empty
+          setMembers(prev => {
+            if (prev.length === 0) {
+              return [{
+                user_id: user.id,
+                username: data.username,
+                role: (currentUserRole as Member['role']) || 'user',
+                isOnline: true,
+                avatar_url: data.avatar_url,
+                bio: data.bio,
+              }];
+            }
+            return prev;
+          });
+          setLoading(false);
         }
       }).catch(() => {});
     }
