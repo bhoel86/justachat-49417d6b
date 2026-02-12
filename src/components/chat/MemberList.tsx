@@ -116,18 +116,20 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
 
   useEffect(() => {
     if (user) {
-      restSelect<{ username: string; avatar_url: string | null; bio: string | null; age: number | null }>(
-        'profiles',
-        `select=username,avatar_url,bio,age&user_id=eq.${user.id}&limit=1`
-      ).then((rows) => {
-        const data = rows?.[0];
-        if (data) {
-          setCurrentUsername(data.username);
-          setCurrentAvatarUrl(data.avatar_url);
-          setCurrentBio(data.bio);
-          setCurrentAge(data.age);
-        }
-      }).catch(() => {});
+      // Use supabase client directly (handles auth natively, avoids token race)
+      supabase
+        .from('profiles')
+        .select('username, avatar_url, bio, age')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setCurrentUsername(data.username);
+            setCurrentAvatarUrl(data.avatar_url);
+            setCurrentBio(data.bio);
+            setCurrentAge(data.age);
+          }
+        });
     }
   }, [user]);
 
@@ -159,12 +161,16 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
       return;
     }
 
-    // Fetch profiles for ALL online users (web + IRC)
+    // Fetch profiles for ALL online users (web + IRC) — use supabase client for auth
     let profiles: any[] | null = null;
     let roles: any[] | null = null;
     try {
-      profiles = await restSelect('profiles_public', `select=user_id,username,avatar_url,bio,ghost_mode&user_id=in.(${allOnlineIds.join(',')})`);
-      roles = await restSelect('user_roles', `select=user_id,role&user_id=in.(${allOnlineIds.join(',')})`);
+      const [profilesRes, rolesRes] = await Promise.all([
+        supabase.from('profiles_public').select('user_id,username,avatar_url,bio,ghost_mode').in('user_id', allOnlineIds),
+        supabase.from('user_roles').select('user_id,role').in('user_id', allOnlineIds),
+      ]);
+      profiles = profilesRes.data;
+      roles = rolesRes.data;
     } catch {
       setLoading(false);
       return;
@@ -174,7 +180,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     let locationMap = new Map<string, string>();
     if ((isAdmin || isOwner) && allOnlineIds.length > 0) {
       try {
-        const locations = await restSelect<{ user_id: string; ip_address: string | null }>('user_locations', `select=user_id,ip_address&user_id=in.(${allOnlineIds.join(',')})`);
+        const { data: locations } = await supabase.from('user_locations').select('user_id,ip_address').in('user_id', allOnlineIds);
         if (locations) {
           locationMap = new Map(locations.map(l => [l.user_id, l.ip_address || '']));
         }
@@ -795,18 +801,19 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
           age={currentAge}
           onProfileUpdated={() => {
             // Refresh current user data
-            restSelect<{ username: string; avatar_url: string | null; bio: string | null; age: number | null }>(
-              'profiles',
-              `select=username,avatar_url,bio,age&user_id=eq.${user.id}&limit=1`
-            ).then((rows) => {
-              const data = rows?.[0];
-              if (data) {
-                setCurrentUsername(data.username);
-                setCurrentAvatarUrl(data.avatar_url);
-                setCurrentBio(data.bio);
-                setCurrentAge(data.age);
-              }
-            }).catch(() => {});
+            supabase
+              .from('profiles')
+              .select('username, avatar_url, bio, age')
+              .eq('user_id', user.id)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data) {
+                  setCurrentUsername(data.username);
+                  setCurrentAvatarUrl(data.avatar_url);
+                  setCurrentBio(data.bio);
+                  setCurrentAge(data.age);
+                }
+              });
             fetchMembers();
           }}
         />
