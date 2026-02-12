@@ -101,7 +101,7 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
   const [viewProfileTarget, setViewProfileTarget] = useState<Member | null>(null);
   const [showOffline, setShowOffline] = useState(false);
   const botSettings = useBotSettings();
-  const { user, role: currentUserRole, isOwner, isAdmin } = useAuth();
+  const { user, session, role: currentUserRole, isOwner, isAdmin } = useAuth();
   const { toast } = useToast();
   const radio = useRadioOptional();
   const { theme } = useTheme();

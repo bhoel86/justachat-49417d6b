@@ -31,7 +31,7 @@ interface ChatHeaderProps {
 }
 
 const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageClick, currentLanguage = 'en', doNotDisturb, onToggleDND }: ChatHeaderProps) => {
-  const { logoutFromChat, role, user, isAdmin, isOwner } = useAuth();
+  const { logoutFromChat, role, user, session, isAdmin, isOwner } = useAuth();
   const { toast } = useToast();
   const [ghostMode, setGhostMode] = useState(false);
   const [togglingGhost, setTogglingGhost] = useState(false);
