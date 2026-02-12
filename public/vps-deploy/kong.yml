@@ -130,25 +130,25 @@ services:
             - anon
 
   ## Realtime
-  - name: realtime-v1-ws
-    _comment: "Realtime: /realtime/v1/* -> ws://realtime:4000/socket/*"
-    url: http://realtime:4000/socket
-    routes:
-      - name: realtime-v1-ws
-        strip_path: true
-        paths:
-          - /realtime/v1/
-    plugins:
-      - name: cors
-      - name: key-auth
-        config:
-          hide_credentials: false
-      - name: acl
-        config:
-          hide_groups_header: true
-          allow:
-            - admin
-            - anon
+   - name: realtime-v1-ws
+     _comment: "Realtime: /realtime/v1/* -> ws://realtime:4000/socket/realtime-dev/*"
+     url: http://realtime:4000/socket/realtime-dev
+     routes:
+       - name: realtime-v1-ws
+         strip_path: true
+         paths:
+           - /realtime/v1/
+     plugins:
+       - name: cors
+       - name: key-auth
+         config:
+           hide_credentials: false
+       - name: acl
+         config:
+           hide_groups_header: true
+           allow:
+             - admin
+             - anon
 
   ## Storage
   - name: storage-v1
