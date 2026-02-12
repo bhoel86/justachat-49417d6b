@@ -220,16 +220,27 @@ const Home = () => {
    useEffect(() => {
      const fetchChannels = async () => {
        try {
-         console.log('[Lobby] Fetching channels...');
-         const { data, error } = await supabaseUntyped
-           .from("channels_public")
-           .select("id, name, description")
-           .order("name");
-
-         if (error) {
-           console.error('[Lobby] Channel fetch error:', error);
+         console.log('[Lobby] Fetching channels via REST...');
+         const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+         const supabaseKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
+         
+         const res = await fetch(
+           `${supabaseUrl}/rest/v1/channels_public?select=id,name,description&order=name`,
+           {
+             headers: {
+               'apikey': supabaseKey,
+               'Authorization': `Bearer ${supabaseKey}`,
+             },
+           }
+         );
+         
+         if (!res.ok) {
+           const errText = await res.text();
+           console.error('[Lobby] Channel fetch error:', res.status, errText);
            toast.error("Failed to load rooms");
+           setChannels([]);
          } else {
+           const data = await res.json();
            console.log('[Lobby] Channels loaded:', data?.length);
            setChannels(data || []);
          }
