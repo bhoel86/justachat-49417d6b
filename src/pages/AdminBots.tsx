@@ -36,7 +36,7 @@ const ROOM_NAMES = ROOM_ENTRIES.map(([room]) => room);
 
 const AdminBots = () => {
   const navigate = useNavigate();
-  const { user, isAdmin, isOwner, loading: authLoading } = useAuth();
+  const { user, session, isAdmin, isOwner, loading: authLoading } = useAuth();
   const [settings, setSettings] = useState<BotSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,49 +50,79 @@ const AdminBots = () => {
 
   const fetchSettings = async () => {
     try {
-      const { data: botData, error: botError } = await supabase
-        .from("bot_settings")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const accessToken = session?.access_token || supabaseKey;
 
-      if (botError) {
-        console.error("Error fetching bot settings:", botError);
-        toast.error(`Failed to load bot settings: ${botError.message}`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/bot_settings?select=*&limit=1`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        console.error("Error fetching bot settings:", res.status);
+        toast.error(`Failed to load bot settings: HTTP ${res.status}`);
         return;
       }
-      
-      if (botData) {
-        setSettings(botData as BotSettings);
+
+      const rows = await res.json();
+      if (rows.length > 0) {
+        setSettings(rows[0] as BotSettings);
       } else {
         console.log("No bot settings found, attempting to create defaults...");
-        const { data: newSettings, error: createError } = await supabase
-          .from("bot_settings")
-          .insert({
-            enabled: true,
-            allowed_channels: ROOM_NAMES,
-            chat_speed: 5,
-            moderator_bots_enabled: true,
-            updated_by: user?.id
-          })
-          .select()
-          .single();
+        const createRes = await fetch(
+          `${supabaseUrl}/rest/v1/bot_settings`,
+          {
+            method: 'POST',
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify({
+              enabled: true,
+              allowed_channels: ROOM_NAMES,
+              chat_speed: 5,
+              moderator_bots_enabled: true,
+              updated_by: user?.id
+            }),
+          }
+        );
 
-        if (createError) {
-          console.error("Error creating bot settings:", createError);
-          if (createError.code === '42501' || createError.message?.includes('RLS')) {
+        if (!createRes.ok) {
+          const errText = await createRes.text();
+          console.error("Error creating bot settings:", errText);
+          if (createRes.status === 403 || errText.includes('RLS')) {
             toast.error("Bot settings not initialized. Run fix-bots-and-sync.sh on VPS to set up.");
           } else {
-            toast.error(`Failed to initialize: ${createError.message}`);
+            toast.error(`Failed to initialize: ${errText}`);
           }
         } else {
-          setSettings(newSettings as BotSettings);
+          const newRows = await createRes.json();
+          setSettings(newRows[0] as BotSettings);
           toast.success("Bot settings initialized");
         }
       }
-    } catch (err) {
-      console.error("Error:", err);
-      toast.error("Failed to connect to database");
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.error("Bot settings fetch timed out");
+        toast.error("Request timed out — try refreshing");
+      } else {
+        console.error("Error:", err);
+        toast.error("Failed to connect to database");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -105,15 +135,38 @@ const AdminBots = () => {
     }
   }, [user]);
 
+  const getAuthHeaders = () => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const accessToken = session?.access_token || supabaseKey;
+    return { supabaseUrl, supabaseKey, accessToken };
+  };
+
+  const updateBotSettings = async (updates: Record<string, any>) => {
+    if (!settings) return false;
+    const { supabaseUrl, supabaseKey, accessToken } = getAuthHeaders();
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/bot_settings?id=eq.${settings.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ ...updates, updated_by: user?.id }),
+      }
+    );
+    return res.ok;
+  };
+
   const handleToggleEnabled = async (enabled: boolean) => {
     if (!settings) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("bot_settings")
-        .update({ enabled, updated_by: user?.id })
-        .eq("id", settings.id);
-      if (error) throw error;
+      const ok = await updateBotSettings({ enabled });
+      if (!ok) throw new Error('Update failed');
       setSettings({ ...settings, enabled });
       toast.success(enabled ? "All moderator bots enabled" : "All moderator bots disabled");
     } catch (err) {
@@ -132,11 +185,8 @@ const AdminBots = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("bot_settings")
-        .update({ allowed_channels: newChannels, updated_by: user?.id })
-        .eq("id", settings.id);
-      if (error) throw error;
+      const ok = await updateBotSettings({ allowed_channels: newChannels });
+      if (!ok) throw new Error('Update failed');
       setSettings({ ...settings, allowed_channels: newChannels });
       const mod = MODERATORS[roomName];
       toast.success(`${mod?.name || roomName} ${enabled ? 'enabled' : 'disabled'} in #${roomName}`);
@@ -152,11 +202,8 @@ const AdminBots = () => {
     if (!settings) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("bot_settings")
-        .update({ allowed_channels: ROOM_NAMES, updated_by: user?.id })
-        .eq("id", settings.id);
-      if (error) throw error;
+      const ok = await updateBotSettings({ allowed_channels: ROOM_NAMES });
+      if (!ok) throw new Error('Update failed');
       setSettings({ ...settings, allowed_channels: ROOM_NAMES });
       toast.success("All room bots enabled");
     } catch (err) {
@@ -171,11 +218,8 @@ const AdminBots = () => {
     if (!settings) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("bot_settings")
-        .update({ allowed_channels: [], updated_by: user?.id })
-        .eq("id", settings.id);
-      if (error) throw error;
+      const ok = await updateBotSettings({ allowed_channels: [] });
+      if (!ok) throw new Error('Update failed');
       setSettings({ ...settings, allowed_channels: [] });
       toast.success("All room bots disabled");
     } catch (err) {
@@ -190,11 +234,8 @@ const AdminBots = () => {
     if (!settings) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("bot_settings")
-        .update({ chat_speed: speed, updated_by: user?.id })
-        .eq("id", settings.id);
-      if (error) throw error;
+      const ok = await updateBotSettings({ chat_speed: speed });
+      if (!ok) throw new Error('Update failed');
       setSettings({ ...settings, chat_speed: speed });
       toast.success(`Bot response delay set to ${speed}s`);
     } catch (err) {
