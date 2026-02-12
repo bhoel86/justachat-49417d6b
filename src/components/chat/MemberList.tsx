@@ -47,7 +47,7 @@ interface Member {
 
 interface MemberListProps {
   onlineUserIds: Set<string>;
-  listeningUsers?: Map<string, { title: string; artist: string }>;
+  listeningUsers?: Map<string, { title: string; artist: string; paused?: boolean }>;
   channelName?: string;
   channelId?: string;
   onOpenPm?: (userId: string, username: string) => void;
@@ -199,13 +199,26 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
       return;
     }
 
-    // Fetch profiles for ALL online users — pass access token explicitly
+    // Also fetch all staff (owner/admin) so they never flicker out of the list
+    // Staff are always visible per platform policy
+    let staffIds: string[] = [];
+    try {
+      const staffRoles = await restSelect<{ user_id: string }>('user_roles', `select=user_id&role=in.(owner,admin)`, accessToken);
+      if (staffRoles) {
+        staffIds = staffRoles.map(r => r.user_id).filter(id => !combinedIds.has(id));
+        staffIds.forEach(id => combinedIds.add(id));
+      }
+    } catch {}
+    
+    const allFetchIds = [...combinedIds];
+
+    // Fetch profiles for ALL users (online + staff) — pass access token explicitly
     let profiles: any[] | null = null;
     let roles: any[] | null = null;
     try {
       [profiles, roles] = await Promise.all([
-        restSelect('profiles_public', `select=user_id,username,avatar_url,bio,ghost_mode&user_id=in.(${allOnlineIds.join(',')})`, accessToken),
-        restSelect('user_roles', `select=user_id,role&user_id=in.(${allOnlineIds.join(',')})`, accessToken),
+        restSelect('profiles_public', `select=user_id,username,avatar_url,bio,ghost_mode&user_id=in.(${allFetchIds.join(',')})`, accessToken),
+        restSelect('user_roles', `select=user_id,role&user_id=in.(${allFetchIds.join(',')})`, accessToken),
       ]);
     } catch {
       setLoading(false);
@@ -214,14 +227,17 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
 
     // Fetch IP addresses for admins/owners (only for online users)
     let locationMap = new Map<string, string>();
-    if ((isAdmin || isOwner) && allOnlineIds.length > 0) {
+    if ((isAdmin || isOwner) && allFetchIds.length > 0) {
       try {
-        const locations = await restSelect<{ user_id: string; ip_address: string | null }>('user_locations', `select=user_id,ip_address&user_id=in.(${allOnlineIds.join(',')})`, accessToken);
+        const locations = await restSelect<{ user_id: string; ip_address: string | null }>('user_locations', `select=user_id,ip_address&user_id=in.(${allFetchIds.join(',')})`, accessToken);
         if (locations) {
           locationMap = new Map(locations.map(l => [l.user_id, l.ip_address || '']));
         }
       } catch {}
     }
+
+    // Set of IDs that are actually in-room (presence + channel_members)
+    const inRoomIds = new Set(allOnlineIds);
 
     if (profiles) {
       const roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]) || []);
@@ -239,15 +255,17 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
       }
       
       const memberList: Member[] = profiles
-        // Filter out ghost mode users unless they are the current user, viewer is admin/owner, OR the user is an owner/admin (always visible)
+        // Filter: show in-room users + always show staff (owner/admin)
         .filter((p: { user_id: string; ghost_mode?: boolean }) => {
+          const targetRole = roleMap.get(p.user_id);
           // Always show current user
           if (p.user_id === user?.id) return true;
+          // Always show staff (owner/admin) - they must never flicker out
+          if (targetRole === 'owner' || targetRole === 'admin') return true;
+          // Only show non-staff if they're actually in this room
+          if (!inRoomIds.has(p.user_id)) return false;
           // Admins and owners viewing can see all ghost users
           if (isAdmin || isOwner) return true;
-          // Get the target user's role - owners/admins are ALWAYS visible even with ghost mode
-          const targetRole = roleMap.get(p.user_id);
-          if (targetRole === 'owner' || targetRole === 'admin') return true;
           // Hide ghost mode users from regular users (only non-staff)
           return !p.ghost_mode;
         })
@@ -255,14 +273,15 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
           const memberRole = (roleMap.get(p.user_id) || 'user') as Member['role'];
           // Only include IP for non-admin/owner users
           const showIp = (isAdmin || isOwner) && memberRole !== 'admin' && memberRole !== 'owner';
-          // Ghost mode: regular users see ghost users as offline, EXCEPT owners/admins are always shown as-is
+          // Staff not in presence appear online but may have ghost mode
           const targetIsStaff = memberRole === 'owner' || memberRole === 'admin';
-          const shouldAppearOffline = p.ghost_mode && p.user_id !== user?.id && !isAdmin && !isOwner && !targetIsStaff;
+          const isInRoom = inRoomIds.has(p.user_id);
+          const shouldAppearOffline = (p.ghost_mode && p.user_id !== user?.id && !isAdmin && !isOwner && !targetIsStaff) || (!isInRoom && !targetIsStaff);
           return {
             user_id: p.user_id,
             username: p.username,
             role: memberRole,
-            isOnline: shouldAppearOffline ? false : true, // All fetched users are online in this room
+            isOnline: shouldAppearOffline ? false : true,
             avatar_url: p.avatar_url,
             bio: p.bio,
             ip_address: showIp ? locationMap.get(p.user_id) || null : null,
@@ -990,7 +1009,7 @@ interface MemberItemProps {
   onAction?: (actionMessage: string) => void;
   isCurrentUser: boolean;
   onProfileClick?: () => void;
-  currentlyPlaying?: { title: string; artist: string } | null;
+  currentlyPlaying?: { title: string; artist: string; paused?: boolean } | null;
 }
 
 const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, onRoleChange, onBan, onKick, onMute, onKline, onPmClick, onAction, isCurrentUser, onProfileClick, currentlyPlaying }: MemberItemProps) => {
@@ -1066,12 +1085,12 @@ const MemberItem = ({ member, canManage, canModerate, canKline, availableRoles, 
             </span>
           </div>
         )}
-        {/* Show currently playing music for any user listening */}
+        {/* Show currently playing music for any user listening (always visible, even when paused) */}
         {currentlyPlaying && (
           <div className="flex items-center gap-1 mt-0.5">
-            <Music className="h-2.5 w-2.5 text-primary animate-pulse" />
+            <Music className={cn("h-2.5 w-2.5 text-primary", !currentlyPlaying.paused && "animate-pulse")} />
             <span className="text-[10px] text-primary truncate max-w-[120px]">
-              {currentlyPlaying.title}
+              {currentlyPlaying.paused ? `⏸ ${currentlyPlaying.title}` : currentlyPlaying.title}
             </span>
           </div>
         )}

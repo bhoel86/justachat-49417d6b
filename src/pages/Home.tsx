@@ -762,7 +762,8 @@ const Home = () => {
                 ))
               ) : (
                 channels.map((channel) => {
-                  const userCount = roomUserCounts[channel.id] || 0;
+                  const basCount = roomUserCounts[channel.id] || 0;
+                  const userCount = basCount + (moderatorBotsEnabled && botsAllowedChannels.includes(channel.name) ? 1 : 0);
                   return (
                     <button
                       key={channel.id}
@@ -919,7 +920,8 @@ const Home = () => {
                     <>
                       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-2 gap-1.5 lg:max-h-[280px] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
                         {channels.map((channel) => {
-                          const userCount = roomUserCounts[channel.id] || 0;
+                          const baseCount = roomUserCounts[channel.id] || 0;
+                          const userCount = baseCount + (moderatorBotsEnabled && botsAllowedChannels.includes(channel.name) ? 1 : 0);
                           return (
                             <button
                               key={channel.id}
