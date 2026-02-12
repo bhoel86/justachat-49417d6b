@@ -219,24 +219,29 @@ const Home = () => {
 
   useEffect(() => {
     const fetchChannels = async () => {
-      console.log('[Lobby] Fetching channels...');
-      const { data, error } = await supabase
-        .from("channels")
-        .select("id, name, description")
-        .eq("is_private", false)
-        .order("name");
+      try {
+        console.log('[Lobby] Fetching channels...');
+        const { data, error } = await supabaseUntyped
+          .from("channels")
+          .select("id, name, description")
+          .eq("is_private", false)
+          .eq("is_hidden", false)
+          .order("name");
 
-      if (error) {
-        console.error('[Lobby] Channel fetch error:', error);
-        toast.error("Failed to load rooms");
-      } else {
-        console.log('[Lobby] Channels loaded:', data?.length);
-        setChannels(data || []);
+        if (error) {
+          console.error('[Lobby] Channel fetch error:', error);
+          toast.error("Failed to load rooms");
+        } else {
+          console.log('[Lobby] Channels loaded:', data?.length);
+          setChannels(data || []);
+        }
+      } catch (err) {
+        console.error('[Lobby] Channel fetch exception:', err);
+      } finally {
+        setLoadingChannels(false);
       }
-      setLoadingChannels(false);
     };
 
-    // Fetch channels regardless of auth state - public channels don't require auth
     fetchChannels();
   }, []);
 
