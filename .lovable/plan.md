@@ -1,100 +1,57 @@
 
 
-# Fix Plan: Radio, Ghost Members, IRC Relay, and Banner Styling
+## Fix Plan: Chat Visibility, Member List Stability, Radio & Bot Issues
 
-## Issue 1: Radio Not Working on VPS
+### Problems Identified
 
-**Root Cause:** The Content-Security-Policy (CSP) header currently served by Nginx on the VPS does not include YouTube domains. The master-update output shows the live CSP is missing `youtube.com`, `ytimg.com` entries in `script-src`, `frame-src`, `connect-src`, and `media-src`. The correct CSP exists in `public/nginx-justachat.conf` in the repo, but it appears the VPS's actual Nginx config file (`/etc/nginx/sites-available/justachat.net` or similar) is stale and was never synced.
+1. **Chat messages only show locally** — Other users in the same room don't see your messages. The realtime subscription is set up, but the Supabase JS client `insert` may silently fail on VPS, or the realtime publication for `messages` may not be active.
 
-**Fix:** Update `master-update.sh` to automatically sync the Nginx config from the repo during deploy. Add a stage that copies `dist/nginx-justachat.conf` to `/etc/nginx/sites-available/justachat.net` (or wherever the live config lives) before reloading Nginx. This ensures the CSP always matches the repo.
+2. **Your name shows in rooms you're not in** — The member list always shows ALL owners/admins in EVERY room (line 264 of MemberList.tsx: `if (targetRole === 'owner' || targetRole === 'admin') return true`). Staff should only appear in rooms they're actually present in, but remain visible (not hidden by ghost mode) when they ARE in the room.
 
-**Technical Details:**
-- Add a new stage in `public/vps-deploy/master-update.sh` between "Sync Edge Functions" and "Restart Services"
-- The stage will copy `dist/nginx-justachat.conf` to the correct Nginx path
-- Backup the old config first for safety
-- The CSP in the repo file already has the correct YouTube entries
+3. **JustaBot showing in rooms it shouldn't** — The bot moderator entry is added to the member list when `moderatorBotsEnabled` is true globally, but it doesn't check if the specific channel is in `allowed_channels`. Bots should only appear in rooms where they're enabled.
 
----
+4. **Radio causing username bouncing** — Every play/pause and song change triggers a presence `track()` call, which triggers a presence `sync` event, which changes `onlineUserIds`, which triggers `fetchMembers`. This rapid cycle causes the member list to bounce. The "Listening To" status appearing and disappearing is part of this same loop.
 
-## Issue 2: Users/Admins Showing in Rooms They Did Not Join
-
-**Root Cause:** Two problems converge:
-
-1. **IRC disconnect does not clean up `channel_members`:** When an IRC user disconnects (`socket.onclose` at line 3199), the code removes them from the in-memory `channelSubscriptions` but **never deletes their `channel_members` rows** from the database. These stale rows cause users to appear in rooms indefinitely.
-
-2. **Web user cleanup is best-effort:** The web client (`ChatRoom.tsx` line 511-517) attempts to delete `channel_members` on unmount, but if the browser tab is closed abruptly (or the network drops), the cleanup never runs, leaving stale entries.
-
-**Fix:**
-- **IRC Gateway (`socket.onclose`):** Add database cleanup to delete all `channel_members` rows for the disconnecting user across all their joined channels.
-- **Periodic cleanup:** Add a lightweight cleanup mechanism. When the member list fetches members, cross-reference `channel_members` entries against current presence state. Members in `channel_members` who are NOT in the presence state and NOT connected via IRC should be pruned.
-
-**Technical Details (IRC Gateway):**
-```
-socket.onclose:
-  - For each channelId in session.channels:
-    - Delete from channel_members where channel_id = channelId AND user_id = session.userId
-  - Remove from channelSubscriptions (already done)
-  - Delete from sessions (already done)
-```
-
-This uses the `realtimeClient` (service role) since the session's authenticated client may already be invalid at disconnect time.
+5. **Room counts not showing +1 for some rooms** — The lobby already has bot count logic but it depends on `botsAllowedChannels` containing each room name. If a room isn't in that array, it won't get the +1.
 
 ---
 
-## Issue 3: IRC Cannot See Web Chat
+### Technical Changes
 
-**Root Cause:** The Realtime message relay (line 3234-3365) subscribes to `postgres_changes` on the `messages` table using a service-role client. This subscription works for relaying web messages to IRC. However, the relay depends on a successful Realtime connection.
+#### 1. Fix Chat Message Visibility (ChatRoom.tsx)
 
-Looking at the VPS logs, there are repeated `Connection refused` errors for `[::1]:8000` (IPv6). The Nginx config proxies to `localhost:8000` but Kong is listening on IPv4 only (`127.0.0.1:8000`). When the edge function's Realtime client connects, it goes through the same path and may hit this IPv6 issue, causing the relay subscription to fail silently.
+- Replace `supabase.from('messages').insert()` with a direct REST `fetch` call (using `restInsert` or raw fetch with the access token). The Supabase JS client is known to hang/silently fail on VPS.
+- Ensure the realtime subscription uses the correct filter and event handling.
+- Add a database migration to ensure `messages` is in the `supabase_realtime` publication (if not already).
 
-Additionally, the edge function container is cold-restarted during every deploy, which means the Realtime subscription has to re-establish. If the subscription enters `CHANNEL_ERROR` or `TIMED_OUT`, there's a 5-second retry, but it may keep failing if the underlying connection is broken.
+#### 2. Fix Staff Appearing in All Rooms (MemberList.tsx)
 
-**Fix:**
-1. **Nginx IPv6 fix:** Update the Nginx proxy config to explicitly use `127.0.0.1:8000` instead of `localhost:8000` to prevent IPv6 resolution issues.
-2. **Verify Realtime relay:** The relay code already has retry logic (line 3357-3364). The IPv6 fix should resolve the underlying issue.
+- Remove the blanket "always show staff" logic that fetches ALL owners/admins from `user_roles` and injects them into every room.
+- Instead, only ensure staff are not hidden by ghost mode when they ARE in the room (present in `onlineUserIds` or `channel_members`).
+- The current user always shows (self-seeding logic stays).
 
-**Technical Details:**
-- In `public/nginx-justachat.conf`, change `proxy_pass http://localhost:8000` to `proxy_pass http://127.0.0.1:8000` in the Supabase API proxy block.
+#### 3. Fix Bot Visibility Per Channel (MemberList.tsx)
 
----
+- Change the `botMember` logic to also check if `channelName` is in `botSettings.allowed_channels`, not just `moderatorBotsEnabled`.
+- Currently `botsEnabledForChannel` is calculated but only used elsewhere. Use it for the bot member display too.
 
-## Issue 4: Make IRC Banners Cooler
+#### 4. Stabilize Radio Presence Updates (ChatRoom.tsx)
 
-**Current State:** The ASCII art banners are plain `#`-character block letters that look functional but boring now that spacing is correct.
+- Debounce the presence `track()` call for `nowPlaying` changes. Instead of re-tracking on every `isPlaying`/`videoId` change, batch updates with a 2-second debounce.
+- This prevents the rapid presence sync -> fetchMembers -> re-render cycle that causes bouncing.
+- The "Listening To" display in MemberList already handles the `paused` flag correctly.
 
-**Fix:** Replace the basic hash-character ASCII art with more visually appealing designs using dots, slashes, backslashes, and pipe characters for a cleaner, more stylized look. Add decorative borders and themed accents around each banner.
+#### 5. Verify Room Counts (Home.tsx)
 
-**Technical Details:**
-- Redesign each room's ASCII art in `ROOM_ASCII_ART_RAW` (lines 348-440 in `irc-gateway/index.ts`)
-- Use a mix of `/`, `\`, `|`, `_`, `.`, and other ASCII chars (0x20-0x7E only per the standard) 
-- Add decorative top/bottom borders using `=`, `-`, `~` characters with room-specific accent characters
-- Enhance the welcome section formatting around the ASCII art with better dividers and spacing
-- Add a "powered by" footer line with the JAC brand
-
-Example style upgrade for "GENERAL":
-```
-     ___  ____  _  _  ____  ____   __   __
-    / __)(  __)( \( )(  __)(  _ \ / _\ (  )
-   ( (_ \ ) _) )  (  ) _)  )   //    \/ (_/\
-    \___/(____)(_)\_)(____)(__ _)\_/\_/\____/
-```
-
-Each room gets its own unique style treatment while maintaining the 50-character width standard and pure ASCII requirement.
+- No code change needed if `allowed_channels` in `bot_settings` is correctly populated. The existing logic at line 766 is correct. The fix in item 3 (ensuring bot visibility matches `allowed_channels`) will align the member list with the lobby counts.
 
 ---
 
-## Summary of Files to Change
+### Files to Modify
 
-| File | Change |
-|------|--------|
-| `supabase/functions/irc-gateway/index.ts` | Fix `socket.onclose` cleanup, redesign ASCII banners |
-| `public/nginx-justachat.conf` | Fix IPv6 proxy_pass, ensure CSP has YouTube |
-| `public/vps-deploy/master-update.sh` | Add Nginx config sync stage |
-
-## Implementation Order
-
-1. Fix Nginx config (IPv6 + CSP sync) -- resolves radio and IRC relay
-2. Fix `channel_members` cleanup in IRC gateway `onclose` -- resolves ghost members
-3. Redesign ASCII art banners -- visual improvement
-4. Deploy and verify
+| File | Changes |
+|------|---------|
+| `src/components/chat/ChatRoom.tsx` | Replace message insert with REST call; debounce radio presence updates |
+| `src/components/chat/MemberList.tsx` | Remove blanket staff injection; gate bot on `allowed_channels`; keep ghost mode bypass for staff who ARE in room |
+| Database migration | Ensure `ALTER PUBLICATION supabase_realtime ADD TABLE public.messages` is applied |
 
