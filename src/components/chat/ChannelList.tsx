@@ -100,9 +100,11 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
   const isStPatricks = theme === 'stpatricks';
 
   const fetchChannels = async () => {
+    // Fetch either user's own channels (if logged in) or all public channels
+    // RLS policies restrict what gets returned based on visibility + ownership
     const { data } = await supabaseUntyped
       .from('channels')
-      .select('*')
+      .select('id,name,description,is_private,created_by,is_hidden,name_color,name_gradient_from,name_gradient_to,bg_color,created_at')
       .order('created_at', { ascending: true });
     
     if (data) {
