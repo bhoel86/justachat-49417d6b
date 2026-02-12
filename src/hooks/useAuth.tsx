@@ -51,29 +51,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // caused users to be logged out on every page refresh on VPS.
 
     // Role check function that can optionally control loading state
-    const fetchRole = async (userId: string, controlLoading: boolean) => {
+    // Uses direct REST fetch with timeout to prevent Supabase client hanging
+    const fetchRole = async (userId: string, controlLoading: boolean, accessToken?: string) => {
       try {
         console.log('[Auth] Fetching role for user:', userId);
-        const { data, error } = await supabaseUntyped
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .single();
         
-        if (error) {
-          console.warn('[Auth] Role fetch error:', error.message);
-        }
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         
-        if (isMounted) {
-          const resolvedRole = (data?.role as AppRole) ?? 'user';
-          console.log('[Auth] Role resolved:', resolvedRole);
-          setRole(resolvedRole);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        
+        try {
+          const res = await fetch(
+            `${supabaseUrl}/rest/v1/user_roles?user_id=eq.${userId}&select=role`,
+            {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${accessToken || supabaseKey}`,
+                'Accept': 'application/json',
+              },
+              signal: controller.signal,
+            }
+          );
+          clearTimeout(timeout);
+          
+          if (res.ok) {
+            const rows = await res.json();
+            if (isMounted) {
+              const roleOrder: AppRole[] = ['owner', 'admin', 'moderator', 'user'];
+              let best: AppRole = 'user';
+              for (const row of rows) {
+                const idx = roleOrder.indexOf(row.role);
+                if (idx >= 0 && idx < roleOrder.indexOf(best)) {
+                  best = row.role;
+                }
+              }
+              console.log('[Auth] Role resolved:', best, 'from', rows.length, 'rows');
+              setRole(best);
+            }
+          } else {
+            console.warn('[Auth] Role fetch HTTP error:', res.status);
+            if (isMounted) setRole('user');
+          }
+        } catch (fetchErr: any) {
+          clearTimeout(timeout);
+          if (fetchErr.name === 'AbortError') {
+            console.warn('[Auth] Role fetch timed out after 5s');
+          } else {
+            console.error('[Auth] Role fetch error:', fetchErr);
+          }
+          if (isMounted) setRole('user');
         }
       } catch (err) {
         console.error('[Auth] Role fetch exception:', err);
         if (isMounted) setRole('user');
       } finally {
-        // Only set loading false after role is fetched (prevents flicker)
         if (controlLoading && isMounted) {
           setLoading(false);
         }
@@ -99,7 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          fetchRole(session.user.id, false);
+          fetchRole(session.user.id, false, session.access_token);
         } else {
           setRole(null);
         }
@@ -146,7 +179,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 console.log('[Auth] Session established from OAuth hash');
                 setSession(data.session);
                 setUser(data.session.user);
-                await fetchRole(data.session.user.id, true);
+                await fetchRole(data.session.user.id, true, data.session.access_token);
                 return; // fetchRole sets loading=false
               }
             } else {
@@ -171,7 +204,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(session?.user ?? null);
 
           if (session?.user) {
-            await fetchRole(session.user.id, true);
+            await fetchRole(session.user.id, true, session.access_token);
             return; // fetchRole sets loading=false
           }
         }
@@ -218,13 +251,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshRole = async () => {
     if (user) {
-      const { data } = await supabaseUntyped
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-      
-      setRole(data?.role as AppRole ?? 'user');
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const accessToken = session?.access_token;
+        
+        const res = await fetch(
+          `${supabaseUrl}/rest/v1/user_roles?user_id=eq.${user.id}&select=role`,
+          {
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${accessToken || supabaseKey}`,
+              'Accept': 'application/json',
+            },
+          }
+        );
+        if (res.ok) {
+          const rows = await res.json();
+          const roleOrder: AppRole[] = ['owner', 'admin', 'moderator', 'user'];
+          let best: AppRole = 'user';
+          for (const row of rows) {
+            const idx = roleOrder.indexOf(row.role);
+            if (idx >= 0 && idx < roleOrder.indexOf(best)) {
+              best = row.role;
+            }
+          }
+          setRole(best);
+        }
+      } catch {
+        // keep existing role
+      }
     }
   };
 
