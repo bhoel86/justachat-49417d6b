@@ -49,7 +49,7 @@ services:
     container_name: supabase-kong
     image: kong:2.8.1
     restart: unless-stopped
-    entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
+    entrypoint: bash -c 'envsubst < ~/temp.yml > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
     ports:
       - "127.0.0.1:8000:8000/tcp"
       - "127.0.0.1:8443:8443/tcp"
