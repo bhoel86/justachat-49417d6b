@@ -8,6 +8,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { restSelect } from "@/lib/supabaseRest";
 import { Button } from "@/components/ui/button";
 import { 
   LogOut, Users, MessageSquare, Shield, Music, Gamepad2, Vote, Tv, 
@@ -29,7 +30,6 @@ import {
 import LobbyMirrorRoom from "@/components/home/LobbyMirrorRoom";
 import PayPalDonateModal from "@/components/home/PayPalDonateModal";
 // Bot counts removed — only real users count
-import { supabaseUntyped } from "@/hooks/useAuth";
 import { ThemeSelector } from "@/components/theme/ThemeSelector";
 // Room background images
 import generalBg from "@/assets/rooms/general-bg.jpg";
@@ -185,23 +185,27 @@ const Home = () => {
     }
   }, [user, authLoading, navigate, oauthProcessing]);
 
-  // Fetch bot settings for room counts
+  // Fetch bot settings for room counts (REST to avoid JS client hang on VPS)
   useEffect(() => {
     const fetchBotSettings = async () => {
-      const { data } = await supabaseUntyped
-        .from('bot_settings')
-        .select('enabled, allowed_channels, moderator_bots_enabled')
-        .limit(1)
-        .single();
-      if (data) {
-        setBotsGloballyEnabled(data.enabled ?? false);
-        setBotsAllowedChannels(data.allowed_channels ?? []);
-        setModeratorBotsEnabled(data.moderator_bots_enabled ?? false);
+      try {
+        const rows = await restSelect<any>(
+          'bot_settings',
+          'select=enabled,allowed_channels,moderator_bots_enabled&limit=1',
+        );
+        const data = rows?.[0];
+        if (data) {
+          setBotsGloballyEnabled(data.enabled ?? false);
+          setBotsAllowedChannels(data.allowed_channels ?? []);
+          setModeratorBotsEnabled(data.moderator_bots_enabled ?? false);
+        }
+      } catch (err) {
+        console.warn('[Lobby] Bot settings fetch failed:', err);
       }
     };
     fetchBotSettings();
 
-    // Subscribe to changes
+    // Subscribe to changes (realtime is fine — it's websocket, not REST)
     const channel = supabase
       .channel('home-bot-settings')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bot_settings' }, (payload) => {
@@ -261,15 +265,16 @@ const Home = () => {
     const knownMembers: Record<string, Set<string>> = {};
     channels.forEach(ch => { knownMembers[ch.id] = new Set(); });
 
-    // Single batch fetch for ALL member data (replaces N sequential queries)
+    // Single batch fetch for ALL member data via REST (prevents JS client hang)
     const fetchAllMemberData = async () => {
-      const channelIds = channels.map(ch => ch.id);
-      const { data } = await supabase
-        .from('channel_members')
-        .select('channel_id, user_id')
-        .in('channel_id', channelIds);
+      try {
+        const channelIds = channels.map(ch => ch.id);
+        const filter = `channel_id=in.(${channelIds.join(',')})`;
+        const data = await restSelect<{ channel_id: string; user_id: string }>(
+          'channel_members',
+          `select=channel_id,user_id&${filter}`,
+        );
 
-      if (data) {
         // Reset and rebuild
         channels.forEach(ch => { knownMembers[ch.id] = new Set(); });
         data.forEach(row => {
@@ -279,6 +284,8 @@ const Home = () => {
         const counts: RoomUserCounts = {};
         channels.forEach(ch => { counts[ch.id] = knownMembers[ch.id]?.size || 0; });
         setRoomUserCounts(counts);
+      } catch (err) {
+        console.warn('[Lobby] Member count fetch failed:', err);
       }
     };
 
