@@ -354,6 +354,22 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${currentChannel.id}` },
         async (payload) => {
           const newMessage = payload.new as Message;
+           // Skip if this is our own message (we already added it optimistically)
+           if (newMessage.user_id === user?.id) {
+             // Replace optimistic message with real one (keeps the real DB id)
+             setMessages(prev => {
+               const hasOptimistic = prev.some(m => m.id.startsWith('optimistic-') && m.user_id === newMessage.user_id && m.content === newMessage.content);
+               if (hasOptimistic) {
+                 return prev.map(m => 
+                   m.id.startsWith('optimistic-') && m.user_id === newMessage.user_id && m.content === newMessage.content
+                     ? { ...newMessage, profile: m.profile }
+                     : m
+                 );
+               }
+               return prev; // Already replaced or not found — skip duplicate
+             });
+             return;
+           }
            let profile: { username: string; avatar_url?: string | null } | undefined;
            try {
              const rows = await restSelect<{ username: string; avatar_url: string | null }>('profiles_public', `select=username,avatar_url&user_id=eq.${newMessage.user_id}&limit=1`);
@@ -1254,13 +1270,36 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       }
     }
 
-    await (supabase as any)
+    // Optimistic: show message locally immediately (don't wait for realtime)
+    const optimisticMsg: Message = {
+      id: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      content: finalContent,
+      user_id: user.id,
+      channel_id: currentChannel.id,
+      created_at: new Date().toISOString(),
+      profile: { username, avatar_url: undefined }
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    const { error: insertError } = await (supabase as any)
       .from('messages')
       .insert({
         content: finalContent,
         user_id: user.id,
         channel_id: currentChannel.id
       });
+
+    if (insertError) {
+      console.error('[ChatRoom] Message insert failed:', insertError);
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
+      toast({
+        variant: "destructive",
+        title: "Failed to send",
+        description: insertError.message || "Message could not be sent."
+      });
+      return;
+    }
 
     // Check if this is a trivia answer (only in trivia channel with active question)
     if (triviaGame.isTriviaChannel && triviaGame.gameState.currentQuestion) {

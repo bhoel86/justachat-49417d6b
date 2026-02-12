@@ -576,6 +576,17 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
 
         {/* Members Content */}
         <div className="flex-1 overflow-y-auto p-2">
+          {loading && members.length === 0 ? (
+            <div className="space-y-2 px-1">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2 animate-pulse">
+                  <div className="h-6 w-6 rounded-full bg-muted" />
+                  <div className="h-3 w-20 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
             {/* STAFF SECTION - Compact */}
             <div className="mb-2">
               {/* Owner Section */}
@@ -776,6 +787,8 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
                 )}
               </div>
             )}
+            </>
+          )}
           </div>
         </div>
 
