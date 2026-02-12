@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { restSelect } from '@/lib/supabaseRest';
 import { toast } from 'sonner';
 import { playPMNotificationSound } from '@/lib/notificationSound';
 
@@ -46,6 +47,16 @@ export interface BlockedUser {
   createdAt: Date;
 }
 
+/** Helper to get current access token without blocking */
+const getAccessToken = async (): Promise<string | null> => {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token || null;
+  } catch {
+    return null;
+  }
+};
+
 export const useFriends = (currentUserId: string, onFriendRequestReceived?: FriendRequestCallback) => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
@@ -59,18 +70,19 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     onFriendRequestReceivedRef.current = onFriendRequestReceived;
   }, [onFriendRequestReceived]);
 
-  // Fetch friends list
+  // Fetch friends list via REST
   const fetchFriends = useCallback(async () => {
     if (!currentUserId) return;
 
     try {
+      const token = await getAccessToken();
+      
       // Fetch friendships where user is either user_id or friend_id
-      const { data: friendships, error } = await supabase
-        .from('friends')
-        .select('*')
-        .or(`user_id.eq.${currentUserId},friend_id.eq.${currentUserId}`);
-
-      if (error) throw error;
+      const friendships = await restSelect<{ id: string; user_id: string; friend_id: string; created_at: string }>(
+        'friends',
+        `select=id,user_id,friend_id,created_at&or=(user_id.eq.${currentUserId},friend_id.eq.${currentUserId})`,
+        token
+      );
 
       // Get the other user's ID for each friendship
       const friendUserIds = friendships?.map(f => 
@@ -82,13 +94,12 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
         return;
       }
 
-      // Fetch profiles for all friends using public view (excludes sensitive fields)
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles_public')
-        .select('user_id, username, avatar_url')
-        .in('user_id', friendUserIds);
-
-      if (profilesError) throw profilesError;
+      // Fetch profiles for all friends
+      const profiles = await restSelect<{ user_id: string; username: string; avatar_url: string | null }>(
+        'profiles_public',
+        `select=user_id,username,avatar_url&user_id=in.(${friendUserIds.join(',')})`,
+        token
+      );
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
 
@@ -110,18 +121,18 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [currentUserId]);
 
-  // Fetch pending friend requests
+  // Fetch pending friend requests via REST
   const fetchPendingRequests = useCallback(async () => {
     if (!currentUserId) return;
 
     try {
-      const { data: requests, error } = await supabase
-        .from('friend_requests')
-        .select('*')
-        .eq('status', 'pending')
-        .or(`sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId}`);
-
-      if (error) throw error;
+      const token = await getAccessToken();
+      
+      const requests = await restSelect<{ id: string; sender_id: string; recipient_id: string; status: string; created_at: string }>(
+        'friend_requests',
+        `select=id,sender_id,recipient_id,status,created_at&status=eq.pending&or=(sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId})`,
+        token
+      );
 
       if (!requests || requests.length === 0) {
         setPendingRequests([]);
@@ -134,12 +145,11 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
         ...requests.map(r => r.recipient_id)
       ])];
 
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles_public')
-        .select('user_id, username, avatar_url')
-        .in('user_id', userIds);
-
-      if (profilesError) throw profilesError;
+      const profiles = await restSelect<{ user_id: string; username: string; avatar_url: string | null }>(
+        'profiles_public',
+        `select=user_id,username,avatar_url&user_id=in.(${userIds.join(',')})`,
+        token
+      );
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
 
@@ -166,17 +176,18 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [currentUserId]);
 
-  // Fetch blocked users
+  // Fetch blocked users via REST
   const fetchBlockedUsers = useCallback(async () => {
     if (!currentUserId) return;
 
     try {
-      const { data: blocks, error } = await supabase
-        .from('blocked_users')
-        .select('*')
-        .eq('blocker_id', currentUserId);
-
-      if (error) throw error;
+      const token = await getAccessToken();
+      
+      const blocks = await restSelect<{ id: string; blocked_id: string; reason: string | null; created_at: string }>(
+        'blocked_users',
+        `select=id,blocked_id,reason,created_at&blocker_id=eq.${currentUserId}`,
+        token
+      );
 
       if (!blocks || blocks.length === 0) {
         setBlockedUsers([]);
@@ -185,12 +196,11 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
 
       const blockedIds = blocks.map(b => b.blocked_id);
 
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles_public')
-        .select('user_id, username, avatar_url')
-        .in('user_id', blockedIds);
-
-      if (profilesError) throw profilesError;
+      const profiles = await restSelect<{ user_id: string; username: string; avatar_url: string | null }>(
+        'profiles_public',
+        `select=user_id,username,avatar_url&user_id=in.(${blockedIds.join(',')})`,
+        token
+      );
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
 
@@ -212,7 +222,7 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [currentUserId]);
 
-  // Send friend request
+  // Send friend request (write operations still use supabase client for simplicity)
   const sendFriendRequest = useCallback(async (targetUserId: string) => {
     if (!currentUserId) return false;
 
@@ -279,7 +289,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     if (!currentUserId) return false;
 
     try {
-      // Get the request
       const { data: request, error: fetchError } = await supabase
         .from('friend_requests')
         .select('*')
@@ -288,7 +297,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
 
       if (fetchError) throw fetchError;
 
-      // Update request status
       const { error: updateError } = await supabase
         .from('friend_requests')
         .update({ status: 'accepted' })
@@ -296,7 +304,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
 
       if (updateError) throw updateError;
 
-      // Create friendship (both directions for easy querying)
       const { error: friendError1 } = await supabase
         .from('friends')
         .insert({
@@ -368,7 +375,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
   // Remove friend
   const removeFriend = useCallback(async (friendshipId: string, friendId: string) => {
     try {
-      // Delete both directions
       await supabase
         .from('friends')
         .delete()
@@ -394,19 +400,16 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     if (!currentUserId) return false;
 
     try {
-      // Remove any existing friendship
       await supabase
         .from('friends')
         .delete()
         .or(`and(user_id.eq.${currentUserId},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${currentUserId})`);
 
-      // Remove any pending requests
       await supabase
         .from('friend_requests')
         .delete()
         .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`);
 
-      // Add to blocked list
       const { error } = await supabase
         .from('blocked_users')
         .insert({
@@ -500,30 +503,39 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
         // Handle new incoming friend requests with popup and sound
         const newRequest = payload.new as { id: string; sender_id: string; recipient_id: string; status: string };
         if (newRequest.recipient_id === currentUserId && newRequest.status === 'pending') {
-          // Fetch sender's profile to get their username (using public view)
-          const { data: senderProfile } = await supabase
-            .from('profiles_public')
-            .select('username, avatar_url')
-            .eq('user_id', newRequest.sender_id)
-            .maybeSingle();
+          // Fetch sender's profile via REST
+          try {
+            const token = await getAccessToken();
+            const profiles = await restSelect<{ username: string; avatar_url: string | null }>(
+              'profiles_public',
+              `select=username,avatar_url&user_id=eq.${newRequest.sender_id}&limit=1`,
+              token
+            );
+            const senderProfile = profiles?.[0];
           
-          const senderName = senderProfile?.username || 'Someone';
-          const senderAvatar = senderProfile?.avatar_url || null;
+            const senderName = senderProfile?.username || 'Someone';
+            const senderAvatar = senderProfile?.avatar_url || null;
           
-          // Play notification sound
-          playPMNotificationSound();
+            // Play notification sound
+            playPMNotificationSound();
           
-          // If callback is provided, trigger popup
-          if (onFriendRequestReceivedRef.current) {
-            onFriendRequestReceivedRef.current({
-              id: newRequest.id,
-              senderId: newRequest.sender_id,
-              senderUsername: senderName,
-              senderAvatarUrl: senderAvatar,
-            });
-          } else {
-            // Fallback to toast if no popup handler
-            toast.info(`${senderName} sent you a friend request!`, {
+            // If callback is provided, trigger popup
+            if (onFriendRequestReceivedRef.current) {
+              onFriendRequestReceivedRef.current({
+                id: newRequest.id,
+                senderId: newRequest.sender_id,
+                senderUsername: senderName,
+                senderAvatarUrl: senderAvatar,
+              });
+            } else {
+              toast.info(`${senderName} sent you a friend request!`, {
+                description: 'Check your Friends tab to respond',
+                duration: 5000,
+              });
+            }
+          } catch {
+            playPMNotificationSound();
+            toast.info('Someone sent you a friend request!', {
               description: 'Check your Friends tab to respond',
               duration: 5000,
             });
@@ -559,7 +571,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
   }, [currentUserId, fetchFriends, fetchPendingRequests, fetchBlockedUsers]);
 
   // Track online status of friends via global presence channel
-  // This channel tracks ALL online users (not room-scoped) for friend status
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -585,7 +596,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // Track with user_id field to match room presence format
           await presenceChannel.track({ user_id: currentUserId });
         }
       });
