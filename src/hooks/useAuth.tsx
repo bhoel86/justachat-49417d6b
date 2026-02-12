@@ -53,16 +53,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Role check function that can optionally control loading state
     const fetchRole = async (userId: string, controlLoading: boolean) => {
       try {
-        const { data } = await supabaseUntyped
+        console.log('[Auth] Fetching role for user:', userId);
+        const { data, error } = await supabaseUntyped
           .from('user_roles')
           .select('role')
           .eq('user_id', userId)
           .single();
         
-        if (isMounted) {
-          setRole(data?.role as AppRole ?? 'user');
+        if (error) {
+          console.warn('[Auth] Role fetch error:', error.message);
         }
-      } catch {
+        
+        if (isMounted) {
+          const resolvedRole = (data?.role as AppRole) ?? 'user';
+          console.log('[Auth] Role resolved:', resolvedRole);
+          setRole(resolvedRole);
+        }
+      } catch (err) {
+        console.error('[Auth] Role fetch exception:', err);
         if (isMounted) setRole('user');
       } finally {
         // Only set loading false after role is fetched (prevents flicker)
@@ -188,21 +196,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Logout from chat function - call this when leaving chat room
   const logoutFromChat = async () => {
+    console.log('[Auth] logoutFromChat called');
+    
+    // Clear state first
+    setSession(null);
+    setUser(null);
+    setRole(null);
     
     // Best-effort sign-out; if it fails, still clear local storage to prevent re-login.
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch {
       // ignore
-    } finally {
-      clearAuthStorage();
-      localStorage.removeItem('jac_personal_theme');
     }
-    setSession(null);
-    setUser(null);
-    setRole(null);
+    clearAuthStorage();
+    localStorage.removeItem('jac_personal_theme');
+    
     // Redirect to login page
-    window.location.href = '/login';
+    window.location.replace('/login');
   };
 
   const refreshRole = async () => {
@@ -245,21 +256,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    console.log('[Auth] signOut called');
+    
+    // Clear state first to prevent re-render loops
+    setSession(null);
+    setUser(null);
+    setRole(null);
     
     // Best-effort sign-out; if it fails, still clear local storage to prevent re-login.
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch {
       // ignore
-    } finally {
-      clearAuthStorage();
-      localStorage.removeItem('jac_personal_theme');
     }
-    setSession(null);
-    setUser(null);
-    setRole(null);
-    // Redirect to login page
-    window.location.href = '/login';
+    clearAuthStorage();
+    localStorage.removeItem('jac_personal_theme');
+    
+    // Use replace to prevent back-button returning to lobby
+    console.log('[Auth] Redirecting to /login');
+    window.location.replace('/login');
   };
 
   return (
