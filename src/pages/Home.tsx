@@ -219,6 +219,7 @@ const Home = () => {
 
   useEffect(() => {
     const fetchChannels = async () => {
+      console.log('[Lobby] Fetching channels...');
       const { data, error } = await supabase
         .from("channels")
         .select("id, name, description")
@@ -226,17 +227,18 @@ const Home = () => {
         .order("name");
 
       if (error) {
+        console.error('[Lobby] Channel fetch error:', error);
         toast.error("Failed to load rooms");
       } else {
+        console.log('[Lobby] Channels loaded:', data?.length);
         setChannels(data || []);
       }
       setLoadingChannels(false);
     };
 
-    if (user) {
-      fetchChannels();
-    }
-  }, [user]);
+    // Fetch channels regardless of auth state - public channels don't require auth
+    fetchChannels();
+  }, []);
 
   // Fetch member counts from channel_members table + subscribe for live updates
   useEffect(() => {
