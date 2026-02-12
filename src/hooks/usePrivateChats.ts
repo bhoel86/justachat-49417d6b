@@ -109,111 +109,139 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     // Only setup once
     if (channelRef.current) return;
 
-    const channelName = `pm-inbox-${currentUserId}-${Date.now()}`;
-    const channel = supabase.channel(channelName);
-    channelRef.current = channel;
-    
-    channel
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'private_messages',
-          filter: `recipient_id=eq.${currentUserId}`,
-        },
-        async (payload) => {
-          const msg = payload.new as { sender_id: string };
-          if (msg.sender_id === currentUserId) return;
-          
-           const isAway = awayRef.current;
-           const isDND = dndRef.current;
-           
-          // Check if we already have a chat open with this sender
-          const hasExistingChat = openChatSendersRef.current.has(msg.sender_id);
-          
-          if (hasExistingChat) {
-            // Just mark as unread if minimized
-            setChats(prev => prev.map(c => {
-              if (c.targetUserId === msg.sender_id && c.isMinimized) {
+    let retryCount = 0;
+    const maxRetries = 3;
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const createSubscription = () => {
+      // Clean up previous attempt if any
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
+      const channelName = `pm-inbox-${currentUserId}-${Date.now()}`;
+      const channel = supabase.channel(channelName);
+      channelRef.current = channel;
+      
+      channel
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'private_messages',
+            filter: `recipient_id=eq.${currentUserId}`,
+          },
+          async (payload) => {
+            const msg = payload.new as { sender_id: string };
+            if (msg.sender_id === currentUserId) return;
+            
+             const isAway = awayRef.current;
+             const isDND = dndRef.current;
+             
+            // Check if we already have a chat open with this sender
+            const hasExistingChat = openChatSendersRef.current.has(msg.sender_id);
+            
+            if (hasExistingChat) {
+              // Just mark as unread if minimized
+              setChats(prev => prev.map(c => {
+                if (c.targetUserId === msg.sender_id && c.isMinimized) {
+                   if (!isDND) playPMNotificationSound();
+                  return { ...c, hasUnread: true };
+                }
+                return c;
+              }));
+            } else {
+               // New conversation - fetch sender info
+              try {
+                const { data: profile } = await supabase
+                  .from('profiles_public')
+                  .select('username')
+                  .eq('user_id', msg.sender_id)
+                  .maybeSingle();
+                
+                const senderUsername = profile?.username || 'Unknown';
+                
+                 // Play sound unless DND
                  if (!isDND) playPMNotificationSound();
-                return { ...c, hasUnread: true };
-              }
-              return c;
-            }));
-          } else {
-             // New conversation - fetch sender info
-            try {
-              const { data: profile } = await supabase
-                .from('profiles_public')
-                .select('username')
-                .eq('user_id', msg.sender_id)
-                .maybeSingle();
-              
-              const senderUsername = profile?.username || 'Unknown';
-              
-               // Play sound unless DND
-               if (!isDND) playPMNotificationSound();
-               
-               // If away mode, add to inbox instead of opening chat
-               if (isAway) {
-                 setInbox(prev => {
-                   const next = new Map(prev);
-                   const existing = next.get(msg.sender_id);
-                   next.set(msg.sender_id, {
-                     senderId: msg.sender_id,
-                     senderUsername,
-                     count: (existing?.count || 0) + 1,
-                     lastMessageAt: new Date(),
-                   });
-                   return next;
-                 });
                  
-                 // Show toast notification
-                 toast.info(`New message from ${senderUsername}`, {
-                   description: 'Message saved to inbox',
-                   action: {
-                     label: 'Open',
-                     onClick: () => {
-                       // This will be handled by opening the chat
+                 // If away mode, add to inbox instead of opening chat
+                 if (isAway) {
+                   setInbox(prev => {
+                     const next = new Map(prev);
+                     const existing = next.get(msg.sender_id);
+                     next.set(msg.sender_id, {
+                       senderId: msg.sender_id,
+                       senderUsername,
+                       count: (existing?.count || 0) + 1,
+                       lastMessageAt: new Date(),
+                     });
+                     return next;
+                   });
+                   
+                   // Show toast notification
+                   toast.info(`New message from ${senderUsername}`, {
+                     description: 'Message saved to inbox',
+                     action: {
+                       label: 'Open',
+                       onClick: () => {
+                         // This will be handled by opening the chat
+                       },
                      },
-                   },
-                 });
-                 return;
-               }
-              
-               // Not away - open the chat window
-              const offset = (openChatSendersRef.current.size % 5) * 30;
-              
-              const newChat: PrivateChat = {
-                id: `${msg.sender_id}-${Date.now()}`,
-                targetUserId: msg.sender_id,
-                targetUsername: senderUsername,
-                position: { 
-                  x: Math.min(window.innerWidth - 340, 100 + offset),
-                  y: Math.min(window.innerHeight - 440, 100 + offset)
-                },
-                zIndex: 1001,
-                isMinimized: isDND,
-                hasUnread: isDND
-              };
-              
-              setChats(cur => {
-                // Final check to prevent duplicates
-                if (cur.find(c => c.targetUserId === msg.sender_id)) return cur;
-                return [...cur, newChat];
-              });
-            } catch (e) {
-              console.error('Failed to open PM from new sender:', e);
+                   });
+                   return;
+                 }
+                
+                 // Not away - open the chat window
+                const offset = (openChatSendersRef.current.size % 5) * 30;
+                
+                const newChat: PrivateChat = {
+                  id: `${msg.sender_id}-${Date.now()}`,
+                  targetUserId: msg.sender_id,
+                  targetUsername: senderUsername,
+                  position: { 
+                    x: Math.min(window.innerWidth - 340, 100 + offset),
+                    y: Math.min(window.innerHeight - 440, 100 + offset)
+                  },
+                  zIndex: 1001,
+                  isMinimized: isDND,
+                  hasUnread: isDND
+                };
+                
+                setChats(cur => {
+                  // Final check to prevent duplicates
+                  if (cur.find(c => c.targetUserId === msg.sender_id)) return cur;
+                  return [...cur, newChat];
+                });
+              } catch (e) {
+                console.error('Failed to open PM from new sender:', e);
+              }
             }
           }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`PM inbox subscription: ${status}`);
-      });
+        )
+        .subscribe((status) => {
+          console.log(`PM inbox subscription: ${status}`);
+          if (status === 'CHANNEL_ERROR' && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`PM inbox retrying (${retryCount}/${maxRetries})...`);
+            // Clean up failed channel and retry after delay
+            if (channelRef.current) {
+              supabase.removeChannel(channelRef.current);
+              channelRef.current = null;
+            }
+            retryTimeout = setTimeout(createSubscription, 2000 * retryCount);
+          }
+        });
+    };
+
+    // Wait for auth session to be available before subscribing
+    supabase.auth.getSession().then(() => {
+      createSubscription();
+    });
 
     return () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;

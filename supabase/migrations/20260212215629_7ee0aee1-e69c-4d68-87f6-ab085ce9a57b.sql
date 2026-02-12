@@ -1,0 +1,1 @@
+ALTER TABLE public.private_messages REPLICA IDENTITY FULL;
