@@ -452,78 +452,82 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
 
     presenceChannelRef.current = presenceChannel;
 
-    presenceChannel
-      .on('presence', { event: 'sync' }, async () => {
-        const state = presenceChannel.presenceState();
-        const onlineIds = new Set<string>();
-
-        Object.values(state).forEach((presences: any[]) => {
-          presences.forEach((presence: { user_id?: string }) => {
-            if (!presence.user_id) return;
-            onlineIds.add(presence.user_id);
-          });
-        });
-
-        // Only update onlineUserIds if the actual set of IDs changed
-        setOnlineUserIds(prev => {
-          const prevSorted = Array.from(prev).sort().join(',');
-          const nextSorted = Array.from(onlineIds).sort().join(',');
-          if (prevSorted === nextSorted) return prev;
-          return onlineIds;
-        });
-
-        // Fetch usernames for online users
-        if (onlineIds.size > 0) {
-          try {
-            const userIds = Array.from(onlineIds);
-            const profiles = await restSelect<{ username: string }>('profiles_public', `select=username&user_id=in.(${userIds.join(',')})`);
-            setOnlineUsers((profiles || []).map((p) => ({ username: p.username })));
-          } catch {
-            setOnlineUsers([]);
-          }
-        } else {
-          setOnlineUsers([]);
-        }
-      })
-      .subscribe(async (status) => {
-        if (status !== 'SUBSCRIBED') return;
-        presenceReadyRef.current = true;
-
-        await presenceChannel.track({ user_id: user.id });
-
-        // Insert into channel_members so IRC gateway can see web users
-        // Uses direct fetch (not supabase.from) to prevent JS client hang on VPS
-        try {
-          const restUrl = import.meta.env.VITE_SUPABASE_URL;
-          const restKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-          const tok = cachedAccessToken || restKey;
-          const restHeaders: Record<string, string> = {
-            'apikey': restKey,
-            'Authorization': `Bearer ${tok}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-          };
-          // Delete first
-          await fetch(`${restUrl}/rest/v1/channel_members?channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}`, {
-            method: 'DELETE', headers: restHeaders,
-          });
-          // Then insert
-          await fetch(`${restUrl}/rest/v1/channel_members`, {
-            method: 'POST', headers: restHeaders,
-            body: JSON.stringify({ channel_id: currentChannel.id, user_id: user.id }),
-          });
-        } catch (e) {
-          // Non-critical - IRC visibility only
-          console.log('[ChatRoom] channel_members insert skipped:', e);
-        }
-      });
-
-    // Capture session token NOW so cleanup can use it synchronously on unload
+    // Capture session token BEFORE subscribing so the INSERT uses the real JWT (not anon key)
     let cachedAccessToken = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.access_token) {
         cachedAccessToken = data.session.access_token;
       }
+
+      // Only start presence AFTER we have the real token
+      presenceChannel
+        .on('presence', { event: 'sync' }, async () => {
+          const state = presenceChannel.presenceState();
+          const onlineIds = new Set<string>();
+
+          Object.values(state).forEach((presences: any[]) => {
+            presences.forEach((presence: { user_id?: string }) => {
+              if (!presence.user_id) return;
+              onlineIds.add(presence.user_id);
+            });
+          });
+
+          // Only update onlineUserIds if the actual set of IDs changed
+          setOnlineUserIds(prev => {
+            const prevSorted = Array.from(prev).sort().join(',');
+            const nextSorted = Array.from(onlineIds).sort().join(',');
+            if (prevSorted === nextSorted) return prev;
+            return onlineIds;
+          });
+
+          // Fetch usernames for online users
+          if (onlineIds.size > 0) {
+            try {
+              const userIds = Array.from(onlineIds);
+              const profiles = await restSelect<{ username: string }>('profiles_public', `select=username&user_id=in.(${userIds.join(',')})`);
+              setOnlineUsers((profiles || []).map((p) => ({ username: p.username })));
+            } catch {
+              setOnlineUsers([]);
+            }
+          } else {
+            setOnlineUsers([]);
+          }
+        })
+        .subscribe(async (status) => {
+          if (status !== 'SUBSCRIBED') return;
+          presenceReadyRef.current = true;
+
+          await presenceChannel.track({ user_id: user.id });
+
+          // Insert into channel_members so IRC gateway can see web users
+          // Uses direct fetch (not supabase.from) to prevent JS client hang on VPS
+          try {
+            const restUrl = import.meta.env.VITE_SUPABASE_URL;
+            const restKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+            const tok = cachedAccessToken;
+            const restHeaders: Record<string, string> = {
+              'apikey': restKey,
+              'Authorization': `Bearer ${tok}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal',
+            };
+            // Delete first
+            await fetch(`${restUrl}/rest/v1/channel_members?channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}`, {
+              method: 'DELETE', headers: restHeaders,
+            });
+            // Then insert
+            const insertRes = await fetch(`${restUrl}/rest/v1/channel_members`, {
+              method: 'POST', headers: restHeaders,
+              body: JSON.stringify({ channel_id: currentChannel.id, user_id: user.id }),
+            });
+            if (!insertRes.ok) {
+              console.warn('[ChatRoom] channel_members insert failed:', insertRes.status, await insertRes.text().catch(() => ''));
+            }
+          } catch (e) {
+            // Non-critical - IRC visibility only
+            console.log('[ChatRoom] channel_members insert skipped:', e);
+          }
+        });
     });
 
     // Helper to clean up channel_members on any exit
@@ -558,8 +562,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         if (user?.id && currentChannel?.id) {
           const restUrl = import.meta.env.VITE_SUPABASE_URL;
           const restKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-          const tok = cachedAccessToken || restKey;
-          const rh: Record<string, string> = { 'apikey': restKey, 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+          const rh: Record<string, string> = { 'apikey': restKey, 'Authorization': `Bearer ${cachedAccessToken}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
           fetch(`${restUrl}/rest/v1/channel_members?channel_id=eq.${currentChannel.id}&user_id=eq.${user.id}`, { method: 'DELETE', headers: rh })
             .then(() => fetch(`${restUrl}/rest/v1/channel_members`, { method: 'POST', headers: rh, body: JSON.stringify({ channel_id: currentChannel.id, user_id: user.id }) }))
             .catch(() => {});
