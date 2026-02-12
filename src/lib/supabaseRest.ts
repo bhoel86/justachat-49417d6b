@@ -7,10 +7,22 @@
  * supabase.from().
  */
 
+import { supabase } from '@/integrations/supabase/client';
+
 const getConfig = () => ({
   url: import.meta.env.VITE_SUPABASE_URL as string,
   key: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
 });
+
+/** Get the current session access token, falling back to anon key */
+const getAccessToken = async (): Promise<string | null> => {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data?.session?.access_token || null;
+  } catch {
+    return null;
+  }
+};
 
 export const restHeaders = (accessToken?: string | null) => {
   const { key } = getConfig();
@@ -22,7 +34,8 @@ export const restHeaders = (accessToken?: string | null) => {
   };
 };
 
-/** GET rows from a table via REST. Returns parsed JSON array. */
+/** GET rows from a table via REST. Returns parsed JSON array. 
+ *  If no accessToken is provided, automatically fetches the current session token. */
 export async function restSelect<T = any>(
   table: string,
   query: string,
@@ -30,12 +43,14 @@ export async function restSelect<T = any>(
   timeoutMs = 8000,
 ): Promise<T[]> {
   const { url } = getConfig();
+  // Auto-fetch token if not provided
+  const token = accessToken ?? await getAccessToken();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(`${url}/rest/v1/${table}?${query}`, {
-      headers: restHeaders(accessToken),
+      headers: restHeaders(token),
       signal: controller.signal,
     });
     clearTimeout(timeout);

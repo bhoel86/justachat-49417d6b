@@ -92,7 +92,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
   const [roomTextColor, setRoomTextColor] = useState<string | null>(null);
   const [roomBgColor, setRoomBgColor] = useState<string | null>(null);
   const [roomGradient, setRoomGradient] = useState<{ name: string; from: string; to: string } | null>(null);
-  const { user, isAdmin, isOwner } = useAuth();
+  const { user, session, isAdmin, isOwner } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { theme } = useTheme();

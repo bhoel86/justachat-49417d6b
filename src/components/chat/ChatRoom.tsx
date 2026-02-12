@@ -77,7 +77,7 @@ interface ChatRoomProps {
 }
 
 const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
-  const { user, isAdmin, isOwner, role, refreshRole } = useAuth();
+  const { user, session, isAdmin, isOwner, role, refreshRole } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<{ username: string; avatarUrl?: string | null }[]>([]);
