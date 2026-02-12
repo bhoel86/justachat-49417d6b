@@ -99,23 +99,23 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
   const isValentines = theme === 'valentines';
   const isStPatricks = theme === 'stpatricks';
 
-  const fetchChannels = async () => {
-    // Fetch either user's own channels (if logged in) or all public channels
-    // RLS policies restrict what gets returned based on visibility + ownership
-    const { data } = await supabaseUntyped
-      .from('channels')
-      .select('id,name,description,is_private,created_by,is_hidden,name_color,name_gradient_from,name_gradient_to,bg_color,created_at')
-      .order('created_at', { ascending: true });
-    
-    if (data) {
-      setChannels(data);
-      // Auto-select general if no channel selected
-      if (autoSelectFirst && !currentChannelId && data.length > 0) {
-        onChannelSelect(data[0]);
-      }
-    }
-    setLoading(false);
-  };
+   const fetchChannels = async () => {
+     // Fetch either user's own channels (if logged in) or all public channels
+     // Using channels_public view to safely read without RLS restrictions
+     const { data } = await supabaseUntyped
+       .from('channels_public')
+       .select('id,name,description,is_private,created_by,is_hidden,name_color,name_gradient_from,name_gradient_to,bg_color')
+       .order('name', { ascending: true });
+     
+     if (data) {
+       setChannels(data);
+       // Auto-select general if no channel selected
+       if (autoSelectFirst && !currentChannelId && data.length > 0) {
+         onChannelSelect(data[0]);
+       }
+     }
+     setLoading(false);
+   };
 
   useEffect(() => {
     fetchChannels();

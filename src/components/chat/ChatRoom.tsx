@@ -180,7 +180,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     
     const loadInitialChannel = async () => {
       const { data } = await supabaseUntyped
-        .from('channels')
+        .from('channels_public')
         .select('*')
         .eq('name', initialChannelName)
         .maybeSingle();
@@ -980,7 +980,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           return;
         }
         const { data: targetChannel } = await supabaseUntyped
-          .from('channels')
+          .from('channels_public')
           .select('*')
           .eq('name', channelName)
           .maybeSingle();
@@ -996,7 +996,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       // Handle /part command
       if (parsed.command === 'part') {
         const { data: generalChannel } = await supabaseUntyped
-          .from('channels')
+          .from('channels_public')
           .select('*')
           .eq('name', 'general')
           .single();

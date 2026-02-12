@@ -217,33 +217,31 @@ const Home = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchChannels = async () => {
-      try {
-        console.log('[Lobby] Fetching channels...');
-        const { data, error } = await supabaseUntyped
-          .from("channels")
-          .select("id, name, description")
-          .eq("is_private", false)
-          .eq("is_hidden", false)
-          .order("name");
+   useEffect(() => {
+     const fetchChannels = async () => {
+       try {
+         console.log('[Lobby] Fetching channels...');
+         const { data, error } = await supabaseUntyped
+           .from("channels_public")
+           .select("id, name, description")
+           .order("name");
 
-        if (error) {
-          console.error('[Lobby] Channel fetch error:', error);
-          toast.error("Failed to load rooms");
-        } else {
-          console.log('[Lobby] Channels loaded:', data?.length);
-          setChannels(data || []);
-        }
-      } catch (err) {
-        console.error('[Lobby] Channel fetch exception:', err);
-      } finally {
-        setLoadingChannels(false);
-      }
-    };
+         if (error) {
+           console.error('[Lobby] Channel fetch error:', error);
+           toast.error("Failed to load rooms");
+         } else {
+           console.log('[Lobby] Channels loaded:', data?.length);
+           setChannels(data || []);
+         }
+       } catch (err) {
+         console.error('[Lobby] Channel fetch exception:', err);
+       } finally {
+         setLoadingChannels(false);
+       }
+     };
 
-    fetchChannels();
-  }, []);
+     fetchChannels();
+   }, []);
 
   // Fetch member counts from channel_members table + subscribe for live updates
   useEffect(() => {
