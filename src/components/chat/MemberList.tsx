@@ -94,15 +94,33 @@ const roleConfig = {
 import { useBotSettings } from "@/hooks/useBotSettings";
 
 const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', channelId, onOpenPm, onOpenBotPm, onAction }: MemberListProps) => {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Seed current user immediately so the list is never empty on first render
+  const { user: authUser, session: authSession, role: authRole, isOwner: authIsOwner, isAdmin: authIsAdmin } = useAuth();
+  const [members, setMembers] = useState<Member[]>(() => {
+    if (authUser) {
+      return [{
+        user_id: authUser.id,
+        username: authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'You',
+        role: (authRole as Member['role']) || 'user',
+        isOnline: true,
+        avatar_url: null,
+        bio: null,
+      }];
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(() => !authUser);
   const initialSelfShown = useRef(false);
   const [botChatTarget, setBotChatTarget] = useState<{ moderator: ModeratorInfo; channelName: string } | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [viewProfileTarget, setViewProfileTarget] = useState<Member | null>(null);
   const [showOffline, setShowOffline] = useState(false);
   const botSettings = useBotSettings();
-  const { user, session, role: currentUserRole, isOwner, isAdmin } = useAuth();
+  const user = authUser;
+  const session = authSession;
+  const currentUserRole = authRole;
+  const isOwner = authIsOwner;
+  const isAdmin = authIsAdmin;
   const { toast } = useToast();
   const radio = useRadioOptional();
   const { theme } = useTheme();
