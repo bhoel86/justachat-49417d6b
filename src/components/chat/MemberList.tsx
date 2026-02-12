@@ -191,17 +191,34 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     // Combine both sets of user IDs — always include current user
     const combinedIds = new Set([...presenceIds, ...ircUserIds]);
     if (user?.id) combinedIds.add(user.id);
+    
+    // Fetch ALL staff (owners + admins) so we can show them if they're actually in-room
+    // This ensures staff appear even if presence sync is delayed
+    let staffIds: string[] = [];
+    try {
+      const staffRoles = await restSelect<{ user_id: string; role: string }>('user_roles', `select=user_id,role&role=in.(owner,admin)`, accessToken);
+      if (staffRoles) {
+        staffIds = staffRoles.map(r => r.user_id);
+        // Add staff to fetch list so we get their profiles, but DON'T add to combinedIds yet
+        // They'll only appear if they're in the room (checked below via inRoomIds)
+      }
+    } catch {}
+    
     const allOnlineIds = [...combinedIds];
     
-    if (allOnlineIds.length === 0) {
-      setMembers([]);
+    if (allOnlineIds.length === 0 && staffIds.length === 0) {
+      // Still show current user at minimum
+      if (user?.id) {
+        // Keep existing members (seeded self)
+      } else {
+        setMembers([]);
+      }
       setLoading(false);
       return;
     }
 
-    // Staff are NOT globally injected — they only appear if actually in this room
-    // (present in onlineUserIds or channel_members)
-    const allFetchIds = [...combinedIds];
+    // Fetch profiles for online users AND staff (so staff profiles are available if they're in room)
+    const allFetchIds = [...new Set([...combinedIds, ...staffIds])];
 
     // Fetch profiles for ALL users (online + staff) — pass access token explicitly
     let profiles: any[] | null = null;
@@ -228,7 +245,12 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     }
 
     // Set of IDs that are actually in-room (presence + channel_members)
+    // Staff who are in presence OR channel_members are considered in-room
     const inRoomIds = new Set(allOnlineIds);
+    // Also check: staff who are in onlineUserIds (presence) should be in-room even if channel_members missed them
+    staffIds.forEach(id => {
+      if (presenceIds.includes(id)) inRoomIds.add(id);
+    });
 
     if (profiles) {
       const roleMap = new Map(roles?.map((r: { user_id: string; role: string }) => [r.user_id, r.role]) || []);

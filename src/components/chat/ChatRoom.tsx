@@ -467,7 +467,13 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           });
         });
 
-        setOnlineUserIds(onlineIds);
+        // Only update onlineUserIds if the actual set of IDs changed (prevents bouncing from metadata-only changes like nowPlaying)
+        setOnlineUserIds(prev => {
+          const prevSorted = Array.from(prev).sort().join(',');
+          const nextSorted = Array.from(onlineIds).sort().join(',');
+          if (prevSorted === nextSorted) return prev; // same set, skip re-render
+          return onlineIds;
+        });
         setListeningUsers(listening);
 
         // Fetch usernames for online users

@@ -268,12 +268,12 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
     }
     loadTimeoutRef.current = window.setTimeout(() => {
       if (loadAttemptRef.current?.videoId === currentSong.videoId) {
-        // Video hasn't started playing after 10 seconds - mark as broken and skip
+        // Video hasn't started playing after 25 seconds - mark as broken and skip
         console.log(`Radio: Video ${currentSong.videoId} failed to load, marking as broken and skipping`);
         brokenVideosRef.current.add(currentSong.videoId);
         skipBroken();
       }
-    }, 10000);
+    }, 25000);
 
     playerRef.current = new ytWindow.YT.Player('youtube-radio-player', {
       height: '0',
@@ -406,7 +406,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
         brokenVideosRef.current.add(currentPlaylist[nextIndex].videoId);
         skipBroken();
       }
-    }, 10000);
+    }, 25000);
     
     if (playerRef.current && isInitialized) {
       playerRef.current.loadVideoById(currentPlaylist[nextIndex].videoId);
@@ -435,7 +435,7 @@ export const RadioProvider: React.FC<RadioProviderProps> = ({ children }) => {
         brokenVideosRef.current.add(currentPlaylist[prevIndex].videoId);
         skipBroken();
       }
-    }, 10000);
+    }, 25000);
     
     if (playerRef.current && isInitialized) {
       playerRef.current.loadVideoById(currentPlaylist[prevIndex].videoId);
