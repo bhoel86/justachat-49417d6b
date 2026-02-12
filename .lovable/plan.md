@@ -1,57 +1,128 @@
 
 
-## Fix Plan: Chat Visibility, Member List Stability, Radio & Bot Issues
+# Fix Plan: 7 Issues Step-by-Step
 
-### Problems Identified
+## Issue 1: Image Uploads Not Working
 
-1. **Chat messages only show locally** — Other users in the same room don't see your messages. The realtime subscription is set up, but the Supabase JS client `insert` may silently fail on VPS, or the realtime publication for `messages` may not be active.
+**Root Cause:** The upload endpoint URL is built from `VITE_SUPABASE_URL` which points to Lovable Cloud (`supabase.co`), not the VPS. On the VPS, the upload-image edge function runs locally but the frontend might be hitting the wrong endpoint. Additionally, the edge function logs need checking.
 
-2. **Your name shows in rooms you're not in** — The member list always shows ALL owners/admins in EVERY room (line 264 of MemberList.tsx: `if (targetRole === 'owner' || targetRole === 'admin') return true`). Staff should only appear in rooms they're actually present in, but remain visible (not hidden by ghost mode) when they ARE in the room.
+**Fix:**
+- Test the upload-image edge function directly to confirm it works on Cloud
+- Check edge function logs for errors
+- The VPS already has `mapToPublicUrl()` logic — the issue is likely that on VPS the function itself errors out (storage RLS, missing bucket policies, or service role key issues)
+- Add better error logging in ChatInput.tsx so we can see exactly what response comes back
+- Ensure the `chat-images` bucket has proper INSERT policies for authenticated users
 
-3. **JustaBot showing in rooms it shouldn't** — The bot moderator entry is added to the member list when `moderatorBotsEnabled` is true globally, but it doesn't check if the specific channel is in `allowed_channels`. Bots should only appear in rooms where they're enabled.
-
-4. **Radio causing username bouncing** — Every play/pause and song change triggers a presence `track()` call, which triggers a presence `sync` event, which changes `onlineUserIds`, which triggers `fetchMembers`. This rapid cycle causes the member list to bounce. The "Listening To" status appearing and disappearing is part of this same loop.
-
-5. **Room counts not showing +1 for some rooms** — The lobby already has bot count logic but it depends on `botsAllowedChannels` containing each room name. If a room isn't in that array, it won't get the +1.
-
----
-
-### Technical Changes
-
-#### 1. Fix Chat Message Visibility (ChatRoom.tsx)
-
-- Replace `supabase.from('messages').insert()` with a direct REST `fetch` call (using `restInsert` or raw fetch with the access token). The Supabase JS client is known to hang/silently fail on VPS.
-- Ensure the realtime subscription uses the correct filter and event handling.
-- Add a database migration to ensure `messages` is in the `supabase_realtime` publication (if not already).
-
-#### 2. Fix Staff Appearing in All Rooms (MemberList.tsx)
-
-- Remove the blanket "always show staff" logic that fetches ALL owners/admins from `user_roles` and injects them into every room.
-- Instead, only ensure staff are not hidden by ghost mode when they ARE in the room (present in `onlineUserIds` or `channel_members`).
-- The current user always shows (self-seeding logic stays).
-
-#### 3. Fix Bot Visibility Per Channel (MemberList.tsx)
-
-- Change the `botMember` logic to also check if `channelName` is in `botSettings.allowed_channels`, not just `moderatorBotsEnabled`.
-- Currently `botsEnabledForChannel` is calculated but only used elsewhere. Use it for the bot member display too.
-
-#### 4. Stabilize Radio Presence Updates (ChatRoom.tsx)
-
-- Debounce the presence `track()` call for `nowPlaying` changes. Instead of re-tracking on every `isPlaying`/`videoId` change, batch updates with a 2-second debounce.
-- This prevents the rapid presence sync -> fetchMembers -> re-render cycle that causes bouncing.
-- The "Listening To" display in MemberList already handles the `paused` flag correctly.
-
-#### 5. Verify Room Counts (Home.tsx)
-
-- No code change needed if `allowed_channels` in `bot_settings` is correctly populated. The existing logic at line 766 is correct. The fix in item 3 (ensuring bot visibility matches `allowed_channels`) will align the member list with the lobby counts.
+**VPS Diagnostic:**
+```bash
+# Test upload endpoint
+curl -s -o /dev/null -w "%{http_code}" -X OPTIONS http://127.0.0.1:8000/functions/v1/upload-image
+curl -s -X POST http://127.0.0.1:8000/functions/v1/upload-image -w "%{http_code}"
+docker compose logs functions --tail 30 | grep -i "upload\|error"
+```
 
 ---
 
-### Files to Modify
+## Issue 2: 3-Dot Menu Options Disappear Too Fast
+
+**Root Cause:** In `MemberList.tsx` (line 1128-1136), the 3-dot DropdownMenuTrigger button has `opacity-0 group-hover:opacity-100`. The dropdown content opens but when the mouse leaves the trigger area, the group-hover state changes and causes layout shifts. The menu itself may also close due to focus/pointer interaction conflicts.
+
+**Fix:**
+- Change the trigger button from `opacity-0 group-hover:opacity-100` to always visible (or at least `opacity-50 group-hover:opacity-100`) so the hover state doesn't fight with the dropdown open state
+- Add `onCloseAutoFocus={(e) => e.preventDefault()}` to `DropdownMenuContent` to prevent focus stealing
+
+---
+
+## Issue 3: Friends List Not Working
+
+**Root Cause:** The `useFriends` hook (line 68) uses `supabase.from('friends').select('*')` — the standard Supabase JS client. Per the project memory, all data-heavy components should use REST helpers (`restSelect`) instead of `supabase.from()` because the JS client can hang on the VPS.
+
+**Fix:**
+- Convert `useFriends.ts` data fetching from `supabase.from()` to use `restSelect` / direct fetch calls
+- Also convert friend request fetching and blocked users fetching
+- Ensure the online presence tracking for friends uses the `global-online-users` channel correctly
+
+---
+
+## Issue 4: Remove "Now Playing" Feature Under Users
+
+**Root Cause:** The `currentlyPlaying` display in `MemberList.tsx` (lines 1114-1122) shows music info under each user. This data comes from presence metadata (`nowPlaying`). It also causes presence metadata updates that trigger unnecessary re-renders.
+
+**Fix:**
+- Remove the `currentlyPlaying` prop and its rendering from `MemberItem` component (lines 1114-1122)
+- Remove `listeningUsers` tracking from `ChatRoom.tsx` presence sync handler
+- Stop broadcasting `nowPlaying` in the presence `track()` call (line 501)
+- Remove the `listeningUsers` prop from `MemberList` component entirely
+- This also eliminates metadata-only presence updates that cause bouncing
+
+---
+
+## Issue 5: Member List Bouncing — Users/Admins Appear Then Disappear
+
+**Root Cause:** The `fetchMembers` function fetches ALL staff IDs globally (line 199), but then only shows them if they're in `presenceIds`. The problem is timing — presence sync fires, staff are seen briefly, then the next sync might miss them if their presence heartbeat is slightly delayed. The 10-second polling interval re-fetches and may get different results.
+
+**Fix:**
+- Remove the global staff fetch entirely — staff should appear only via normal presence + channel_members, same as everyone else
+- The previous fix of fetching all staff IDs was overcomplicating things and causing the bouncing
+- Simplify `fetchMembers` back to: presence IDs + channel_members IDs + current user = the complete member list
+- Staff are already in presence when they're in the room, so they'll show up naturally
+- Keep the 10-second polling fallback but remove the special staff logic
+
+---
+
+## Issue 6: Room Counts Not Syncing
+
+**Root Cause:** Related to Issue 5. Room counts in the lobby/sidebar derive from `channel_members` table. The delete-then-insert pattern in ChatRoom.tsx (lines 506-513) can cause brief count drops. Also, the `visibilitychange` handler (line 549-553) deletes the member when the tab goes to background on mobile, which drops the count.
+
+**Fix:**
+- Change `visibilitychange` to only cleanup on `hidden` if the page is actually being closed (use `document.hidden` check with a delay)
+- Ensure the delete-then-insert is atomic (wrap in a small delay so the delete and insert happen close together)
+
+---
+
+## Issue 7: VPS Diagnostics — Realtime and Kong Health Check
+
+**Fix:** Create a simple diagnostic script section. After applying all code fixes, provide VPS commands:
+
+```bash
+# 1. Update code
+cd /var/www/justachat && sudo chown -R unix:unix . && git pull origin main
+
+# 2. Check Kong health
+curl -s http://127.0.0.1:8000/ | head -5
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/auth/v1/health
+
+# 3. Check Realtime
+docker ps | grep realtime
+docker compose logs realtime --tail 10
+
+# 4. Check Edge Functions
+docker ps | grep functions
+curl -s -o /dev/null -w "%{http_code}" -X OPTIONS http://127.0.0.1:8000/functions/v1/upload-image
+
+# 5. Test chat message sending
+# Send a test message via REST API to confirm messages table INSERT works
+
+# 6. Build and deploy
+bash /var/www/justachat/public/vps-deploy/vps-update.sh
+```
+
+---
+
+## Technical Summary of File Changes
 
 | File | Changes |
 |------|---------|
-| `src/components/chat/ChatRoom.tsx` | Replace message insert with REST call; debounce radio presence updates |
-| `src/components/chat/MemberList.tsx` | Remove blanket staff injection; gate bot on `allowed_channels`; keep ghost mode bypass for staff who ARE in room |
-| Database migration | Ensure `ALTER PUBLICATION supabase_realtime ADD TABLE public.messages` is applied |
+| `src/components/chat/MemberList.tsx` | Remove `currentlyPlaying` prop/render, remove `listeningUsers` prop, make 3-dot button always visible, simplify `fetchMembers` to remove global staff fetch |
+| `src/components/chat/ChatRoom.tsx` | Remove `nowPlaying` from presence `track()`, remove `listeningUsers` state, fix `visibilitychange` handler timing |
+| `src/hooks/useFriends.ts` | Convert from `supabase.from()` to `restSelect` / direct fetch for all data queries |
+| `src/components/chat/ChatInput.tsx` | Add console.error for upload response debugging |
+
+## Implementation Order
+
+1. Fix MemberList (3-dot menu + remove nowPlaying + simplify staff logic)
+2. Fix ChatRoom (stop broadcasting nowPlaying, fix visibility handler)
+3. Fix useFriends (convert to REST helpers)
+4. Test upload-image edge function and add debugging
+5. Provide VPS diagnostic commands
 
