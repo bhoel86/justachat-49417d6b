@@ -282,15 +282,20 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
 
   // Debounce fetchMembers to prevent rapid re-fetches when onlineUserIds changes frequently
   const fetchMembersTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const prevOnlineIdsRef = useRef<string>('');
   
   useEffect(() => {
-    // Debounce: only fetch after 300ms of no changes
+    // Only refetch if the set of online IDs actually changed (prevents bouncing)
+    const sortedIds = Array.from(onlineUserIds).sort().join(',');
+    if (sortedIds === prevOnlineIdsRef.current) return;
+    prevOnlineIdsRef.current = sortedIds;
+
     if (fetchMembersTimeoutRef.current) {
       clearTimeout(fetchMembersTimeoutRef.current);
     }
     fetchMembersTimeoutRef.current = setTimeout(() => {
       fetchMembers();
-    }, 300);
+    }, 500);
     
     return () => {
       if (fetchMembersTimeoutRef.current) {
@@ -299,51 +304,27 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     };
   }, [onlineUserIds, channelId]);
 
-  // Subscribe to profile, role, AND channel_members changes for IRC user visibility
+  // Subscribe to channel_members changes (IRC users joining/leaving) — only for this channel
+  // Removed global profiles/user_roles subscriptions as they caused constant refetches and bouncing
   useEffect(() => {
-    const channels: ReturnType<typeof supabase.channel>[] = [];
-    
-    const memberChangesChannel = supabase
-      .channel('member-changes')
+    if (!channelId) return;
+
+    const ircMembersChannel = supabase
+      .channel(`channel-members-${channelId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
+        { event: '*', schema: 'public', table: 'channel_members', filter: `channel_id=eq.${channelId}` },
         () => {
           if (fetchMembersTimeoutRef.current) clearTimeout(fetchMembersTimeoutRef.current);
-          fetchMembersTimeoutRef.current = setTimeout(() => fetchMembers(), 300);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_roles' },
-        () => {
-          if (fetchMembersTimeoutRef.current) clearTimeout(fetchMembersTimeoutRef.current);
-          fetchMembersTimeoutRef.current = setTimeout(() => fetchMembers(), 300);
+          fetchMembersTimeoutRef.current = setTimeout(() => fetchMembers(), 500);
         }
       )
       .subscribe();
-    channels.push(memberChangesChannel);
-
-    // Subscribe to channel_members changes (IRC users joining/leaving)
-    if (channelId) {
-      const ircMembersChannel = supabase
-        .channel(`channel-members-${channelId}`)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'channel_members', filter: `channel_id=eq.${channelId}` },
-          () => {
-            if (fetchMembersTimeoutRef.current) clearTimeout(fetchMembersTimeoutRef.current);
-            fetchMembersTimeoutRef.current = setTimeout(() => fetchMembers(), 500);
-          }
-        )
-        .subscribe();
-      channels.push(ircMembersChannel);
-    }
 
     return () => {
-      channels.forEach(ch => supabase.removeChannel(ch));
+      supabase.removeChannel(ircMembersChannel);
     };
-  }, [channelId]); // Only re-subscribe when channel changes
+  }, [channelId]);
 
   const handleRoleChange = async (memberId: string, newRole: Member['role']) => {
     try {

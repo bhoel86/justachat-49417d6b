@@ -354,19 +354,20 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${currentChannel.id}` },
         async (payload) => {
           const newMessage = payload.new as Message;
-           // Skip if this is our own message (we already added it optimistically)
+           // If this is our own message, try to replace the optimistic version
            if (newMessage.user_id === user?.id) {
-             // Replace optimistic message with real one (keeps the real DB id)
              setMessages(prev => {
-               const hasOptimistic = prev.some(m => m.id.startsWith('optimistic-') && m.user_id === newMessage.user_id && m.content === newMessage.content);
-               if (hasOptimistic) {
-                 return prev.map(m => 
-                   m.id.startsWith('optimistic-') && m.user_id === newMessage.user_id && m.content === newMessage.content
-                     ? { ...newMessage, profile: m.profile }
-                     : m
-                 );
+               // Check if we already have this exact DB message (deduplicate)
+               if (prev.some(m => m.id === newMessage.id)) return prev;
+               const optimisticIdx = prev.findIndex(m => m.id.startsWith('optimistic-') && m.user_id === newMessage.user_id && m.content === newMessage.content);
+               if (optimisticIdx !== -1) {
+                 // Replace optimistic with real
+                 const updated = [...prev];
+                 updated[optimisticIdx] = { ...newMessage, profile: prev[optimisticIdx].profile };
+                 return updated;
                }
-               return prev; // Already replaced or not found — skip duplicate
+               // No optimistic match — still add the message (don't drop it!)
+               return [...prev, { ...newMessage, profile: { username: username || user?.email?.split('@')[0] || 'You' } }];
              });
              return;
            }
