@@ -460,7 +460,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         const listening = new Map<string, { title: string; artist: string }>();
 
         Object.values(state).forEach((presences: any[]) => {
-          presences.forEach((presence: { user_id?: string; nowPlaying?: { title: string; artist: string } }) => {
+          presences.forEach((presence: { user_id?: string; nowPlaying?: { title: string; artist: string; paused?: boolean } }) => {
             if (!presence.user_id) return;
             onlineIds.add(presence.user_id);
             if (presence.nowPlaying) listening.set(presence.user_id, presence.nowPlaying);
@@ -487,8 +487,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         if (status !== 'SUBSCRIBED') return;
         presenceReadyRef.current = true;
 
-        const nowPlaying = radio?.isPlaying && radio?.currentSong
-          ? { title: radio.currentSong.title, artist: radio.currentSong.artist }
+        // Always send track info so other users see what you're listening to (even when paused)
+        const nowPlaying = radio?.currentSong
+          ? { title: radio.currentSong.title, artist: radio.currentSong.artist, paused: !radio.isPlaying }
           : undefined;
 
         await presenceChannel.track({ user_id: user.id, nowPlaying });
@@ -623,8 +624,9 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     const ch = presenceChannelRef.current;
     if (!ch || !presenceReadyRef.current) return;
 
-    const nowPlaying = radio?.isPlaying && radio?.currentSong
-      ? { title: radio.currentSong.title, artist: radio.currentSong.artist }
+    // Always send track info so other users see what you're listening to (even when paused)
+    const nowPlaying = radio?.currentSong
+      ? { title: radio.currentSong.title, artist: radio.currentSong.artist, paused: !radio.isPlaying }
       : undefined;
 
     ch.track({ user_id: user.id, nowPlaying });
