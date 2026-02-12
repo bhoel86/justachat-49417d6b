@@ -108,14 +108,24 @@ const PrivateChatWindow = ({
     token: string | undefined
   ): Promise<PrivateMessage | null> => {
     try {
-      const resp = await supabase.functions.invoke('decrypt-pm', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: { messageId: msg.id, encrypted_content: msg.encrypted_content, iv: msg.iv }
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const resp = await fetch(`${supabaseUrl}/functions/v1/decrypt-pm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token || apikey}`,
+          ...(apikey ? { 'apikey': apikey } : {}),
+        },
+        body: JSON.stringify({ messageId: msg.id, encrypted_content: msg.encrypted_content, iv: msg.iv }),
       });
-      if (resp.data?.success) {
+
+      const data = await resp.json().catch(() => ({}));
+      if (data?.success) {
         return {
           id: msg.id,
-          content: resp.data.decrypted_content,
+          content: data.decrypted_content,
           senderId: msg.sender_id,
           senderName: msg.sender_id === currentUserId ? currentUsername : targetUsername,
           timestamp: new Date(msg.created_at),
@@ -501,22 +511,28 @@ const PrivateChatWindow = ({
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      const resp = await supabase.functions.invoke('encrypt-pm', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: { message: content, recipient_id: targetUserId }
+      // Use direct fetch instead of supabase.functions.invoke for VPS compatibility
+      const resp = await fetch(`${supabaseUrl}/functions/v1/encrypt-pm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token || apikey}`,
+          ...(apikey ? { 'apikey': apikey } : {}),
+        },
+        body: JSON.stringify({ message: content, recipient_id: targetUserId }),
       });
 
-      if (resp.error) {
-        throw new Error(resp.error.message || 'Encryption failed');
-      }
+      const data = await resp.json().catch(() => ({}));
 
-      if (!resp.data?.success) {
-        throw new Error(resp.data?.error || 'Encryption failed');
+      if (!resp.ok || !data?.success) {
+        throw new Error(data?.error || 'Encryption failed');
       }
 
       // Update the temp message ID with the real one from the server
-      const realId = resp.data.message_id;
+      const realId = data.message_id;
       if (realId) {
         processedIdsRef.current.add(realId);
         setMessages(cur => cur.map(m => 

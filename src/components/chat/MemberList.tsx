@@ -358,6 +358,8 @@ const MemberList = ({
   const prevOnlineIdsRef = useRef<string>("");
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isFirstFetchRef = useRef(true);
+
   useEffect(() => {
     // Only refetch if the set of online IDs actually changed (prevents bouncing)
     const sortedIds = Array.from(onlineUserIds).sort().join(",");
@@ -367,9 +369,16 @@ const MemberList = ({
     if (fetchMembersTimeoutRef.current) {
       clearTimeout(fetchMembersTimeoutRef.current);
     }
-    fetchMembersTimeoutRef.current = setTimeout(() => {
+
+    // First fetch is immediate (no flicker), subsequent ones debounce
+    if (isFirstFetchRef.current) {
+      isFirstFetchRef.current = false;
       fetchMembers();
-    }, 500);
+    } else {
+      fetchMembersTimeoutRef.current = setTimeout(() => {
+        fetchMembers();
+      }, 500);
+    }
 
     return () => {
       if (fetchMembersTimeoutRef.current) {
