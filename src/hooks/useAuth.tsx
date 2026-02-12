@@ -93,29 +93,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // Auth listener handles BOTH initial and ongoing events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!isMounted) return;
-        console.log('[Auth] State change:', event, session?.user?.email);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
+    const resolveSession = (session: Session | null) => {
+      if (!isMounted) return;
+      setSession(session);
+      setUser(session?.user ?? null);
 
-        if (session?.user) {
-          fetchRole(session.user.id, session.access_token).finally(() => {
-            if (isMounted && !initialResolved) {
-              initialResolved = true;
-              setLoading(false);
-            }
-          });
-        } else {
-          setRole(null);
+      if (session?.user) {
+        fetchRole(session.user.id, session.access_token).finally(() => {
           if (isMounted && !initialResolved) {
             initialResolved = true;
             setLoading(false);
           }
+        });
+      } else {
+        setRole(null);
+        if (isMounted && !initialResolved) {
+          initialResolved = true;
+          setLoading(false);
         }
+      }
+    };
+
+    // Auth listener handles ongoing events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!isMounted) return;
+        console.log('[Auth] State change:', event, session?.user?.email);
+        resolveSession(session);
 
         // Clear URL hash after OAuth callback is processed (VPS fix)
         if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
@@ -123,6 +127,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     );
+
+    // Belt-and-suspenders: also call getSession() directly so we don't
+    // depend solely on the listener firing (which can hang on some VPS setups).
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (isMounted && !initialResolved) {
+        console.log('[Auth] getSession resolved:', session?.user?.email ?? 'no session');
+        resolveSession(session);
+      }
+    }).catch(() => {
+      // If getSession also hangs/fails, safety timeout below handles it
+    });
 
     // Safety timeout — never stay loading forever
     const safetyTimeout = window.setTimeout(() => {
