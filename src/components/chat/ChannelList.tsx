@@ -7,7 +7,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Hash, Plus, Lock, Home, MoreVertical, Trash2, EyeOff, Eye, Palette, Sparkles, Settings, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { supabaseUntyped, useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { restSelect } from "@/lib/supabaseRest";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -100,19 +101,20 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
   const isStPatricks = theme === 'stpatricks';
 
    const fetchChannels = async () => {
-     // Fetch either user's own channels (if logged in) or all public channels
-     // Using channels_public view to safely read without RLS restrictions
-     const { data } = await supabaseUntyped
-       .from('channels_public')
-       .select('id,name,description,is_private,created_by,is_hidden,name_color,name_gradient_from,name_gradient_to,bg_color')
-       .order('name', { ascending: true });
-     
-     if (data) {
-       setChannels(data);
-       // Auto-select general if no channel selected
-       if (autoSelectFirst && !currentChannelId && data.length > 0) {
-         onChannelSelect(data[0]);
+     try {
+       const data = await restSelect<Channel>(
+         'channels_public',
+         'select=id,name,description,is_private,created_by,is_hidden,name_color,name_gradient_from,name_gradient_to,bg_color&order=name',
+       );
+       
+       if (data) {
+         setChannels(data);
+         if (autoSelectFirst && !currentChannelId && data.length > 0) {
+           onChannelSelect(data[0]);
+         }
        }
+     } catch (err) {
+       console.error('[ChannelList] Fetch failed:', err);
      }
      setLoading(false);
    };
@@ -149,7 +151,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
       return;
     }
 
-    const { data, error } = await supabaseUntyped
+    const { data, error } = await (supabase as any)
       .from('channels')
       .insert({
         name: channelName,
@@ -201,7 +203,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
       return;
     }
 
-    const { error } = await supabaseUntyped
+    const { error } = await (supabase as any)
       .from('channels')
       .delete()
       .eq('id', channel.id);
@@ -217,7 +219,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
 
     // Log the delete action
     if (user) {
-      await supabaseUntyped.from('audit_logs').insert({
+      await (supabase as any).from('audit_logs').insert({
         user_id: user.id,
         action: 'channel_delete',
         resource_type: 'channel',
@@ -247,7 +249,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
   const handleToggleHidden = async (channel: Channel) => {
     const newHiddenState = !channel.is_hidden;
     
-    const { error } = await supabaseUntyped
+    const { error } = await (supabase as any)
       .from('channels')
       .update({ is_hidden: newHiddenState })
       .eq('id', channel.id);
@@ -263,7 +265,7 @@ const ChannelList = ({ currentChannelId, onChannelSelect, autoSelectFirst = true
 
     // Log the hide/show action
     if (user) {
-      await supabaseUntyped.from('audit_logs').insert({
+      await (supabase as any).from('audit_logs').insert({
         user_id: user.id,
         action: newHiddenState ? 'channel_hide' : 'channel_show',
         resource_type: 'channel',
