@@ -14,15 +14,18 @@ const getConfig = () => ({
   key: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
 });
 
-/** Get the current session access token, falling back to anon key */
-const getAccessToken = async (): Promise<string | null> => {
-  try {
-    const { data } = await supabase.auth.getSession();
-    return data?.session?.access_token || null;
-  } catch {
-    return null;
-  }
-};
+/** Cached access token — updated by auth state listener, never blocks on getSession() */
+let _cachedAccessToken: string | null = null;
+
+// Listen for auth changes to keep token cached (non-blocking)
+supabase.auth.onAuthStateChange((_event, session) => {
+  _cachedAccessToken = session?.access_token || null;
+});
+
+// Also try to seed the cache once on load (fire-and-forget, never awaited in hot path)
+supabase.auth.getSession().then(({ data }) => {
+  _cachedAccessToken = data?.session?.access_token || null;
+}).catch(() => {});
 
 export const restHeaders = (accessToken?: string | null) => {
   const { key } = getConfig();
@@ -43,8 +46,8 @@ export async function restSelect<T = any>(
   timeoutMs = 8000,
 ): Promise<T[]> {
   const { url } = getConfig();
-  // Auto-fetch token if not provided
-  const token = accessToken ?? await getAccessToken();
+  // Use cached token if none provided (never blocks on getSession)
+  const token = accessToken ?? _cachedAccessToken;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
