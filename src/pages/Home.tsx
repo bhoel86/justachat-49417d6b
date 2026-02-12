@@ -238,45 +238,35 @@ const Home = () => {
     }
   }, [user]);
 
-  // Fetch member counts from channel_members table + subscribe to presence for live online users
+  // Fetch member counts from channel_members table + subscribe for live updates
   useEffect(() => {
     if (!channels.length) return;
 
-    // Fetch actual member counts from channel_members table
-    const fetchMemberCounts = async () => {
-      const counts: RoomUserCounts = {};
-      
-      // Batch fetch: get all channel_members grouped by channel
-      for (const channel of channels) {
-        const { count } = await supabase
-          .from('channel_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('channel_id', channel.id);
-        counts[channel.id] = count || 0;
-      }
-      setRoomUserCounts(counts);
-    };
-
-    fetchMemberCounts();
-
-    // Subscribe to channel_members changes — apply deltas directly from payload
-    // to avoid flicker from delete-then-insert upsert pattern
     const knownMembers: Record<string, Set<string>> = {};
-    // Seed known members from initial fetch
     channels.forEach(ch => { knownMembers[ch.id] = new Set(); });
 
-    const seedKnownMembers = async () => {
-      for (const channel of channels) {
-        const { data } = await supabase
-          .from('channel_members')
-          .select('user_id')
-          .eq('channel_id', channel.id);
-        if (data) {
-          knownMembers[channel.id] = new Set(data.map(d => d.user_id));
-        }
+    // Single batch fetch for ALL member data (replaces N sequential queries)
+    const fetchAllMemberData = async () => {
+      const channelIds = channels.map(ch => ch.id);
+      const { data } = await supabase
+        .from('channel_members')
+        .select('channel_id, user_id')
+        .in('channel_id', channelIds);
+
+      if (data) {
+        // Reset and rebuild
+        channels.forEach(ch => { knownMembers[ch.id] = new Set(); });
+        data.forEach(row => {
+          if (!knownMembers[row.channel_id]) knownMembers[row.channel_id] = new Set();
+          knownMembers[row.channel_id].add(row.user_id);
+        });
+        const counts: RoomUserCounts = {};
+        channels.forEach(ch => { counts[ch.id] = knownMembers[ch.id]?.size || 0; });
+        setRoomUserCounts(counts);
       }
     };
-    seedKnownMembers();
+
+    fetchAllMemberData();
 
     // Buffer DELETE events to absorb delete-then-insert upsert pattern
     const pendingDeletes: Record<string, ReturnType<typeof setTimeout>> = {};
@@ -295,7 +285,6 @@ const Home = () => {
           if (row?.channel_id && row?.user_id) {
             if (!knownMembers[row.channel_id]) knownMembers[row.channel_id] = new Set();
             knownMembers[row.channel_id].add(row.user_id);
-            // Cancel any pending delete flush for this channel — the insert absorbed it
             if (pendingDeletes[row.channel_id]) {
               clearTimeout(pendingDeletes[row.channel_id]);
               delete pendingDeletes[row.channel_id];
@@ -311,7 +300,6 @@ const Home = () => {
           const row = payload.old as any;
           if (row?.channel_id && row?.user_id) {
             knownMembers[row.channel_id]?.delete(row.user_id);
-            // Delay the state update — if an INSERT follows within 1s, it cancels this
             if (pendingDeletes[row.channel_id]) clearTimeout(pendingDeletes[row.channel_id]);
             pendingDeletes[row.channel_id] = setTimeout(() => {
               flushCount(row.channel_id);
@@ -322,20 +310,8 @@ const Home = () => {
       )
       .subscribe();
 
-    // Polling fallback: re-fetch actual counts every 15s to catch missed Realtime events
-    // (e.g., user closes browser and keepalive DELETE isn't captured by Realtime)
-    const pollInterval = setInterval(async () => {
-      for (const channel of channels) {
-        const { data } = await supabase
-          .from('channel_members')
-          .select('user_id')
-          .eq('channel_id', channel.id);
-        if (data) {
-          knownMembers[channel.id] = new Set(data.map(d => d.user_id));
-          flushCount(channel.id);
-        }
-      }
-    }, 15000);
+    // Polling fallback: single batch re-fetch every 15s
+    const pollInterval = setInterval(() => fetchAllMemberData(), 15000);
 
     return () => {
       Object.values(pendingDeletes).forEach(t => clearTimeout(t));
