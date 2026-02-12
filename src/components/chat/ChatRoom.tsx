@@ -618,18 +618,25 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
   }, [user?.id, navigate, toast]);
 
-  // Update presence payload (nowPlaying) without creating extra channels
+  // Update presence payload (nowPlaying) — debounced to prevent rapid sync loops
+  const radioDebounceRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (!user?.id) return;
     const ch = presenceChannelRef.current;
     if (!ch || !presenceReadyRef.current) return;
 
-    // Always send track info so other users see what you're listening to (even when paused)
-    const nowPlaying = radio?.currentSong
-      ? { title: radio.currentSong.title, artist: radio.currentSong.artist, paused: !radio.isPlaying }
-      : undefined;
+    // Debounce 2 seconds to stop rapid track() calls from bouncing the member list
+    if (radioDebounceRef.current) clearTimeout(radioDebounceRef.current);
+    radioDebounceRef.current = setTimeout(() => {
+      const nowPlaying = radio?.currentSong
+        ? { title: radio.currentSong.title, artist: radio.currentSong.artist, paused: !radio.isPlaying }
+        : undefined;
+      ch.track({ user_id: user.id, nowPlaying });
+    }, 2000);
 
-    ch.track({ user_id: user.id, nowPlaying });
+    return () => {
+      if (radioDebounceRef.current) clearTimeout(radioDebounceRef.current);
+    };
   }, [user?.id, radio?.isPlaying, radio?.currentSong?.videoId]);
 
   const addSystemMessage = useCallback((content: string, channelId?: string) => {
@@ -1183,13 +1190,16 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       if (result.isSystemMessage && !result.broadcast) {
         addSystemMessage(result.message);
       } else if (result.broadcast) {
-        await (supabase as any)
-          .from('messages')
-          .insert({
+        try {
+          const { restInsert } = await import('@/lib/supabaseRest');
+          await restInsert('messages', {
             content: result.message,
             user_id: user.id,
             channel_id: currentChannel.id
-          });
+          }, session?.access_token);
+        } catch (err) {
+          console.error('[ChatRoom] Broadcast insert failed:', err);
+        }
       }
       return;
     }
@@ -1284,13 +1294,18 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     };
     setMessages(prev => [...prev, optimisticMsg]);
 
-    const { error: insertError } = await (supabase as any)
-      .from('messages')
-      .insert({
+    // Use direct REST insert — the Supabase JS client can silently hang on VPS
+    let insertError: Error | null = null;
+    try {
+      const { restInsert } = await import('@/lib/supabaseRest');
+      await restInsert('messages', {
         content: finalContent,
         user_id: user.id,
         channel_id: currentChannel.id
-      });
+      }, session?.access_token);
+    } catch (err: any) {
+      insertError = err;
+    }
 
     if (insertError) {
       console.error('[ChatRoom] Message insert failed:', insertError);

@@ -199,17 +199,8 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
       return;
     }
 
-    // Also fetch all staff (owner/admin) so they never flicker out of the list
-    // Staff are always visible per platform policy
-    let staffIds: string[] = [];
-    try {
-      const staffRoles = await restSelect<{ user_id: string }>('user_roles', `select=user_id&role=in.(owner,admin)`, accessToken);
-      if (staffRoles) {
-        staffIds = staffRoles.map(r => r.user_id).filter(id => !combinedIds.has(id));
-        staffIds.forEach(id => combinedIds.add(id));
-      }
-    } catch {}
-    
+    // Staff are NOT globally injected — they only appear if actually in this room
+    // (present in onlineUserIds or channel_members)
     const allFetchIds = [...combinedIds];
 
     // Fetch profiles for ALL users (online + staff) — pass access token explicitly
@@ -255,18 +246,18 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
       }
       
       const memberList: Member[] = profiles
-        // Filter: show in-room users + always show staff (owner/admin)
+        // Filter: only show users actually in this room (presence or channel_members)
         .filter((p: { user_id: string; ghost_mode?: boolean }) => {
           const targetRole = roleMap.get(p.user_id);
           // Always show current user
           if (p.user_id === user?.id) return true;
-          // Always show staff (owner/admin) - they must never flicker out
-          if (targetRole === 'owner' || targetRole === 'admin') return true;
-          // Only show non-staff if they're actually in this room
+          // Everyone must be in the room to show — staff included
           if (!inRoomIds.has(p.user_id)) return false;
+          // Staff in the room are always visible (bypass ghost mode)
+          if (targetRole === 'owner' || targetRole === 'admin') return true;
           // Admins and owners viewing can see all ghost users
           if (isAdmin || isOwner) return true;
-          // Hide ghost mode users from regular users (only non-staff)
+          // Hide ghost mode users from regular users
           return !p.ghost_mode;
         })
         .map((p: { user_id: string; username: string; avatar_url: string | null; bio: string | null; ghost_mode?: boolean }) => {
@@ -543,9 +534,9 @@ const MemberList = ({ onlineUserIds, listeningUsers, channelName = 'general', ch
     botSettings?.allowed_channels?.includes(channelName);
   const moderatorBotsEnabled = botSettings?.moderator_bots_enabled ?? true;
 
-  // Get the bot moderator for this channel (only if moderator bots enabled)
+  // Get the bot moderator for this channel (only if moderator bots enabled AND this channel is in allowed_channels)
   const moderator = getModerator(channelName);
-  const botMember: Member | null = moderatorBotsEnabled ? {
+  const botMember: Member | null = (moderatorBotsEnabled && botsEnabledForChannel) ? {
     user_id: `bot-${channelName}`,
     username: `${moderator.avatar} ${moderator.name}`,
     role: 'bot',
