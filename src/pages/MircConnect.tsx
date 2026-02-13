@@ -4,7 +4,7 @@
  */
 
 import { Link } from "react-router-dom";
-import { ArrowLeft, Server, Lock, Hash, User, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Server, Lock, Hash, User, CheckCircle, AlertCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageSEO from "@/components/seo/PageSEO";
@@ -18,9 +18,9 @@ const MircConnect = () => {
     <div className="min-h-screen bg-background relative">
       <PageSEO
         title="Connect with mIRC"
-        description="How to connect to JustAChat using mIRC. Step-by-step setup guide with server details and our custom theme package."
+        description="How to connect to JustAChat using mIRC. Step-by-step setup guide with server details, NickServ commands, and our custom theme package."
         path="/mirc"
-        keywords="mirc setup, irc connection, justachat irc, mirc theme, irc client setup"
+        keywords="mirc setup, irc connection, justachat irc, mirc theme, irc client setup, nickserv"
       />
 
       {/* Theme floating decorations */}
@@ -109,18 +109,10 @@ const MircConnect = () => {
                 <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold shrink-0">3</div>
                 <div className="flex-1">
                   <h3 className="font-bold text-primary mb-2 flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    Set Your Login Password
+                    <User className="w-4 h-4" />
+                    Set Your Nickname
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-3">In the <strong>Connect → Options</strong> section, set your <strong>Password</strong> field to:</p>
-                  <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-lg">
-                    <code className="font-mono text-lg bg-accent/20 px-2 py-1 rounded border border-border">your-email;your-password</code>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      <AlertCircle className="w-4 h-4 inline mr-1 text-destructive" />
-                      Use a <strong>semicolon (;)</strong> to separate your email and password
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Example: <code className="bg-muted px-1 rounded">john@example.com;MySecretPass123</code></p>
-                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">In <strong>Connect → Options</strong>, set your <strong>Nickname</strong> to match your Justachat username.</p>
                 </div>
               </div>
             </div>
@@ -131,10 +123,13 @@ const MircConnect = () => {
                 <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold shrink-0">4</div>
                 <div className="flex-1">
                   <h3 className="font-bold text-primary mb-2 flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Set Your Nickname
+                    <Hash className="w-4 h-4" />
+                    Connect
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-3">In <strong>Connect → Options</strong>, set your <strong>Nickname</strong> to match your Justachat username.</p>
+                  <p className="text-sm text-muted-foreground mb-3">Click <strong>Connect</strong>. You can also type:</p>
+                  <div className="bg-foreground text-background font-mono p-3 rounded-lg text-sm">
+                    <p>/server 157.245.174.197 6667</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -145,16 +140,35 @@ const MircConnect = () => {
                 <div className="w-8 h-8 bg-accent text-accent-foreground rounded-full flex items-center justify-center font-bold shrink-0">5</div>
                 <div className="flex-1">
                   <h3 className="font-bold text-accent-foreground mb-2 flex items-center gap-2">
-                    <Hash className="w-4 h-4" />
-                    Connect and Join!
+                    <Lock className="w-4 h-4" />
+                    Identify with NickServ
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-3">Click <strong>Connect</strong> and you'll be automatically joined to <strong>#general</strong>. You can also type:</p>
+                  <p className="text-sm text-muted-foreground mb-3">Once connected, identify yourself to start chatting:</p>
                   <div className="bg-foreground text-background font-mono p-3 rounded-lg text-sm">
-                    <p>/server 157.245.174.197 6667</p>
-                    <p>/join #general</p>
+                    <p>/msg NickServ IDENTIFY your-password</p>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">This uses your nickname to find your account — just enter your password.</p>
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* NickServ Commands */}
+        <Card className="mb-6">
+          <CardHeader className="bg-primary text-primary-foreground rounded-t-lg py-2 px-3">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              NickServ Commands
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="bg-foreground text-background font-mono text-sm p-4 rounded-b-lg space-y-2">
+              <p><span className="text-accent">/msg NickServ IDENTIFY &lt;password&gt;</span> - Log in to your account</p>
+              <p><span className="text-accent">/msg NickServ REGISTER &lt;email&gt; &lt;password&gt;</span> - Create a new account</p>
+              <p><span className="text-accent">/msg NickServ SET PASSWORD &lt;new-password&gt;</span> - Change your password</p>
+              <p><span className="text-accent">/msg NickServ INFO [nickname]</span> - View registration info</p>
+              <p><span className="text-accent">/msg NickServ HELP</span> - Show available commands</p>
             </div>
           </CardContent>
         </Card>
@@ -189,8 +203,12 @@ const MircConnect = () => {
               <p className="text-sm text-muted-foreground">Make sure you're using port <strong>6667</strong>.</p>
             </div>
             <div className="bg-card border border-border p-3 rounded-lg">
-              <p className="font-bold text-sm text-destructive">Invalid Password?</p>
-              <p className="text-sm text-muted-foreground">Double-check your password format: <code className="bg-muted px-1 rounded">email;password</code> with a semicolon separator.</p>
+              <p className="font-bold text-sm text-destructive">NickServ says "not registered"?</p>
+              <p className="text-sm text-muted-foreground">Make sure your <strong>nickname</strong> matches your Justachat username exactly, then try <code className="bg-muted px-1 rounded">/msg NickServ IDENTIFY password</code>.</p>
+            </div>
+            <div className="bg-card border border-border p-3 rounded-lg">
+              <p className="font-bold text-sm text-destructive">Don't have an account?</p>
+              <p className="text-sm text-muted-foreground">Register directly from mIRC: <code className="bg-muted px-1 rounded">/msg NickServ REGISTER email password</code></p>
             </div>
             <div className="bg-card border border-border p-3 rounded-lg">
               <p className="font-bold text-sm text-destructive">Need Help?</p>
@@ -199,9 +217,23 @@ const MircConnect = () => {
           </CardContent>
         </Card>
 
+        {/* Alternative Login */}
+        <Card className="mb-6">
+          <CardHeader className="bg-muted rounded-t-lg py-2 px-3">
+            <CardTitle className="text-sm font-bold text-muted-foreground">Alternative: PASS Login</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground mb-2">You can also authenticate using the PASS command before connecting:</p>
+            <div className="bg-foreground text-background font-mono p-3 rounded-lg text-sm">
+              <p>PASS email;password</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Set this in mIRC's <strong>Connect → Options → Password</strong> field using a semicolon separator.</p>
+          </CardContent>
+        </Card>
+
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground mb-4">
-          <p>Don't have an account? <Link to="/login" className="text-primary underline">Sign up on the web first</Link></p>
+          <p>Don't have an account? <Link to="/login" className="text-primary underline">Sign up on the web</Link> or register via <code className="bg-muted px-1 rounded">/msg NickServ REGISTER</code></p>
         </div>
       </div>
 

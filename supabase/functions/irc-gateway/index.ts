@@ -744,11 +744,32 @@ async function handlePASS(session: IRCSession, params: string[]) {
 }
 
 async function completeRegistration(session: IRCSession) {
+  // Allow registration without auth - user can authenticate later via NickServ IDENTIFY
   if (!session.authenticated) {
-    sendIRC(
-      session,
-      `:${SERVER_NAME} NOTICE * :*** You must authenticate with PASS email:password (or email|password for mIRC) before registering`,
-    );
+    session.registered = true;
+    
+    const hashedIp = "guest";
+    
+    // Send welcome messages
+    sendNumeric(session, RPL.WELCOME, `:Welcome to the ${NETWORK_NAME} IRC Network, ${session.nick}!`);
+    sendNumeric(session, RPL.YOURHOST, `:Your host is ${LOCAL_HOST_NAME} [${hashedIp}], running version ${SERVER_VERSION}`);
+    sendNumeric(session, RPL.CREATED, `:This server was created for JAC - Just A Chat`);
+    sendNumeric(session, RPL.MYINFO, `${SERVER_NAME} ${SERVER_VERSION} o o`);
+    sendNumeric(session, RPL.ISUPPORT, "CHANTYPES=# PREFIX=(qaov)~&@+ NETWORK=JACNet CASEMAPPING=ascii :are supported by this server");
+    
+    // Send short guest MOTD
+    sendNumeric(session, RPL.MOTDSTART, `:- ${SERVER_NAME} Message of the Day -`);
+    sendNumeric(session, RPL.MOTD, `:- `);
+    sendNumeric(session, RPL.MOTD, `:-   ${IRC_COLORS.BOLD}${IRC_COLORS.CYAN}Welcome to JustAChat (JAC)${IRC_COLORS.RESET}`);
+    sendNumeric(session, RPL.MOTD, `:- `);
+    sendNumeric(session, RPL.MOTD, `:-   ${IRC_COLORS.YELLOW}You are not identified.${IRC_COLORS.RESET}`);
+    sendNumeric(session, RPL.MOTD, `:-   ${IRC_COLORS.GREEN}To login:${IRC_COLORS.RESET} /msg NickServ IDENTIFY <password>`);
+    sendNumeric(session, RPL.MOTD, `:-   ${IRC_COLORS.GREEN}To register:${IRC_COLORS.RESET} /msg NickServ REGISTER <email> <password>`);
+    sendNumeric(session, RPL.MOTD, `:-   ${IRC_COLORS.GREEN}For help:${IRC_COLORS.RESET} /msg NickServ HELP`);
+    sendNumeric(session, RPL.MOTD, `:- `);
+    sendNumeric(session, RPL.ENDOFMOTD, `:End of MOTD command`);
+    
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** You must identify via /msg NickServ IDENTIFY <password> to use channels`);
     return;
   }
 
@@ -821,6 +842,10 @@ async function completeRegistration(session: IRCSession) {
 async function handleJOIN(session: IRCSession, params: string[]) {
   if (!session.registered) {
     sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
+    return;
+  }
+  if (!session.authenticated) {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** You must identify first: /msg NickServ IDENTIFY <password>`);
     return;
   }
 
@@ -1562,6 +1587,238 @@ function handleCTCPRequest(session: IRCSession, sender: string, ctcpCommand: str
   }
 }
 
+// ========== NICKSERV SERVICE ==========
+const NICKSERV_NAME = "NickServ";
+const NICKSERV_HOST = `${NICKSERV_NAME}!${NICKSERV_NAME}@services.${SERVER_NAME}`;
+
+function sendNickServNotice(session: IRCSession, message: string) {
+  sendIRC(session, `:${NICKSERV_HOST} NOTICE ${session.nick || "*"} :${message}`);
+}
+
+async function handleNickServ(session: IRCSession, message: string) {
+  const parts = message.trim().split(/\s+/);
+  const command = (parts[0] || "").toUpperCase();
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  switch (command) {
+    case "IDENTIFY": {
+      const password = parts[1];
+      if (!password) {
+        sendNickServNotice(session, "Syntax: IDENTIFY <password>");
+        return;
+      }
+
+      if (session.authenticated) {
+        sendNickServNotice(session, "You are already identified.");
+        return;
+      }
+
+      if (!session.nick) {
+        sendNickServNotice(session, "You must set a nickname first.");
+        return;
+      }
+
+      // Look up email by nickname using service role
+      const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: profileData } = await serviceClient
+        .from("profiles")
+        .select("user_id")
+        .ilike("username", session.nick)
+        .maybeSingle();
+
+      if (!profileData) {
+        sendNickServNotice(session, `The nickname ${IRC_COLORS.BOLD}${session.nick}${IRC_COLORS.RESET} is not registered.`);
+        return;
+      }
+
+      // Get email from auth.users via admin API
+      const { data: userData, error: userError } = await serviceClient.auth.admin.getUserById(profileData.user_id);
+
+      if (userError || !userData?.user?.email) {
+        sendNickServNotice(session, "Failed to look up account. Please try PASS email:password instead.");
+        return;
+      }
+
+      // Authenticate with email + password
+      const anonClient = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: authData, error: authError } = await anonClient.auth.signInWithPassword({
+        email: userData.user.email,
+        password: password,
+      });
+
+      if (authError || !authData.user) {
+        sendNickServNotice(session, "Invalid password.");
+        return;
+      }
+
+      // Upgrade session
+      session.userId = authData.user.id;
+      session.authenticated = true;
+      session.supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: {
+            Authorization: `Bearer ${authData.session?.access_token}`,
+          },
+        },
+      });
+
+      sendNickServNotice(session, `You are now identified for ${IRC_COLORS.BOLD}${session.nick}${IRC_COLORS.RESET}.`);
+      sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** Authentication successful`);
+
+      // Sync nick from profile
+      try {
+        const { data: profile } = await session.supabase
+          .from("profiles")
+          .select("username")
+          .eq("user_id", session.userId)
+          .single();
+
+        const pd = profile as { username: string } | null;
+        if (pd && pd.username !== session.nick) {
+          const oldNick = session.nick;
+          session.nick = pd.username;
+          sendIRC(session, `:${oldNick}!${session.user}@irc.${SERVER_NAME} NICK :${session.nick}`);
+        }
+      } catch (_e) { /* ignore */ }
+
+      console.log(`[NickServ] ${session.nick} identified successfully`);
+      break;
+    }
+
+    case "REGISTER": {
+      const email = parts[1];
+      const password = parts[2];
+      if (!email || !password) {
+        sendNickServNotice(session, "Syntax: REGISTER <email> <password>");
+        return;
+      }
+
+      if (session.authenticated) {
+        sendNickServNotice(session, "You are already registered and identified.");
+        return;
+      }
+
+      if (!session.nick) {
+        sendNickServNotice(session, "You must set a nickname first with /nick <name>");
+        return;
+      }
+
+      // Check if nick is already taken
+      const serviceClient2 = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: existingProfile } = await serviceClient2
+        .from("profiles")
+        .select("id")
+        .ilike("username", session.nick)
+        .maybeSingle();
+
+      if (existingProfile) {
+        sendNickServNotice(session, `The nickname ${IRC_COLORS.BOLD}${session.nick}${IRC_COLORS.RESET} is already registered.`);
+        return;
+      }
+
+      // Create account via Supabase signup
+      const anonClient2 = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: signupData, error: signupError } = await anonClient2.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username: session.nick },
+        },
+      });
+
+      if (signupError) {
+        sendNickServNotice(session, `Registration failed: ${signupError.message}`);
+        return;
+      }
+
+      if (signupData?.user?.identities?.length === 0) {
+        sendNickServNotice(session, "An account with that email already exists.");
+        return;
+      }
+
+      sendNickServNotice(session, `Registration successful! A verification email has been sent to ${IRC_COLORS.BOLD}${email}${IRC_COLORS.RESET}.`);
+      sendNickServNotice(session, "After verifying, use: /msg NickServ IDENTIFY <password>");
+      console.log(`[NickServ] ${session.nick} registered with ${email}`);
+      break;
+    }
+
+    case "SET": {
+      const subCommand = (parts[1] || "").toUpperCase();
+      if (subCommand === "PASSWORD") {
+        const newPassword = parts[2];
+        if (!newPassword) {
+          sendNickServNotice(session, "Syntax: SET PASSWORD <new-password>");
+          return;
+        }
+
+        if (!session.authenticated || !session.userId) {
+          sendNickServNotice(session, "You must identify first: /msg NickServ IDENTIFY <password>");
+          return;
+        }
+
+        // Use service role to update password
+        const serviceClient3 = createClient(supabaseUrl, supabaseServiceKey);
+        const { error: updateError } = await serviceClient3.auth.admin.updateUserById(session.userId, {
+          password: newPassword,
+        });
+
+        if (updateError) {
+          sendNickServNotice(session, `Password change failed: ${updateError.message}`);
+          return;
+        }
+
+        sendNickServNotice(session, "Your password has been changed successfully.");
+        console.log(`[NickServ] ${session.nick} changed password`);
+      } else {
+        sendNickServNotice(session, "Available SET commands: SET PASSWORD <new-password>");
+      }
+      break;
+    }
+
+    case "INFO": {
+      const targetNick = parts[1] || session.nick;
+      if (!targetNick) {
+        sendNickServNotice(session, "Syntax: INFO <nickname>");
+        return;
+      }
+
+      const serviceClient4 = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: infoProfile } = await serviceClient4
+        .from("profiles")
+        .select("username, created_at, bio")
+        .ilike("username", targetNick)
+        .maybeSingle();
+
+      if (!infoProfile) {
+        sendNickServNotice(session, `${IRC_COLORS.BOLD}${targetNick}${IRC_COLORS.RESET} is not registered.`);
+        return;
+      }
+
+      const ip = infoProfile as { username: string; created_at: string; bio: string | null };
+      sendNickServNotice(session, `Information for ${IRC_COLORS.BOLD}${ip.username}${IRC_COLORS.RESET}:`);
+      sendNickServNotice(session, `  Registered: ${new Date(ip.created_at).toUTCString()}`);
+      if (ip.bio) {
+        sendNickServNotice(session, `  Bio: ${ip.bio}`);
+      }
+      break;
+    }
+
+    case "HELP":
+    default: {
+      sendNickServNotice(session, `${IRC_COLORS.BOLD}${IRC_COLORS.CYAN}NickServ Commands:${IRC_COLORS.RESET}`);
+      sendNickServNotice(session, `  ${IRC_COLORS.BOLD}IDENTIFY <password>${IRC_COLORS.RESET}         - Log in to your account`);
+      sendNickServNotice(session, `  ${IRC_COLORS.BOLD}REGISTER <email> <password>${IRC_COLORS.RESET} - Register a new account`);
+      sendNickServNotice(session, `  ${IRC_COLORS.BOLD}SET PASSWORD <new-password>${IRC_COLORS.RESET} - Change your password`);
+      sendNickServNotice(session, `  ${IRC_COLORS.BOLD}INFO [nickname]${IRC_COLORS.RESET}             - View registration info`);
+      sendNickServNotice(session, `  ${IRC_COLORS.BOLD}HELP${IRC_COLORS.RESET}                        - Show this help`);
+      break;
+    }
+  }
+}
+
 async function handlePRIVMSG(session: IRCSession, params: string[]) {
   if (!session.registered) {
     sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
@@ -1575,6 +1832,18 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
 
   const target = params[0];
   const message = params.slice(1).join(" ").replace(/^:/, "");
+
+  // Intercept messages to NickServ (works even without auth)
+  if (target.toLowerCase() === "nickserv") {
+    await handleNickServ(session, message);
+    return;
+  }
+
+  // Block non-NickServ actions for unauthenticated users
+  if (!session.authenticated) {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** You must identify first: /msg NickServ IDENTIFY <password>`);
+    return;
+  }
 
   // Handle CTCP requests (messages wrapped in \x01)
   if (message.startsWith(CTCP_DELIM) && message.endsWith(CTCP_DELIM)) {
@@ -3434,10 +3703,11 @@ Deno.serve(async (req) => {
       info: "Connect via WebSocket for IRC protocol access. Use wss://[host]/functions/v1/irc-gateway",
       instructions: [
         "1. Connect with a WebSocket-capable IRC client",
-         "2. Send: PASS your-email@example.com:your-password (or your-email@example.com|your-password for mIRC)",
-        "3. Send: NICK your-nickname", 
-        "4. Send: USER username 0 * :Real Name",
-        "5. Use /list to see channels, /join #channel to join"
+        "2. Send: NICK your-nickname",
+        "3. Send: USER username 0 * :Real Name",
+        "4. Send: /msg NickServ IDENTIFY <password> (to log in)",
+        "5. Or send: /msg NickServ REGISTER <email> <password> (to create account)",
+        "6. Use /list to see channels, /join #channel to join"
       ]
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -3473,7 +3743,7 @@ Deno.serve(async (req) => {
   socket.onopen = () => {
     sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Looking up your hostname...`);
     sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Found your hostname`);
-    sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Please authenticate with PASS email:password (or email|password for mIRC)`);
+    sendIRC(session, `:${SERVER_NAME} NOTICE * :*** Use /msg NickServ IDENTIFY <password> or PASS email:password to authenticate`);
     
     // Send PING every 30 seconds to keep the connection alive
     // Also perform periodic idle timeout and flood stat cleanup
