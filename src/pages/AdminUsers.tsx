@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
-import { restInvokeFunction, restUpdate } from "@/lib/supabaseRest";
+import { restInvokeFunction, restUpdate, restSelect } from "@/lib/supabaseRest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -77,9 +77,25 @@ const AdminUsers = () => {
     try {
       const data = await restInvokeFunction<any>('admin-list-users', {}, token);
       setUsers((data?.users || []) as UserRecord[]);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+    } catch (edgeFnError) {
+      console.warn('Edge function failed, falling back to REST:', edgeFnError);
+      try {
+        const profiles = await restSelect<any>('profiles', 'select=user_id,username,created_at,avatar_url,bio,age', token);
+        const roles = await restSelect<any>('user_roles', 'select=user_id,role', token);
+        const roleMap = new Map(roles.map((r: any) => [r.user_id, r.role]));
+        const fallbackUsers: UserRecord[] = profiles.map((p: any) => ({
+          user_id: p.user_id,
+          username: p.username || 'Unknown',
+          role: (roleMap.get(p.user_id) || 'user') as UserRecord['role'],
+          created_at: p.created_at,
+        }));
+        const rolePriority: Record<string, number> = { owner: 0, admin: 1, moderator: 2, user: 3 };
+        fallbackUsers.sort((a, b) => (rolePriority[a.role] ?? 3) - (rolePriority[b.role] ?? 3));
+        setUsers(fallbackUsers);
+      } catch (restError) {
+        console.error('REST fallback also failed:', restError);
+        toast.error('Failed to load users');
+      }
     } finally {
       setUsersLoading(false);
       setRefreshing(false);
