@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { restInvokeFunction, restUpdate, restSelect } from "@/lib/supabaseRest";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -74,14 +75,17 @@ const AdminUsers = () => {
   };
 
   const fetchUsers = async () => {
+    // Always get a fresh token to avoid JWT expired errors
+    const { data: sessionData } = await supabase.auth.getSession();
+    const freshToken = sessionData?.session?.access_token || token;
     try {
-      const data = await restInvokeFunction<any>('admin-list-users', {}, token);
+      const data = await restInvokeFunction<any>('admin-list-users', {}, freshToken);
       setUsers((data?.users || []) as UserRecord[]);
     } catch (edgeFnError) {
       console.warn('Edge function failed, falling back to REST:', edgeFnError);
       try {
-        const profiles = await restSelect<any>('profiles', 'select=user_id,username,created_at,avatar_url,bio,age', token);
-        const roles = await restSelect<any>('user_roles', 'select=user_id,role', token);
+        const profiles = await restSelect<any>('profiles', 'select=user_id,username,created_at,avatar_url,bio,age', freshToken);
+        const roles = await restSelect<any>('user_roles', 'select=user_id,role', freshToken);
         const roleMap = new Map(roles.map((r: any) => [r.user_id, r.role]));
         const fallbackUsers: UserRecord[] = profiles.map((p: any) => ({
           user_id: p.user_id,
