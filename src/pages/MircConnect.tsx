@@ -11,7 +11,7 @@ import PageSEO from "@/components/seo/PageSEO";
 import { ValentinesFloatingHearts } from "@/components/theme/ValentinesFloatingHearts";
 import { StPatricksFloatingIcons } from "@/components/theme/StPatricksFloatingIcons";
 import { MatrixFloatingCode } from "@/components/theme/MatrixFloatingCode";
-import { ThemedMascot } from "@/components/theme/ThemedMascot";
+import SiteFooter from "@/components/layout/SiteFooter";
 
 const MircConnect = () => {
   return (
@@ -61,13 +61,12 @@ const MircConnect = () => {
               <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">157.245.174.197</code>
             </div>
             <div className="bg-muted/50 border border-border p-3 rounded-lg">
-              <p className="text-sm font-bold text-primary mb-1">Port (SSL):</p>
-              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">6697</code>
-              <span className="ml-2 text-xs text-primary">(Recommended)</span>
+              <p className="text-sm font-bold text-primary mb-1">Port:</p>
+              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">6667</code>
             </div>
             <div className="bg-muted/50 border border-border p-3 rounded-lg">
-              <p className="text-sm font-bold text-primary mb-1">Port (Non-SSL):</p>
-              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">6667</code>
+              <p className="text-sm font-bold text-primary mb-1">Port (SSL):</p>
+              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">6697</code>
             </div>
             <div className="bg-muted/50 border border-border p-3 rounded-lg">
               <p className="text-sm font-bold text-primary mb-1">Default Channel:</p>
@@ -159,7 +158,7 @@ const MircConnect = () => {
                   </h3>
                   <p className="text-sm text-muted-foreground mb-3">Click <strong>Connect</strong> and you'll be automatically joined to <strong>#general</strong>. You can also type:</p>
                   <div className="bg-foreground text-background font-mono p-3 rounded-lg text-sm">
-                    <p>/server 157.245.174.197 +6697</p>
+                    <p>/server 157.245.174.197 6667</p>
                     <p>/join #general</p>
                   </div>
                 </div>
@@ -209,14 +208,12 @@ const MircConnect = () => {
         </Card>
 
         {/* Footer */}
-        <div className="flex items-center justify-center gap-4 py-4">
-          <ThemedMascot side="left" className="h-10" />
-          <div className="text-center text-sm text-muted-foreground">
-            <p>Don't have an account? <Link to="/login" className="text-primary underline">Sign up on the web first</Link></p>
-          </div>
-          <ThemedMascot side="right" className="h-10" />
+        <div className="text-center text-sm text-muted-foreground mb-4">
+          <p>Don't have an account? <Link to="/login" className="text-primary underline">Sign up on the web first</Link></p>
         </div>
       </div>
+
+      <SiteFooter />
     </div>
   );
 };
