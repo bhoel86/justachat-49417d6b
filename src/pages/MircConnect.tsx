@@ -18,7 +18,7 @@ const MircConnect = () => {
     <div className="min-h-screen bg-background relative">
       <PageSEO
         title="Connect with mIRC"
-        description="How to connect to JustAChat using mIRC. Step-by-step setup guide with server details, SSL configuration, and our custom theme package."
+        description="How to connect to JustAChat using mIRC. Step-by-step setup guide with server details and our custom theme package."
         path="/mirc"
         keywords="mirc setup, irc connection, justachat irc, mirc theme, irc client setup"
       />
@@ -65,8 +65,8 @@ const MircConnect = () => {
               <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">6667</code>
             </div>
             <div className="bg-muted/50 border border-border p-3 rounded-lg">
-              <p className="text-sm font-bold text-primary mb-1">Port (SSL):</p>
-              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">6697</code>
+              <p className="text-sm font-bold text-primary mb-1">Default Channel:</p>
+              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">#general</code>
             </div>
             <div className="bg-muted/50 border border-border p-3 rounded-lg">
               <p className="text-sm font-bold text-primary mb-1">Default Channel:</p>
@@ -105,7 +105,7 @@ const MircConnect = () => {
                   <div className="bg-muted/50 border border-border p-3 font-mono text-sm space-y-1 rounded-lg">
                     <p><span className="text-muted-foreground">Description:</span> <span className="text-primary">Justachat</span></p>
                     <p><span className="text-muted-foreground">IRC Server:</span> <span className="text-primary">157.245.174.197</span></p>
-                    <p><span className="text-muted-foreground">Ports:</span> <span className="text-primary">+6697</span> <span className="text-xs text-primary/70">(the + means SSL)</span></p>
+                    <p><span className="text-muted-foreground">Ports:</span> <span className="text-primary">6667</span></p>
                   </div>
                 </div>
               </div>
@@ -194,7 +194,7 @@ const MircConnect = () => {
           <CardContent className="p-4 space-y-3">
             <div className="bg-card border border-border p-3 rounded-lg">
               <p className="font-bold text-sm text-destructive">Connection Refused?</p>
-              <p className="text-sm text-muted-foreground">Make sure you're using port <strong>+6697</strong> (with the + for SSL) or <strong>6667</strong> for non-SSL.</p>
+              <p className="text-sm text-muted-foreground">Make sure you're using port <strong>6667</strong>.</p>
             </div>
             <div className="bg-card border border-border p-3 rounded-lg">
               <p className="font-bold text-sm text-destructive">Invalid Password?</p>
