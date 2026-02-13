@@ -64,10 +64,6 @@ const MircConnect = () => {
               <p className="text-sm font-bold text-primary mb-1">Port:</p>
               <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">6667</code>
             </div>
-            <div className="bg-muted/50 border border-border p-3 rounded-lg">
-              <p className="text-sm font-bold text-primary mb-1">Default Channel:</p>
-              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">#general</code>
-            </div>
           </CardContent>
         </Card>
 
