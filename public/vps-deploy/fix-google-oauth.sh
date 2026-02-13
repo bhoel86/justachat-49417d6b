@@ -122,9 +122,18 @@ echo -e "${GREEN}  ✓ .env updated${NC}"
 
 # Step 4: Restart auth
 echo ""
-echo -e "${YELLOW}[4/4] Restarting GoTrue (supabase-auth)...${NC}"
+echo -e "${YELLOW}[4/4] Restarting GoTrue...${NC}"
 cd /root/supabase/docker
-docker compose --env-file .env restart supabase-auth
+
+# Find the actual auth container name (varies by setup)
+AUTH_CONTAINER=$(docker ps --format '{{.Names}}' | grep -iE 'auth|gotrue' | head -1)
+if [ -z "$AUTH_CONTAINER" ]; then
+  echo -e "${YELLOW}  Could not find auth container by name, restarting all...${NC}"
+  docker compose --env-file .env restart
+else
+  echo "  Found auth container: $AUTH_CONTAINER"
+  docker restart "$AUTH_CONTAINER"
+fi
 
 sleep 3
 echo ""
