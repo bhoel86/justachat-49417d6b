@@ -1,6 +1,6 @@
 ; ========================================
 ; JAC Chat 2026 - Ultimate mIRC Theme
-; Version: 2026.1.6
+; Version: 2026.1.7
 ; ========================================
 ;
 ; FEATURES:
@@ -31,11 +31,10 @@ alias -l jac.server { return 157.245.174.197 }
 alias -l jac.port { return 6667 }
 ; User-specific credentials live in jac-config.ini so updates don't wipe them.
 alias -l jac.cfg { return $scriptdir $+ jac-config.ini }
-alias -l jac.email { return $readini($jac.cfg, auth, email) }
-alias -l jac.pass_raw { return $readini($jac.cfg, auth, pass) }
 alias -l jac.nick { return $readini($jac.cfg, auth, nick) }
+alias -l jac.pass_raw { return $readini($jac.cfg, auth, pass) }
 alias -l jac.radio { return https://justachat.net }
-alias -l jac.version { return 2026.1.6 }
+alias -l jac.version { return 2026.1.7 }
 
 ; =====================
 ; THEME COLORS
@@ -55,7 +54,6 @@ on *:START:{
 alias -l jac.isJac { return $iif($serverip == $jac.server,1,0) }
 
 ; Safely escape $ in passwords for mIRC scripting contexts.
-; (If your password contains $, this ensures it is treated as literal text.)
 alias -l jac.pass {
   if (!$jac.pass_raw) return
   return $replace($jac.pass_raw,$chr(36),$chr(36) $+ $chr(36))
@@ -63,31 +61,25 @@ alias -l jac.pass {
 
 alias -l jac.hasConfig {
   if (!$exists($jac.cfg)) return 0
-  if ($jac.email == $null) return 0
-  if ($jac.pass_raw == $null) return 0
   if ($jac.nick == $null) return 0
+  if ($jac.pass_raw == $null) return 0
   return 1
 }
 
 alias jac.setup {
   echo -a 11[JAC] Creating/Updating $jac.cfg ...
-  var %email = $$?="Email:"
-  if (!%email) { echo -a 4[JAC] Cancelled. | return }
-  var %pass = $$?="Password:"
-  if (!%pass) { echo -a 4[JAC] Cancelled. | return }
   var %nick = $$?="Nickname:"
   if (!%nick) { echo -a 4[JAC] Cancelled. | return }
+  var %pass = $$?="Password:"
+  if (!%pass) { echo -a 4[JAC] Cancelled. | return }
 
-  writeini -n $jac.cfg auth email %email
-  writeini -n $jac.cfg auth pass %pass
   writeini -n $jac.cfg auth nick %nick
+  writeini -n $jac.cfg auth pass %pass
 
   echo -a 3[JAC] Saved! Now type /jac to connect.
 }
 
 alias jac {
-  ; IMPORTANT: PASS must be sent BEFORE mIRC registers (NICK/USER).
-  ; Using /server ... <password> makes mIRC send PASS first.
   if (!$jac.hasConfig) {
     echo -a 4[JAC] Missing config. Running /jac.setup...
     jac.setup
@@ -103,11 +95,9 @@ alias jac {
   unset %jac_blocked
 
   echo -a 11[JAC 2026] Connecting to JAC Chat...
-  ; mIRC strips everything before ':' in the /server password argument (server password becomes just the password).
-  ; The gateway accepts multiple delimiters, so we use ';' which is safe in mIRC scripts.
-  var %auth = $jac.email $+ $chr(59) $+ $jac.pass
   nick $jac.nick
-  server -m $jac.server $jac.port %auth
+  ; Connect without a server password - NickServ will handle auth
+  server -m $jac.server $jac.port
 }
 
 ; Numeric 465 is used by the proxy for ban / rate-limit notices.
@@ -131,10 +121,11 @@ on *:CONNECT:{
 ; RPL_WELCOME (001) - Successfully registered, now auto-join
 raw 001:*:{
   if ($jac.isJac) {
-    echo -a 3[JAC] Logged in as $jac.nick
+    echo -a 3[JAC] Connected! Identifying with NickServ...
+    msg NickServ IDENTIFY $jac.pass
     jac.toolbar.create
-    ; Auto-join default channel
-    .timerjac.autojoin 1 2 join $jac.channel
+    ; Auto-join default channel after a short delay for NickServ to process
+    .timerjac.autojoin 1 3 join $jac.channel
   }
 }
 
