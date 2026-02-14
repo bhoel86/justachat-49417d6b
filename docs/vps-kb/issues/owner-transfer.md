@@ -2,7 +2,7 @@
 Date: 2026-02-14
 
 ## Problem
-Needed to transfer site ownership from bhoel86@gmail.com (Mars) to unix@justachat.net (Unix).
+Needed to transfer site ownership from bhoel86@gmail.com (Mars) to unix@justachat.net (Unix, UUID: ffa550ea-47a3-4255-9f04-4fb49efd799e).
 
 ## Symptoms
 Old owner account was the only one with admin/owner access.
