@@ -159,10 +159,6 @@ services:
           - OPTIONS
     plugins:
       - name: cors
-      - name: request-termination
-        config:
-          status_code: 200
-          message: ok
 
   - name: functions-v1
     url: http://functions:9000/
