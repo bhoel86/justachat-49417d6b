@@ -11,8 +11,8 @@ cd ~/supabase/docker
 source .env
 
 # User details
-EMAIL="unix@justachat.net"
-PASSWORD="6598140"
+EMAIL="unix@justachat.com"
+PASSWORD="634103258"
 USERNAME="Unix"
 
 echo ""
