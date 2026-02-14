@@ -87,6 +87,19 @@ export const filterProfanity = (message: string): string => {
   return filtered;
 };
 
+// Whitelisted URL patterns (own storage, CDN, etc.)
+const WHITELISTED_URL_PATTERNS = [
+  /https?:\/\/[^/]*supabase[^/]*\/storage\//i,
+  /https?:\/\/justachat\.net\//i,
+  /https?:\/\/justachat\.lovable\.app\//i,
+  /https?:\/\/[^/]*lovableproject\.com\//i,
+  /https?:\/\/[^/]*lovable\.app\//i,
+];
+
+const isWhitelistedUrl = (url: string): boolean => {
+  return WHITELISTED_URL_PATTERNS.some(pattern => pattern.test(url));
+};
+
 // Filter URLs from message (replace with blocked notice)
 export const filterUrls = (message: string): string => {
   // Preserve false positives
@@ -101,9 +114,12 @@ export const filterUrls = (message: string): string => {
     });
   });
   
-  // Reset lastIndex and filter actual URLs
+  // Reset lastIndex and filter actual URLs, but allow whitelisted ones
   URL_PATTERN.lastIndex = 0;
-  cleaned = cleaned.replace(URL_PATTERN, '[link blocked]');
+  cleaned = cleaned.replace(URL_PATTERN, (match) => {
+    if (isWhitelistedUrl(match)) return match;
+    return '[link blocked]';
+  });
   
   // Restore preserved parts
   preservedParts.forEach(({ placeholder, original }) => {
