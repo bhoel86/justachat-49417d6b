@@ -15,7 +15,7 @@ interface MircThemePackageProps {
 }
 
 const MircThemePackage = ({ isDownloadingZip, setIsDownloadingZip }: MircThemePackageProps) => {
-  const [serverAddress, setServerAddress] = useState("157.245.174.197");
+  const [serverAddress, setServerAddress] = useState("24.199.122.60");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
@@ -136,7 +136,7 @@ const MircThemePackage = ({ isDownloadingZip, setIsDownloadingZip }: MircThemePa
             <Label htmlFor="theme-server">Server</Label>
             <Input
               id="theme-server"
-              placeholder="157.245.174.197"
+              placeholder="24.199.122.60"
               value={serverAddress}
               onChange={(e) => setServerAddress(e.target.value)}
             />

@@ -51,7 +51,7 @@ const DownloadProxy = () => {
             <div className="grid gap-3 text-sm">
               <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
                 <span className="text-muted-foreground min-w-24 font-medium">Server:</span>
-                <code className="bg-background px-3 py-1 rounded border font-mono">157.245.174.197</code>
+                <code className="bg-background px-3 py-1 rounded border font-mono">24.199.122.60</code>
               </div>
               <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
                 <span className="text-muted-foreground min-w-24 font-medium">Port:</span>
@@ -95,7 +95,7 @@ const DownloadProxy = () => {
               <li>Click <strong>Add</strong> and fill in:
                 <div className="ml-6 mt-2 space-y-1 text-muted-foreground">
                   <div>Description: <code className="bg-muted px-1 rounded">Justachat</code></div>
-                  <div>Address: <code className="bg-muted px-1 rounded">157.245.174.197</code></div>
+                  <div>Address: <code className="bg-muted px-1 rounded">24.199.122.60</code></div>
                   <div>Port: <code className="bg-muted px-1 rounded">6667</code></div>
                   <div>Password: <code className="bg-muted px-1 rounded">username@email.com:password</code></div>
                 </div>
@@ -114,11 +114,11 @@ const DownloadProxy = () => {
               <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-2">
                 <div>
                   <span className="text-muted-foreground">Non-SSL:</span>
-                  <code className="block mt-1 text-foreground">/server 157.245.174.197 6667 username@email.com:password</code>
+                  <code className="block mt-1 text-foreground">/server 24.199.122.60 6667 username@email.com:password</code>
                 </div>
                 <div className="border-t border-border pt-2">
                   <span className="text-muted-foreground">SSL:</span>
-                  <code className="block mt-1 text-foreground">/server -ssl 157.245.174.197 6697 username@email.com:password</code>
+                  <code className="block mt-1 text-foreground">/server -ssl 24.199.122.60 6697 username@email.com:password</code>
                 </div>
                 <div className="border-t border-border pt-2">
                   <span className="text-muted-foreground">Then join a room:</span>

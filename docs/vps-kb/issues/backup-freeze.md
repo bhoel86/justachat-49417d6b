@@ -33,7 +33,7 @@ tar -czf ~/justachat-backup-$(date +%Y%m%d).tar.gz \
 
 **Download to Windows:**
 ```powershell
-scp unix@157.245.174.197:~/justachat-backup-*.tar.gz C:\Users\dunad\Desktop\
+scp unix@24.199.122.60:~/justachat-backup-*.tar.gz C:\Users\dunad\Desktop\
 ```
 
 ## Prevention

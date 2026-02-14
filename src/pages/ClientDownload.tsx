@@ -278,7 +278,7 @@ const ClientDownload = () => {
             <div className="grid sm:grid-cols-3 gap-4 font-mono text-sm">
               <div className="p-3 rounded-lg bg-background border border-border">
                 <div className="text-muted-foreground text-xs mb-1">Server</div>
-                <div>157.245.174.197</div>
+                <div>24.199.122.60</div>
               </div>
               <div className="p-3 rounded-lg bg-background border border-border">
                 <div className="text-muted-foreground text-xs mb-1">SSL Port</div>

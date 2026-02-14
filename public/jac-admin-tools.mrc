@@ -1,20 +1,20 @@
 ; ╔══════════════════════════════════════════════════╗
 ; ║  JAC Admin Tools v2.0 - mIRC Script             ║
 ; ║  For JustAChat.net IRC Administrators            ║
-; ║  Server: 157.245.174.197 · Port: 6667           ║
+; ║  Server: 24.199.122.60 · Port: 6667              ║
 ; ║  Auth: NickServ IDENTIFY (no server password)    ║
 ; ║  Load: /load -rs $mircdir $+ jac-admin-tools.mrc║
 ; ╚══════════════════════════════════════════════════╝
 
 ; ── Configuration ──────────────────────────────────
-alias -l jac.adm.server { return 157.245.174.197 }
+alias -l jac.adm.server { return 24.199.122.60 }
 alias -l jac.adm.version { return 2.0 }
 alias -l jac.adm.isJac { return $iif($serverip == $jac.adm.server,1,0) }
 
 ; ── Main Menu Trigger ──────────────────────────────
 alias jac.admin {
   if (!$jac.adm.isJac) {
-    echo -a 4[JAC Admin] You must be connected to JustAChat (157.245.174.197:6667) first!
+    echo -a 4[JAC Admin] You must be connected to JustAChat (24.199.122.60:6667) first!
     echo -a 7[JAC Admin] Type /jac to connect.
     return
   }
@@ -130,7 +130,7 @@ dialog jac_admin_panel {
   text "Your Modes:", 405, 18 278 60 10
   text "", 406, 80 278 100 10
   text "Server:", 407, 220 254 40 10
-  text "157.245.174.197", 408, 262 254 120 10
+  text "24.199.122.60", 408, 262 254 120 10
   text "Port:", 409, 220 266 30 10
   text "6667 (no SSL)", 410, 252 266 80 10
 
@@ -406,7 +406,7 @@ on *:dialog:jac_admin_panel:sclick:603: {
 ; Help
 on *:dialog:jac_admin_panel:sclick:604: {
   jac.log ── JAC Admin Help v2.0 ──
-  jac.log Server: 157.245.174.197 Port: 6667
+  jac.log Server: 24.199.122.60 Port: 6667
   jac.log Auth: NickServ IDENTIFY (no server password)
   jac.log Right-click users in nicklist for quick actions
   jac.log Type /jac.admin to reopen this panel
@@ -498,7 +498,7 @@ on *:load: {
   echo -a 4║ 11 F8          4- Shortcut to admin panel       ║
   echo -a 4║ 11 Right-click 4- Quick actions on users        ║
   echo -a 4╠══════════════════════════════════════════════╣
-  echo -a 4║ 3 Server: 157.245.174.197:6667               4║
+  echo -a 4║ 3 Server: 24.199.122.60:6667                 4║
   echo -a 4║ 3 Auth: NickServ IDENTIFY (no server pass)   4║
   echo -a 4╚══════════════════════════════════════════════╝
   echo -a  

@@ -85,7 +85,7 @@ const AdminPanelDownload = () => {
               </div>
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Monitor className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>Server: 157.245.174.197:6667</span>
+                <span>Server: 24.199.122.60:6667</span>
               </div>
             </div>
           </CardContent>

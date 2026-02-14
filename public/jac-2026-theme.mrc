@@ -27,7 +27,7 @@
 ; CONFIGURATION
 ; =====================
 
-alias -l jac.server { return 157.245.174.197 }
+alias -l jac.server { return 24.199.122.60 }
 alias -l jac.port { return 6667 }
 ; User-specific credentials live in jac-config.ini so updates don't wipe them.
 alias -l jac.cfg { return $scriptdir $+ jac-config.ini }

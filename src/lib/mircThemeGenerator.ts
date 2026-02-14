@@ -118,7 +118,7 @@ pause
 
 // Generate the main theme script (to be hosted at /public/jac-2026-theme.mrc)
 export const generateThemeScript = (config: MircPackageConfig) => {
-  const server = config.serverAddress || "157.245.174.197";
+  const server = config.serverAddress || "24.199.122.60";
   // credentials now live in jac-config.ini so updater doesn't overwrite them
   const radioUrl = config.radioStreamUrl || "https://justachat.net";
 
@@ -793,7 +793,7 @@ Chat. Connect. Chill.
 
 // Generate servers.ini
 export const generateServersIni = (serverAddress: string) => {
-  const server = serverAddress || "157.245.174.197";
+  const server = serverAddress || "24.199.122.60";
   return `[servers]
 n0=JAC:JAC Chat 2026SERVER:${server}:6667GROUP:JAC
 

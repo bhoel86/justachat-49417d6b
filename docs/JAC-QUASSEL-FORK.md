@@ -8,7 +8,7 @@ Quassel is a modern, cross-platform IRC client written in C++/Qt with a unique c
 
 - **Custom Branding**: JAC Chat logos, splash screen, about dialog
 - **Role-Based Nicklist Colors**: Owners (Yellow), Admins (Red), Moderators (Green), Bots (Cyan)
-- **Pre-configured Server**: Auto-connects to 157.245.174.197:6697 (SSL)
+- **Pre-configured Server**: Auto-connects to 24.199.122.60:6697 (SSL)
 - **Dark Theme**: Matches justachat.net web UI (#0d1117 background)
 - **Custom Stylesheet**: JAC 2026 theme with room-specific colors
 
@@ -92,7 +92,7 @@ Pre-configure JAC server:
 NetworkInfo defaultNetwork;
 defaultNetwork.networkName = "JAC Chat";
 defaultNetwork.serverList.append({
-    "157.245.174.197",  // Server
+    "24.199.122.60",  // Server
     6697,               // Port
     QString(),          // Password (user enters at runtime)
     true                // SSL enabled
@@ -313,7 +313,7 @@ void AboutDlg::setupUi() {
         "<p>Based on <a href='https://quassel-irc.org'>Quassel IRC</a></p>"
         "<p>A custom IRC client for <a href='https://justachat.net'>Justachat™</a></p>"
         "<hr>"
-        "<p><b>Server:</b> 157.245.174.197</p>"
+        "<p><b>Server:</b> 24.199.122.60</p>"
         "<p><b>Ports:</b> 6667 (plain) / 6697 (SSL)</p>"
         "<hr>"
         "<p>© 2026 Justachat™. All rights reserved.</p>"

@@ -13,7 +13,7 @@ interface MircSetupPackageProps {
 }
 
 const MircSetupPackage = ({ isDownloadingZip, setIsDownloadingZip }: MircSetupPackageProps) => {
-  const [serverAddress, setServerAddress] = useState("157.245.174.197");
+  const [serverAddress, setServerAddress] = useState("24.199.122.60");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
@@ -249,7 +249,7 @@ TROUBLESHOOTING:
             <Label htmlFor="server">Server Address</Label>
             <Input
               id="server"
-              placeholder="157.245.174.197 or 127.0.0.1"
+              placeholder="24.199.122.60 or 127.0.0.1"
               value={serverAddress}
               onChange={(e) => setServerAddress(e.target.value)}
             />

@@ -13,7 +13,7 @@ Modern dark-themed admin panel with:
 - Rate limiting / flood detection
 - JustAChat branding & watermark
 
-Server: 157.245.174.197 · Port: 6667 (no SSL)
+Server: 24.199.122.60 · Port: 6667 (no SSL)
 Run: python main.py
 """
 
@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 APP_NAME     = "Justachat™ IRC Admin Console"
 APP_VERSION  = "v8.0"
 APP_TAGLINE  = "Chat. Connect. Chill."
-SERVER_HOST  = "157.245.174.197"
+SERVER_HOST  = "24.199.122.60"
 SERVER_PORT  = 6667
 
 # ── Theme Colors ──────────────────────────────────────────────────

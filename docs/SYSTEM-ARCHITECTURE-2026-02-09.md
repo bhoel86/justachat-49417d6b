@@ -56,7 +56,7 @@ The VPS edge-runtime reads from `/home/deno/functions/irc-gateway/` (host: `~/su
 bans, blocked_users, bot_settings, channel_members, channel_settings, channels, friend_requests, friends, messages, mutes, private_messages, profiles, room_admins, room_bans, room_mutes, site_settings, user_roles
 
 ## Infrastructure — WORKING
-- **VPS:** 157.245.174.197 (DigitalOcean)
+- **VPS:** 24.199.122.60 (DigitalOcean)
 - **Domain:** justachat.net
 - **Stack:** Self-hosted Supabase Docker + Nginx reverse proxy
 - **Edge Functions:** Routed via `main/index.ts` router (monkey-patches `Deno.serve`)

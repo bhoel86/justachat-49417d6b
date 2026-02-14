@@ -20,13 +20,13 @@ TABLE OF CONTENTS
 
 FROM WINDOWS POWERSHELL:
 ------------------------
-ssh unix@157.245.174.197
+ssh unix@24.199.122.60
 
 Password: Khoel15$$
 
 ALTERNATIVE (if you have SSH key):
 ----------------------------------
-ssh -i C:\Users\dunad\.ssh\id_rsa unix@157.245.174.197
+ssh -i C:\Users\dunad\.ssh\id_rsa unix@24.199.122.60
 
 
 USING WINSCP (Visual File Manager):
@@ -36,7 +36,7 @@ WinSCP provides a "desktop computer" experience for browsing and managing files.
 1. Download WinSCP: https://winscp.net/eng/download.php
 2. Open WinSCP and create New Site:
    - File Protocol: SFTP
-   - Host name: 157.245.174.197
+   - Host name: 24.199.122.60
    - Port: 22
    - User name: unix
    - Password: Khoel15$$
@@ -87,7 +87,7 @@ Method 2 - PowerShell:
      sudo cp /root/backups/justachat.net-Working-*.tar.gz ~/
 
   2. Then download (run on Windows PowerShell):
-     scp unix@157.245.174.197:~/justachat.net-Working-*.tar.gz C:\Users\dunad\Desktop\
+     scp unix@24.199.122.60:~/justachat.net-Working-*.tar.gz C:\Users\dunad\Desktop\
 
 
 WHAT'S INCLUDED IN BACKUP:
@@ -114,7 +114,7 @@ Method 1 - WinSCP:
   4. Drag the backup .tar.gz file from LEFT to RIGHT
 
 Method 2 - PowerShell:
-  scp C:\Users\dunad\Desktop\YOUR-BACKUP-FILE.tar.gz unix@157.245.174.197:~/
+  scp C:\Users\dunad\Desktop\YOUR-BACKUP-FILE.tar.gz unix@24.199.122.60:~/
 
 
 STEP 2: RUN RESTORE (on VPS after SSH)
@@ -177,7 +177,7 @@ OPTION B: FROM WINDOWS POWERSHELL (Command Line)
 mkdir C:\Users\dunad\Desktop\justachat-source
 
 # Download source code (excludes node_modules)
-scp -r unix@157.245.174.197:/var/www/justachat/* C:\Users\dunad\Desktop\justachat-source\
+scp -r unix@24.199.122.60:/var/www/justachat/* C:\Users\dunad\Desktop\justachat-source\
 
 # Then run npm install in the downloaded folder
 cd C:\Users\dunad\Desktop\justachat-source
@@ -186,7 +186,7 @@ npm install
 
 DOWNLOAD JUST THE DIST (built files only):
 ------------------------------------------
-PowerShell: scp -r unix@157.245.174.197:/var/www/justachat/dist C:\Users\dunad\Desktop\justachat-dist
+PowerShell: scp -r unix@24.199.122.60:/var/www/justachat/dist C:\Users\dunad\Desktop\justachat-dist
 WinSCP: Just drag the /var/www/justachat/dist folder to your desktop
 
 
@@ -200,7 +200,7 @@ WinSCP: Just drag the /var/www/justachat/dist folder to your desktop
 
 SSH ACCESS
 ----------
-Server IP:      157.245.174.197
+Server IP:      24.199.122.60
 Username:       unix
 Password:       Khoel15$$
 Purpose:        SSH login to VPS
@@ -488,9 +488,9 @@ sudo systemctl restart nginx
 
 QUICK REFERENCE CARD:
 ---------------------
-SSH:        ssh unix@157.245.174.197 (password: Khoel15$$)
+SSH:        ssh unix@24.199.122.60 (password: Khoel15$$)
 Backup:     sudo bash /tmp/backup-vps.sh
-Download:   scp unix@157.245.174.197:~/FILE C:\Users\dunad\Desktop\
+Download:   scp unix@24.199.122.60:~/FILE C:\Users\dunad\Desktop\
 Logs:       sudo journalctl -u SERVICE -f
 Restart:    sudo systemctl restart SERVICE
 

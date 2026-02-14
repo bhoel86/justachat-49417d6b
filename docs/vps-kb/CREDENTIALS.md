@@ -4,7 +4,7 @@
 > ⚠️ SENSITIVE — Do not commit to public repos
 
 ## SSH Access
-- **IP:** 157.245.174.197
+- **IP:** 24.199.122.60
 - **User:** unix
 - **Password:** Khoel15$$
 

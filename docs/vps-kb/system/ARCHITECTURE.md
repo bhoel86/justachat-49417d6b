@@ -1,7 +1,7 @@
 # JUSTACHAT VPS - SYSTEM ARCHITECTURE
 
 ## Infrastructure
-- **VPS IP**: 157.245.174.197
+- **VPS IP**: 24.199.122.60
 - **Domain**: justachat.net
 - **OS**: Ubuntu (DigitalOcean)
 - **User**: `unix` (non-root, sudo access)

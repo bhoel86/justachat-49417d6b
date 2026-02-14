@@ -201,7 +201,7 @@ fi
 
 echo ""
 echo "mIRC Connection Settings:"
-echo "  Address: 157.245.174.197"
+echo "  Address: 24.199.122.60"
 echo "  Port:    6667"
 echo "  Password: youremail@example.com;yourpassword"
 echo ""

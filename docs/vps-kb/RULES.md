@@ -5,7 +5,7 @@
 ---
 
 ### RULE 1: VPS IS THE ONLY SOURCE OF TRUTH
-- Unless the user explicitly says "Lovable" or "Lovable Cloud", **ALL references are to the VPS** at `157.245.174.197` / `justachat.net`.
+- Unless the user explicitly says "Lovable" or "Lovable Cloud", **ALL references are to the VPS** at `24.199.122.60` / `justachat.net`.
 - The VPS is the production environment. Nothing else matters.
 - Lovable Cloud/preview is only for testing UI changes before pushing to VPS.
 

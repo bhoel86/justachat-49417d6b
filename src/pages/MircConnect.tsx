@@ -58,7 +58,7 @@ const MircConnect = () => {
           <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-muted/50 border border-border p-3 rounded-lg">
               <p className="text-sm font-bold text-primary mb-1">Server Address:</p>
-              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">157.245.174.197</code>
+              <code className="text-lg font-mono bg-accent/20 px-2 py-1 rounded border border-border">24.199.122.60</code>
             </div>
             <div className="bg-muted/50 border border-border p-3 rounded-lg">
               <p className="text-sm font-bold text-primary mb-1">Port:</p>
@@ -96,7 +96,7 @@ const MircConnect = () => {
                   <p className="text-sm text-muted-foreground mb-3">In the <strong>Connect → Servers</strong> section, click <strong>Add</strong> and enter:</p>
                   <div className="bg-muted/50 border border-border p-3 font-mono text-sm space-y-1 rounded-lg">
                     <p><span className="text-muted-foreground">Description:</span> <span className="text-primary">Justachat</span></p>
-                    <p><span className="text-muted-foreground">IRC Server:</span> <span className="text-primary">157.245.174.197</span></p>
+                    <p><span className="text-muted-foreground">IRC Server:</span> <span className="text-primary">24.199.122.60</span></p>
                     <p><span className="text-muted-foreground">Ports:</span> <span className="text-primary">6667</span></p>
                   </div>
                 </div>
@@ -128,7 +128,7 @@ const MircConnect = () => {
                   </h3>
                   <p className="text-sm text-muted-foreground mb-3">Click <strong>Connect</strong>. You can also type:</p>
                   <div className="bg-foreground text-background font-mono p-3 rounded-lg text-sm">
-                    <p>/server 157.245.174.197 6667</p>
+                    <p>/server 24.199.122.60 6667</p>
                   </div>
                 </div>
               </div>
