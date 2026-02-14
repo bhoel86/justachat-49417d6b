@@ -26,9 +26,15 @@ How to avoid it in the future.
 ```
 
 ## Issue Index
-<!-- Add new issues here as they are created -->
 
 | File | Issue | Date |
 |------|-------|------|
 | owner-transfer.md | Owner account transfer from bhoel86 to unix@justachat.net | 2026-02-14 |
 | grant-permissions.md | Tables need explicit GRANT for anon/authenticated roles | 2026-02-14 |
+| jwt-expired-retry.md | JWT expired token retry logic | 2026-02-14 |
+| captcha-timeout.md | CAPTCHA verification hangs — switched to fetch+AbortController | 2026-02-14 |
+| docker-startup-freeze.md | 500/502 errors on startup — port conflicts & analytics exclusion | 2026-02-14 |
+| sasl-auth-errors.md | SASL auth failures — role password reset procedure | 2026-02-14 |
+| anon-key-mismatch.md | Frontend/backend ANON_KEY mismatch causes 401s | 2026-02-14 |
+| backup-freeze.md | Backup command freezes — split into 2 steps | 2026-02-14 |
+| password-reset-protocol.md | Manual SQL password reset doesn't work — use GoTrue API | 2026-02-14 |
