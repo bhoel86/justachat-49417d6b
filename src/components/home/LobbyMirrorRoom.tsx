@@ -9,8 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ChatHeader from "@/components/chat/ChatHeader";
 import MemberList from "@/components/chat/MemberList";
 import MessageBubble from "@/components/chat/MessageBubble";
-import { Button } from "@/components/ui/button";
-import { Users, X, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -39,7 +38,7 @@ const LobbyMirrorRoom = () => {
   const { theme } = useTheme();
   const isRetro = theme === 'retro80s';
   const [messages, setMessages] = useState<MirrorMessage[]>([]);
-  const [showMemberSidebar, setShowMemberSidebar] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Only real users appear — no simulated bots
@@ -103,40 +102,18 @@ const LobbyMirrorRoom = () => {
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleJoinChat()}
     >
-      {/* Mobile overlay when member sidebar is open */}
-      {showMemberSidebar && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowMemberSidebar(false);
-          }}
-        />
-      )}
-
       {/* Main Chat Area */}
-      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden pointer-events-none">
         {/* Mobile Header Bar */}
         <div className={`flex items-center gap-2 px-2 py-2 bg-card lg:hidden ${isRetro ? 'border-b-4 border-pink-500' : 'border-b border-border'}`}>
           <div className="flex-1 min-w-0">
             <p className={`text-base font-semibold truncate ${isRetro ? 'text-cyan-400' : ''}`}>#general</p>
             <p className={`text-xs ${isRetro ? 'text-yellow-400' : 'text-muted-foreground'}`}>Live preview — Tap to join</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMemberSidebar(true);
-            }}
-            className="h-9 w-9"
-          >
-            <Users className="h-5 w-5" />
-          </Button>
         </div>
 
         {/* Desktop Header */}
-        <div className={`hidden lg:block ${isRetro ? 'border-b-4 border-pink-500' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div className={`hidden lg:block ${isRetro ? 'border-b-4 border-pink-500' : ''}`}>
           <ChatHeader 
             onlineCount={0}
             topic="Live preview of #general — Click anywhere to join the conversation!"
@@ -191,7 +168,7 @@ const LobbyMirrorRoom = () => {
         </div>
         
         {/* Fake Input - Shows join prompt */}
-        <div className="p-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+        <div className="p-2 border-t border-border">
           <div className="flex gap-2">
             <div className="flex-1 bg-input rounded-lg px-3 py-2.5 text-base text-muted-foreground flex items-center justify-between">
               <span>Click to join and start chatting...</span>
@@ -201,31 +178,15 @@ const LobbyMirrorRoom = () => {
         </div>
       </div>
 
-      {/* Member Sidebar */}
+      {/* Member Sidebar - also non-interactive */}
       <div 
-        className={cn(
-          "fixed lg:relative inset-y-0 right-0 z-40 transition-transform duration-300 lg:transition-none shrink-0",
-          showMemberSidebar ? "translate-x-0" : "translate-x-full lg:translate-x-0",
-          "[&>div]:!w-44 [&>div]:sm:!w-40"
-        )}
-        onClick={(e) => e.stopPropagation()}
+        className="hidden lg:block shrink-0 pointer-events-none [&>div]:!w-44 [&>div]:sm:!w-40"
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowMemberSidebar(false);
-          }}
-          className="absolute top-2 right-2 h-8 w-8 lg:hidden z-10"
-        >
-          <X className="h-4 w-4" />
-        </Button>
         <MemberList 
           onlineUserIds={onlineUserIds}
           channelName="general"
-          onOpenPm={() => handleJoinChat()}
-          onAction={() => handleJoinChat()}
+          onOpenPm={() => {}}
+          onAction={() => {}}
         />
       </div>
     </div>
