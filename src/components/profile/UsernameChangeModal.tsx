@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Check, AtSign } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { restSelect, restUpdate } from "@/lib/supabaseRest";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -38,7 +38,8 @@ const UsernameChangeModal = ({
   currentUsername,
   onUsernameChange,
 }: UsernameChangeModalProps) => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const token = session?.access_token;
   const [newUsername, setNewUsername] = useState(currentUsername);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,27 +64,25 @@ const UsernameChangeModal = ({
     setError(null);
 
     try {
-      // Check if username is already taken
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', newUsername.trim())
-        .neq('user_id', user.id)
-        .maybeSingle();
+      // Check if username is already taken via REST
+      const existing = await restSelect('profiles', `select=id&username=eq.${encodeURIComponent(newUsername.trim())}&user_id=neq.${user.id}`, token);
 
-      if (existing) {
+      if (existing.length > 0) {
         setError("This username is already taken");
         setSaving(false);
         return;
       }
 
-      // Update username
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ username: newUsername.trim() })
-        .eq('user_id', user.id);
+      // Update username via REST
+      const ok = await restUpdate('profiles', `user_id=eq.${user.id}`, { username: newUsername.trim() }, token);
+      if (!ok) throw new Error('Failed to update username');
 
-      if (updateError) throw updateError;
+      // Sync registered_nicks (NickServ)
+      try {
+        await restUpdate('registered_nicks', `user_id=eq.${user.id}`, { nickname: newUsername.trim() }, token);
+      } catch {
+        // Non-fatal
+      }
 
       onUsernameChange(newUsername.trim());
       onOpenChange(false);

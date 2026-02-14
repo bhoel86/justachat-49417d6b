@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Camera, AtSign, FileText, Lock, Loader2, Check, Eye, EyeOff, Calendar, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { restSelect, restUpdate } from "@/lib/supabaseRest";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -65,7 +66,8 @@ export const ProfileEditModal = ({
   age: initialAge,
   onProfileUpdated,
 }: ProfileEditModalProps) => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const token = session?.access_token;
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("avatar");
   
@@ -176,6 +178,7 @@ export const ProfileEditModal = ({
     try {
       const updates: Record<string, any> = {};
       let hasChanges = false;
+      let usernameChanged = false;
 
       // Check avatar changes
       if (selectedAvatar && selectedAvatar !== initialAvatarUrl) {
@@ -192,15 +195,9 @@ export const ProfileEditModal = ({
           return;
         }
 
-        // Check if taken
-        const { data: existing } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('username', newUsername.trim())
-          .neq('user_id', user.id)
-          .maybeSingle();
-
-        if (existing) {
+        // Check if taken via REST
+        const existing = await restSelect('profiles', `select=id&username=eq.${encodeURIComponent(newUsername.trim())}&user_id=neq.${user.id}`, token);
+        if (existing.length > 0) {
           setUsernameError("This username is already taken");
           setSaving(false);
           return;
@@ -208,6 +205,7 @@ export const ProfileEditModal = ({
 
         updates.username = newUsername.trim();
         hasChanges = true;
+        usernameChanged = true;
       }
 
       // Check bio changes
@@ -234,14 +232,25 @@ export const ProfileEditModal = ({
         hasChanges = true;
       }
 
-      // Save profile updates
+      // Save profile updates via REST
       if (hasChanges) {
-        const { error } = await supabase
-          .from('profiles')
-          .update(updates)
-          .eq('user_id', user.id);
+        const ok = await restUpdate('profiles', `user_id=eq.${user.id}`, updates, token);
+        if (!ok) throw new Error('Failed to update profile');
+      }
 
-        if (error) throw error;
+      // Sync registered_nicks when username changes (NickServ)
+      if (usernameChanged) {
+        try {
+          await restUpdate(
+            'registered_nicks',
+            `user_id=eq.${user.id}`,
+            { nickname: newUsername.trim() },
+            token,
+          );
+        } catch (nickErr) {
+          console.warn('Could not sync registered_nicks:', nickErr);
+          // Non-fatal — user might not have a registered nick
+        }
       }
 
       // Handle password change
