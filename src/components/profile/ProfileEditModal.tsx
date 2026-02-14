@@ -268,11 +268,25 @@ export const ProfileEditModal = ({
           return;
         }
 
-        const { error: pwError } = await supabase.auth.updateUser({
-          password: newPassword
+        // Use direct GoTrue REST call to avoid JS client hanging on VPS
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const currentToken = token || (await supabase.auth.getSession()).data?.session?.access_token;
+        if (!currentToken) throw new Error('Not authenticated');
+        
+        const pwRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+          method: 'PUT',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${currentToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ password: newPassword }),
         });
-
-        if (pwError) throw pwError;
+        
+        if (!pwRes.ok) {
+          const pwErr = await pwRes.text();
+          throw new Error(pwErr || 'Failed to update password');
+        }
       }
 
       toast.success('Profile updated');

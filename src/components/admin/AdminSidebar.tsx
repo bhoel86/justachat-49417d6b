@@ -11,14 +11,12 @@ import {
   VolumeX,
   MessageSquare,
   Mail,
-  Key,
   ChevronLeft,
   ChevronRight,
   Bot,
   Globe,
   Map,
   Monitor,
-  Rocket,
   HelpCircle,
   MessageSquareLock,
 } from "lucide-react";
@@ -49,8 +47,6 @@ const navItems: NavItem[] = [
   { label: "PMs", href: "/admin/messages", icon: MessageSquareLock, adminOnly: true },
   { label: "Bots", href: "/admin/bots", icon: Bot, adminOnly: true },
   { label: "Emails", href: "/admin/emails", icon: Mail, ownerOnly: true },
-  { label: "API Keys", href: "/admin/api", icon: Key, ownerOnly: true },
-  { label: "Deploy", href: "/admin/deploy", icon: Rocket, ownerOnly: true },
   { label: "Desktop Panel", href: "/admin/panel-download", icon: Monitor, ownerOnly: true },
   { label: "Sitemap", href: "/admin/sitemap", icon: Map, adminOnly: true },
 ];

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import jungleHeaderLogo from "@/assets/themes/jungle-header-logo.png";
+import { ThemeSelector } from "@/components/theme/ThemeSelector";
 
 interface ChatHeaderProps {
   onlineCount: number;
@@ -256,6 +257,8 @@ const ChatHeader = ({ onlineCount, topic, channelName = 'general', onLanguageCli
               </TooltipContent>
             </Tooltip>
           )}
+          
+          <ThemeSelector />
           
           {onLanguageClick && (
             <Tooltip>

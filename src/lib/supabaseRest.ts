@@ -27,6 +27,18 @@ supabase.auth.getSession().then(({ data }) => {
   _cachedAccessToken = data?.session?.access_token || null;
 }).catch(() => {});
 
+/** Attempt a single token refresh — returns fresh token or null */
+async function tryRefreshToken(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.session) return null;
+    _cachedAccessToken = data.session.access_token;
+    return data.session.access_token;
+  } catch {
+    return null;
+  }
+}
+
 export const restHeaders = (accessToken?: string | null) => {
   const { key } = getConfig();
   return {
@@ -52,10 +64,21 @@ export async function restSelect<T = any>(
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(`${url}/rest/v1/${table}?${query}`, {
+    let res = await fetch(`${url}/rest/v1/${table}?${query}`, {
       headers: restHeaders(token),
       signal: controller.signal,
     });
+
+    // Auto-retry on 401 with refreshed token
+    if (res.status === 401 && !accessToken) {
+      const freshToken = await tryRefreshToken();
+      if (freshToken) {
+        res = await fetch(`${url}/rest/v1/${table}?${query}`, {
+          headers: restHeaders(freshToken),
+          signal: controller.signal,
+        });
+      }
+    }
     clearTimeout(timeout);
 
     if (!res.ok) {
@@ -86,10 +109,20 @@ export async function restDelete(
   accessToken?: string | null,
 ): Promise<boolean> {
   const { url } = getConfig();
-  const res = await fetch(`${url}/rest/v1/${table}?${filter}`, {
+  const token = accessToken ?? _cachedAccessToken;
+  let res = await fetch(`${url}/rest/v1/${table}?${filter}`, {
     method: 'DELETE',
-    headers: restHeaders(accessToken),
+    headers: restHeaders(token),
   });
+  if (res.status === 401 && !accessToken) {
+    const freshToken = await tryRefreshToken();
+    if (freshToken) {
+      res = await fetch(`${url}/rest/v1/${table}?${filter}`, {
+        method: 'DELETE',
+        headers: restHeaders(freshToken),
+      });
+    }
+  }
   return res.ok;
 }
 
@@ -100,14 +133,29 @@ export async function restInsert<T = any>(
   accessToken?: string | null,
 ): Promise<T[]> {
   const { url } = getConfig();
-  const res = await fetch(`${url}/rest/v1/${table}`, {
+  const token = accessToken ?? _cachedAccessToken;
+  let res = await fetch(`${url}/rest/v1/${table}`, {
     method: 'POST',
     headers: {
-      ...restHeaders(accessToken),
+      ...restHeaders(token),
       'Prefer': 'return=representation',
     },
     body: JSON.stringify(body),
   });
+
+  if (res.status === 401 && !accessToken) {
+    const freshToken = await tryRefreshToken();
+    if (freshToken) {
+      res = await fetch(`${url}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: {
+          ...restHeaders(freshToken),
+          'Prefer': 'return=representation',
+        },
+        body: JSON.stringify(body),
+      });
+    }
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -125,14 +173,28 @@ export async function restUpdate(
   accessToken?: string | null,
 ): Promise<boolean> {
   const { url } = getConfig();
-  const res = await fetch(`${url}/rest/v1/${table}?${filter}`, {
+  const token = accessToken ?? _cachedAccessToken;
+  let res = await fetch(`${url}/rest/v1/${table}?${filter}`, {
     method: 'PATCH',
     headers: {
-      ...restHeaders(accessToken),
+      ...restHeaders(token),
       'Prefer': 'return=minimal',
     },
     body: JSON.stringify(body),
   });
+  if (res.status === 401 && !accessToken) {
+    const freshToken = await tryRefreshToken();
+    if (freshToken) {
+      res = await fetch(`${url}/rest/v1/${table}?${filter}`, {
+        method: 'PATCH',
+        headers: {
+          ...restHeaders(freshToken),
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify(body),
+      });
+    }
+  }
   return res.ok;
 }
 
