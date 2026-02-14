@@ -7,7 +7,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { restSelect } from "@/lib/supabaseRest";
+import { restSelect, restInsert } from "@/lib/supabaseRest";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTriviaGame } from "@/hooks/useTriviaGame";
@@ -1207,7 +1207,6 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
         addSystemMessage(result.message);
       } else if (result.broadcast) {
         try {
-          const { restInsert } = await import('@/lib/supabaseRest');
           await restInsert('messages', {
             content: result.message,
             user_id: user.id,
@@ -1313,7 +1312,6 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
     // Use direct REST insert — the Supabase JS client can silently hang on VPS
     let insertError: Error | null = null;
     try {
-      const { restInsert } = await import('@/lib/supabaseRest');
       await restInsert('messages', {
         content: finalContent,
         user_id: user.id,
