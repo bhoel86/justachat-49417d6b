@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { restInvokeFunction, restUpdate, restSelect } from "@/lib/supabaseRest";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -75,9 +75,13 @@ const AdminUsers = () => {
   };
 
   const fetchUsers = async () => {
-    // Always get a fresh token to avoid JWT expired errors
-    const { data: sessionData } = await supabase.auth.getSession();
-    const freshToken = sessionData?.session?.access_token || token;
+    // Use the token from the session context — avoid getSession() which can hang
+    const freshToken = token;
+    if (!freshToken) {
+      console.warn('[AdminUsers] No access token available, skipping fetch');
+      setUsersLoading(false);
+      return;
+    }
     try {
       const data = await restInvokeFunction<any>('admin-list-users', {}, freshToken);
       setUsers((data?.users || []) as UserRecord[]);
@@ -107,8 +111,8 @@ const AdminUsers = () => {
   };
 
   useEffect(() => {
-    if (isOwner || isAdmin) fetchUsers();
-  }, [isOwner, isAdmin]);
+    if ((isOwner || isAdmin) && token) fetchUsers();
+  }, [isOwner, isAdmin, token]);
 
   const handleRoleChange = async (userId: string, username: string, previousRole: string, newRole: string) => {
     if (!user) return;
