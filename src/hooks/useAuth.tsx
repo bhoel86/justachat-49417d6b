@@ -214,20 +214,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, username: string, age: number) => {
     const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          username,
-          age
-        }
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    try {
+      // Use direct REST call with timeout to prevent VPS hangs
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
+
+      const res = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          data: { username, age },
+          gotrue_meta_security: {},
+          code_challenge: undefined,
+          code_challenge_method: undefined,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+      const body = await res.json();
+
+      if (!res.ok) {
+        return { error: new Error(body.msg || body.message || body.error_description || 'Signup failed'), data: null };
       }
-    });
-    
-    return { error, data };
+
+      // If identities is empty array, user already exists
+      if (body.identities && body.identities.length === 0) {
+        return { error: new Error('User already registered'), data: null };
+      }
+
+      return { error: null, data: { user: body as User } };
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        return { error: new Error('Signup timed out. Please try again.'), data: null };
+      }
+      return { error: err instanceof Error ? err : new Error(String(err)), data: null };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
