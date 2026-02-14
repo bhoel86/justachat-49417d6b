@@ -388,23 +388,31 @@ const Auth = () => {
 
   const verifyCaptchaOnServer = async (token: string): Promise<boolean> => {
     try {
-      // Get current session for owner debug mode
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const { data, error } = await supabase.functions.invoke('verify-captcha', {
-        body: { token, debug: isOwner },
-        headers: session?.access_token ? {
-          Authorization: `Bearer ${session.access_token}`
-        } : undefined
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/verify-captcha`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ token, debug: isOwner }),
+        signal: controller.signal,
       });
-      
-      if (error) {
-        console.error('CAPTCHA verification error:', error);
-        if (isOwner) {
-          setCaptchaDebugInfo({ error: error.message, context: 'Function invocation failed' });
-        }
+
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        console.error('CAPTCHA verification error:', res.status);
         return false;
       }
+
+      const data = await res.json();
 
       if (data?.success !== true) {
         console.warn("CAPTCHA rejected:", data);
@@ -416,8 +424,11 @@ const Auth = () => {
       }
       
       return data?.success === true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('CAPTCHA verification failed:', err);
+      if (err?.name === 'AbortError') {
+        console.error('CAPTCHA verification timed out');
+      }
       if (isOwner) {
         setCaptchaDebugInfo({ exception: err instanceof Error ? err.message : String(err) });
       }
