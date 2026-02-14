@@ -117,20 +117,27 @@ const AdminUsers = () => {
   const handleRoleChange = async (userId: string, username: string, previousRole: string, newRole: string) => {
     if (!user) return;
     try {
-      // Use REST upsert via POST with Prefer: resolution=merge-duplicates
       const url = import.meta.env.VITE_SUPABASE_URL;
       const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(`${url}/rest/v1/user_roles?on_conflict=user_id`, {
-        method: 'POST',
-        headers: {
-          'apikey': key,
-          'Authorization': `Bearer ${token || key}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates,return=minimal',
-        },
-        body: JSON.stringify({ user_id: userId, role: newRole }),
+      const headers = {
+        'apikey': key,
+        'Authorization': `Bearer ${token || key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      };
+
+      // Update the existing role row for this user (filter by previous role to be precise)
+      const res = await fetch(`${url}/rest/v1/user_roles?user_id=eq.${userId}&role=eq.${previousRole}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ role: newRole }),
       });
-      if (!res.ok) throw new Error('Upsert failed');
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Role update failed:', errText);
+        throw new Error('Failed to update role');
+      }
 
       await logModerationAction({
         action: 'change_role', moderatorId: user.id, targetUserId: userId, targetUsername: username,
@@ -139,8 +146,9 @@ const AdminUsers = () => {
 
       toast.success(`Role updated to ${roleConfig[newRole as keyof typeof roleConfig].label}`);
       fetchUsers();
-    } catch (error) {
-      toast.error('Failed to update role. You may not have permission.');
+    } catch (error: any) {
+      console.error('Role change error:', error);
+      toast.error(error.message || 'Failed to update role. You may not have permission.');
     }
   };
 
