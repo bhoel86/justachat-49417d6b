@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Check, AtSign } from "lucide-react";
-import { restSelect, restUpdate } from "@/lib/supabaseRest";
+import { restSelect, restUpdate, restInsert } from "@/lib/supabaseRest";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -77,11 +77,18 @@ const UsernameChangeModal = ({
       const ok = await restUpdate('profiles', `user_id=eq.${user.id}`, { username: newUsername.trim() }, token);
       if (!ok) throw new Error('Failed to update username');
 
-      // Sync registered_nicks (NickServ)
+      // Sync registered_nicks (NickServ) — upsert pattern
       try {
-        await restUpdate('registered_nicks', `user_id=eq.${user.id}`, { nickname: newUsername.trim() }, token);
+        const updated = await restUpdate('registered_nicks', `user_id=eq.${user.id}`, { nickname: newUsername.trim() }, token);
+        if (!updated) {
+          await restInsert('registered_nicks', { user_id: user.id, nickname: newUsername.trim(), email_verified: true }, token);
+        }
       } catch {
-        // Non-fatal
+        try {
+          await restInsert('registered_nicks', { user_id: user.id, nickname: newUsername.trim(), email_verified: true }, token);
+        } catch {
+          // Non-fatal
+        }
       }
 
       onUsernameChange(newUsername.trim());

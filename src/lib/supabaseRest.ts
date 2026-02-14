@@ -165,7 +165,7 @@ export async function restInsert<T = any>(
   return res.json();
 }
 
-/** PATCH (update) rows in a table via REST. */
+/** PATCH (update) rows in a table via REST. Returns true if rows were actually updated. */
 export async function restUpdate(
   table: string,
   filter: string,
@@ -178,7 +178,7 @@ export async function restUpdate(
     method: 'PATCH',
     headers: {
       ...restHeaders(token),
-      'Prefer': 'return=minimal',
+      'Prefer': 'return=representation',
     },
     body: JSON.stringify(body),
   });
@@ -189,13 +189,19 @@ export async function restUpdate(
         method: 'PATCH',
         headers: {
           ...restHeaders(freshToken),
-          'Prefer': 'return=minimal',
+          'Prefer': 'return=representation',
         },
         body: JSON.stringify(body),
       });
     }
   }
-  return res.ok;
+  if (!res.ok) return false;
+  try {
+    const rows = await res.json();
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return res.ok;
+  }
 }
 
 /** Call an edge function via REST. */

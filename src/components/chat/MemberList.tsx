@@ -1015,8 +1015,11 @@ const MemberList = ({
                   setCurrentAge(data.age);
                 }
               })
-              .catch(() => {});
-            fetchMembers();
+              .catch(() => {})
+              .finally(() => {
+                // Delay fetchMembers slightly to ensure profiles_public view reflects the update
+                setTimeout(() => fetchMembers(), 300);
+              });
           }}
         />
       )}

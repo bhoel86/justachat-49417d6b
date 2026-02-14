@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Camera, AtSign, FileText, Lock, Loader2, Check, Eye, EyeOff, Calendar, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { restSelect, restUpdate } from "@/lib/supabaseRest";
+import { restSelect, restUpdate, restInsert } from "@/lib/supabaseRest";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -238,18 +238,35 @@ export const ProfileEditModal = ({
         if (!ok) throw new Error('Failed to update profile');
       }
 
-      // Sync registered_nicks when username changes (NickServ)
+      // Sync registered_nicks when username changes (NickServ) — upsert pattern
       if (usernameChanged) {
         try {
-          await restUpdate(
+          // Try update first
+          const updated = await restUpdate(
             'registered_nicks',
             `user_id=eq.${user.id}`,
             { nickname: newUsername.trim() },
             token,
           );
+          // If no row existed to update, insert a new registration
+          if (!updated) {
+            await restInsert(
+              'registered_nicks',
+              { user_id: user.id, nickname: newUsername.trim(), email_verified: true },
+              token,
+            );
+          }
         } catch (nickErr) {
-          console.warn('Could not sync registered_nicks:', nickErr);
-          // Non-fatal — user might not have a registered nick
+          // Fallback: try insert if update failed (e.g. no existing row)
+          try {
+            await restInsert(
+              'registered_nicks',
+              { user_id: user.id, nickname: newUsername.trim(), email_verified: true },
+              token,
+            );
+          } catch {
+            console.warn('Could not sync registered_nicks:', nickErr);
+          }
         }
       }
 
