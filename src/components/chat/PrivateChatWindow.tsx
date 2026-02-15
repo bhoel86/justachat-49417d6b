@@ -140,11 +140,13 @@ const PrivateChatWindow = ({
 
   // Load history + subscribe to new messages
   useEffect(() => {
+    console.log('[PM Effect] Running for', targetUserId, 'isBot:', isBot, 'hasLoaded:', hasLoadedRef.current);
     if (hasLoadedRef.current || isBot) {
       setIsConnected(true);
       return;
     }
     hasLoadedRef.current = true;
+    console.log('[PM Effect] Setting up history + subscription + polling for', targetUserId);
 
     const loadHistory = async () => {
       try {
