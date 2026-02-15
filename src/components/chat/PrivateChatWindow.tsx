@@ -88,6 +88,20 @@ const PrivateChatWindow = ({
   const isBot = !!getBotId(targetUserId);
   const botId = getBotId(targetUserId);
 
+  // Cache user token via onAuthStateChange to avoid getSession() hangs on VPS
+  const cachedTokenRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    // Seed from getSession (non-blocking)
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.access_token) cachedTokenRef.current = data.session.access_token;
+    }).catch(() => {});
+    // Keep updated via listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) cachedTokenRef.current = session.access_token;
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Debug: track mount/unmount
   useEffect(() => {
     console.log('[PM Mount]', targetUserId);
@@ -222,15 +236,22 @@ const PrivateChatWindow = ({
         console.log('[PM History] Fetched', data?.length ?? 0, 'messages');
 
         if (data && data.length > 0) {
-          let token: string | undefined;
-          try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            token = sessionData.session?.access_token;
-          } catch {
-            console.warn('[PM History] getSession failed');
-          }
+          const token = cachedTokenRef.current;
           if (!token) {
-            console.warn('[PM History] No user token - cannot decrypt. User may need to re-login.');
+            console.warn('[PM History] No user token cached - cannot decrypt. User may need to re-login.');
+            // Retry once after a short delay in case onAuthStateChange hasn't fired yet
+            await new Promise(r => setTimeout(r, 1500));
+            const retryToken = cachedTokenRef.current;
+            if (!retryToken) {
+              console.warn('[PM History] Still no token after retry');
+              return;
+            }
+            console.log('[PM History] Token available after retry, decrypting', data.length, 'messages...');
+            const decryptPromises = data.map(msg => tryDecrypt(msg, retryToken));
+            const results = await Promise.all(decryptPromises);
+            const decrypted = results.filter((m): m is PrivateMessage => m !== null);
+            console.log('[PM History] Successfully decrypted:', decrypted.length, '/', data.length);
+            setMessages(decrypted);
             return;
           }
           console.log('[PM History] Token available, decrypting', data.length, 'messages...');
@@ -337,26 +358,14 @@ const PrivateChatWindow = ({
     console.log('[PM Poll] Starting polling for', targetUserId);
     let pollActive = true;
     
-    // Cache the token once at setup
-    let cachedToken: string | undefined;
-    supabase.auth.getSession().then(({ data }) => {
-      cachedToken = data.session?.access_token;
-      console.log('[PM Poll] Token cached:', !!cachedToken);
-    }).catch(() => {
-      console.warn('[PM Poll] Failed to cache token');
-    });
-    
-    const { data: { subscription: tokenSub } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.access_token) cachedToken = session.access_token;
-    });
-    
+    // Use the component-level cachedTokenRef instead of local getSession()
     const intervalId = window.setInterval(() => {
       if (!pollActive) return;
       
       (async () => {
         try {
           // Skip polling if no user token available
-          if (!cachedToken) return;
+          if (!cachedTokenRef.current) return;
 
           const filter = `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&order=created_at.desc&limit=10&select=*`;
           const data = await restSelect<any>('private_messages', filter, null, 8000);
@@ -371,7 +380,7 @@ const PrivateChatWindow = ({
           if (newMsgs.length === 0) return;
           
           console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
-          const token = cachedToken;
+          const token = cachedTokenRef.current;
 
           for (const msg of newMsgs) {
             const decrypted = await tryDecrypt(msg, token);
@@ -393,7 +402,6 @@ const PrivateChatWindow = ({
       console.log('[PM Poll] Cleaning up polling for', targetUserId);
       pollActive = false;
       window.clearInterval(intervalId);
-      tokenSub.unsubscribe();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId, targetUserId, isBot]);
