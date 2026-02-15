@@ -286,17 +286,25 @@ const PrivateChatWindow = ({
     // This catches anything Realtime misses (common on VPS)
     const pollInterval = setInterval(async () => {
       try {
-        const { data } = await supabase
+        const { data, error: pollError } = await supabase
           .from('private_messages')
           .select('*')
           .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
           .order('created_at', { ascending: false })
           .limit(10);
 
+        if (pollError) {
+          console.error('[PM Poll] Query error:', pollError);
+          return;
+        }
+        
+        console.log('[PM Poll] Fetched', data?.length ?? 0, 'messages, processed IDs:', processedIdsRef.current.size);
+
         if (!data || data.length === 0) return;
 
         // Check if any messages are new (not yet processed)
         const newMsgs = data.filter(m => !processedIdsRef.current.has(m.id) && !pendingDecryptsRef.current.has(m.id));
+        console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
         if (newMsgs.length === 0) return;
 
         const { data: sessionData } = await supabase.auth.getSession();
@@ -307,6 +315,7 @@ const PrivateChatWindow = ({
           pendingDecryptsRef.current.add(msg.id);
           try {
             const decrypted = await decryptMessage(msg, token);
+            console.log('[PM Poll] Decrypt result for', msg.id, ':', decrypted ? 'OK' : 'FAILED');
             if (decrypted) {
               processedIdsRef.current.add(msg.id);
               setMessages(cur => {
@@ -323,7 +332,7 @@ const PrivateChatWindow = ({
           }
         }
       } catch (e) {
-        // Silent fail for polling
+        console.error('[PM Poll] Error:', e);
       }
     }, 4000);
 
