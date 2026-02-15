@@ -2894,6 +2894,19 @@ async function handleOPER(session: IRCSession, params: string[]) {
   
   sendIRC(session, `:${SERVER_NAME} 381 ${session.nick} :You are now an IRC operator`);
   sendIRC(session, `:${session.nick} MODE ${session.nick} :+o`);
+
+  // Broadcast the mode change to all other connected IRC sessions in shared channels
+  for (const channelId of session.channels) {
+    const subs = channelSubscriptions.get(channelId);
+    if (!subs) continue;
+    for (const sid of subs) {
+      if (sid === session.sessionId) continue;
+      const otherSession = sessions.get(sid);
+      if (otherSession?.registered) {
+        sendIRC(otherSession, `:${session.nick} MODE ${session.nick} :+o`);
+      }
+    }
+  }
 }
 
 // ============================================

@@ -148,10 +148,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }, 5000);
 
+    // Realtime subscription on user_roles — auto-refresh role when changed (e.g. /oper)
+    const roleChannel = supabase
+      .channel('my-role-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_roles',
+        },
+        (payload: any) => {
+          // Only react to changes for the current user
+          const changedUserId = payload.new?.user_id || payload.old?.user_id;
+          if (isMounted && changedUserId && changedUserId === user?.id) {
+            console.log('[Auth] Realtime role change detected, refreshing...');
+            fetchRole(changedUserId, session?.access_token);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       isMounted = false;
       window.clearTimeout(safetyTimeout);
       subscription.unsubscribe();
+      supabase.removeChannel(roleChannel);
     };
   }, []);
 
