@@ -2895,15 +2895,39 @@ async function handleOPER(session: IRCSession, params: string[]) {
   sendIRC(session, `:${SERVER_NAME} 381 ${session.nick} :You are now an IRC operator`);
   sendIRC(session, `:${session.nick} MODE ${session.nick} :+o`);
 
-  // Broadcast the mode change to all other connected IRC sessions in shared channels
-  for (const channelId of session.channels) {
-    const subs = channelSubscriptions.get(channelId);
-    if (!subs) continue;
-    for (const sid of subs) {
-      if (sid === session.sessionId) continue;
-      const otherSession = sessions.get(sid);
-      if (otherSession?.registered) {
-        sendIRC(otherSession, `:${session.nick} MODE ${session.nick} :+o`);
+  // Fetch channel names for all channels the user is in
+  const channelIds = [...session.channels];
+  if (channelIds.length > 0) {
+    const { data: chans } = await operServiceClient
+      .from("channels")
+      .select("id, name")
+      .in("id", channelIds);
+    
+    const chanNameMap = new Map<string, string>();
+    if (chans) {
+      for (const c of chans as any[]) {
+        chanNameMap.set(c.id, c.name);
+      }
+    }
+
+    // Send channel MODE +o to all sessions in each channel (this is what mIRC uses to update @ prefix)
+    for (const channelId of channelIds) {
+      const chanName = chanNameMap.get(channelId);
+      if (!chanName) continue;
+      const ircChanName = `#${chanName}`;
+
+      // Send to the oper user themselves
+      sendIRC(session, `:${SERVER_NAME} MODE ${ircChanName} +o ${session.nick}`);
+
+      // Broadcast to other sessions in the channel
+      const subs = channelSubscriptions.get(channelId);
+      if (!subs) continue;
+      for (const sid of subs) {
+        if (sid === session.sessionId) continue;
+        const otherSession = sessions.get(sid);
+        if (otherSession?.registered) {
+          sendIRC(otherSession, `:${SERVER_NAME} MODE ${ircChanName} +o ${session.nick}`);
+        }
       }
     }
   }
