@@ -96,9 +96,10 @@ interface ChatInputProps {
   canControlRadio?: boolean;
   onlineUsers?: { username: string; avatarUrl?: string | null }[];
   radioListenerCount?: number;
+  accessToken?: string | null;
 }
 
-const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUsers = [], radioListenerCount = 0 }: ChatInputProps) => {
+const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUsers = [], radioListenerCount = 0, accessToken: propToken }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const [selectedAction, setSelectedAction] = useState<{ emoji: string; action: string; suffix: string } | null>(null);
   const [textFormat, setTextFormat] = useState<TextFormat>({ textStyle: 'none' });
@@ -121,19 +122,12 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const { addToHistory, navigateHistory, resetHistoryNavigation } = useInputHistory();
   const { theme } = useTheme();
   const isSimulation = theme === 'matrix';
-  const tokenRef = useRef<string | null>(null);
+  const tokenRef = useRef<string | null>(propToken ?? null);
 
-  // Cache auth token to avoid getSession() hanging on VPS (same pattern as PM)
+  // Keep tokenRef in sync with the prop from parent (same pattern as PM)
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      tokenRef.current = session?.access_token ?? null;
-    });
-    // Seed immediately
-    supabase.auth.getSession().then(({ data }) => {
-      tokenRef.current = data.session?.access_token ?? null;
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    if (propToken) tokenRef.current = propToken;
+  }, [propToken]);
 
   // Detect @mention and /command typing
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

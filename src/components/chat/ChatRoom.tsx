@@ -1639,6 +1639,7 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
           canControlRadio={true} 
           onlineUsers={onlineUsers}
           radioListenerCount={0}
+          accessToken={session?.access_token}
         />
       </div>
 
