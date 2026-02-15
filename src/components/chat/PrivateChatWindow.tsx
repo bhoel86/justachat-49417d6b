@@ -194,15 +194,18 @@ const PrivateChatWindow = ({
     }
   }, [decryptMessage]);
 
-  // Load history + subscribe to new messages (runs once)
+  // Load history + subscribe to new messages
   useEffect(() => {
     console.log('[PM Effect] Running for', targetUserId, 'isBot:', isBot, 'hasLoaded:', hasLoadedRef.current);
-    if (hasLoadedRef.current || isBot) {
+    if (isBot) {
       setIsConnected(true);
       return;
     }
+
+    // If already loaded once, just reload history (component stayed mounted via display:none)
+    const isReload = hasLoadedRef.current;
     hasLoadedRef.current = true;
-    console.log('[PM Effect] Setting up history + subscription for', targetUserId);
+    console.log('[PM Effect] Setting up', isReload ? 'history reload' : 'initial load + subscription', 'for', targetUserId);
 
     const loadHistory = async () => {
       try {
@@ -299,7 +302,9 @@ const PrivateChatWindow = ({
 
     loadHistory().then(() => {
       setIsConnected(true);
-      setupSubscription();
+      if (!isReload) {
+        setupSubscription();
+      }
     });
 
     const connectTimeout = setTimeout(() => {
