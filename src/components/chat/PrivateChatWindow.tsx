@@ -120,6 +120,12 @@ const PrivateChatWindow = ({
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      // CRITICAL: Never use anon key as Bearer token - it has no sub claim and will 401
+      if (!token) {
+        console.warn('[PM Decrypt] No user token available, skipping msg', msg.id.slice(0, 8));
+        return null;
+      }
+
       console.log('[PM Decrypt] Attempting msg', msg.id.slice(0, 8), 'via', supabaseUrl?.slice(0, 30));
 
       const controller = new AbortController();
@@ -129,7 +135,7 @@ const PrivateChatWindow = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || apikey}`,
+          'Authorization': `Bearer ${token}`,
           ...(apikey ? { 'apikey': apikey } : {}),
         },
         body: JSON.stringify({ messageId: msg.id, encrypted_content: msg.encrypted_content, iv: msg.iv }),
@@ -216,17 +222,20 @@ const PrivateChatWindow = ({
         console.log('[PM History] Fetched', data?.length ?? 0, 'messages');
 
         if (data && data.length > 0) {
-          const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
           let token: string | undefined;
           try {
             const { data: sessionData } = await supabase.auth.getSession();
             token = sessionData.session?.access_token;
           } catch {
-            console.warn('[PM History] getSession failed, using apikey');
+            console.warn('[PM History] getSession failed');
           }
-          console.log('[PM History] Token available:', !!token, 'Decrypting', data.length, 'messages...');
+          if (!token) {
+            console.warn('[PM History] No user token - cannot decrypt. User may need to re-login.');
+            return;
+          }
+          console.log('[PM History] Token available, decrypting', data.length, 'messages...');
           
-          const decryptPromises = data.map(msg => tryDecrypt(msg, token || apikey));
+          const decryptPromises = data.map(msg => tryDecrypt(msg, token));
           const results = await Promise.all(decryptPromises);
           const decrypted = results.filter((m): m is PrivateMessage => m !== null);
           console.log('[PM History] Successfully decrypted:', decrypted.length, '/', data.length);
@@ -330,12 +339,11 @@ const PrivateChatWindow = ({
     
     // Cache the token once at setup
     let cachedToken: string | undefined;
-    const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     supabase.auth.getSession().then(({ data }) => {
       cachedToken = data.session?.access_token;
       console.log('[PM Poll] Token cached:', !!cachedToken);
     }).catch(() => {
-      console.warn('[PM Poll] Failed to cache token, will use apikey');
+      console.warn('[PM Poll] Failed to cache token');
     });
     
     const { data: { subscription: tokenSub } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -347,12 +355,14 @@ const PrivateChatWindow = ({
       
       (async () => {
         try {
+          // Skip polling if no user token available
+          if (!cachedToken) return;
+
           const filter = `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&order=created_at.desc&limit=10&select=*`;
           const data = await restSelect<any>('private_messages', filter, null, 8000);
 
           if (!data || data.length === 0) return;
 
-          // Filter to messages that need processing (not yet decrypted, not maxed out retries, not pending)
           const newMsgs = data.filter(m => 
             !processedIdsRef.current.has(m.id) && 
             !pendingDecryptsRef.current.has(m.id) &&
@@ -361,7 +371,7 @@ const PrivateChatWindow = ({
           if (newMsgs.length === 0) return;
           
           console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
-          const token = cachedToken || apikey;
+          const token = cachedToken;
 
           for (const msg of newMsgs) {
             const decrypted = await tryDecrypt(msg, token);
