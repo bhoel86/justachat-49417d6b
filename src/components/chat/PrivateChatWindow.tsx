@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Lock, Send, Minus, ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { restSelect } from "@/lib/supabaseRest";
 import EmojiPicker from "./EmojiPicker";
 import FormattedText from "./FormattedText";
 import { useToast } from "@/hooks/use-toast";
@@ -291,19 +292,10 @@ const PrivateChatWindow = ({
       (async () => {
         try {
           console.log('[PM Poll] Querying DB...');
-          const queryPromise = supabase
-            .from('private_messages')
-            .select('*')
-            .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-          // Add 8s timeout to prevent infinite hang
-          const timeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('PM poll query timeout after 8s')), 8000)
-          );
-
-          const { data, error: pollError } = await Promise.race([queryPromise, timeoutPromise]);
+          // Use REST helper instead of Supabase JS client to avoid VPS hangs
+          const filter = `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&order=created_at.desc&limit=10&select=*`;
+          const data = await restSelect<any>('private_messages', filter, null, 8000);
+          const pollError = null;
 
           if (pollError) {
             console.error('[PM Poll] Query error:', pollError);
