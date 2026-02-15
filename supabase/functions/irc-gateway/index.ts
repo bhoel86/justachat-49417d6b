@@ -115,6 +115,7 @@ const RPL = {
   CHANNELMODEIS: "324",
   WHOREPLY: "352",
   ENDOFWHO: "315",
+  INVITING: "341",
 };
 
 const ERR = {
@@ -2723,6 +2724,166 @@ function handleRADIO(session: IRCSession) {
 }
 
 // ============================================
+// TOPIC - Set/view channel topic
+// ============================================
+async function handleTOPIC(session: IRCSession, params: string[]) {
+  if (!session.registered) {
+    sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
+    return;
+  }
+  if (!session.authenticated || !session.supabase || !session.userId) {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** You must identify first`);
+    return;
+  }
+  
+  const channelName = params[0]?.replace(/^#/, '');
+  if (!channelName) {
+    sendNumeric(session, ERR.NEEDMOREPARAMS, "TOPIC :Not enough parameters");
+    return;
+  }
+  
+  // Get channel
+  const { data: channel } = await session.supabase.from("channels").select("id, name").ilike("name", channelName).maybeSingle();
+  if (!channel) {
+    sendNumeric(session, ERR.NOSUCHCHANNEL, `#${channelName} :No such channel`);
+    return;
+  }
+  
+  // If no topic text provided, show current topic
+  const topicText = params.slice(1).join(' ').replace(/^:/, '');
+  if (!topicText) {
+    const { data: settings } = await session.supabase.from("channel_settings").select("topic").eq("channel_name", channel.name).maybeSingle();
+    if (settings?.topic) {
+      sendNumeric(session, RPL.TOPIC, `#${channel.name} :${settings.topic}`);
+    } else {
+      sendNumeric(session, RPL.NOTOPIC, `#${channel.name} :No topic is set`);
+    }
+    return;
+  }
+  
+  // Check if user is mod/admin/owner
+  const { data: roleData } = await session.supabase.from("user_roles").select("role").eq("user_id", session.userId).maybeSingle();
+  const role = roleData?.role || 'user';
+  const isMod = role === 'admin' || role === 'moderator' || role === 'owner';
+  const isRoomOwner = channel.id ? await session.supabase.from("channels").select("created_by").eq("id", channel.id).maybeSingle().then((r: { data: { created_by: string } | null }) => r.data?.created_by === session.userId) : false;
+  
+  if (!isMod && !isRoomOwner) {
+    sendNumeric(session, ERR.CHANOPRIVSNEEDED, `#${channel.name} :You're not channel operator`);
+    return;
+  }
+  
+  // Update topic
+  await session.supabase.from("channel_settings").update({ 
+    topic: topicText.slice(0, 200),
+    updated_by: session.userId,
+    updated_at: new Date().toISOString()
+  }).eq("channel_name", channel.name);
+  
+  // Broadcast topic change to channel
+  const subscribers = channelSubscriptions.get(channel.id);
+  if (subscribers) {
+    for (const sub of subscribers) {
+      sendIRC(sub, `:${session.nick}!${session.user}@jac.chat TOPIC #${channel.name} :${topicText}`);
+    }
+  }
+  
+  sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** Topic for #${channel.name} set`);
+}
+
+// ============================================
+// INVITE - Invite user to channel
+// ============================================
+async function handleINVITE(session: IRCSession, params: string[]) {
+  if (!session.registered) {
+    sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
+    return;
+  }
+  if (!session.authenticated || !session.supabase || !session.userId) {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** You must identify first`);
+    return;
+  }
+  
+  const targetNick = params[0];
+  const channelName = params[1]?.replace(/^#/, '');
+  
+  if (!targetNick || !channelName) {
+    sendNumeric(session, ERR.NEEDMOREPARAMS, "INVITE :Not enough parameters");
+    return;
+  }
+  
+  // Find target user
+  const { data: targetProfile } = await session.supabase.from("profiles").select("user_id, username").ilike("username", targetNick).maybeSingle();
+  if (!targetProfile) {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** User ${targetNick} not found`);
+    return;
+  }
+  
+  // Find channel
+  const { data: channel } = await session.supabase.from("channels").select("id, name").ilike("name", channelName).maybeSingle();
+  if (!channel) {
+    sendNumeric(session, ERR.NOSUCHCHANNEL, `#${channelName} :No such channel`);
+    return;
+  }
+  
+  // Send invite notice to target if they're connected
+  const targetSession = Array.from(sessions.values()).find(s => s.nick?.toLowerCase() === targetNick.toLowerCase());
+  if (targetSession) {
+    sendIRC(targetSession, `:${session.nick}!${session.user}@jac.chat INVITE ${targetNick} #${channel.name}`);
+  }
+  
+  // Confirm to sender
+  sendNumeric(session, RPL.INVITING, `${targetNick} #${channel.name}`);
+}
+
+// ============================================
+// OPER - Authenticate as IRC Operator
+// ============================================
+async function handleOPER(session: IRCSession, params: string[]) {
+  if (!session.registered) {
+    sendNumeric(session, ERR.NOTREGISTERED, ":You have not registered");
+    return;
+  }
+  if (!session.authenticated || !session.supabase || !session.userId) {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** You must identify first`);
+    return;
+  }
+  
+  const username = params[0];
+  const password = params[1];
+  
+  if (!username || !password) {
+    sendNumeric(session, ERR.NEEDMOREPARAMS, "OPER :Not enough parameters");
+    return;
+  }
+  
+  // Check the OPER_PASSWORD from env
+  const operPassword = Deno.env.get("OPER_PASSWORD");
+  if (!operPassword || password !== operPassword) {
+    sendNumeric(session, ERR.PASSWDMISMATCH, ":Password incorrect");
+    return;
+  }
+  
+  // Check if user matches the username
+  const { data: profile } = await session.supabase.from("profiles").select("user_id, username").ilike("username", username).maybeSingle();
+  if (!profile || profile.user_id !== session.userId) {
+    sendNumeric(session, ERR.PASSWDMISMATCH, ":No matching O:line for your host");
+    return;
+  }
+  
+  // Grant admin role
+  const { data: currentRole } = await session.supabase.from("user_roles").select("role").eq("user_id", session.userId).maybeSingle();
+  if (currentRole?.role === 'owner' || currentRole?.role === 'admin') {
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** You are already an IRC Operator`);
+    return;
+  }
+  
+  await session.supabase.from("user_roles").upsert({ user_id: session.userId, role: 'admin' }, { onConflict: 'user_id' });
+  
+  sendIRC(session, `:${SERVER_NAME} 381 ${session.nick} :You are now an IRC operator`);
+  sendIRC(session, `:${session.nick} MODE ${session.nick} :+o`);
+}
+
+// ============================================
 // K-LINE - Global IP Ban (Operator only)
 // ============================================
 async function handleKLINE(session: IRCSession, params: string[]) {
@@ -3417,6 +3578,15 @@ async function handleIRCCommand(session: IRCSession, line: string) {
       break;
     case "KICK":
       await handleKICK(session, params);
+      break;
+    case "TOPIC":
+      await handleTOPIC(session, params);
+      break;
+    case "INVITE":
+      await handleINVITE(session, params);
+      break;
+    case "OPER":
+      await handleOPER(session, params);
       break;
     case "WHO":
       // Stub for WHO command
