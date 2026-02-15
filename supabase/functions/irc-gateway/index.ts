@@ -3650,7 +3650,8 @@ Deno.serve(async (req) => {
         }
       }
       
-      // For other commands, set up authenticated session
+      // For other commands, set up authenticated session from token
+      // This handles cold-start recovery when in-memory sessions are lost
       if (!tempSession.authenticated && token && token !== supabaseAnonKey) {
         const supabase = createClient(supabaseUrl, supabaseAnonKey, {
           global: { headers: { Authorization: `Bearer ${token}` } },
@@ -3660,14 +3661,20 @@ Deno.serve(async (req) => {
           tempSession.authenticated = true;
           tempSession.userId = userData.user.id;
           tempSession.supabase = supabase;
-          // DON'T set registered=true here — let NICK+USER flow handle it
-          // so handleUSER doesn't reject with 462 "You may not reregister"
+          
+          // For NICK/USER during initial registration, don't set registered
+          // so completeRegistration can run and send welcome messages.
+          // For ALL other commands, set registered=true (cold-start recovery).
+          if (command !== 'NICK' && command !== 'USER') {
+            tempSession.registered = true;
+          }
           
           // Get username from profile
           const { data: profile } = await supabase.from("profiles").select("username").eq("user_id", userData.user.id).single();
           if (profile) {
             tempSession.nick = (profile as { username: string }).username;
           }
+          console.log(`[IRC HTTP] Session from token: nick=${tempSession.nick}, cmd=${command}, registered=${tempSession.registered}`);
         }
       }
       
