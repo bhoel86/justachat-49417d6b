@@ -86,6 +86,8 @@ interface IRCSession {
   sessionId: string;
   isBridge: boolean;
   pendingMessages: string[];
+  lastPollMessageTime: string; // ISO timestamp of last polled message
+  knownMembers: Map<string, Set<string>>; // channelId -> Set<userId> for JOIN/PART detection
 }
 
 // IRC numeric replies
@@ -3691,13 +3693,133 @@ Deno.serve(async (req) => {
       
       console.log(`[IRC HTTP] Command: ${command}, Args: ${args}, Session: ${sessionId}`);
       
-      // POLL command - return and clear pending messages for this bridge session
+      // POLL command - return pending messages + check DB for web user messages
       if (command === "POLL") {
         const existingSession = sessionId ? sessions.get(sessionId) : null;
         if (existingSession && existingSession.isBridge) {
           const messages = [...existingSession.pendingMessages];
           existingSession.pendingMessages = [];
           existingSession.lastPing = Date.now();
+          
+          // Query DB for new messages from web users in channels this IRC user has joined
+          if (existingSession.authenticated && existingSession.supabase && existingSession.channels.size > 0) {
+            try {
+              const channelIds = Array.from(existingSession.channels);
+              const since = existingSession.lastPollMessageTime;
+              
+              // Get new messages since last poll
+              const { data: newMessages } = await existingSession.supabase
+                .from("messages")
+                .select("id, channel_id, user_id, content, created_at")
+                .in("channel_id", channelIds)
+                .gt("created_at", since)
+                .order("created_at", { ascending: true })
+                .limit(50);
+              
+              if (newMessages && newMessages.length > 0) {
+                // Get profiles for senders we don't know
+                const senderIds = [...new Set((newMessages as any[]).map((m: any) => m.user_id))];
+                const { data: profiles } = await existingSession.supabase
+                  .from("profiles")
+                  .select("user_id, username")
+                  .in("user_id", senderIds);
+                
+                const profileMap = new Map<string, string>();
+                if (profiles) {
+                  for (const p of profiles as any[]) {
+                    profileMap.set(p.user_id, p.username);
+                  }
+                }
+                
+                // Get channel names
+                const { data: channels } = await existingSession.supabase
+                  .from("channels_public")
+                  .select("id, name")
+                  .in("id", channelIds);
+                
+                const channelNameMap = new Map<string, string>();
+                if (channels) {
+                  for (const c of channels as any[]) {
+                    channelNameMap.set(c.id, c.name);
+                  }
+                }
+                
+                for (const msg of newMessages as any[]) {
+                  // Skip messages from ourselves (IRC user already saw their own)
+                  if (msg.user_id === existingSession.userId) continue;
+                  
+                  const senderNick = profileMap.get(msg.user_id) || msg.user_id.substring(0, 8);
+                  const chanName = channelNameMap.get(msg.channel_id) || "unknown";
+                  
+                  // Determine if sender is a bot (user_id starts with "bot-")
+                  const isBotSender = msg.user_id.startsWith("bot-") || msg.user_id.startsWith("sim-");
+                  const senderHost = isBotSender ? `bot.${SERVER_NAME}` : `web.${SERVER_NAME}`;
+                  
+                  // Format as IRC PRIVMSG
+                  messages.push(`:${senderNick}!${senderNick}@${senderHost} PRIVMSG #${chanName} :${msg.content}`);
+                }
+                
+                // Update last poll time to the newest message
+                const lastMsg = (newMessages as any[])[(newMessages as any[]).length - 1];
+                existingSession.lastPollMessageTime = lastMsg.created_at;
+              }
+              
+              // Check for JOIN/PART events - compare current channel_members with known
+              for (const channelId of channelIds) {
+                const { data: currentMembers } = await existingSession.supabase
+                  .from("channel_members")
+                  .select("user_id")
+                  .eq("channel_id", channelId);
+                
+                if (!currentMembers) continue;
+                
+                const currentSet = new Set((currentMembers as any[]).map((m: any) => m.user_id));
+                const knownSet = existingSession.knownMembers.get(channelId) || new Set();
+                const chanName = (await existingSession.supabase
+                  .from("channels_public")
+                  .select("name")
+                  .eq("id", channelId)
+                  .maybeSingle()).data as { name: string } | null;
+                
+                if (!chanName) continue;
+                
+                // Detect new JOINs (in current but not in known)
+                for (const uid of currentSet) {
+                  if (!knownSet.has(uid) && uid !== existingSession.userId) {
+                    // Look up username
+                    const username = (await existingSession.supabase
+                      .from("profiles")
+                      .select("username")
+                      .eq("user_id", uid)
+                      .maybeSingle()).data as { username: string } | null;
+                    if (username) {
+                      messages.push(`:${username.username}!${username.username}@web.${SERVER_NAME} JOIN #${chanName.name}`);
+                    }
+                  }
+                }
+                
+                // Detect PARTs (in known but not in current)
+                for (const uid of knownSet) {
+                  if (!currentSet.has(uid) && uid !== existingSession.userId) {
+                    const username = (await existingSession.supabase
+                      .from("profiles")
+                      .select("username")
+                      .eq("user_id", uid)
+                      .maybeSingle()).data as { username: string } | null;
+                    if (username) {
+                      messages.push(`:${username.username}!${username.username}@web.${SERVER_NAME} PART #${chanName.name} :Leaving`);
+                    }
+                  }
+                }
+                
+                // Update known members
+                existingSession.knownMembers.set(channelId, currentSet);
+              }
+            } catch (e) {
+              console.error(`[POLL] DB message check error:`, e);
+            }
+          }
+          
           return new Response(JSON.stringify({ lines: messages }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
@@ -3741,6 +3863,8 @@ Deno.serve(async (req) => {
         sessionId: sessionId || `http-${Date.now()}`,
         isBridge: false, // temp session uses fakeWs for this request's output
         pendingMessages: existingBridgeSession?.pendingMessages || [],
+        lastPollMessageTime: existingBridgeSession?.lastPollMessageTime || new Date().toISOString(),
+        knownMembers: existingBridgeSession?.knownMembers || new Map(),
       };
       
       // Handle PASS command (authentication)
@@ -3929,6 +4053,8 @@ Deno.serve(async (req) => {
     sessionId,
     isBridge: false,
     pendingMessages: [],
+    lastPollMessageTime: new Date().toISOString(),
+    knownMembers: new Map(),
   };
 
   sessions.set(sessionId, session);
