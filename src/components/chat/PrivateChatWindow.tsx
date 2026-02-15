@@ -290,12 +290,20 @@ const PrivateChatWindow = ({
       
       (async () => {
         try {
-          const { data, error: pollError } = await supabase
+          console.log('[PM Poll] Querying DB...');
+          const queryPromise = supabase
             .from('private_messages')
             .select('*')
             .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
             .order('created_at', { ascending: false })
             .limit(10);
+
+          // Add 8s timeout to prevent infinite hang
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('PM poll query timeout after 8s')), 8000)
+          );
+
+          const { data, error: pollError } = await Promise.race([queryPromise, timeoutPromise]);
 
           if (pollError) {
             console.error('[PM Poll] Query error:', pollError);
