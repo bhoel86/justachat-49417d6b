@@ -105,9 +105,11 @@ const PrivateChatWindow = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Track processed message IDs to prevent duplicates
-  const processedIdsRef = useRef<Set<string>>(new Set());
+  // Track message processing state
+  const processedIdsRef = useRef<Set<string>>(new Set()); // Successfully decrypted
+  const failedIdsRef = useRef<Map<string, number>>(new Map()); // msg.id → attempt count
   const pendingDecryptsRef = useRef<Set<string>>(new Set());
+  const MAX_DECRYPT_RETRIES = 3;
 
   // Decrypt a single message - memoized helper
   const decryptMessage = useCallback(async (
@@ -118,6 +120,11 @@ const PrivateChatWindow = ({
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      console.log('[PM Decrypt] Attempting msg', msg.id.slice(0, 8), 'via', supabaseUrl?.slice(0, 30));
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
       const resp = await fetch(`${supabaseUrl}/functions/v1/decrypt-pm`, {
         method: 'POST',
         headers: {
@@ -126,13 +133,17 @@ const PrivateChatWindow = ({
           ...(apikey ? { 'apikey': apikey } : {}),
         },
         body: JSON.stringify({ messageId: msg.id, encrypted_content: msg.encrypted_content, iv: msg.iv }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!resp.ok) {
-        console.warn('[PM Decrypt] HTTP error:', resp.status, 'for msg', msg.id);
+        console.warn('[PM Decrypt] HTTP', resp.status, 'for msg', msg.id.slice(0, 8));
+        return null;
       }
       const data = await resp.json().catch(() => ({}));
       if (data?.success) {
+        console.log('[PM Decrypt] ✓ msg', msg.id.slice(0, 8));
         return {
           id: msg.id,
           content: data.decrypted_content,
@@ -142,12 +153,46 @@ const PrivateChatWindow = ({
           isOwn: msg.sender_id === currentUserId
         };
       }
-      console.warn('[PM Decrypt] Failed for msg', msg.id, 'response:', JSON.stringify(data).slice(0, 200));
-    } catch (e) {
-      console.error('[PM Decrypt] Exception:', e);
+      console.warn('[PM Decrypt] Failed for msg', msg.id.slice(0, 8), 'response:', JSON.stringify(data).slice(0, 200));
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        console.error('[PM Decrypt] Timeout for msg', msg.id.slice(0, 8));
+      } else {
+        console.error('[PM Decrypt] Exception:', e?.message || e);
+      }
     }
     return null;
   }, [currentUserId, currentUsername, targetUsername]);
+
+  // Helper: try to decrypt a message, track success/failure
+  const tryDecrypt = useCallback(async (
+    msg: any,
+    token: string | undefined
+  ): Promise<PrivateMessage | null> => {
+    // Already succeeded
+    if (processedIdsRef.current.has(msg.id)) return null;
+    // Currently in progress
+    if (pendingDecryptsRef.current.has(msg.id)) return null;
+    // Failed too many times
+    const attempts = failedIdsRef.current.get(msg.id) || 0;
+    if (attempts >= MAX_DECRYPT_RETRIES) return null;
+
+    pendingDecryptsRef.current.add(msg.id);
+    try {
+      const decrypted = await decryptMessage(msg, token);
+      if (decrypted) {
+        processedIdsRef.current.add(msg.id);
+        failedIdsRef.current.delete(msg.id);
+        return decrypted;
+      } else {
+        failedIdsRef.current.set(msg.id, attempts + 1);
+        console.warn('[PM] Decrypt attempt', attempts + 1, '/', MAX_DECRYPT_RETRIES, 'failed for', msg.id.slice(0, 8));
+        return null;
+      }
+    } finally {
+      pendingDecryptsRef.current.delete(msg.id);
+    }
+  }, [decryptMessage]);
 
   // Load history + subscribe to new messages (runs once)
   useEffect(() => {
@@ -163,30 +208,29 @@ const PrivateChatWindow = ({
       try {
         // Use restSelect to avoid supabase JS client hangs on VPS
         const filter = `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&order=created_at.asc&limit=100&select=*`;
+        console.log('[PM History] Loading...');
         const data = await restSelect<any>('private_messages', filter, null, 10000);
+        console.log('[PM History] Fetched', data?.length ?? 0, 'messages');
 
         if (data && data.length > 0) {
-          // Use cached token from supabaseRest instead of blocking getSession()
           const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
           let token: string | undefined;
           try {
             const { data: sessionData } = await supabase.auth.getSession();
             token = sessionData.session?.access_token;
           } catch {
-            // If getSession hangs/fails, fall back to apikey
+            console.warn('[PM History] getSession failed, using apikey');
           }
+          console.log('[PM History] Token available:', !!token, 'Decrypting', data.length, 'messages...');
           
-          const decryptPromises = data.map(msg => {
-            processedIdsRef.current.add(msg.id);
-            return decryptMessage(msg, token || apikey);
-          });
-          
+          const decryptPromises = data.map(msg => tryDecrypt(msg, token || apikey));
           const results = await Promise.all(decryptPromises);
           const decrypted = results.filter((m): m is PrivateMessage => m !== null);
+          console.log('[PM History] Successfully decrypted:', decrypted.length, '/', data.length);
           setMessages(decrypted);
         }
       } catch (e) {
-        console.error('Load history error:', e);
+        console.error('[PM History] Load error:', e);
       }
     };
 
@@ -207,24 +251,17 @@ const PrivateChatWindow = ({
           async (payload) => {
             const msg = payload.new as any;
             if (msg.sender_id !== targetUserId) return;
-            if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) return;
-            pendingDecryptsRef.current.add(msg.id);
             
-            try {
-              const { data: sessionData } = await supabase.auth.getSession();
-              const token = sessionData.session?.access_token;
-              const decrypted = await decryptMessage(msg, token);
-              
-              if (decrypted) {
-                processedIdsRef.current.add(msg.id);
-                setMessages(cur => {
-                  if (cur.some(m => m.id === msg.id)) return cur;
-                  return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-                });
-                onNewMessage?.();
-              }
-            } finally {
-              pendingDecryptsRef.current.delete(msg.id);
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData.session?.access_token;
+            const decrypted = await tryDecrypt(msg, token);
+            
+            if (decrypted) {
+              setMessages(cur => {
+                if (cur.some(m => m.id === msg.id)) return cur;
+                return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+              });
+              onNewMessage?.();
             }
           }
         )
@@ -239,23 +276,16 @@ const PrivateChatWindow = ({
           async (payload) => {
             const msg = payload.new as any;
             if (msg.recipient_id !== targetUserId) return;
-            if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) return;
-            pendingDecryptsRef.current.add(msg.id);
             
-            try {
-              const { data: sessionData } = await supabase.auth.getSession();
-              const token = sessionData.session?.access_token;
-              const decrypted = await decryptMessage(msg, token);
-              
-              if (decrypted) {
-                processedIdsRef.current.add(msg.id);
-                setMessages(cur => {
-                  if (cur.some(m => m.id === msg.id)) return cur;
-                  return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-                });
-              }
-            } finally {
-              pendingDecryptsRef.current.delete(msg.id);
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData.session?.access_token;
+            const decrypted = await tryDecrypt(msg, token);
+            
+            if (decrypted) {
+              setMessages(cur => {
+                if (cur.some(m => m.id === msg.id)) return cur;
+                return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+              });
             }
           }
         )
@@ -290,10 +320,10 @@ const PrivateChatWindow = ({
   useEffect(() => {
     if (isBot) return;
     
-   console.log('[PM Poll] Starting polling for', targetUserId);
+    console.log('[PM Poll] Starting polling for', targetUserId);
     let pollActive = true;
     
-    // Cache the token once at setup to avoid supabase.auth.getSession() hanging on VPS
+    // Cache the token once at setup
     let cachedToken: string | undefined;
     const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     supabase.auth.getSession().then(({ data }) => {
@@ -303,48 +333,39 @@ const PrivateChatWindow = ({
       console.warn('[PM Poll] Failed to cache token, will use apikey');
     });
     
-    // Also listen for token refreshes
     const { data: { subscription: tokenSub } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.access_token) cachedToken = session.access_token;
     });
     
     const intervalId = window.setInterval(() => {
-      console.log('[PM Poll] Tick', targetUserId, 'active:', pollActive);
       if (!pollActive) return;
       
       (async () => {
         try {
-          console.log('[PM Poll] Querying DB...');
-          // Use REST helper instead of Supabase JS client to avoid VPS hangs
           const filter = `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&order=created_at.desc&limit=10&select=*`;
           const data = await restSelect<any>('private_messages', filter, null, 8000);
-          
-          console.log('[PM Poll] Fetched', data?.length ?? 0, 'messages');
 
           if (!data || data.length === 0) return;
 
-          const newMsgs = data.filter(m => !processedIdsRef.current.has(m.id) && !pendingDecryptsRef.current.has(m.id));
+          // Filter to messages that need processing (not yet decrypted, not maxed out retries, not pending)
+          const newMsgs = data.filter(m => 
+            !processedIdsRef.current.has(m.id) && 
+            !pendingDecryptsRef.current.has(m.id) &&
+            (failedIdsRef.current.get(m.id) || 0) < MAX_DECRYPT_RETRIES
+          );
           if (newMsgs.length === 0) return;
           
           console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
           const token = cachedToken || apikey;
 
           for (const msg of newMsgs) {
-            if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) continue;
-            // Mark as processed BEFORE decrypt to prevent infinite re-processing on failure
-            processedIdsRef.current.add(msg.id);
-            pendingDecryptsRef.current.add(msg.id);
-            try {
-              const decrypted = await decryptMessage(msg, token);
-              if (decrypted) {
-                setMessages(cur => {
-                  if (cur.some(m => m.id === msg.id)) return cur;
-                  return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-                });
-                if (msg.sender_id !== currentUserId) onNewMessage?.();
-              }
-            } finally {
-              pendingDecryptsRef.current.delete(msg.id);
+            const decrypted = await tryDecrypt(msg, token);
+            if (decrypted) {
+              setMessages(cur => {
+                if (cur.some(m => m.id === msg.id)) return cur;
+                return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+              });
+              if (msg.sender_id !== currentUserId) onNewMessage?.();
             }
           }
         } catch (e) {
