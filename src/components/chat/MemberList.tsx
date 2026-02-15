@@ -425,8 +425,27 @@ const MemberList = ({
       )
       .subscribe();
 
+    // Subscribe to user_roles changes so role updates (e.g. /oper) propagate instantly
+    const rolesChannel = supabase
+      .channel(`user-roles-live-${channelId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_roles",
+        },
+        () => {
+          if (fetchMembersTimeoutRef.current)
+            clearTimeout(fetchMembersTimeoutRef.current);
+          fetchMembersTimeoutRef.current = setTimeout(() => fetchMembers(), 500);
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ircMembersChannel);
+      supabase.removeChannel(rolesChannel);
     };
   }, [channelId]);
 
