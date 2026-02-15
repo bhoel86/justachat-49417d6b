@@ -3597,10 +3597,42 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         } else {
-          // Token-based auth
+          // Password-only auth: look up email via nick from registered_nicks or profiles
+          const nickForLookup = nick || sessionId;
+          if (nickForLookup) {
+            // Try registered_nicks first
+            const { data: regNick } = await supabase.from("registered_nicks").select("user_id").eq("nickname", nickForLookup).single();
+            let userEmail: string | null = null;
+            
+            if (regNick) {
+              // Get email from auth user via admin or profile lookup
+              const { data: authUser } = await supabase.auth.admin.getUserById(regNick.user_id);
+              userEmail = authUser?.user?.email || null;
+            }
+            
+            if (!userEmail) {
+              // Try profiles table
+              const { data: prof } = await supabase.from("profiles").select("user_id").eq("username", nickForLookup).single();
+              if (prof) {
+                const { data: authUser } = await supabase.auth.admin.getUserById(prof.user_id);
+                userEmail = authUser?.user?.email || null;
+              }
+            }
+            
+            if (userEmail) {
+              const { data, error } = await supabase.auth.signInWithPassword({ email: userEmail, password: raw });
+              if (!error && data.session) {
+                return new Response(JSON.stringify({ token: data.session.access_token, userId: data.user.id }), {
+                  headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+              }
+            }
+          }
+          
+          // Fallback: try as token
           const { data, error } = await supabase.auth.getUser(raw);
           if (error || !data.user) {
-            return new Response(JSON.stringify({ error: "Invalid token" }), {
+            return new Response(JSON.stringify({ error: "Invalid password or nickname not found" }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }

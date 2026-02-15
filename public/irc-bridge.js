@@ -69,6 +69,7 @@ function handleClient(socket) {
   let alive = true;
   let authenticating = false; // true while PASS is in-flight
   let pendingQueue = [];      // commands queued while PASS is processing
+  let pendingPass = null;     // stored PASS args, sent after NICK arrives
 
   let lineBuffer = '';
 
@@ -187,6 +188,13 @@ function handleClient(socket) {
       // Track NICK locally
       if (command === 'NICK') {
         nick = args.replace(/^:/, '').trim();
+        // If we have a pending PASS, now send it with the nick
+        if (pendingPass !== null) {
+          authenticating = true;
+          sendCommand('PASS', pendingPass);
+          pendingPass = null;
+          continue;
+        }
       }
 
       // Track USER locally
@@ -219,10 +227,16 @@ function handleClient(socket) {
         continue;
       }
 
-      // PASS — start auth, queue subsequent commands
+      // PASS — store it, wait for NICK to arrive so we can send nick with the request
       if (command === 'PASS') {
-        authenticating = true;
-        sendCommand('PASS', args);
+        if (nick) {
+          // NICK already known, send immediately
+          authenticating = true;
+          sendCommand('PASS', args);
+        } else {
+          // Store and wait for NICK
+          pendingPass = args;
+        }
         continue;
       }
 
