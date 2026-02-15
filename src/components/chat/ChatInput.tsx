@@ -311,7 +311,20 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
       const safeName = attachedImage.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const suggestedPath = `${Date.now()}-${safeName}`;
 
-      const accessToken = tokenRef.current;
+      // Try cached token first, fall back to getSession with timeout
+      let accessToken = tokenRef.current;
+      if (!accessToken) {
+        try {
+          const result = await Promise.race([
+            supabase.auth.getSession(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+          ]);
+          accessToken = result.data.session?.access_token ?? null;
+          if (accessToken) tokenRef.current = accessToken;
+        } catch {
+          // getSession timed out or failed
+        }
+      }
       if (!accessToken) throw new Error("You must be signed in to upload images.");
 
       const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`;
