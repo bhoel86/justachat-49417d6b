@@ -11,6 +11,7 @@ import { restSelect } from "@/lib/supabaseRest";
 import EmojiPicker from "./EmojiPicker";
 import FormattedText from "./FormattedText";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { compressImage } from "@/lib/imageCompression";
 import { CHAT_BOTS, ROOM_BOTS } from "@/lib/chatBots";
 import { getChatBotFunctionName } from "@/lib/environment";
@@ -84,23 +85,17 @@ const PrivateChatWindow = ({
   const hasLoadedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { session } = useAuth();
 
   const isBot = !!getBotId(targetUserId);
   const botId = getBotId(targetUserId);
 
-  // Cache user token via onAuthStateChange to avoid getSession() hangs on VPS
-  const cachedTokenRef = useRef<string | undefined>(undefined);
+  // Keep a ref to the latest token so async callbacks always see the freshest value
+  const tokenRef = useRef<string | undefined>(session?.access_token);
   useEffect(() => {
-    // Seed from getSession (non-blocking)
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.access_token) cachedTokenRef.current = data.session.access_token;
-    }).catch(() => {});
-    // Keep updated via listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.access_token) cachedTokenRef.current = session.access_token;
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    tokenRef.current = session?.access_token;
+    console.log('[PM] Auth token updated from context:', !!session?.access_token);
+  }, [session?.access_token]);
 
   // Debug: track mount/unmount
   useEffect(() => {
@@ -236,22 +231,9 @@ const PrivateChatWindow = ({
         console.log('[PM History] Fetched', data?.length ?? 0, 'messages');
 
         if (data && data.length > 0) {
-          const token = cachedTokenRef.current;
+          const token = tokenRef.current;
           if (!token) {
-            console.warn('[PM History] No user token cached - cannot decrypt. User may need to re-login.');
-            // Retry once after a short delay in case onAuthStateChange hasn't fired yet
-            await new Promise(r => setTimeout(r, 1500));
-            const retryToken = cachedTokenRef.current;
-            if (!retryToken) {
-              console.warn('[PM History] Still no token after retry');
-              return;
-            }
-            console.log('[PM History] Token available after retry, decrypting', data.length, 'messages...');
-            const decryptPromises = data.map(msg => tryDecrypt(msg, retryToken));
-            const results = await Promise.all(decryptPromises);
-            const decrypted = results.filter((m): m is PrivateMessage => m !== null);
-            console.log('[PM History] Successfully decrypted:', decrypted.length, '/', data.length);
-            setMessages(decrypted);
+            console.warn('[PM History] No user token from auth context - cannot decrypt. User may need to re-login.');
             return;
           }
           console.log('[PM History] Token available, decrypting', data.length, 'messages...');
@@ -285,8 +267,7 @@ const PrivateChatWindow = ({
             const msg = payload.new as any;
             if (msg.sender_id !== targetUserId) return;
             
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData.session?.access_token;
+            const token = tokenRef.current;
             const decrypted = await tryDecrypt(msg, token);
             
             if (decrypted) {
@@ -310,8 +291,7 @@ const PrivateChatWindow = ({
             const msg = payload.new as any;
             if (msg.recipient_id !== targetUserId) return;
             
-            const { data: sessionData } = await supabase.auth.getSession();
-            const token = sessionData.session?.access_token;
+            const token = tokenRef.current;
             const decrypted = await tryDecrypt(msg, token);
             
             if (decrypted) {
@@ -365,7 +345,7 @@ const PrivateChatWindow = ({
       (async () => {
         try {
           // Skip polling if no user token available
-          if (!cachedTokenRef.current) return;
+          if (!tokenRef.current) return;
 
           const filter = `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&order=created_at.desc&limit=10&select=*`;
           const data = await restSelect<any>('private_messages', filter, null, 8000);
@@ -380,7 +360,7 @@ const PrivateChatWindow = ({
           if (newMsgs.length === 0) return;
           
           console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
-          const token = cachedTokenRef.current;
+          const token = tokenRef.current;
 
           for (const msg of newMsgs) {
             const decrypted = await tryDecrypt(msg, token);
@@ -507,8 +487,7 @@ const PrivateChatWindow = ({
     if (!attachedImage) return null;
     setIsUploading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      const token = tokenRef.current;
       if (!token) throw new Error("Not signed in");
 
       // Required for VPS gateway routing (matches ChatInput upload behavior)
@@ -592,10 +571,9 @@ const PrivateChatWindow = ({
       setIsBotTyping(true);
 
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
         const resp = await supabase.functions.invoke(getChatBotFunctionName(), {
-          headers: sessionData.session?.access_token 
-            ? { Authorization: `Bearer ${sessionData.session.access_token}` } 
+          headers: tokenRef.current 
+            ? { Authorization: `Bearer ${tokenRef.current}` } 
             : {},
           body: { message: content, botId, isPM: true, username: currentUsername }
         });
@@ -636,8 +614,7 @@ const PrivateChatWindow = ({
     setMessage('');
     
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      const token = tokenRef.current;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
