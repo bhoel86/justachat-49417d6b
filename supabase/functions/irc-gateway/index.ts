@@ -3620,7 +3620,8 @@ Deno.serve(async (req) => {
           tempSession.authenticated = true;
           tempSession.userId = userData.user.id;
           tempSession.supabase = supabase;
-          tempSession.registered = true;
+          // DON'T set registered=true here — let NICK+USER flow handle it
+          // so handleUSER doesn't reject with 462 "You may not reregister"
           
           // Get username from profile
           const { data: profile } = await supabase.from("profiles").select("username").eq("user_id", userData.user.id).single();
@@ -3633,7 +3634,11 @@ Deno.serve(async (req) => {
       // For unauthenticated commands that don't need auth (like LIST), use anon client
       if (!tempSession.supabase) {
         tempSession.supabase = createClient(supabaseUrl, supabaseAnonKey);
-        tempSession.registered = true; // Allow LIST etc. to work
+        // Only set registered for non-registration commands (LIST, WHO, etc.)
+        // Don't set for NICK/USER so completeRegistration can run
+        if (command !== 'NICK' && command !== 'USER') {
+          tempSession.registered = true;
+        }
       }
       
       // Route the command
