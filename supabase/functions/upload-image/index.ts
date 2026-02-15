@@ -175,6 +175,17 @@ Deno.serve(async (req) => {
     console.log("SUPABASE_URL:", supabaseUrl);
     console.log("Has Service Role Key:", !!supabaseServiceRoleKey);
 
+    // On VPS, list buckets to debug "Bucket not found"
+    if (supabaseServiceRoleKey) {
+      try {
+        const debugClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+        const { data: buckets, error: bucketsErr } = await debugClient.storage.listBuckets();
+        console.log("Available buckets:", buckets?.map(b => b.name) || "none", "error:", bucketsErr?.message || "none");
+      } catch (e) {
+        console.log("Bucket list debug failed:", e);
+      }
+    }
+
     // Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
