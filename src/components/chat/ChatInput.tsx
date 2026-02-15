@@ -121,6 +121,19 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
   const { addToHistory, navigateHistory, resetHistoryNavigation } = useInputHistory();
   const { theme } = useTheme();
   const isSimulation = theme === 'matrix';
+  const tokenRef = useRef<string | null>(null);
+
+  // Cache auth token to avoid getSession() hanging on VPS (same pattern as PM)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      tokenRef.current = session?.access_token ?? null;
+    });
+    // Seed immediately
+    supabase.auth.getSession().then(({ data }) => {
+      tokenRef.current = data.session?.access_token ?? null;
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Detect @mention and /command typing
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,8 +311,7 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
       const safeName = attachedImage.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const suggestedPath = `${Date.now()}-${safeName}`;
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      const accessToken = tokenRef.current;
       if (!accessToken) throw new Error("You must be signed in to upload images.");
 
       const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`;
