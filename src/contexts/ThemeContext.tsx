@@ -133,7 +133,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .from('site_settings')
           .select('value')
           .eq('key', 'theme')
-          .single();
+          .maybeSingle();
 
         if (siteError) {
           console.warn('[Theme] Failed to fetch global theme:', siteError.message);
