@@ -96,10 +96,26 @@ const Index = () => {
   }, [channelName, navigate]);
 
   // Don't redirect while processing OAuth callback - wait for session to be established
+  // Use a ref to track if we ever had a user to distinguish "never logged in" from "token refresh glitch"
+  const hadUserRef = useRef(false);
+  
+  useEffect(() => {
+    if (user) hadUserRef.current = true;
+  }, [user]);
+
   useEffect(() => {
     if (oauthProcessing) return;
     
     if (!loading && !user) {
+      // If we previously had a user, wait a moment before redirecting
+      // to avoid flash-logout during token refresh
+      if (hadUserRef.current) {
+        const timeout = setTimeout(() => {
+          // Re-check after delay — if still no user, it's a real logout
+          if (!user) navigate("/login");
+        }, 2000);
+        return () => clearTimeout(timeout);
+      }
       navigate("/login");
     }
   }, [user, loading, navigate, oauthProcessing]);
