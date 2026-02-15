@@ -3575,7 +3575,8 @@ Deno.serve(async (req) => {
       
       // Handle PASS command (authentication)
       if (command === "PASS") {
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || supabaseAnonKey;
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
         const raw = (args || "").replace(/^:/, "");
         
         const delimiter = raw.includes(":") ? ":" : raw.includes("|") ? "|" : raw.includes(";") ? ";" : raw.includes(",") ? "," : null;
@@ -3598,34 +3599,41 @@ Deno.serve(async (req) => {
           });
         } else {
           // Password-only auth: look up email via nick from registered_nicks or profiles
-          const nickForLookup = nick || sessionId;
-          if (nickForLookup) {
+          const nickForLookup = body.nick || tempSession.nick || sessionId;
+          console.log(`[IRC PASS] Password-only auth, looking up nick: ${nickForLookup}`);
+          if (nickForLookup && nickForLookup !== "bridge-user") {
             // Try registered_nicks first
-            const { data: regNick } = await supabase.from("registered_nicks").select("user_id").eq("nickname", nickForLookup).single();
+            const { data: regNick, error: regErr } = await supabase.from("registered_nicks").select("user_id").eq("nickname", nickForLookup).single();
+            console.log(`[IRC PASS] registered_nicks lookup: ${regNick ? 'found ' + regNick.user_id : 'not found'}, err: ${regErr?.message || 'none'}`);
             let userEmail: string | null = null;
             
             if (regNick) {
-              // Get email from auth user via admin or profile lookup
               const { data: authUser } = await supabase.auth.admin.getUserById(regNick.user_id);
               userEmail = authUser?.user?.email || null;
+              console.log(`[IRC PASS] Got email from registered_nicks: ${userEmail ? 'yes' : 'no'}`);
             }
             
             if (!userEmail) {
               // Try profiles table
-              const { data: prof } = await supabase.from("profiles").select("user_id").eq("username", nickForLookup).single();
+              const { data: prof, error: profErr } = await supabase.from("profiles").select("user_id").eq("username", nickForLookup).single();
+              console.log(`[IRC PASS] profiles lookup: ${prof ? 'found ' + prof.user_id : 'not found'}, err: ${profErr?.message || 'none'}`);
               if (prof) {
                 const { data: authUser } = await supabase.auth.admin.getUserById(prof.user_id);
                 userEmail = authUser?.user?.email || null;
+                console.log(`[IRC PASS] Got email from profiles: ${userEmail ? 'yes' : 'no'}`);
               }
             }
             
             if (userEmail) {
+              console.log(`[IRC PASS] Attempting signInWithPassword for ${userEmail}`);
               const { data, error } = await supabase.auth.signInWithPassword({ email: userEmail, password: raw });
               if (!error && data.session) {
+                console.log(`[IRC PASS] Auth SUCCESS for ${nickForLookup}`);
                 return new Response(JSON.stringify({ token: data.session.access_token, userId: data.user.id }), {
                   headers: { ...corsHeaders, "Content-Type": "application/json" },
                 });
               }
+              console.log(`[IRC PASS] signInWithPassword failed: ${error?.message}`);
             }
           }
           
