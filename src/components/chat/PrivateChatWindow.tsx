@@ -272,8 +272,15 @@ const PrivateChatWindow = ({
 
     // Load history first, then subscribe
     loadHistory().then(() => {
+      // Mark connected after history loads so input is usable even if Realtime fails
+      setIsConnected(true);
       setupSubscription();
     });
+
+    // Safety timeout: ensure input is never permanently disabled
+    const connectTimeout = setTimeout(() => {
+      setIsConnected(true);
+    }, 5000);
 
     // Polling fallback: check for new messages every 4 seconds
     // This catches anything Realtime misses (common on VPS)
@@ -321,6 +328,7 @@ const PrivateChatWindow = ({
     }, 4000);
 
     return () => {
+      clearTimeout(connectTimeout);
       clearInterval(pollInterval);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
