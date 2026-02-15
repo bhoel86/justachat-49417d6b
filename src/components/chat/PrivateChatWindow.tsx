@@ -275,7 +275,53 @@ const PrivateChatWindow = ({
       setupSubscription();
     });
 
+    // Polling fallback: check for new messages every 4 seconds
+    // This catches anything Realtime misses (common on VPS)
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('private_messages')
+          .select('*')
+          .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (!data || data.length === 0) return;
+
+        // Check if any messages are new (not yet processed)
+        const newMsgs = data.filter(m => !processedIdsRef.current.has(m.id) && !pendingDecryptsRef.current.has(m.id));
+        if (newMsgs.length === 0) return;
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
+        for (const msg of newMsgs) {
+          if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) continue;
+          pendingDecryptsRef.current.add(msg.id);
+          try {
+            const decrypted = await decryptMessage(msg, token);
+            if (decrypted) {
+              processedIdsRef.current.add(msg.id);
+              setMessages(cur => {
+                if (cur.some(m => m.id === msg.id)) return cur;
+                const newMessages = [...cur, decrypted].sort(
+                  (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+                );
+                return newMessages;
+              });
+              if (msg.sender_id !== currentUserId) onNewMessage?.();
+            }
+          } finally {
+            pendingDecryptsRef.current.delete(msg.id);
+          }
+        }
+      } catch (e) {
+        // Silent fail for polling
+      }
+    }, 4000);
+
     return () => {
+      clearInterval(pollInterval);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
