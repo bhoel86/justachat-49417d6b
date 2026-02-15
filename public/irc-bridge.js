@@ -4,12 +4,8 @@
  * Listens on port 6669 and proxies IRC client connections
  * to the irc-gateway Edge Function via HTTP POST + polling.
  *
- * Usage: node irc-bridge.js
- * PM2:   pm2 start irc-bridge.js --name irc-bridge
- *
- * VPS deploy:
- *   cp /var/www/justachat/public/irc-bridge.js /var/www/justachat/irc-bridge.js
- *   pm2 start /var/www/justachat/irc-bridge.js --name irc-bridge
+ * Usage: node irc-bridge.cjs
+ * PM2:   pm2 start irc-bridge.cjs --name irc-bridge
  */
 
 const net = require('net');
@@ -22,8 +18,6 @@ const GATEWAY_URL = 'https://justachat.net/functions/v1/irc-gateway';
 const POLL_INTERVAL_MS = 2000;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
-
-// Use the anon key for bridge requests (service key optional for admin ops)
 const API_KEY = ANON_KEY || SERVICE_KEY;
 
 // ── Helpers ────────────────────────────────────────────────
@@ -70,14 +64,14 @@ function handleClient(socket) {
   const sessionId = `bridge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   let authToken = null;
   let nick = null;
-  let registered = false;
+  let user = null;
   let pollTimer = null;
   let alive = true;
+  let authenticating = false; // true while PASS is in-flight
+  let pendingQueue = [];      // commands queued while PASS is processing
 
-  // Buffer for incomplete lines
   let lineBuffer = '';
 
-  // Start polling for server->client messages
   function startPolling() {
     if (pollTimer) return;
     pollTimer = setInterval(async () => {
@@ -100,7 +94,6 @@ function handleClient(socket) {
     }, POLL_INTERVAL_MS);
   }
 
-  // Send an IRC command to the gateway
   async function sendCommand(command, args) {
     try {
       const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
@@ -111,12 +104,30 @@ function handleClient(socket) {
         nick,
       }, headers);
 
-      // PASS returns token/userId
       if (command === 'PASS' && res.token) {
         authToken = res.token;
+        authenticating = false;
         console.log(`[BRIDGE] Authenticated ${nick || 'user'} (session ${sessionId})`);
-        // After auth, start polling
         startPolling();
+
+        // Flush queued commands now that we have the token
+        const queued = [...pendingQueue];
+        pendingQueue = [];
+        for (const q of queued) {
+          await sendCommand(q.command, q.args);
+        }
+        return;
+      }
+
+      if (command === 'PASS' && res.error) {
+        authenticating = false;
+        socket.write(`:jac.chat NOTICE * :${res.error}\r\n`);
+        // Flush queued commands without auth
+        const queued = [...pendingQueue];
+        pendingQueue = [];
+        for (const q of queued) {
+          await sendCommand(q.command, q.args);
+        }
         return;
       }
 
@@ -125,35 +136,32 @@ function handleClient(socket) {
         return;
       }
 
-      // Send response lines to client
       if (res.lines && res.lines.length > 0) {
         for (const line of res.lines) {
           socket.write(line + '\r\n');
         }
       }
 
-      // After NICK + USER are sent and we have auth, ensure polling is running
       if (command === 'USER' && authToken) {
-        registered = true;
         startPolling();
       }
     } catch (err) {
       console.error(`[BRIDGE] Command error (${command}):`, err.message);
+      if (command === 'PASS') {
+        authenticating = false;
+      }
     }
   }
 
-  // Parse incoming IRC data
   socket.on('data', (data) => {
     lineBuffer += data.toString();
     const lines = lineBuffer.split(/\r?\n/);
-    // Keep incomplete last line in buffer
     lineBuffer = lines.pop() || '';
 
     for (const raw of lines) {
       const line = raw.trim();
       if (!line) continue;
 
-      // Parse IRC command
       const spaceIdx = line.indexOf(' ');
       let command, args;
       if (spaceIdx === -1) {
@@ -166,15 +174,13 @@ function handleClient(socket) {
 
       console.log(`[BRIDGE] ${nick || remoteAddr} -> ${command} ${args ? args.substring(0, 80) : ''}`);
 
-      // Handle locally: PING/PONG for keepalive
-      if (command === 'PONG') {
-        // Client responding to our PING - just ignore
-        continue;
-      }
+      // PONG - ignore
+      if (command === 'PONG') continue;
+
+      // PING - respond locally
       if (command === 'PING') {
-        // Respond with PONG
-        const token = args.startsWith(':') ? args : `:${args}`;
-        socket.write(`PONG ${token}\r\n`);
+        const tok = args.startsWith(':') ? args : `:${args}`;
+        socket.write(`PONG ${tok}\r\n`);
         continue;
       }
 
@@ -183,16 +189,19 @@ function handleClient(socket) {
         nick = args.replace(/^:/, '').trim();
       }
 
-      // CAP negotiation - handle minimally
+      // Track USER locally
+      if (command === 'USER') {
+        user = args;
+      }
+
+      // CAP negotiation
       if (command === 'CAP') {
         const subCmd = args.split(' ')[0]?.toUpperCase();
         if (subCmd === 'LS') {
           socket.write(':jac.chat CAP * LS :\r\n');
           continue;
         }
-        if (subCmd === 'END') {
-          continue;
-        }
+        if (subCmd === 'END') continue;
         if (subCmd === 'REQ') {
           socket.write(':jac.chat CAP * NAK :' + args.split(' ').slice(1).join(' ') + '\r\n');
           continue;
@@ -200,7 +209,7 @@ function handleClient(socket) {
         continue;
       }
 
-      // QUIT - clean up
+      // QUIT
       if (command === 'QUIT') {
         sendCommand('QUIT', args).finally(() => {
           alive = false;
@@ -210,7 +219,20 @@ function handleClient(socket) {
         continue;
       }
 
-      // Forward everything else to gateway
+      // PASS — start auth, queue subsequent commands
+      if (command === 'PASS') {
+        authenticating = true;
+        sendCommand('PASS', args);
+        continue;
+      }
+
+      // If we're waiting for PASS to complete, queue this command
+      if (authenticating) {
+        pendingQueue.push({ command, args });
+        continue;
+      }
+
+      // Forward everything else
       sendCommand(command, args);
     }
   });
@@ -219,7 +241,6 @@ function handleClient(socket) {
     console.log(`[BRIDGE] Client disconnected: ${nick || remoteAddr}`);
     alive = false;
     if (pollTimer) clearInterval(pollTimer);
-    // Notify gateway of disconnect
     sendCommand('QUIT', ':Connection closed').catch(() => {});
   });
 
@@ -229,10 +250,8 @@ function handleClient(socket) {
     if (pollTimer) clearInterval(pollTimer);
   });
 
-  // Send initial notice
   socket.write(':jac.chat NOTICE * :*** Welcome to JACNet IRC Bridge\r\n');
-  socket.write(':jac.chat NOTICE * :*** Use PASS email:password to authenticate\r\n');
-  socket.write(':jac.chat NOTICE * :*** Or use NickServ IDENTIFY after connecting\r\n');
+  socket.write(':jac.chat NOTICE * :*** Connecting...\r\n');
 }
 
 // ── Start TCP server ───────────────────────────────────────
@@ -241,7 +260,7 @@ const server = net.createServer(handleClient);
 server.listen(IRC_PORT, '0.0.0.0', () => {
   console.log(`[BRIDGE] JustAChat IRC Bridge listening on port ${IRC_PORT}`);
   console.log(`[BRIDGE] Gateway: ${GATEWAY_URL}`);
-  console.log(`[BRIDGE] API key configured: ${API_KEY ? 'yes' : 'NO - set SUPABASE_ANON_KEY env var'}`);
+  console.log(`[BRIDGE] API key configured: ${API_KEY ? 'yes' : 'NO'}`);
 });
 
 server.on('error', (err) => {
