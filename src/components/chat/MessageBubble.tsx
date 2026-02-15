@@ -243,9 +243,11 @@ const MessageBubble = ({
   const imgMatch = message.match(/^\[img:(https?:\/\/[^\]]+)\]$/);
   const isImageOnly = !!imgMatch;
 
-  // Check if message is ASCII art (contains RGB color codes or dense block characters)
+  // Check if message is ASCII art (contains RGB color codes, dense block characters, or multi-line art patterns)
+  const lines = message.split('\n');
   const isAsciiArt = /\[rgb:\d+,\d+,\d+\]/.test(message) || 
-    (message.split('\n').length > 3 && /[█▓▒░╔╗╚╝║═╠╣╬╩╦╤╧╟╢╥╨┌┐└┘│─┼├┤┬┴]/.test(message));
+    (lines.length > 2 && /[█▓▒░╔╗╚╝║═╠╣╬╩╦╤╧╟╢╥╨┌┐└┘│─┼├┤┬┴♪♫✧✦ಠ︵╯°□∩]/.test(message)) ||
+    (lines.length > 3 && lines.filter(l => /^\s{2,}/.test(l)).length > lines.length / 2);
 
   // Render image-only or ASCII art messages without bubble
   if ((isImageOnly && imgMatch) || isAsciiArt) {
