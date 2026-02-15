@@ -2897,11 +2897,15 @@ async function handleOPER(session: IRCSession, params: string[]) {
 
   // Fetch channel names for all channels the user is in
   const channelIds = [...session.channels];
+  console.log(`[OPER] User ${session.nick} channels:`, channelIds.length, channelIds);
+  
   if (channelIds.length > 0) {
-    const { data: chans } = await operServiceClient
+    const { data: chans, error: chanErr } = await operServiceClient
       .from("channels")
       .select("id, name")
       .in("id", channelIds);
+    
+    console.log(`[OPER] Channel lookup result:`, chans?.length, chanErr?.message);
     
     const chanNameMap = new Map<string, string>();
     if (chans) {
@@ -2913,23 +2917,32 @@ async function handleOPER(session: IRCSession, params: string[]) {
     // Send channel MODE +o to all sessions in each channel (this is what mIRC uses to update @ prefix)
     for (const channelId of channelIds) {
       const chanName = chanNameMap.get(channelId);
-      if (!chanName) continue;
+      if (!chanName) {
+        console.log(`[OPER] No channel name for ID ${channelId}`);
+        continue;
+      }
       const ircChanName = `#${chanName}`;
+      
+      console.log(`[OPER] Sending MODE ${ircChanName} +o ${session.nick}`);
 
       // Send to the oper user themselves
       sendIRC(session, `:${SERVER_NAME} MODE ${ircChanName} +o ${session.nick}`);
 
       // Broadcast to other sessions in the channel
       const subs = channelSubscriptions.get(channelId);
+      console.log(`[OPER] Channel ${ircChanName} has ${subs?.size || 0} subscribers`);
       if (!subs) continue;
       for (const sid of subs) {
         if (sid === session.sessionId) continue;
         const otherSession = sessions.get(sid);
         if (otherSession?.registered) {
+          console.log(`[OPER] Broadcasting MODE +o to ${otherSession.nick}`);
           sendIRC(otherSession, `:${SERVER_NAME} MODE ${ircChanName} +o ${session.nick}`);
         }
       }
     }
+  } else {
+    console.log(`[OPER] User ${session.nick} has NO channels tracked`);
   }
 }
 
