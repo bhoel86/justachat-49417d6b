@@ -1667,21 +1667,22 @@ const ChatRoom = ({ initialChannelName }: ChatRoomProps) => {
       </div>
 
 
-      {/* Private Chat Windows - Only active (non-minimized) */}
-      {privateChats.activeChats.map(chat => (
-        <PrivateChatWindow
-          key={chat.id}
-          targetUserId={chat.targetUserId}
-          targetUsername={chat.targetUsername}
-          currentUserId={privateChats.currentUserId}
-          currentUsername={privateChats.currentUsername}
-          onClose={() => privateChats.closeChat(chat.id)}
-          onMinimize={() => privateChats.minimizeChat(chat.id)}
-          onNewMessage={() => privateChats.setUnread(chat.id)}
-          initialPosition={chat.position}
-          zIndex={chat.zIndex}
-          onFocus={() => privateChats.bringToFront(chat.id)}
-        />
+      {/* Private Chat Windows - render ALL, hide minimized via CSS to preserve state */}
+      {privateChats.chats.map(chat => (
+        <div key={chat.id} style={{ display: chat.isMinimized ? 'none' : 'contents' }}>
+          <PrivateChatWindow
+            targetUserId={chat.targetUserId}
+            targetUsername={chat.targetUsername}
+            currentUserId={privateChats.currentUserId}
+            currentUsername={privateChats.currentUsername}
+            onClose={() => privateChats.closeChat(chat.id)}
+            onMinimize={() => privateChats.minimizeChat(chat.id)}
+            onNewMessage={() => privateChats.setUnread(chat.id)}
+            initialPosition={chat.position}
+            zIndex={chat.zIndex}
+            onFocus={() => privateChats.bringToFront(chat.id)}
+          />
+        </div>
       ))}
 
       {/* Bot Chat Windows - Draggable moderator conversations */}
