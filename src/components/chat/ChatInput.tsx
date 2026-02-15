@@ -292,14 +292,12 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
     if (!attachedImage) return null;
     
     setIsUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(50); // Show indeterminate progress since fetch doesn't support upload progress
 
     try {
       const safeName = attachedImage.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const suggestedPath = `${Date.now()}-${safeName}`;
 
-      // Use a direct request to the backend upload endpoint.
-      // This avoids inconsistent multipart handling in some environments AND gives real upload progress.
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("You must be signed in to upload images.");
@@ -312,54 +310,32 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
       formData.append("bucket", "chat-images");
       formData.append("path", suggestedPath);
 
-      const data = await new Promise<any>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", endpoint);
-        xhr.responseType = "json";
-        xhr.timeout = 30000; // 30s timeout to prevent infinite spinner
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
 
-        xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
-        if (apikey) xhr.setRequestHeader("apikey", apikey);
-
-        xhr.upload.onprogress = (evt) => {
-          if (evt.lengthComputable && evt.total > 0) {
-            const pct = Math.round((evt.loaded / evt.total) * 100);
-            // keep 100% for server response / moderation time
-            setUploadProgress(Math.min(99, Math.max(0, pct)));
-          }
-        };
-
-        xhr.onload = () => {
-          const resp = xhr.response ?? (() => {
-            try {
-              return xhr.responseText ? JSON.parse(xhr.responseText) : null;
-            } catch {
-              return xhr.responseText;
-            }
-          })();
-
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(resp);
-            return;
-          }
-
-          const detail =
-            (resp && typeof resp === "object" && (resp.message || resp.error || resp.details))
-              ? (resp.message || resp.error || resp.details)
-              : (typeof resp === "string" ? resp : xhr.responseText);
-
-          reject(new Error(`Upload failed (HTTP ${xhr.status}): ${detail || "Unknown error"}`));
-        };
-
-        xhr.onerror = () => reject(new Error("Upload failed: network error"));
-        xhr.ontimeout = () => reject(new Error("Upload timed out — please try again"));
-        xhr.send(formData);
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          ...(apikey ? { "apikey": apikey } : {}),
+        },
+        body: formData,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
+      setUploadProgress(90);
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        const detail = data?.message || data?.error || data?.details || "Unknown error";
+        throw new Error(`Upload failed (HTTP ${resp.status}): ${detail}`);
+      }
 
       setUploadProgress(100);
       
       if (data?.error) {
-        // Handle specific error types
         if (data.error === "Rate limit exceeded") {
           toast({
             variant: "destructive",
@@ -384,16 +360,24 @@ const ChatInput = ({ onSend, isMuted = false, canControlRadio = false, onlineUse
       
       return data?.url || null;
     } catch (error) {
-      console.error("Upload error:", error);
-      toast({
-        variant: "destructive",
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload image. Please try again.",
-      });
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.error("Upload timed out");
+        toast({
+          variant: "destructive",
+          title: "Upload timed out",
+          description: "Please try again.",
+        });
+      } else {
+        console.error("Upload error:", error);
+        toast({
+          variant: "destructive",
+          title: "Upload failed",
+          description: error instanceof Error ? error.message : "Failed to upload image. Please try again.",
+        });
+      }
       return null;
     } finally {
       setIsUploading(false);
-      // keep the bar visible briefly after completion/failure
       setTimeout(() => setUploadProgress(0), 500);
     }
   };
