@@ -2895,9 +2895,20 @@ async function handleOPER(session: IRCSession, params: string[]) {
   sendIRC(session, `:${SERVER_NAME} 381 ${session.nick} :You are now an IRC operator`);
   sendIRC(session, `:${session.nick} MODE ${session.nick} :+o`);
 
-  // Fetch channel names for all channels the user is in
-  const channelIds = [...session.channels];
-  console.log(`[OPER] User ${session.nick} channels:`, channelIds.length, channelIds);
+  // Get channels from DB (session.channels may be empty after cold-start recovery)
+  let channelIds = [...session.channels];
+  if (channelIds.length === 0 && session.userId) {
+    const { data: memberRows } = await operServiceClient
+      .from("channel_members")
+      .select("channel_id")
+      .eq("user_id", session.userId);
+    if (memberRows) {
+      channelIds = memberRows.map((r: any) => r.channel_id);
+    }
+    console.log(`[OPER] Fetched channels from DB for ${session.nick}:`, channelIds.length);
+  } else {
+    console.log(`[OPER] User ${session.nick} channels from memory:`, channelIds.length);
+  }
   
   if (channelIds.length > 0) {
     const { data: chans, error: chanErr } = await operServiceClient
