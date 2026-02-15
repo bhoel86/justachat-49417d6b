@@ -138,7 +138,7 @@ const PrivateChatWindow = ({
     return null;
   }, [currentUserId, currentUsername, targetUsername]);
 
-  // Load history + subscribe to new messages
+  // Load history + subscribe to new messages (runs once)
   useEffect(() => {
     console.log('[PM Effect] Running for', targetUserId, 'isBot:', isBot, 'hasLoaded:', hasLoadedRef.current);
     if (hasLoadedRef.current || isBot) {
@@ -146,7 +146,7 @@ const PrivateChatWindow = ({
       return;
     }
     hasLoadedRef.current = true;
-    console.log('[PM Effect] Setting up history + subscription + polling for', targetUserId);
+    console.log('[PM Effect] Setting up history + subscription for', targetUserId);
 
     const loadHistory = async () => {
       try {
@@ -161,7 +161,6 @@ const PrivateChatWindow = ({
           const { data: sessionData } = await supabase.auth.getSession();
           const token = sessionData.session?.access_token;
           
-          // Decrypt all messages in parallel for speed
           const decryptPromises = data.map(msg => {
             processedIdsRef.current.add(msg.id);
             return decryptMessage(msg, token);
@@ -176,13 +175,11 @@ const PrivateChatWindow = ({
       }
     };
 
-    // Subscribe to new incoming messages - simple filter on recipient only
     const setupSubscription = () => {
       const channelName = `pm-conv-${[currentUserId, targetUserId].sort().join('-')}-${Date.now()}`;
       const channel = supabase.channel(channelName);
       channelRef.current = channel;
 
-      // Subscribe to messages where current user is recipient (incoming)
       channel
         .on(
           'postgres_changes',
@@ -194,11 +191,7 @@ const PrivateChatWindow = ({
           },
           async (payload) => {
             const msg = payload.new as any;
-            
-            // Only process messages from this conversation partner
             if (msg.sender_id !== targetUserId) return;
-            
-            // Skip if already processed or being processed
             if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) return;
             pendingDecryptsRef.current.add(msg.id);
             
@@ -210,13 +203,8 @@ const PrivateChatWindow = ({
               if (decrypted) {
                 processedIdsRef.current.add(msg.id);
                 setMessages(cur => {
-                  // Final dedup check
                   if (cur.some(m => m.id === msg.id)) return cur;
-                  // Insert in correct position by timestamp
-                  const newMessages = [...cur, decrypted].sort(
-                    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-                  );
-                  return newMessages;
+                  return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                 });
                 onNewMessage?.();
               }
@@ -225,7 +213,6 @@ const PrivateChatWindow = ({
             }
           }
         )
-        // Also subscribe to own sent messages (for multi-device sync)
         .on(
           'postgres_changes',
           {
@@ -236,11 +223,7 @@ const PrivateChatWindow = ({
           },
           async (payload) => {
             const msg = payload.new as any;
-            
-            // Only process messages to this conversation partner
             if (msg.recipient_id !== targetUserId) return;
-            
-            // Skip if already processed
             if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) return;
             pendingDecryptsRef.current.add(msg.id);
             
@@ -253,10 +236,7 @@ const PrivateChatWindow = ({
                 processedIdsRef.current.add(msg.id);
                 setMessages(cur => {
                   if (cur.some(m => m.id === msg.id)) return cur;
-                  const newMessages = [...cur, decrypted].sort(
-                    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-                  );
-                  return newMessages;
+                  return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                 });
               }
             } finally {
@@ -272,20 +252,31 @@ const PrivateChatWindow = ({
         });
     };
 
-    // Load history first, then subscribe
     loadHistory().then(() => {
-      // Mark connected after history loads so input is usable even if Realtime fails
       setIsConnected(true);
       setupSubscription();
     });
 
-    // Safety timeout: ensure input is never permanently disabled
     const connectTimeout = setTimeout(() => {
       setIsConnected(true);
     }, 5000);
 
-    // Polling fallback: check for new messages every 4 seconds
-    // This catches anything Realtime misses (common on VPS)
+    return () => {
+      clearTimeout(connectTimeout);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId, targetUserId, isBot]);
+
+  // Separate polling effect - always runs regardless of hasLoadedRef
+  useEffect(() => {
+    if (isBot) return;
+    
+    console.log('[PM Poll] Starting polling for', targetUserId);
+    
     const pollInterval = setInterval(async () => {
       try {
         const { data, error: pollError } = await supabase
@@ -304,7 +295,6 @@ const PrivateChatWindow = ({
 
         if (!data || data.length === 0) return;
 
-        // Check if any messages are new (not yet processed)
         const newMsgs = data.filter(m => !processedIdsRef.current.has(m.id) && !pendingDecryptsRef.current.has(m.id));
         console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
         if (newMsgs.length === 0) return;
@@ -322,10 +312,7 @@ const PrivateChatWindow = ({
               processedIdsRef.current.add(msg.id);
               setMessages(cur => {
                 if (cur.some(m => m.id === msg.id)) return cur;
-                const newMessages = [...cur, decrypted].sort(
-                  (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-                );
-                return newMessages;
+                return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
               });
               if (msg.sender_id !== currentUserId) onNewMessage?.();
             }
@@ -339,12 +326,8 @@ const PrivateChatWindow = ({
     }, 4000);
 
     return () => {
-      clearTimeout(connectTimeout);
+      console.log('[PM Poll] Cleaning up polling for', targetUserId);
       clearInterval(pollInterval);
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId, targetUserId, isBot]);
