@@ -41,6 +41,10 @@ Deno.serve(async (req) => {
 
     // Get oper password from secure environment variable
     const operPassword = Deno.env.get('OPER_PASSWORD');
+    console.log('OPER_PASSWORD exists:', !!operPassword, 'length:', operPassword?.length);
+    console.log('Provided password length:', password?.length);
+    console.log('Passwords match:', password === operPassword);
+    
     if (!operPassword) {
       console.error('OPER_PASSWORD secret not configured');
       return new Response(
@@ -51,7 +55,7 @@ Deno.serve(async (req) => {
 
     // Validate password
     if (password !== operPassword) {
-      console.log(`Oper auth failed for user ${user.id} - invalid password`);
+      console.log(`Oper auth failed for user ${user.id} - invalid password. Expected length: ${operPassword.length}, got length: ${password?.length}`);
       return new Response(
         JSON.stringify({ error: 'Invalid operator password' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
