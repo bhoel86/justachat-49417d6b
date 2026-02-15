@@ -161,20 +161,24 @@ const PrivateChatWindow = ({
 
     const loadHistory = async () => {
       try {
-        const { data } = await supabase
-          .from('private_messages')
-          .select('*')
-          .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
-          .order('created_at', { ascending: true })
-          .limit(100);
+        // Use restSelect to avoid supabase JS client hangs on VPS
+        const filter = `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&order=created_at.asc&limit=100&select=*`;
+        const data = await restSelect<any>('private_messages', filter, null, 10000);
 
         if (data && data.length > 0) {
-          const { data: sessionData } = await supabase.auth.getSession();
-          const token = sessionData.session?.access_token;
+          // Use cached token from supabaseRest instead of blocking getSession()
+          const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          let token: string | undefined;
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            token = sessionData.session?.access_token;
+          } catch {
+            // If getSession hangs/fails, fall back to apikey
+          }
           
           const decryptPromises = data.map(msg => {
             processedIdsRef.current.add(msg.id);
-            return decryptMessage(msg, token);
+            return decryptMessage(msg, token || apikey);
           });
           
           const results = await Promise.all(decryptPromises);
