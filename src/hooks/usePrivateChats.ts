@@ -6,6 +6,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { playPMNotificationSound } from '@/lib/notificationSound';
 import { supabase } from '@/integrations/supabase/client';
+import { restSelect } from '@/lib/supabaseRest';
 import { toast } from 'sonner';
 
 interface PrivateChat {
@@ -262,13 +263,9 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     const poll = async () => {
       if (cancelled) return;
       try {
-        const { data } = await supabase
-          .from('private_messages')
-          .select('sender_id, created_at')
-          .eq('recipient_id', currentUserId)
-          .gt('created_at', lastSeenPmRef.current)
-          .order('created_at', { ascending: true })
-          .limit(20);
+        // Use restSelect to avoid supabase JS client hangs on VPS
+        const filter = `recipient_id=eq.${currentUserId}&created_at=gt.${encodeURIComponent(lastSeenPmRef.current)}&order=created_at.asc&limit=20&select=sender_id,created_at`;
+        const data = await restSelect<{ sender_id: string; created_at: string }>('private_messages', filter, null, 8000);
 
         if (data && data.length > 0) {
           // Advance watermark
@@ -295,13 +292,10 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
               continue;
             }
 
-            // Fetch username and open chat
+            // Fetch username and open chat via REST
             try {
-              const { data: profile } = await supabase
-                .from('profiles_public')
-                .select('username')
-                .eq('user_id', senderId)
-                .maybeSingle();
+              const profiles = await restSelect<{ username: string }>('profiles_public', `user_id=eq.${senderId}&select=username&limit=1`, null, 5000);
+              const profile = profiles?.[0] || null;
               
               const senderUsername = profile?.username || 'Unknown';
               if (!dndRef.current) playPMNotificationSound();
