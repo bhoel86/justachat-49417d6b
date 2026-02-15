@@ -128,6 +128,9 @@ const PrivateChatWindow = ({
         body: JSON.stringify({ messageId: msg.id, encrypted_content: msg.encrypted_content, iv: msg.iv }),
       });
 
+      if (!resp.ok) {
+        console.warn('[PM Decrypt] HTTP error:', resp.status, 'for msg', msg.id);
+      }
       const data = await resp.json().catch(() => ({}));
       if (data?.success) {
         return {
@@ -139,8 +142,9 @@ const PrivateChatWindow = ({
           isOwn: msg.sender_id === currentUserId
         };
       }
+      console.warn('[PM Decrypt] Failed for msg', msg.id, 'response:', JSON.stringify(data).slice(0, 200));
     } catch (e) {
-      console.error('Decrypt error:', e);
+      console.error('[PM Decrypt] Exception:', e);
     }
     return null;
   }, [currentUserId, currentUsername, targetUsername]);
@@ -318,8 +322,9 @@ const PrivateChatWindow = ({
             pendingDecryptsRef.current.add(msg.id);
             try {
               const decrypted = await decryptMessage(msg, token);
+              // Always mark as processed to prevent infinite re-processing
+              processedIdsRef.current.add(msg.id);
               if (decrypted) {
-                processedIdsRef.current.add(msg.id);
                 setMessages(cur => {
                   if (cur.some(m => m.id === msg.id)) return cur;
                   return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
