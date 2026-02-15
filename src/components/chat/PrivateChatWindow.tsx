@@ -331,11 +331,11 @@ const PrivateChatWindow = ({
 
           for (const msg of newMsgs) {
             if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) continue;
+            // Mark as processed BEFORE decrypt to prevent infinite re-processing on failure
+            processedIdsRef.current.add(msg.id);
             pendingDecryptsRef.current.add(msg.id);
             try {
               const decrypted = await decryptMessage(msg, token);
-              // Always mark as processed to prevent infinite re-processing
-              processedIdsRef.current.add(msg.id);
               if (decrypted) {
                 setMessages(cur => {
                   if (cur.some(m => m.id === msg.id)) return cur;
