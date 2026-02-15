@@ -87,6 +87,12 @@ const PrivateChatWindow = ({
   const isBot = !!getBotId(targetUserId);
   const botId = getBotId(targetUserId);
 
+  // Debug: track mount/unmount
+  useEffect(() => {
+    console.log('[PM Mount]', targetUserId);
+    return () => console.log('[PM Unmount]', targetUserId);
+  }, [targetUserId]);
+
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
     if (messagesRef.current) {
