@@ -242,10 +242,13 @@ const MessageBubble = ({
   // Check if message is ONLY an image/GIF (no text besides the tag)
   const imgMatch = message.match(/^\[img:(https?:\/\/[^\]]+)\]$/);
   const isImageOnly = !!imgMatch;
-  
-  // Render image-only messages without bubble
-  if (isImageOnly && imgMatch) {
-    const imageUrl = imgMatch[1];
+
+  // Check if message is ASCII art (contains RGB color codes or dense block characters)
+  const isAsciiArt = /\[rgb:\d+,\d+,\d+\]/.test(message) || 
+    (message.split('\n').length > 3 && /[█▓▒░╔╗╚╝║═╠╣╬╩╦╤╧╟╢╥╨┌┐└┘│─┼├┤┬┴]/.test(message));
+
+  // Render image-only or ASCII art messages without bubble
+  if ((isImageOnly && imgMatch) || isAsciiArt) {
     return (
       <div
         className={cn(
@@ -253,7 +256,7 @@ const MessageBubble = ({
           isOwn ? "justify-end" : "justify-start"
         )}
       >
-        <div className="max-w-[85%]">
+        <div className={isAsciiArt ? "max-w-full overflow-x-auto" : "max-w-[85%]"}>
           <div className="flex items-center gap-1 mb-0.5">
             {!isOwn ? (
               <UsernameWithDropdown username={sender} userId={senderId} isOwnMessage={false} avatarUrl={senderAvatarUrl} />
@@ -273,8 +276,11 @@ const MessageBubble = ({
               </button>
             )}
           </div>
-          {/* Reuse FormattedText's image renderer so we get consistent loading/error UI (incl. URL on failure) */}
-          <FormattedText text={`[img:${imageUrl}]`} />
+          {isImageOnly && imgMatch ? (
+            <FormattedText text={`[img:${imgMatch[1]}]`} />
+          ) : (
+            <FormattedText text={displayMessage} className="text-sm leading-snug break-words whitespace-pre-wrap" />
+          )}
         </div>
       </div>
     );
