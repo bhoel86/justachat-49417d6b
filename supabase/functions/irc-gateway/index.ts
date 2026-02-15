@@ -2883,7 +2883,14 @@ async function handleOPER(session: IRCSession, params: string[]) {
     return;
   }
   
-  await operServiceClient.from("user_roles").upsert({ user_id: session.userId, role: 'admin' }, { onConflict: 'user_id' });
+  // Delete existing role then insert new one (unique constraint is on user_id+role composite)
+  await operServiceClient.from("user_roles").delete().eq("user_id", session.userId);
+  const { error: insertErr } = await operServiceClient.from("user_roles").insert({ user_id: session.userId, role: 'admin' });
+  if (insertErr) {
+    console.error("Failed to grant oper role:", insertErr);
+    sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** Failed to grant operator status`);
+    return;
+  }
   
   sendIRC(session, `:${SERVER_NAME} 381 ${session.nick} :You are now an IRC operator`);
   sendIRC(session, `:${session.nick} MODE ${session.nick} :+o`);
