@@ -394,7 +394,15 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     return friends.some(f => f.friendId === userId);
   }, [friends]);
 
-  // Initial fetch with loading timeout safety
+  // Keep refs in sync for polling
+  const fetchFriendsRef = useRef(fetchFriends);
+  const fetchPendingRequestsRef = useRef(fetchPendingRequests);
+  const fetchBlockedUsersRef = useRef(fetchBlockedUsers);
+  useEffect(() => { fetchFriendsRef.current = fetchFriends; }, [fetchFriends]);
+  useEffect(() => { fetchPendingRequestsRef.current = fetchPendingRequests; }, [fetchPendingRequests]);
+  useEffect(() => { fetchBlockedUsersRef.current = fetchBlockedUsers; }, [fetchBlockedUsers]);
+
+  // Initial fetch with loading timeout safety + polling fallback
   useEffect(() => {
     if (!currentUserId) {
       setLoading(false);
@@ -407,9 +415,9 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
       setLoading(true);
       try {
         await Promise.all([
-          fetchFriends(),
-          fetchPendingRequests(),
-          fetchBlockedUsers()
+          fetchFriendsRef.current(),
+          fetchPendingRequestsRef.current(),
+          fetchBlockedUsersRef.current()
         ]);
       } catch (err) {
         console.error('Friends fetch error:', err);
@@ -419,6 +427,14 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
 
     fetchAll();
 
+    // Polling fallback every 8s — ensures updates even if Realtime fails on VPS
+    const pollInterval = setInterval(() => {
+      if (!cancelled) {
+        fetchPendingRequestsRef.current();
+        fetchFriendsRef.current();
+      }
+    }, 8000);
+
     // Safety timeout — never spin forever
     const safetyTimeout = setTimeout(() => {
       if (!cancelled) setLoading(false);
@@ -426,9 +442,10 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
 
     return () => {
       cancelled = true;
+      clearInterval(pollInterval);
       clearTimeout(safetyTimeout);
     };
-  }, [currentUserId, fetchFriends, fetchPendingRequests, fetchBlockedUsers]);
+  }, [currentUserId]);
 
   // Subscribe to realtime changes
   useEffect(() => {
