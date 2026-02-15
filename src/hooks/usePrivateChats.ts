@@ -102,6 +102,9 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
     openChatSendersRef.current = new Set(chats.map(c => c.targetUserId));
   }, [chats]);
 
+  // Track last-seen PM timestamp to detect new messages
+  const lastSeenPmRef = useRef<string>(new Date().toISOString());
+  
   // Single listener for incoming PMs - subscribe once
   useEffect(() => {
     if (!currentUserId) return;
@@ -246,6 +249,118 @@ export const usePrivateChats = (currentUserId: string, currentUsername: string) 
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+    };
+  }, [currentUserId]);
+
+  // ── Polling fallback: detect new incoming PMs even when Realtime is down ──
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const { data } = await supabase
+          .from('private_messages')
+          .select('sender_id, created_at')
+          .eq('recipient_id', currentUserId)
+          .gt('created_at', lastSeenPmRef.current)
+          .order('created_at', { ascending: true })
+          .limit(20);
+
+        if (data && data.length > 0) {
+          // Advance watermark
+          lastSeenPmRef.current = data[data.length - 1].created_at;
+
+          // Group by sender
+          const senders = new Map<string, number>();
+          for (const row of data) {
+            if (row.sender_id === currentUserId) continue;
+            senders.set(row.sender_id, (senders.get(row.sender_id) || 0) + 1);
+          }
+
+          for (const [senderId] of senders) {
+            // Skip if chat already open
+            if (openChatSendersRef.current.has(senderId)) {
+              // Mark as unread if minimized
+              setChats(prev => prev.map(c => {
+                if (c.targetUserId === senderId && c.isMinimized) {
+                  if (!dndRef.current) playPMNotificationSound();
+                  return { ...c, hasUnread: true };
+                }
+                return c;
+              }));
+              continue;
+            }
+
+            // Fetch username and open chat
+            try {
+              const { data: profile } = await supabase
+                .from('profiles_public')
+                .select('username')
+                .eq('user_id', senderId)
+                .maybeSingle();
+              
+              const senderUsername = profile?.username || 'Unknown';
+              if (!dndRef.current) playPMNotificationSound();
+
+              if (awayRef.current) {
+                setInbox(prev => {
+                  const next = new Map(prev);
+                  const existing = next.get(senderId);
+                  next.set(senderId, {
+                    senderId,
+                    senderUsername,
+                    count: (existing?.count || 0) + 1,
+                    lastMessageAt: new Date(),
+                  });
+                  return next;
+                });
+                toast.info(`New message from ${senderUsername}`, {
+                  description: 'Message saved to inbox',
+                });
+                continue;
+              }
+
+              const offset = (openChatSendersRef.current.size % 5) * 30;
+              const newChat: PrivateChat = {
+                id: `${senderId}-${Date.now()}`,
+                targetUserId: senderId,
+                targetUsername: senderUsername,
+                position: {
+                  x: Math.min(window.innerWidth - 340, 100 + offset),
+                  y: Math.min(window.innerHeight - 440, 100 + offset),
+                },
+                zIndex: 1001,
+                isMinimized: dndRef.current,
+                hasUnread: dndRef.current,
+              };
+              setChats(cur => {
+                if (cur.find(c => c.targetUserId === senderId)) return cur;
+                return [...cur, newChat];
+              });
+            } catch (e) {
+              console.error('[PM Poll] Failed to open chat for sender:', e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('[PM Poll Inbox] Error:', e);
+      }
+
+      if (!cancelled) {
+        pollTimer = setTimeout(poll, 5000);
+      }
+    };
+
+    // Start after a short delay to let Realtime try first
+    pollTimer = setTimeout(poll, 6000);
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, [currentUserId]);
 
