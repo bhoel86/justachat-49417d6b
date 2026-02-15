@@ -344,7 +344,8 @@ const PrivateChatWindow = ({
         channelRef.current = null;
       }
     };
-  }, [currentUserId, targetUserId, isBot, onNewMessage, decryptMessage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId, targetUserId, isBot]);
 
   // Drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
