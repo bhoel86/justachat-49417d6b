@@ -286,8 +286,23 @@ const PrivateChatWindow = ({
   useEffect(() => {
     if (isBot) return;
     
-    console.log('[PM Poll] Starting polling for', targetUserId);
+   console.log('[PM Poll] Starting polling for', targetUserId);
     let pollActive = true;
+    
+    // Cache the token once at setup to avoid supabase.auth.getSession() hanging on VPS
+    let cachedToken: string | undefined;
+    const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    supabase.auth.getSession().then(({ data }) => {
+      cachedToken = data.session?.access_token;
+      console.log('[PM Poll] Token cached:', !!cachedToken);
+    }).catch(() => {
+      console.warn('[PM Poll] Failed to cache token, will use apikey');
+    });
+    
+    // Also listen for token refreshes
+    const { data: { subscription: tokenSub } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) cachedToken = session.access_token;
+    });
     
     const intervalId = window.setInterval(() => {
       console.log('[PM Poll] Tick', targetUserId, 'active:', pollActive);
@@ -299,12 +314,6 @@ const PrivateChatWindow = ({
           // Use REST helper instead of Supabase JS client to avoid VPS hangs
           const filter = `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&order=created_at.desc&limit=10&select=*`;
           const data = await restSelect<any>('private_messages', filter, null, 8000);
-          const pollError = null;
-
-          if (pollError) {
-            console.error('[PM Poll] Query error:', pollError);
-            return;
-          }
           
           console.log('[PM Poll] Fetched', data?.length ?? 0, 'messages');
 
@@ -314,8 +323,7 @@ const PrivateChatWindow = ({
           if (newMsgs.length === 0) return;
           
           console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
-          const { data: sessionData } = await supabase.auth.getSession();
-          const token = sessionData.session?.access_token;
+          const token = cachedToken || apikey;
 
           for (const msg of newMsgs) {
             if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) continue;
@@ -345,6 +353,7 @@ const PrivateChatWindow = ({
       console.log('[PM Poll] Cleaning up polling for', targetUserId);
       pollActive = false;
       window.clearInterval(intervalId);
+      tokenSub.unsubscribe();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId, targetUserId, isBot]);
