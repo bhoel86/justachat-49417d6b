@@ -485,7 +485,11 @@ const PrivateChatWindow = ({
   // Send message
   const sendMessage = async () => {
     const text = message.trim();
-    if (!text && !attachedImage) return;
+    console.log('[PM] sendMessage called, text:', JSON.stringify(text), 'attachedImage:', !!attachedImage, 'isBot:', isBot, 'botId:', botId, 'targetUserId:', targetUserId, 'isConnected:', isConnected);
+    if (!text && !attachedImage) {
+      console.log('[PM] Early exit: no text and no image');
+      return;
+    }
 
     let imageUrl: string | null = null;
     if (attachedImage) {
