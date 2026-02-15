@@ -277,72 +277,69 @@ const PrivateChatWindow = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId, targetUserId, isBot]);
 
-  // Separate polling effect - uses recursive setTimeout for resilience
+  // Separate polling effect - uses window.setInterval for maximum reliability
   useEffect(() => {
     if (isBot) return;
     
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
     console.log('[PM Poll] Starting polling for', targetUserId);
+    let pollActive = true;
     
-    const poll = async () => {
-      if (cancelled) return;
-      try {
-        const { data, error: pollError } = await supabase
-          .from('private_messages')
-          .select('*')
-          .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
-          .order('created_at', { ascending: false })
-          .limit(10);
+    const intervalId = window.setInterval(() => {
+      console.log('[PM Poll] Tick', targetUserId, 'active:', pollActive);
+      if (!pollActive) return;
+      
+      (async () => {
+        try {
+          const { data, error: pollError } = await supabase
+            .from('private_messages')
+            .select('*')
+            .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
+            .order('created_at', { ascending: false })
+            .limit(10);
 
-        if (pollError) {
-          console.error('[PM Poll] Query error:', pollError);
-        } else {
+          if (pollError) {
+            console.error('[PM Poll] Query error:', pollError);
+            return;
+          }
+          
           console.log('[PM Poll] Fetched', data?.length ?? 0, 'messages');
 
-          if (data && data.length > 0) {
-            const newMsgs = data.filter(m => !processedIdsRef.current.has(m.id) && !pendingDecryptsRef.current.has(m.id));
-            if (newMsgs.length > 0) {
-              console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
-              const { data: sessionData } = await supabase.auth.getSession();
-              const token = sessionData.session?.access_token;
+          if (!data || data.length === 0) return;
 
-              for (const msg of newMsgs) {
-                if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) continue;
-                pendingDecryptsRef.current.add(msg.id);
-                try {
-                  const decrypted = await decryptMessage(msg, token);
-                  if (decrypted) {
-                    processedIdsRef.current.add(msg.id);
-                    setMessages(cur => {
-                      if (cur.some(m => m.id === msg.id)) return cur;
-                      return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-                    });
-                    if (msg.sender_id !== currentUserId) onNewMessage?.();
-                  }
-                } finally {
-                  pendingDecryptsRef.current.delete(msg.id);
-                }
+          const newMsgs = data.filter(m => !processedIdsRef.current.has(m.id) && !pendingDecryptsRef.current.has(m.id));
+          if (newMsgs.length === 0) return;
+          
+          console.log('[PM Poll] New messages to decrypt:', newMsgs.length);
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData.session?.access_token;
+
+          for (const msg of newMsgs) {
+            if (processedIdsRef.current.has(msg.id) || pendingDecryptsRef.current.has(msg.id)) continue;
+            pendingDecryptsRef.current.add(msg.id);
+            try {
+              const decrypted = await decryptMessage(msg, token);
+              if (decrypted) {
+                processedIdsRef.current.add(msg.id);
+                setMessages(cur => {
+                  if (cur.some(m => m.id === msg.id)) return cur;
+                  return [...cur, decrypted].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                });
+                if (msg.sender_id !== currentUserId) onNewMessage?.();
               }
+            } finally {
+              pendingDecryptsRef.current.delete(msg.id);
             }
           }
+        } catch (e) {
+          console.error('[PM Poll] Error:', e);
         }
-      } catch (e) {
-        console.error('[PM Poll] Error:', e);
-      }
-
-      if (!cancelled) {
-        timer = setTimeout(poll, 4000);
-      }
-    };
-
-    // First poll after 4 seconds
-    timer = setTimeout(poll, 4000);
+      })();
+    }, 4000);
 
     return () => {
       console.log('[PM Poll] Cleaning up polling for', targetUserId);
-      cancelled = true;
-      if (timer) clearTimeout(timer);
+      pollActive = false;
+      window.clearInterval(intervalId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId, targetUserId, isBot]);
