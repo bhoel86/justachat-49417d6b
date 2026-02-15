@@ -2872,14 +2872,18 @@ async function handleOPER(session: IRCSession, params: string[]) {
     return;
   }
   
-  // Grant admin role
-  const { data: currentRole } = await session.supabase.from("user_roles").select("role").eq("user_id", session.userId).maybeSingle();
+  // Grant admin role - use service client to bypass RLS
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const operServiceClient = createClient(supabaseUrl, supabaseServiceKey);
+  
+  const { data: currentRole } = await operServiceClient.from("user_roles").select("role").eq("user_id", session.userId).maybeSingle();
   if (currentRole?.role === 'owner' || currentRole?.role === 'admin') {
     sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** You are already an IRC Operator`);
     return;
   }
   
-  await session.supabase.from("user_roles").upsert({ user_id: session.userId, role: 'admin' }, { onConflict: 'user_id' });
+  await operServiceClient.from("user_roles").upsert({ user_id: session.userId, role: 'admin' }, { onConflict: 'user_id' });
   
   sendIRC(session, `:${SERVER_NAME} 381 ${session.nick} :You are now an IRC operator`);
   sendIRC(session, `:${session.nick} MODE ${session.nick} :+o`);
