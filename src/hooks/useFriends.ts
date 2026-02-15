@@ -532,9 +532,34 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     };
   }, [currentUserId, fetchFriends, fetchPendingRequests, fetchBlockedUsers]);
 
-  // Track online status of friends via global presence channel
+  // Track online status of friends via global presence channel + polling fallback
   useEffect(() => {
     if (!currentUserId) return;
+
+    let cancelled = false;
+
+    // Polling fallback: check channel_members to see which friends are in any room
+    const pollOnlineStatus = async () => {
+      if (cancelled || friends.length === 0) return;
+      try {
+        const friendIds = friends.map(f => f.friendId);
+        const members = await restSelect<{ user_id: string }>(
+          'channel_members',
+          `select=user_id&user_id=in.(${friendIds.join(',')})`,
+        );
+        if (!cancelled && members) {
+          const onlineSet = new Set(members.map(m => m.user_id));
+          setOnlineFriendIds(onlineSet);
+        }
+      } catch {
+        // Silently fail
+      }
+    };
+
+    // Initial poll
+    pollOnlineStatus();
+    // Poll every 10s
+    const pollTimer = setInterval(pollOnlineStatus, 10000);
 
     const presenceChannel = supabase.channel('global-online-users', {
       config: { presence: { key: currentUserId } }
@@ -562,6 +587,8 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
       });
 
     return () => {
+      cancelled = true;
+      clearInterval(pollTimer);
       supabase.removeChannel(presenceChannel);
     };
   }, [currentUserId, friends]);
