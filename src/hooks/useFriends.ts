@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { restSelect } from '@/lib/supabaseRest';
+import { restSelect, restInsert, restUpdate, restDelete } from '@/lib/supabaseRest';
 import { toast } from 'sonner';
 import { playPMNotificationSound } from '@/lib/notificationSound';
 
@@ -47,16 +47,6 @@ export interface BlockedUser {
   createdAt: Date;
 }
 
-/** Helper to get current access token without blocking */
-const getAccessToken = async (): Promise<string | null> => {
-  try {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token || null;
-  } catch {
-    return null;
-  }
-};
-
 export const useFriends = (currentUserId: string, onFriendRequestReceived?: FriendRequestCallback) => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
@@ -70,21 +60,16 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     onFriendRequestReceivedRef.current = onFriendRequestReceived;
   }, [onFriendRequestReceived]);
 
-  // Fetch friends list via REST
+  // Fetch friends list via REST (no token param — restSelect uses cached token)
   const fetchFriends = useCallback(async () => {
     if (!currentUserId) return;
 
     try {
-      const token = await getAccessToken();
-      
-      // Fetch friendships where user is either user_id or friend_id
       const friendships = await restSelect<{ id: string; user_id: string; friend_id: string; created_at: string }>(
         'friends',
         `select=id,user_id,friend_id,created_at&or=(user_id.eq.${currentUserId},friend_id.eq.${currentUserId})`,
-        token
       );
 
-      // Get the other user's ID for each friendship
       const friendUserIds = friendships?.map(f => 
         f.user_id === currentUserId ? f.friend_id : f.user_id
       ) || [];
@@ -94,11 +79,9 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
         return;
       }
 
-      // Fetch profiles for all friends
       const profiles = await restSelect<{ user_id: string; username: string; avatar_url: string | null }>(
         'profiles_public',
         `select=user_id,username,avatar_url&user_id=in.(${friendUserIds.join(',')})`,
-        token
       );
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
@@ -126,12 +109,9 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     if (!currentUserId) return;
 
     try {
-      const token = await getAccessToken();
-      
       const requests = await restSelect<{ id: string; sender_id: string; recipient_id: string; status: string; created_at: string }>(
         'friend_requests',
         `select=id,sender_id,recipient_id,status,created_at&status=eq.pending&or=(sender_id.eq.${currentUserId},recipient_id.eq.${currentUserId})`,
-        token
       );
 
       if (!requests || requests.length === 0) {
@@ -139,7 +119,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
         return;
       }
 
-      // Get all user IDs involved
       const userIds = [...new Set([
         ...requests.map(r => r.sender_id),
         ...requests.map(r => r.recipient_id)
@@ -148,7 +127,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
       const profiles = await restSelect<{ user_id: string; username: string; avatar_url: string | null }>(
         'profiles_public',
         `select=user_id,username,avatar_url&user_id=in.(${userIds.join(',')})`,
-        token
       );
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
@@ -181,12 +159,9 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     if (!currentUserId) return;
 
     try {
-      const token = await getAccessToken();
-      
       const blocks = await restSelect<{ id: string; blocked_id: string; reason: string | null; created_at: string }>(
         'blocked_users',
         `select=id,blocked_id,reason,created_at&blocker_id=eq.${currentUserId}`,
-        token
       );
 
       if (!blocks || blocks.length === 0) {
@@ -199,7 +174,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
       const profiles = await restSelect<{ user_id: string; username: string; avatar_url: string | null }>(
         'profiles_public',
         `select=user_id,username,avatar_url&user_id=in.(${blockedIds.join(',')})`,
-        token
       );
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
@@ -222,57 +196,49 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [currentUserId]);
 
-  // Send friend request (write operations still use supabase client for simplicity)
+  // Send friend request via REST
   const sendFriendRequest = useCallback(async (targetUserId: string) => {
     if (!currentUserId) return false;
 
     try {
       // Check if already friends
-      const { data: existing } = await supabase
-        .from('friends')
-        .select('id')
-        .or(`and(user_id.eq.${currentUserId},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${currentUserId})`)
-        .maybeSingle();
+      const existing = await restSelect(
+        'friends',
+        `select=id&or=(and(user_id.eq.${currentUserId},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${currentUserId}))&limit=1`,
+      );
 
-      if (existing) {
+      if (existing && existing.length > 0) {
         toast.error('You are already friends with this user');
         return false;
       }
 
       // Check if request already exists
-      const { data: existingRequest } = await supabase
-        .from('friend_requests')
-        .select('id, status')
-        .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`)
-        .eq('status', 'pending')
-        .maybeSingle();
+      const existingRequest = await restSelect(
+        'friend_requests',
+        `select=id,status&status=eq.pending&or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))&limit=1`,
+      );
 
-      if (existingRequest) {
+      if (existingRequest && existingRequest.length > 0) {
         toast.error('A friend request already exists');
         return false;
       }
 
       // Check if blocked
-      const { data: blocked } = await supabase
-        .from('blocked_users')
-        .select('id')
-        .or(`and(blocker_id.eq.${currentUserId},blocked_id.eq.${targetUserId}),and(blocker_id.eq.${targetUserId},blocked_id.eq.${currentUserId})`)
-        .maybeSingle();
+      const blocked = await restSelect(
+        'blocked_users',
+        `select=id&or=(and(blocker_id.eq.${currentUserId},blocked_id.eq.${targetUserId}),and(blocker_id.eq.${targetUserId},blocked_id.eq.${currentUserId}))&limit=1`,
+      );
 
-      if (blocked) {
+      if (blocked && blocked.length > 0) {
         toast.error('Cannot send friend request to this user');
         return false;
       }
 
-      const { error } = await supabase
-        .from('friend_requests')
-        .insert({
-          sender_id: currentUserId,
-          recipient_id: targetUserId,
-          status: 'pending'
-        });
-
-      if (error) throw error;
+      await restInsert('friend_requests', {
+        sender_id: currentUserId,
+        recipient_id: targetUserId,
+        status: 'pending'
+      });
 
       toast.success('Friend request sent!');
       await fetchPendingRequests();
@@ -284,43 +250,41 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [currentUserId, fetchPendingRequests]);
 
-  // Accept friend request
+  // Accept friend request via REST
   const acceptFriendRequest = useCallback(async (requestId: string) => {
     if (!currentUserId) return false;
 
     try {
-      const { data: request, error: fetchError } = await supabase
-        .from('friend_requests')
-        .select('*')
-        .eq('id', requestId)
-        .single();
+      // Fetch the request details
+      const requests = await restSelect<{ id: string; sender_id: string; recipient_id: string }>(
+        'friend_requests',
+        `select=id,sender_id,recipient_id&id=eq.${requestId}&limit=1`,
+      );
 
-      if (fetchError) throw fetchError;
+      if (!requests || requests.length === 0) {
+        toast.error('Friend request not found');
+        return false;
+      }
 
-      const { error: updateError } = await supabase
-        .from('friend_requests')
-        .update({ status: 'accepted' })
-        .eq('id', requestId);
+      const request = requests[0];
 
-      if (updateError) throw updateError;
+      // Update request status
+      await restUpdate('friend_requests', `id=eq.${requestId}`, { status: 'accepted' });
 
-      const { error: friendError1 } = await supabase
-        .from('friends')
-        .insert({
-          user_id: currentUserId,
-          friend_id: request.sender_id
-        });
+      // Create friendship both ways
+      await restInsert('friends', {
+        user_id: currentUserId,
+        friend_id: request.sender_id,
+      });
 
-      if (friendError1) throw friendError1;
-
-      const { error: friendError2 } = await supabase
-        .from('friends')
-        .insert({
+      try {
+        await restInsert('friends', {
           user_id: request.sender_id,
-          friend_id: currentUserId
+          friend_id: currentUserId,
         });
-
-      // Ignore error if second insert fails due to unique constraint
+      } catch {
+        // Ignore if second insert fails (unique constraint)
+      }
 
       toast.success('Friend request accepted!');
       await Promise.all([fetchFriends(), fetchPendingRequests()]);
@@ -332,15 +296,10 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [currentUserId, fetchFriends, fetchPendingRequests]);
 
-  // Decline friend request
+  // Decline friend request via REST
   const declineFriendRequest = useCallback(async (requestId: string) => {
     try {
-      const { error } = await supabase
-        .from('friend_requests')
-        .update({ status: 'declined' })
-        .eq('id', requestId);
-
-      if (error) throw error;
+      await restUpdate('friend_requests', `id=eq.${requestId}`, { status: 'declined' });
 
       toast.info('Friend request declined');
       await fetchPendingRequests();
@@ -352,15 +311,10 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [fetchPendingRequests]);
 
-  // Cancel outgoing friend request
+  // Cancel outgoing friend request via REST
   const cancelFriendRequest = useCallback(async (requestId: string) => {
     try {
-      const { error } = await supabase
-        .from('friend_requests')
-        .delete()
-        .eq('id', requestId);
-
-      if (error) throw error;
+      await restDelete('friend_requests', `id=eq.${requestId}`);
 
       toast.info('Friend request cancelled');
       await fetchPendingRequests();
@@ -372,18 +326,11 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [fetchPendingRequests]);
 
-  // Remove friend
+  // Remove friend via REST
   const removeFriend = useCallback(async (friendshipId: string, friendId: string) => {
     try {
-      await supabase
-        .from('friends')
-        .delete()
-        .eq('id', friendshipId);
-
-      await supabase
-        .from('friends')
-        .delete()
-        .or(`and(user_id.eq.${currentUserId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${currentUserId})`);
+      await restDelete('friends', `id=eq.${friendshipId}`);
+      await restDelete('friends', `or=(and(user_id.eq.${currentUserId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${currentUserId}))`);
 
       toast.info('Friend removed');
       await fetchFriends();
@@ -395,30 +342,22 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [currentUserId, fetchFriends]);
 
-  // Block user
+  // Block user via REST
   const blockUser = useCallback(async (targetUserId: string, reason?: string) => {
     if (!currentUserId) return false;
 
     try {
-      await supabase
-        .from('friends')
-        .delete()
-        .or(`and(user_id.eq.${currentUserId},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${currentUserId})`);
+      // Remove friendship
+      await restDelete('friends', `or=(and(user_id.eq.${currentUserId},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${currentUserId}))`);
 
-      await supabase
-        .from('friend_requests')
-        .delete()
-        .or(`and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId})`);
+      // Remove pending requests
+      await restDelete('friend_requests', `or=(and(sender_id.eq.${currentUserId},recipient_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},recipient_id.eq.${currentUserId}))`);
 
-      const { error } = await supabase
-        .from('blocked_users')
-        .insert({
-          blocker_id: currentUserId,
-          blocked_id: targetUserId,
-          reason
-        });
-
-      if (error) throw error;
+      await restInsert('blocked_users', {
+        blocker_id: currentUserId,
+        blocked_id: targetUserId,
+        reason: reason || null,
+      });
 
       toast.success('User blocked');
       await Promise.all([fetchFriends(), fetchPendingRequests(), fetchBlockedUsers()]);
@@ -430,15 +369,10 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     }
   }, [currentUserId, fetchFriends, fetchPendingRequests, fetchBlockedUsers]);
 
-  // Unblock user
+  // Unblock user via REST
   const unblockUser = useCallback(async (blockId: string) => {
     try {
-      const { error } = await supabase
-        .from('blocked_users')
-        .delete()
-        .eq('id', blockId);
-
-      if (error) throw error;
+      await restDelete('blocked_users', `id=eq.${blockId}`);
 
       toast.success('User unblocked');
       await fetchBlockedUsers();
@@ -460,24 +394,40 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     return friends.some(f => f.friendId === userId);
   }, [friends]);
 
-  // Initial fetch
+  // Initial fetch with loading timeout safety
   useEffect(() => {
     if (!currentUserId) {
       setLoading(false);
       return;
     }
 
+    let cancelled = false;
+
     const fetchAll = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchFriends(),
-        fetchPendingRequests(),
-        fetchBlockedUsers()
-      ]);
-      setLoading(false);
+      try {
+        await Promise.all([
+          fetchFriends(),
+          fetchPendingRequests(),
+          fetchBlockedUsers()
+        ]);
+      } catch (err) {
+        console.error('Friends fetch error:', err);
+      }
+      if (!cancelled) setLoading(false);
     };
 
     fetchAll();
+
+    // Safety timeout — never spin forever
+    const safetyTimeout = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 10000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(safetyTimeout);
+    };
   }, [currentUserId, fetchFriends, fetchPendingRequests, fetchBlockedUsers]);
 
   // Subscribe to realtime changes
@@ -503,23 +453,18 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
         // Handle new incoming friend requests with popup and sound
         const newRequest = payload.new as { id: string; sender_id: string; recipient_id: string; status: string };
         if (newRequest.recipient_id === currentUserId && newRequest.status === 'pending') {
-          // Fetch sender's profile via REST
           try {
-            const token = await getAccessToken();
             const profiles = await restSelect<{ username: string; avatar_url: string | null }>(
               'profiles_public',
               `select=username,avatar_url&user_id=eq.${newRequest.sender_id}&limit=1`,
-              token
             );
             const senderProfile = profiles?.[0];
           
             const senderName = senderProfile?.username || 'Someone';
             const senderAvatar = senderProfile?.avatar_url || null;
           
-            // Play notification sound
             playPMNotificationSound();
           
-            // If callback is provided, trigger popup
             if (onFriendRequestReceivedRef.current) {
               onFriendRequestReceivedRef.current({
                 id: newRequest.id,
@@ -588,7 +533,6 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
           });
         });
         
-        // Filter to only friends who are online
         const onlineFriends = new Set(
           friends.map(f => f.friendId).filter(id => onlineIds.has(id))
         );
