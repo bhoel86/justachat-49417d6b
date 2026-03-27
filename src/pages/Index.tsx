@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
 import ChatRoom from "@/components/chat/ChatRoom";
 import { toast } from "sonner";
