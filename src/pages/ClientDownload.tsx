@@ -21,11 +21,7 @@ const ClientDownload = () => {
   const navigate = useNavigate();
   const [detectedOS, setDetectedOS] = useState<'windows' | 'macos' | 'linux' | 'unknown'>('unknown');
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login");
-    }
-  }, [user, loading, navigate]);
+  // No auth redirect - page should be crawlable by search engines
 
   // Detect user's OS
   useEffect(() => {

@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -390,6 +391,10 @@ const Home = () => {
   }
 
   return (
+    <>
+    <Helmet>
+      <meta name="robots" content="noindex, nofollow" />
+    </Helmet>
     <div className="min-h-screen bg-background text-foreground relative">
       
       {/* Floating theme decorations */}
@@ -1262,6 +1267,7 @@ const Home = () => {
         />
       )}
     </div>
+    </>
   );
 };
 

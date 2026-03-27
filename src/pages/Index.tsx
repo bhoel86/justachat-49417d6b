@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
 import ChatRoom from "@/components/chat/ChatRoom";
 import { toast } from "sonner";
@@ -143,7 +144,14 @@ const Index = () => {
     return null;
   }
 
-  return <ChatRoom initialChannelName={channelName} />;
+  return (
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+      <ChatRoom initialChannelName={channelName} />
+    </>
+  );
 };
 
 export default Index;
