@@ -391,6 +391,10 @@ const Home = () => {
   }
 
   return (
+    <>
+    <Helmet>
+      <meta name="robots" content="noindex, nofollow" />
+    </Helmet>
     <div className="min-h-screen bg-background text-foreground relative">
       
       {/* Floating theme decorations */}
