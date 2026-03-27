@@ -132,11 +132,7 @@ const Dating = () => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/home');
-    }
-  }, [user, authLoading, navigate]);
+  // No auth redirect - page should be crawlable by search engines
 
   useEffect(() => {
     if (user) {
