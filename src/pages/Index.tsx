@@ -144,7 +144,14 @@ const Index = () => {
     return null;
   }
 
-  return <ChatRoom initialChannelName={channelName} />;
+  return (
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+      <ChatRoom initialChannelName={channelName} />
+    </>
+  );
 };
 
 export default Index;
