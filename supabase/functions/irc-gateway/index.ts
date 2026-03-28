@@ -1896,6 +1896,7 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
       }
 
       // Insert message into database
+      rememberRecentIrcMessage(session.userId!, channel.id, message);
       const { error } = await (session.supabase as any)
         .from("messages")
         .insert({
