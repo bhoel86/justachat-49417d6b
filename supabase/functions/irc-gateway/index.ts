@@ -4097,7 +4097,19 @@ Deno.serve(async (req) => {
           if (profile) {
             tempSession.nick = (profile as { username: string }).username;
           }
-          console.log(`[IRC HTTP] Session from token: nick=${tempSession.nick}, cmd=${command}, registered=${tempSession.registered}`);
+          
+          // Recover channel memberships from DB (critical for POLL to work after cold-start)
+          if (tempSession.channels.size === 0) {
+            const { data: memberships } = await supabase.from("channel_members").select("channel_id").eq("user_id", userData.user.id);
+            if (memberships) {
+              for (const m of memberships as any[]) {
+                tempSession.channels.add(m.channel_id);
+              }
+            }
+            console.log(`[IRC HTTP] Recovered ${tempSession.channels.size} channels from DB for ${tempSession.nick}`);
+          }
+          
+          console.log(`[IRC HTTP] Session from token: nick=${tempSession.nick}, cmd=${command}, registered=${tempSession.registered}, channels=${tempSession.channels.size}`);
         }
       }
       
