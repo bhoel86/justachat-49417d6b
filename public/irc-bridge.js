@@ -86,6 +86,8 @@ function handleClient(socket) {
 
         if (res.lines && res.lines.length > 0) {
           for (const line of res.lines) {
+            // Suppress stale "identify first" notices after successful auth
+            if (authToken && line.includes('You must identify first')) continue;
             if (alive) socket.write(line + '\r\n');
           }
         }
