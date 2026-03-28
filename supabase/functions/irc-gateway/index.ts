@@ -1857,6 +1857,11 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
         return;
       }
 
+      // Ensure channel is tracked in session (critical for POLL after cold-start)
+      if (!session.channels.has(channel.id)) {
+        session.channels.add(channel.id);
+      }
+
       // Insert message into database
       const { error } = await (session.supabase as any)
         .from("messages")
