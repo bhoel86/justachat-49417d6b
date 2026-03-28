@@ -3772,7 +3772,59 @@ Deno.serve(async (req) => {
       
       // POLL command - return pending messages + check DB for web user messages
       if (command === "POLL") {
-        const existingSession = sessionId ? sessions.get(sessionId) : null;
+        let existingSession = sessionId ? sessions.get(sessionId) : null;
+        
+        // Cold-start recovery: reconstruct bridge session from auth token
+        if (!existingSession && sessionId) {
+          const authHeader = req.headers.get("authorization") || "";
+          const token = authHeader.replace(/^Bearer\s+/i, "");
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+          
+          if (token && token !== supabaseAnonKey) {
+            const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+              global: { headers: { Authorization: `Bearer ${token}` } },
+            });
+            const { data: userData } = await supabase.auth.getUser(token);
+            if (userData?.user) {
+              // Get username
+              const { data: profile } = await supabase.from("profiles").select("username").eq("user_id", userData.user.id).single();
+              const username = (profile as { username: string } | null)?.username || "bridge-user";
+              
+              // Get channels user is a member of
+              const { data: memberships } = await supabase.from("channel_members").select("channel_id").eq("user_id", userData.user.id);
+              const channelSet = new Set<string>();
+              if (memberships) {
+                for (const m of memberships as any[]) {
+                  channelSet.add(m.channel_id);
+                }
+              }
+              
+              // Reconstruct session
+              const recoveredSession: IRCSession = {
+                ws: { send: () => {}, readyState: 1 } as unknown as WebSocket,
+                nick: username,
+                user: username,
+                realname: "IRC Bridge User",
+                registered: true,
+                authenticated: true,
+                userId: userData.user.id,
+                channels: channelSet,
+                lastPing: Date.now(),
+                supabase: supabase,
+                sessionId: sessionId,
+                isBridge: true,
+                pendingMessages: [],
+                lastPollMessageTime: new Date(Date.now() - 10000).toISOString(), // Start from 10s ago
+                knownMembers: new Map(),
+              };
+              sessions.set(sessionId, recoveredSession);
+              existingSession = recoveredSession;
+              console.log(`[POLL] Cold-start recovery: restored session for ${username} with ${channelSet.size} channels`);
+            }
+          }
+        }
+        
         if (existingSession && existingSession.isBridge) {
           const messages = [...existingSession.pendingMessages];
           existingSession.pendingMessages = [];
