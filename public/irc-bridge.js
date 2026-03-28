@@ -149,6 +149,16 @@ function handleClient(socket) {
 
       if (res.lines && res.lines.length > 0) {
         for (const line of res.lines) {
+          // Capture AUTH_TOKEN from NickServ IDENTIFY flow
+          const tokenMatch = line.match(/\*\*\* AUTH_TOKEN (.+)/);
+          if (tokenMatch) {
+            authToken = tokenMatch[1].trim();
+            console.log(`[BRIDGE] Captured auth token from NickServ for ${nick || sessionId}`);
+            startPolling();
+            continue; // Don't forward token line to IRC client
+          }
+          // Suppress stale "identify first" notices after successful auth
+          if (authToken && line.includes('You must identify first')) continue;
           socket.write(line + '\r\n');
         }
       }
