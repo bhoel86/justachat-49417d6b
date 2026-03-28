@@ -31,6 +31,39 @@ const sessions = new Map<string, IRCSession>();
 // Channel to session mapping for realtime relay
 const channelSubscriptions = new Map<string, Set<string>>(); // channelId -> Set<sessionId>
 
+// Track recent IRC-origin messages so we only suppress true IRC echoes.
+// Without this, same-user web messages get mistaken for IRC messages and never relay back to the bridge.
+const recentIrcMessageFingerprints = new Map<string, number>();
+const IRC_MESSAGE_FINGERPRINT_TTL_MS = 30000;
+
+function buildMessageFingerprint(userId: string, channelId: string, content: string) {
+  return `${userId}:${channelId}:${content.trim()}`;
+}
+
+function rememberRecentIrcMessage(userId: string, channelId: string, content: string) {
+  const now = Date.now();
+  recentIrcMessageFingerprints.set(buildMessageFingerprint(userId, channelId, content), now);
+
+  for (const [key, timestamp] of recentIrcMessageFingerprints.entries()) {
+    if (now - timestamp > IRC_MESSAGE_FINGERPRINT_TTL_MS) {
+      recentIrcMessageFingerprints.delete(key);
+    }
+  }
+}
+
+function isRecentIrcMessage(userId: string, channelId: string, content: string) {
+  const key = buildMessageFingerprint(userId, channelId, content);
+  const timestamp = recentIrcMessageFingerprints.get(key);
+
+  if (!timestamp) return false;
+  if (Date.now() - timestamp > IRC_MESSAGE_FINGERPRINT_TTL_MS) {
+    recentIrcMessageFingerprints.delete(key);
+    return false;
+  }
+
+  return true;
+}
+
 // ============================================
 // Security Hardening: Rate Limiting & Flood Protection
 // ============================================
@@ -1863,6 +1896,7 @@ async function handlePRIVMSG(session: IRCSession, params: string[]) {
       }
 
       // Insert message into database
+      rememberRecentIrcMessage(session.userId!, channel.id, message);
       const { error } = await (session.supabase as any)
         .from("messages")
         .insert({
