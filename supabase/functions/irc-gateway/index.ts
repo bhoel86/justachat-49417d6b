@@ -1646,6 +1646,11 @@ async function handleNickServ(session: IRCSession, message: string) {
       sendNickServNotice(session, `You are now identified for ${IRC_COLORS.BOLD}${session.nick}${IRC_COLORS.RESET}.`);
       sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** Authentication successful`);
 
+      // Send token to bridge so it can authenticate subsequent HTTP requests
+      if (authData.session?.access_token) {
+        sendIRC(session, `:${SERVER_NAME} NOTICE ${session.nick} :*** AUTH_TOKEN ${authData.session.access_token}`);
+      }
+
       // Sync nick from profile
       try {
         const { data: profile } = await session.supabase
