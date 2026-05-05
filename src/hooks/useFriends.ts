@@ -561,7 +561,7 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     // Poll every 10s
     const pollTimer = setInterval(pollOnlineStatus, 10000);
 
-    const presenceChannel = supabase.channel('global-online-users', {
+    const presenceChannel = supabase.channel(`friends-online-${currentUserId}-${Math.random().toString(36).slice(2, 9)}`, {
       config: { presence: { key: currentUserId } }
     });
 
