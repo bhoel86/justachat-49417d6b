@@ -452,7 +452,7 @@ export const useFriends = (currentUserId: string, onFriendRequestReceived?: Frie
     if (!currentUserId) return;
 
     const friendsChannel = supabase
-      .channel('friends-changes')
+      .channel(`friends-changes-${currentUserId}-${Math.random().toString(36).slice(2, 9)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
