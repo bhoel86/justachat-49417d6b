@@ -8,6 +8,7 @@ import { Helmet } from "react-helmet-async";
 import PageSEO from "@/components/seo/PageSEO";
 import SiteFooter from "@/components/layout/SiteFooter";
 import { MessageCircle, Shield, Users, Mic, Video, Gamepad2, Heart, Globe, Zap, Lock } from "lucide-react";
+import CodingHoursCounter from "@/components/home/CodingHoursCounter";
 
 const features = [
   { icon: MessageCircle, title: "Live Chat Rooms", desc: "Topic-based rooms, real people, real time." },
@@ -173,6 +174,7 @@ const Landing = () => {
             <p className="text-[11px] text-muted-foreground mt-4">
               Serious offers only · sales@justachat.net
             </p>
+            <CodingHoursCounter />
           </div>
         </section>
 
