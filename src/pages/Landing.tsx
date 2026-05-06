@@ -173,6 +173,7 @@ const Landing = () => {
             <p className="text-[11px] text-muted-foreground mt-4">
               Serious offers only · sales@justachat.net
             </p>
+            <CodingHoursCounter />
           </div>
         </section>
 
