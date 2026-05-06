@@ -138,17 +138,41 @@ const Landing = () => {
           </div>
         </nav>
 
-        {/* Hero - compact */}
-        <section className="container mx-auto px-4 pt-8 pb-6 text-center relative z-10">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 leading-tight">
-            Free Chat Platform. <span className="text-primary">Real Conversation, No Noise.</span>
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto mb-4">
-            Voice, video, games and genuine connection. No algorithms, no feeds. Just chat.
-          </p>
-          <div className="flex gap-2 justify-center">
-            <Link to="/login?mode=signup" className="px-5 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm">Create Free Account</Link>
-            <Link to="/login" className="px-5 py-2 border border-border rounded-lg font-semibold hover:bg-accent/50 transition-colors text-sm">Login</Link>
+        {/* Hero - FOR SALE */}
+        <section className="container mx-auto px-4 pt-10 pb-10 relative z-10">
+          <div className="max-w-3xl mx-auto bg-card/80 backdrop-blur-sm border-2 border-primary/40 rounded-2xl p-6 sm:p-10 text-center shadow-lg">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-bold tracking-widest uppercase mb-4">
+              <Zap className="w-3.5 h-3.5" />
+              For Sale
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-3 leading-tight">
+              Justachat™ <span className="text-primary">is for sale</span>
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto mb-5">
+              A turnkey adult (18+) chat platform: live rooms, voice &amp; video, private messaging,
+              moderation tools, IRC bridge, custom domains and a full admin suite. Brand, code and
+              infrastructure available to a serious buyer.
+            </p>
+            <ul className="grid sm:grid-cols-2 gap-2 text-left text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto mb-6">
+              <li className="flex gap-2"><Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" /> Production platform &amp; codebase</li>
+              <li className="flex gap-2"><Globe className="w-4 h-4 text-primary shrink-0 mt-0.5" /> Domain portfolio included</li>
+              <li className="flex gap-2"><Users className="w-4 h-4 text-primary shrink-0 mt-0.5" /> Active community &amp; moderation</li>
+              <li className="flex gap-2"><Lock className="w-4 h-4 text-primary shrink-0 mt-0.5" /> Self-hosted backend, full control</li>
+            </ul>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center items-center">
+              <a
+                href="mailto:sales@justachat.net?subject=Justachat%20Acquisition%20Inquiry"
+                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm"
+              >
+                Contact for Inquiry
+              </a>
+              <Link to="/login" className="px-6 py-2.5 border border-border rounded-lg font-semibold hover:bg-accent/50 transition-colors text-sm">
+                Existing User Login
+              </Link>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-4">
+              Serious offers only · sales@justachat.net
+            </p>
           </div>
         </section>
 
