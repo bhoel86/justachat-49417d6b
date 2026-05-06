@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Code2 } from "lucide-react";
 
-// Baseline: 800 hours as of May 6, 2026 — ticks up in real time from there.
-const BASELINE_HOURS = 800;
-const BASELINE_TS = new Date("2026-05-06T00:00:00Z").getTime();
+// Counts hours coded since Justachat™ was founded: Jan 22, 2026 · 1:03 PM (local conceptual time, UTC anchor).
+const BASELINE_TS = new Date("2026-01-22T13:03:00Z").getTime();
+const BASELINE_HOURS = 0;
 
 const CodingHoursCounter = () => {
   const [hours, setHours] = useState(() => {
