@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Code2 } from "lucide-react";
 
-// Baseline: 8,000 hours as of May 6, 2026 — ticks up in real time from there.
-const BASELINE_HOURS = 8000;
+// Baseline: 800 hours as of May 6, 2026 — ticks up in real time from there.
+const BASELINE_HOURS = 800;
 const BASELINE_TS = new Date("2026-05-06T00:00:00Z").getTime();
 
 const CodingHoursCounter = () => {
